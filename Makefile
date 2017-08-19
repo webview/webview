@@ -11,5 +11,5 @@ else ifeq ($(shell uname -s),Darwin)
 	WEBVIEW_LDFLAGS := -framework Cocoa -framework WebKit
 endif
 
-example: main.c webview.h
-	$(CC) $(CFLAGS) $(WEBVIEW_CFLAGS) main.c $(LDFLAGS) $(WEBVIEW_LDFLAGS) -o $@
+example: c-example/main.c webview.h
+	$(CC) $(CFLAGS) $(WEBVIEW_CFLAGS) c-example/main.c $(LDFLAGS) $(WEBVIEW_LDFLAGS) -o $@
