@@ -688,7 +688,7 @@ static int webview(const char *title, const char *url, int width, int height,
 		      requestWithURL:
 			  [NSURL
 			      URLWithString:[NSString
-						stringWithUTF8String:html]]]];
+						stringWithUTF8String:url]]]];
 
   [[w contentView] addSubview:webview];
 

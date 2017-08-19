@@ -8,8 +8,8 @@ else ifeq ($(shell uname -s),Linux)
 	WEBVIEW_LDFLAGS := $(shell pkg-config --libs gtk+-3.0 webkitgtk-3.0)
 else ifeq ($(shell uname -s),Darwin)
 	WEBVIEW_CFLAGS := -DWEBVIEW_COCOA=1 -x objective-c
-	WEBVIEW_LDFLAGS := -framework Cocoa
+	WEBVIEW_LDFLAGS := -framework Cocoa -framework WebKit
 endif
 
 example: main.c
-	$(CC) main.c $(CFLAGS) $(LDFLAGS) $(WEBVIEW_CFLAGS) $(WEBVIEW_LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $(WEBVIEW_CFLAGS) main.c $(LDFLAGS) $(WEBVIEW_LDFLAGS) -o $@
