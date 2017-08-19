@@ -430,7 +430,7 @@ static IDocHostUIHandlerVtbl MyIDocHostUIHandlerTable = {
 static void UnEmbedBrowserObject(HWND hwnd) {
   IOleObject **browserHandle;
   IOleObject *browserObject;
-  if ((browserHandle = (IOleObject **)GetWindowLong(hwnd, GWL_USERDATA))) {
+  if ((browserHandle = (IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA))) {
     browserObject = *browserHandle;
     browserObject->lpVtbl->Close(browserObject, OLECLOSE_NOSAVE);
     browserObject->lpVtbl->Release(browserObject);
@@ -465,7 +465,7 @@ static int EmbedBrowserObject(HWND hwnd) {
 	    pClassFactory, 0, &IID_IOleObject, &browserObject)) {
       pClassFactory->lpVtbl->Release(pClassFactory);
       *((IOleObject **)ptr) = browserObject;
-      SetWindowLong(hwnd, GWL_USERDATA, (LONG)ptr);
+      SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG)ptr);
       if (!browserObject->lpVtbl->SetClientSite(
 	      browserObject, (IOleClientSite *)_iOleClientSiteEx)) {
 	browserObject->lpVtbl->SetHostNames(browserObject, L"My Host Name", 0);
@@ -564,7 +564,7 @@ static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
   IWebBrowser2 *webBrowser2;
   VARIANT myURL;
   IOleObject *browserObject;
-  browserObject = *((IOleObject **)GetWindowLong(hwnd, GWL_USERDATA));
+  browserObject = *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
 					     (void **)&webBrowser2)) {
     VariantInit(&myURL);
@@ -649,7 +649,7 @@ static int webview(const char *title, const char *url, int width, int height,
 
   SetWindowText(msg.hwnd, title);
 
-  DisplayHTMLPage(msg.hwnd, url);
+  DisplayHTMLPage(msg.hwnd, (LPTSTR)url);
   ShowWindow(msg.hwnd, info.wShowWindow);
   UpdateWindow(msg.hwnd);
   SetFocus(msg.hwnd);
