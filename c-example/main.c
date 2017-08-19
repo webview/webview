@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "webview.h"
+#include "../webview.h"
 
 static void usage(char *app) { printf("USAGE: %s <html|url>\n", app); }
 
