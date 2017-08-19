@@ -683,7 +683,7 @@ static int webview(const char *title, const char *url, int width, int height,
 
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   NSRect r = NSMakeRect(0, 0, width, height);
-  NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+  NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
   if (resizable) {
     style = style | NSWindowStyleMaskResizable;
   }
@@ -704,6 +704,8 @@ static int webview(const char *title, const char *url, int width, int height,
       loadRequest:[NSURLRequest
 		      requestWithURL:nsURL]];
 
+  [webview setAutoresizesSubviews:YES];
+  [webview setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
   [[w contentView] addSubview:webview];
 
   [w orderFrontRegardless];
