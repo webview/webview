@@ -6,5 +6,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   int r = webview("WebView example", argv[1], 800, 600, 1);
+  printf("exiting...\n");
   return r;
 }
