@@ -670,7 +670,7 @@ static int webview(const char *title, const char *url, int width, int height,
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 
-@interface WebViewApp: NSObject <NSApplicationDelegate>
+@interface WebViewApp : NSObject <NSApplicationDelegate>
 @end
 @implementation WebViewApp
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)app {
@@ -687,29 +687,25 @@ static int webview(const char *title, const char *url, int width, int height,
 
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   NSRect r = NSMakeRect(0, 0, width, height);
-  NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+  NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+		     NSWindowStyleMaskMiniaturizable;
   if (resizable) {
     style = style | NSWindowStyleMaskResizable;
   }
-  NSWindow *w = [[NSWindow alloc]
-      initWithContentRect:r
-		styleMask:style
-		  backing:NSBackingStoreBuffered
-		    defer:NO];
+  NSWindow *w = [[NSWindow alloc] initWithContentRect:r
+					    styleMask:style
+					      backing:NSBackingStoreBuffered
+						defer:NO];
   [w autorelease];
   [w setTitle:nsTitle];
 
   WebView *webview =
-      [[WebView alloc] initWithFrame:r
-			   frameName:@"WebView"
-			   groupName:nil];
+      [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
   NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
-  [[webview mainFrame]
-      loadRequest:[NSURLRequest
-		      requestWithURL:nsURL]];
+  [[webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
   [webview setAutoresizesSubviews:YES];
-  [webview setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+  [webview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [[w contentView] addSubview:webview];
 
   [w orderFrontRegardless];
