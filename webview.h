@@ -73,6 +73,10 @@ static int webview(const char *title, const char *url, int width, int height,
 #include <mshtmhst.h>
 #include <mshtml.h>
 
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
+
 typedef struct {
   IOleInPlaceFrame frame;
   HWND window;
