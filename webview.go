@@ -7,8 +7,8 @@ package webview
 #cgo windows CFLAGS: -DWEBVIEW_WINAPI=1
 #cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -mwindows
 
-#cgo macos CFLAGS: -DWEBVIEW_COCOA=1 -x objective-c
-#cgo macos LDFLAGS: -framework Cocoa -framework WebKit
+#cgo darwin CFLAGS: -DWEBVIEW_COCOA=1 -x objective-c
+#cgo darwin LDFLAGS: -framework Cocoa -framework WebKit
 
 #include <stdlib.h>
 #include "webview.h"
