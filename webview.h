@@ -622,6 +622,7 @@ static int webview(const char *title, const char *url, int width, int height,
   STARTUPINFO info;
   DWORD style;
   IWebBrowser2 *browser;
+  RECT rect;
 
   hInstance = GetModuleHandle(NULL);
   if (hInstance == NULL) {
@@ -643,8 +644,12 @@ static int webview(const char *title, const char *url, int width, int height,
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
+  GetClientRect(GetDesktopWindow(), &rect);
+  rect.left = (rect.right/2) - (width/2);
+  rect.top = (rect.bottom/2) - (height/2);
+
   msg.hwnd =
-      CreateWindowEx(0, classname, title, style, CW_USEDEFAULT, CW_USEDEFAULT,
+      CreateWindowEx(0, classname, title, style, rect.left, rect.top,
 		     width, height, HWND_DESKTOP, NULL, hInstance, 0);
   if (msg.hwnd == 0) {
     OleUninitialize();
