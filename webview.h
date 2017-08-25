@@ -610,6 +610,19 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
     UnEmbedBrowserObject(hwnd);
     PostQuitMessage(0);
     return TRUE;
+  case WM_SIZE: {
+    IWebBrowser2 *webBrowser2;
+    IOleObject *browserObject =
+	*((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
+					       (void **)&webBrowser2)) {
+      RECT rect;
+      GetClientRect(hwnd, &rect);
+      webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
+      webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
+    }
+    return TRUE;
+  }
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
