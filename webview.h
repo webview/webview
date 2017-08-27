@@ -23,7 +23,17 @@ struct webview_priv {};
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 
-struct webview_priv {};
+@interface WebViewWindowDelegate: NSObject <NSWindowDelegate>
+@property (nonatomic, assign) struct webview *webview;
+@end
+
+struct webview_priv {
+  NSAutoreleasePool *pool;
+  NSWindow *window;
+  WebView *webview;
+  WebViewWindowDelegate *windowDelegate;
+  int loop_result;
+};
 #else
 #error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
 #endif
@@ -50,7 +60,6 @@ static int webview(const char *title, const char *url, int w, int h,
       .width = w,
       .height = h,
       .resizable = resizable,
-      .priv = {0},
   };
   int r = webview_init(&webview);
   if (r != 0) {
@@ -787,49 +796,62 @@ static int webview(const char *title, const char *url, int width, int height,
 #endif /* WEBVIEW_WINAPI */
 
 #if defined(WEBVIEW_COCOA)
-@interface WebViewApp : NSObject <NSApplicationDelegate>
-@end
-@implementation WebViewApp
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)app {
-  return YES;
+@implementation WebViewWindowDelegate
+- (void)windowWillClose:(NSNotification*)notification {
+  self.webview->priv.loop_result = -1;
 }
 @end
 
-static int webview(const char *title, const char *url, int width, int height,
-		   int resizable) {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+static int webview_init(struct webview *w) {
+  w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
-  WebViewApp *app = [WebViewApp new];
-  [NSApp setDelegate:app];
 
-  NSString *nsTitle = [NSString stringWithUTF8String:title];
-  NSRect r = NSMakeRect(0, 0, width, height);
+  NSString *nsTitle = [NSString stringWithUTF8String:w->title];
+  NSRect r = NSMakeRect(0, 0, w->width, w->height);
   NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
 		     NSWindowStyleMaskMiniaturizable;
-  if (resizable) {
+  if (w->resizable) {
     style = style | NSWindowStyleMaskResizable;
   }
-  NSWindow *w = [[NSWindow alloc] initWithContentRect:r
+  w->priv.window = [[NSWindow alloc] initWithContentRect:r
 					    styleMask:style
 					      backing:NSBackingStoreBuffered
 						defer:NO];
-  [w autorelease];
-  [w setTitle:nsTitle];
+  [w->priv.window autorelease];
+  [w->priv.window setTitle:nsTitle];
+  w->priv.windowDelegate = [WebViewWindowDelegate new];
+  w->priv.windowDelegate.webview = w;
+  [w->priv.window setDelegate:w->priv.windowDelegate];
 
-  WebView *webview =
+  w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
-  NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
-  [[webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
+  NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
+  [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
-  [webview setAutoresizesSubviews:YES];
-  [webview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [[w contentView] addSubview:webview];
+  [w->priv.webview setAutoresizesSubviews:YES];
+  [w->priv.webview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [[w->priv.window contentView] addSubview:w->priv.webview];
 
-  [w orderFrontRegardless];
-  [NSApp run];
-  [pool drain];
+  [w->priv.window orderFrontRegardless];
   return 0;
 }
+
+static int webview_loop(struct webview *w, int blocking) {
+  NSDate *until = (blocking ? [NSDate distantFuture] : [NSDate distantPast]);
+  NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                             untilDate:until
+                                inMode:NSDefaultRunLoopMode
+                               dequeue:YES];
+  if (event) {
+    [NSApp sendEvent:event];
+  }
+  return w->priv.loop_result;
+}
+
+static void webview_exit(struct webview *w) {
+  [NSApp terminate:NSApp];
+}
+
 #endif /* WEBVIEW_COCOA */
 
 #endif /* WEBVIEW_H */
