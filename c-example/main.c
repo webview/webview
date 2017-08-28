@@ -6,7 +6,9 @@
 
 static void usage(char *app) { printf("USAGE: %s <html|url>\n", app); }
 
-static void external_invoke_cb() { printf("external_invoke_cb()\n"); }
+static void external_invoke_cb(struct webview *w, const char *arg) {
+  printf("external_invoke_cb(%s)\n", arg);
+}
 
 int main(int argc, char *argv[]) {
   int opt;

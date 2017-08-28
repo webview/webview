@@ -23,7 +23,7 @@ struct webview_priv {};
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 
-@interface WebViewWindowDelegate: NSObject <NSWindowDelegate>
+@interface WebViewWindowDelegate: NSObject <NSWindowDelegate, WebFrameLoadDelegate>
 @property (nonatomic, assign) struct webview *webview;
 @end
 
@@ -44,7 +44,7 @@ struct webview {
   int width;
   int height;
   int resizable;
-  void (*external_invoke_cb)();
+  void (*external_invoke_cb)(struct webview *w, const char *arg);
   struct webview_priv priv;
 };
 
@@ -83,7 +83,7 @@ webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
   (void)err;
   struct webview *w = (struct webview *)JSObjectGetPrivate(thisObject);
   if (w->external_invoke_cb != NULL) {
-    w->external_invoke_cb();
+    w->external_invoke_cb(w, NULL);
   }
   return JSValueMakeUndefined(context);
 }
@@ -800,6 +800,17 @@ static int webview(const char *title, const char *url, int width, int height,
 - (void)windowWillClose:(NSNotification*)notification {
   self.webview->priv.loop_result = -1;
 }
++ (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector { return NO; }
+- (void)webView:(WebView*)webView didClearWindowObject:(WebScriptObject*)windowScriptObject forFrame:(WebFrame*)frame {
+  NSLog(@"didClearWindowObject\n");
+  NSLog(@"didClearWindowObject: %@\n", self);
+  [windowScriptObject setValue:self forKey:@"external"];
+}
+- (void)invoke:(NSString*)arg {
+  if (self.webview->external_invoke_cb != NULL) {
+    self.webview->external_invoke_cb(self.webview, [arg UTF8String]);
+  }
+}
 @end
 
 static int webview_init(struct webview *w) {
@@ -830,6 +841,7 @@ static int webview_init(struct webview *w) {
 
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
 
   [w->priv.window orderFrontRegardless];
