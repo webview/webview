@@ -808,8 +808,6 @@ static int webview(const char *title, const char *url, int width, int height,
 }
 + (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector { return NO; }
 - (void)webView:(WebView*)webView didClearWindowObject:(WebScriptObject*)windowScriptObject forFrame:(WebFrame*)frame {
-  NSLog(@"didClearWindowObject\n");
-  NSLog(@"didClearWindowObject: %@\n", self);
   [windowScriptObject setValue:self forKey:@"external"];
 }
 - (void)invoke:(NSString*)arg {
