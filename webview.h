@@ -82,8 +82,14 @@ webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
   (void)args;
   (void)err;
   struct webview *w = (struct webview *)JSObjectGetPrivate(thisObject);
-  if (w->external_invoke_cb != NULL) {
-    w->external_invoke_cb(w, NULL);
+  if (w->external_invoke_cb != NULL && argc == 1) {
+    JSStringRef js = JSValueToStringCopy(context, args[0], NULL);
+    size_t n = JSStringGetMaximumUTF8CStringSize(js);
+    char *s = g_new(char, n);
+    JSStringGetUTF8CString(js, s, n);
+    w->external_invoke_cb(w, s);
+    JSStringRelease(js);
+    g_free(s);
   }
   return JSValueMakeUndefined(context);
 }
