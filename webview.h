@@ -620,9 +620,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
       GetClientRect(hwnd, &rect);
       webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
       webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
+      webBrowser2->lpVtbl->Release(webBrowser2);
     }
     return TRUE;
-  }
+  }  
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -634,8 +635,8 @@ static int webview(const char *title, const char *url, int width, int height,
   HINSTANCE hInstance;
   STARTUPINFO info;
   DWORD style;
-  IWebBrowser2 *browser;
   RECT rect;
+  HWND hwnd;
 
   hInstance = GetModuleHandle(NULL);
   if (hInstance == NULL) {
@@ -661,24 +662,44 @@ static int webview(const char *title, const char *url, int width, int height,
   rect.left = (rect.right/2) - (width/2);
   rect.top = (rect.bottom/2) - (height/2);
 
-  msg.hwnd =
+  hwnd =
       CreateWindowEx(0, classname, title, style, rect.left, rect.top,
 		     width, height, HWND_DESKTOP, NULL, hInstance, 0);
-  if (msg.hwnd == 0) {
+  if (hwnd == 0) {
     OleUninitialize();
     return -1;
   }
 
-  SetWindowText(msg.hwnd, title);
+  SetWindowText(hwnd, title);
 
-  DisplayHTMLPage(msg.hwnd, (LPTSTR)url);
-  ShowWindow(msg.hwnd, info.wShowWindow);
-  UpdateWindow(msg.hwnd);
-  SetFocus(msg.hwnd);
+  DisplayHTMLPage(hwnd, (LPTSTR)url);
+  ShowWindow(hwnd, info.wShowWindow);
+  UpdateWindow(hwnd);
+  SetFocus(hwnd);
 
   while (GetMessage(&msg, 0, 0, 0) == 1) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
+    switch(msg.message) {
+    case WM_COMMAND:
+    case WM_KEYUP:
+    case WM_KEYDOWN: {
+      IWebBrowser2 *webBrowser2;
+      IOleObject *browserObject =
+        *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
+      if (!browserObject->lpVtbl->QueryInterface(browserObject,
+        &IID_IWebBrowser2, (void **)&webBrowser2)) {
+        IOleInPlaceActiveObject* pIOIPAO;
+        if (!browserObject->lpVtbl->QueryInterface(browserObject, 
+          &IID_IOleInPlaceActiveObject, (void**)&pIOIPAO)) {
+          pIOIPAO->lpVtbl->TranslateAccelerator(pIOIPAO, &msg);
+          pIOIPAO->lpVtbl->Release(pIOIPAO);
+        }
+        webBrowser2->lpVtbl->Release(webBrowser2);
+      }
+    } break;
+    default:
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
   }
   OleUninitialize();
   return 0;
