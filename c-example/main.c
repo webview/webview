@@ -6,22 +6,28 @@
 
 static void usage(char *app) { printf("USAGE: %s <html|url>\n", app); }
 
+static void external_invoke_cb() { printf("external_invoke_cb()\n"); }
+
 int main(int argc, char *argv[]) {
-  int w = 800;
-  int h = 600;
-  int resize = 0;
   int opt;
+  struct webview webview = {
+      .title = "WebView example",
+      .width = 800,
+      .height = 600,
+      .resizable = 0,
+      .external_invoke_cb = external_invoke_cb,
+  };
 
   while ((opt = getopt(argc, argv, "w:h:r")) != -1) {
     switch (opt) {
     case 'w':
-      w = atoi(optarg);
+      webview.width = atoi(optarg);
       break;
     case 'h':
-      h = atoi(optarg);
+      webview.height = atoi(optarg);
       break;
     case 'r':
-      resize = 1;
+      webview.resizable = 1;
       break;
     default:
       usage(argv[0]);
@@ -34,7 +40,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  webview("WebView example", argv[optind], w, h, resize);
+  webview.url = argv[optind];
+
+  webview_init(&webview);
+
+  while (webview_loop(&webview, 1) == 0)
+    ;
   printf("exiting...\n");
+  webview_exit(&webview);
   return 0;
 }

@@ -1,17 +1,104 @@
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
-static int webview(const char *title, const char *url, int w, int h,
-		   int resizable);
-
 #if defined(WEBVIEW_GTK)
+#include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
 #include <webkit/webkit.h>
 
-static void webview_desroy_cb(GtkWidget *widget, GtkWidget *window) {
+struct webview_priv {
+  GtkWidget *window;
+  GtkWidget *scroller;
+  GtkWidget *webview;
+  int loop_result;
+};
+#elif defined(WEBVIEW_WINAPI)
+#include <windows.h>
+
+#include <exdisp.h>
+#include <mshtmhst.h>
+#include <mshtml.h>
+struct webview_priv {};
+#elif defined(WEBVIEW_COCOA)
+#import <Cocoa/Cocoa.h>
+#import <WebKit/WebKit.h>
+
+struct webview_priv {};
+#else
+#error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
+#endif
+
+struct webview {
+  const char *url;
+  const char *title;
+  int width;
+  int height;
+  int resizable;
+  void (*external_invoke_cb)();
+  struct webview_priv priv;
+};
+
+static int webview_init(struct webview *w);
+static int webview_loop(struct webview *w, int blocking);
+static void webview_exit(struct webview *w);
+
+static int webview(const char *title, const char *url, int w, int h,
+		   int resizable) {
+  struct webview webview = {
+      .title = title,
+      .url = url,
+      .width = w,
+      .height = h,
+      .resizable = resizable,
+      .priv = {0},
+  };
+  int r = webview_init(&webview);
+  if (r != 0) {
+    return r;
+  }
+  while (webview_loop(&webview, 1) == 0)
+    ;
+  webview_exit(&webview);
+  return 0;
+}
+
+#if defined(WEBVIEW_GTK)
+static JSValueRef
+webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
+			   JSObjectRef thisObject, size_t argc,
+			   const JSValueRef args[], JSValueRef *err) {
+  (void)fn;
+  (void)thisObject;
+  (void)argc;
+  (void)args;
+  (void)err;
+  struct webview *w = (struct webview *)JSObjectGetPrivate(thisObject);
+  if (w->external_invoke_cb != NULL) {
+    w->external_invoke_cb();
+  }
+  return JSValueMakeUndefined(context);
+}
+static const JSStaticFunction webview_external_static_funcs[] = {
+    {"invoke", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
+    {NULL, NULL, 0},
+};
+
+static const JSClassDefinition webview_external_def = {
+    0,		kJSClassAttributeNone,
+    "external", NULL,
+    NULL,       webview_external_static_funcs,
+    NULL,       NULL,
+    NULL,       NULL,
+    NULL,       NULL,
+    NULL,       NULL,
+    NULL,       NULL,
+    NULL,
+};
+
+static void webview_desroy_cb(GtkWidget *widget, gpointer arg) {
   (void)widget;
-  (void)window;
-  gtk_main_quit();
+  struct webview *w = (struct webview *)arg;
+  webview_exit(w);
 }
 
 static gboolean webview_context_menu_cb(WebKitWebView *webview,
@@ -27,51 +114,66 @@ static gboolean webview_context_menu_cb(WebKitWebView *webview,
   return TRUE;
 }
 
-static int webview(const char *title, const char *url, int width, int height,
-		   int resizable) {
-  GtkWidget *window;
-  GtkWidget *scroller;
-  GtkWidget *webview;
+static void webview_window_object_cleared_cb(WebKitWebView *webview,
+					     WebKitWebFrame *frame,
+					     gpointer context,
+					     gpointer window_object,
+					     gpointer arg) {
+  (void)webview;
+  (void)frame;
+  (void)window_object;
+  JSClassRef cls = JSClassCreate(&webview_external_def);
+  JSObjectRef obj = JSObjectMake(context, cls, arg);
+  JSObjectRef glob = JSContextGetGlobalObject(context);
+  JSStringRef s = JSStringCreateWithUTF8CString("external");
+  JSObjectSetProperty(context, glob, s, obj, kJSPropertyAttributeNone, NULL);
+}
 
+static int webview_init(struct webview *w) {
   if (gtk_init_check(0, NULL) == FALSE) {
     return -1;
   }
 
-  window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(window), title);
+  w->priv.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(w->priv.window), w->title);
 
-  if (resizable) {
-    gtk_window_set_default_size(GTK_WINDOW(window), width, height);
+  if (w->resizable) {
+    gtk_window_set_default_size(GTK_WINDOW(w->priv.window), w->width,
+				w->height);
   } else {
-    gtk_widget_set_size_request(window, width, height);
+    gtk_widget_set_size_request(w->priv.window, w->width, w->height);
   }
-  gtk_window_set_resizable(GTK_WINDOW(window), !!resizable);
-  gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+  gtk_window_set_resizable(GTK_WINDOW(w->priv.window), !!w->resizable);
+  gtk_window_set_position(GTK_WINDOW(w->priv.window), GTK_WIN_POS_CENTER);
 
-  scroller = gtk_scrolled_window_new(NULL, NULL);
-  gtk_container_add(GTK_CONTAINER(window), scroller);
+  w->priv.scroller = gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(w->priv.window), w->priv.scroller);
 
-  webview = webkit_web_view_new();
-  webkit_web_view_load_uri(WEBKIT_WEB_VIEW(webview), url);
-  gtk_container_add(GTK_CONTAINER(scroller), webview);
+  w->priv.webview = webkit_web_view_new();
+  webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview), w->url);
+  gtk_container_add(GTK_CONTAINER(w->priv.scroller), w->priv.webview);
 
-  gtk_widget_show_all(window);
+  gtk_widget_show_all(w->priv.window);
 
-  g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(webview_desroy_cb),
-		   NULL);
-  g_signal_connect(G_OBJECT(webview), "context-menu",
-		   G_CALLBACK(webview_context_menu_cb), NULL);
-
-  gtk_main();
+  g_signal_connect(G_OBJECT(w->priv.window), "destroy",
+		   G_CALLBACK(webview_desroy_cb), w);
+  g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
+		   G_CALLBACK(webview_context_menu_cb), w);
+  g_signal_connect(G_OBJECT(w->priv.webview), "window-object-cleared",
+		   G_CALLBACK(webview_window_object_cleared_cb), w);
   return 0;
 }
 
-#elif defined(WEBVIEW_WINAPI)
-#include <windows.h>
+static int webview_loop(struct webview *w, int blocking) {
+  gtk_main_iteration_do(blocking);
+  return w->priv.loop_result;
+}
 
-#include <exdisp.h>
-#include <mshtmhst.h>
-#include <mshtml.h>
+static void webview_exit(struct webview *w) { w->priv.loop_result = -1; }
+
+#endif /* WEBVIEW_GTK */
+
+#if defined(WEBVIEW_WINAPI)
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "ole32.lib")
@@ -658,12 +760,11 @@ static int webview(const char *title, const char *url, int width, int height,
   }
 
   GetClientRect(GetDesktopWindow(), &rect);
-  rect.left = (rect.right/2) - (width/2);
-  rect.top = (rect.bottom/2) - (height/2);
+  rect.left = (rect.right / 2) - (width / 2);
+  rect.top = (rect.bottom / 2) - (height / 2);
 
-  msg.hwnd =
-      CreateWindowEx(0, classname, title, style, rect.left, rect.top,
-		     width, height, HWND_DESKTOP, NULL, hInstance, 0);
+  msg.hwnd = CreateWindowEx(0, classname, title, style, rect.left, rect.top,
+			    width, height, HWND_DESKTOP, NULL, hInstance, 0);
   if (msg.hwnd == 0) {
     OleUninitialize();
     return -1;
@@ -683,11 +784,9 @@ static int webview(const char *title, const char *url, int width, int height,
   OleUninitialize();
   return 0;
 }
+#endif /* WEBVIEW_WINAPI */
 
-#elif defined(WEBVIEW_COCOA)
-#import <Cocoa/Cocoa.h>
-#import <WebKit/WebKit.h>
-
+#if defined(WEBVIEW_COCOA)
 @interface WebViewApp : NSObject <NSApplicationDelegate>
 @end
 @implementation WebViewApp
@@ -731,8 +830,6 @@ static int webview(const char *title, const char *url, int width, int height,
   [pool drain];
   return 0;
 }
-#else
-#error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
-#endif
+#endif /* WEBVIEW_COCOA */
 
 #endif /* WEBVIEW_H */
