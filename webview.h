@@ -254,8 +254,17 @@ static HRESULT STDMETHODCALLTYPE
 JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
           WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult,
           EXCEPINFO *pExcepInfo, UINT *puArgErr) {
-  printf("JS_Invoke\n");
-  MessageBox(0, "JS_Invoke", "", 0);
+  if (pDispParams->cArgs == 1 && pDispParams->rgvarg[0].vt == VT_BSTR) {
+    BSTR bstr = pDispParams->rgvarg[0].bstrVal;
+    int n = WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, NULL, 0, NULL, NULL);
+    char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
+    if (s != NULL) {
+      WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, &s[0], n, NULL, NULL);
+      // TODO: trigger user-provided callback here
+      printf("JS_Invoke: %s\n", s);
+      GlobalFree(s);
+    }
+  }
   return S_OK;
 }
 
