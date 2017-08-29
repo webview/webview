@@ -894,7 +894,64 @@ static int webview_loop(struct webview *w, int blocking) {
 }
 
 static int webview_eval(struct webview *w, const char *js) {
-  // TODO
+  IWebBrowser2 *webBrowser2;
+  IHTMLDocument2 *htmlDoc2;
+  IDispatch *docDispatch;
+  IDispatch *scriptDispatch;
+  if ((*w->priv.browser)
+          ->lpVtbl->QueryInterface((*w->priv.browser), &IID_IWebBrowser2,
+                                   (void **)&webBrowser2) != S_OK) {
+    return -1;
+  }
+
+  if (webBrowser2->lpVtbl->get_Document(webBrowser2, &docDispatch) != S_OK) {
+    return -1;
+  }
+  if (docDispatch->lpVtbl->QueryInterface(docDispatch, &IID_IHTMLDocument2,
+                                          (void **)&htmlDoc2) != S_OK) {
+    return -1;
+  }
+  if (htmlDoc2->lpVtbl->get_Script(htmlDoc2, &scriptDispatch) != S_OK) {
+    return -1;
+  }
+  DISPID dispid;
+  BSTR evalStr = L"eval";
+  if (scriptDispatch->lpVtbl->GetIDsOfNames(scriptDispatch, &IID_NULL, &evalStr,
+                                            1, LOCALE_SYSTEM_DEFAULT,
+                                            &dispid) != S_OK) {
+    return -1;
+  }
+
+  DISPPARAMS params;
+  VARIANT arg;
+  VARIANT result;
+  EXCEPINFO excepInfo;
+  UINT nArgErr = (UINT)-1;
+  params.cArgs = 1;
+  params.cNamedArgs = 0;
+  params.rgvarg = &arg;
+  arg.vt = VT_BSTR;
+  static const char *prologue = "(function(){";
+  static const char *epilogue = ";})();";
+  int n = strlen(prologue) + strlen(epilogue) + strlen(js) + 1;
+  char *eval = (char *)malloc(n);
+  strcpy(eval, prologue);
+  strcat(eval, js);
+  strcat(eval, epilogue);
+  int m = MultiByteToWideChar(CP_ACP, 0, eval, -1, 0, 0);
+  wchar_t *buf = (wchar_t *)GlobalAlloc(GMEM_FIXED, m * sizeof(wchar_t));
+  MultiByteToWideChar(CP_ACP, 0, eval, -1, buf, m);
+  arg.bstrVal = SysAllocString(buf);
+  if (scriptDispatch->lpVtbl->Invoke(scriptDispatch, dispid, &IID_NULL, 0,
+                                     DISPATCH_METHOD, &params, &result,
+                                     &excepInfo, &nArgErr) != S_OK) {
+    return -1;
+  }
+  SysFreeString(arg.bstrVal);
+  free(eval);
+  scriptDispatch->lpVtbl->Release(scriptDispatch);
+  htmlDoc2->lpVtbl->Release(htmlDoc2);
+  docDispatch->lpVtbl->Release(docDispatch);
   return 0;
 }
 
