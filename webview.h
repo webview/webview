@@ -218,6 +218,58 @@ typedef struct {
   _IDocHostUIHandlerEx ui;
 } _IOleClientSiteEx;
 
+static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
+               REFIID riid,
+               LPVOID FAR *ppvObj) {
+  if (!memcmp(riid, &IID_IDispatch, sizeof(GUID))) {
+    *ppvObj = This;
+    return S_OK;
+  }
+  *ppvObj = 0;
+  return E_NOINTERFACE;
+}
+static HRESULT STDMETHODCALLTYPE JS_AddRef(IDispatch FAR *This) {
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE JS_Release(IDispatch FAR *This) {
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE JS_GetTypeInfoCount(IDispatch FAR *This,
+        UINT *pctinfo) {
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE JS_GetTypeInfo(IDispatch FAR *This,
+		UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo) {
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
+		REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid,
+		DISPID *rgDispId) {
+  for(int i=0; i<cNames; i++) {
+    rgDispId[i] = i+0x1000;
+  }
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE JS_Invoke(IDispatch FAR *This,
+		DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags,
+		DISPPARAMS *pDispParams, VARIANT *pVarResult,
+		EXCEPINFO *pExcepInfo, UINT *puArgErr) {
+  MessageBox(0, "JS_Invoke", "", 0); 
+  return S_OK;
+}
+
+static IDispatchVtbl ExternalDispatchTable = {
+  JS_QueryInterface,
+  JS_AddRef,
+  JS_Release,
+  JS_GetTypeInfoCount,
+  JS_GetTypeInfo,
+  JS_GetIDsOfNames,
+  JS_Invoke
+};
+
+static IDispatch ExternalDispatch = { &ExternalDispatchTable };
+
 static HRESULT STDMETHODCALLTYPE Site_AddRef(IOleClientSite FAR *This) {
   return 1;
 }
@@ -477,8 +529,8 @@ static HRESULT STDMETHODCALLTYPE UI_GetDropTarget(
 }
 static HRESULT STDMETHODCALLTYPE UI_GetExternal(
     IDocHostUIHandler FAR *This, IDispatch __RPC_FAR *__RPC_FAR *ppDispatch) {
-  *ppDispatch = 0;
-  return S_FALSE;
+  *ppDispatch = &ExternalDispatch;
+  return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE UI_TranslateUrl(
     IDocHostUIHandler FAR *This, DWORD dwTranslate, OLECHAR __RPC_FAR *pchURLIn,
