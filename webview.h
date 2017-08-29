@@ -229,10 +229,8 @@ static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
   *ppvObj = 0;
   return E_NOINTERFACE;
 }
-static HRESULT STDMETHODCALLTYPE JS_AddRef(IDispatch FAR *This) { return S_OK; }
-static HRESULT STDMETHODCALLTYPE JS_Release(IDispatch FAR *This) {
-  return S_OK;
-}
+static ULONG STDMETHODCALLTYPE JS_AddRef(IDispatch FAR *This) { return 1; }
+static ULONG STDMETHODCALLTYPE JS_Release(IDispatch FAR *This) { return 1; }
 static HRESULT STDMETHODCALLTYPE JS_GetTypeInfoCount(IDispatch FAR *This,
                                                      UINT *pctinfo) {
   return S_OK;
@@ -256,6 +254,7 @@ static HRESULT STDMETHODCALLTYPE
 JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
           WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult,
           EXCEPINFO *pExcepInfo, UINT *puArgErr) {
+  printf("JS_Invoke\n");
   MessageBox(0, "JS_Invoke", "", 0);
   return S_OK;
 }
@@ -266,10 +265,10 @@ static IDispatchVtbl ExternalDispatchTable = {
 
 static IDispatch ExternalDispatch = {&ExternalDispatchTable};
 
-static HRESULT STDMETHODCALLTYPE Site_AddRef(IOleClientSite FAR *This) {
+static ULONG STDMETHODCALLTYPE Site_AddRef(IOleClientSite FAR *This) {
   return 1;
 }
-static HRESULT STDMETHODCALLTYPE Site_Release(IOleClientSite FAR *This) {
+static ULONG STDMETHODCALLTYPE Site_Release(IOleClientSite FAR *This) {
   return 1;
 }
 static HRESULT STDMETHODCALLTYPE Site_SaveObject(IOleClientSite FAR *This) {
@@ -318,11 +317,11 @@ static HRESULT STDMETHODCALLTYPE InPlace_QueryInterface(
   return (Site_QueryInterface(
       (IOleClientSite *)((char *)This - sizeof(IOleClientSite)), riid, ppvObj));
 }
-static HRESULT STDMETHODCALLTYPE InPlace_AddRef(IOleInPlaceSite FAR *This) {
-  return (1);
+static ULONG STDMETHODCALLTYPE InPlace_AddRef(IOleInPlaceSite FAR *This) {
+  return 1;
 }
-static HRESULT STDMETHODCALLTYPE InPlace_Release(IOleInPlaceSite FAR *This) {
-  return (1);
+static ULONG STDMETHODCALLTYPE InPlace_Release(IOleInPlaceSite FAR *This) {
+  return 1;
 }
 static HRESULT STDMETHODCALLTYPE InPlace_GetWindow(IOleInPlaceSite FAR *This,
                                                    HWND FAR *lphwnd) {
@@ -394,11 +393,11 @@ static HRESULT STDMETHODCALLTYPE Frame_QueryInterface(
     IOleInPlaceFrame FAR *This, REFIID riid, LPVOID FAR *ppvObj) {
   return E_NOTIMPL;
 }
-static HRESULT STDMETHODCALLTYPE Frame_AddRef(IOleInPlaceFrame FAR *This) {
-  return (1);
+static ULONG STDMETHODCALLTYPE Frame_AddRef(IOleInPlaceFrame FAR *This) {
+  return 1;
 }
-static HRESULT STDMETHODCALLTYPE Frame_Release(IOleInPlaceFrame FAR *This) {
-  return (1);
+static ULONG STDMETHODCALLTYPE Frame_Release(IOleInPlaceFrame FAR *This) {
+  return 1;
 }
 static HRESULT STDMETHODCALLTYPE Frame_GetWindow(IOleInPlaceFrame FAR *This,
                                                  HWND FAR *lphwnd) {
@@ -461,10 +460,10 @@ static HRESULT STDMETHODCALLTYPE UI_QueryInterface(IDocHostUIHandler FAR *This,
                                                  sizeof(_IOleInPlaceSiteEx)),
                               riid, ppvObj));
 }
-static HRESULT STDMETHODCALLTYPE UI_AddRef(IDocHostUIHandler FAR *This) {
+static ULONG STDMETHODCALLTYPE UI_AddRef(IDocHostUIHandler FAR *This) {
   return 1;
 }
-static HRESULT STDMETHODCALLTYPE UI_Release(IDocHostUIHandler FAR *This) {
+static ULONG STDMETHODCALLTYPE UI_Release(IDocHostUIHandler FAR *This) {
   return 1;
 }
 static HRESULT STDMETHODCALLTYPE UI_ShowContextMenu(
@@ -637,7 +636,7 @@ static int EmbedBrowserObject(HWND hwnd) {
                         &IID_IClassFactory, (void **)&pClassFactory) &&
       pClassFactory) {
     if (!pClassFactory->lpVtbl->CreateInstance(
-            pClassFactory, 0, &IID_IOleObject, &browserObject)) {
+            pClassFactory, 0, &IID_IOleObject, (void **)&browserObject)) {
       pClassFactory->lpVtbl->Release(pClassFactory);
       *((IOleObject **)ptr) = browserObject;
       SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG)ptr);
