@@ -50,6 +50,7 @@ struct webview {
 
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
+static int webview_eval(struct webview *w, const char *js);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
@@ -182,6 +183,11 @@ static int webview_init(struct webview *w) {
 static int webview_loop(struct webview *w, int blocking) {
   gtk_main_iteration_do(blocking);
   return w->priv.loop_result;
+}
+
+static int webview_eval(struct webview *w, const char *js) {
+  webkit_web_view_execute_script(WEBKIT_WEB_VIEW(w->priv.webview), js);
+  return 0;
 }
 
 static void webview_exit(struct webview *w) { w->priv.loop_result = -1; }
