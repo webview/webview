@@ -815,6 +815,10 @@ static int webview(const char *title, const char *url, int width, int height,
 + (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector { return NO; }
 - (void)webView:(WebView*)webView didClearWindowObject:(WebScriptObject*)windowScriptObject forFrame:(WebFrame*)frame {
   [windowScriptObject setValue:self forKey:@"external"];
+  [windowScriptObject evaluateWebScript:@"window.console={log:function(s){window.external.consoleLog_(s);}};"];
+}
+- (void)consoleLog:(NSString*)arg {
+  NSLog(@"console.log(): %@", arg);
 }
 - (void)invoke:(NSString*)arg {
   if (self.webview->external_invoke_cb != NULL) {
@@ -868,6 +872,12 @@ static int webview_loop(struct webview *w, int blocking) {
     [NSApp sendEvent:event];
   }
   return w->priv.loop_result;
+}
+
+static int webview_eval(struct webview *w, const char *js) {
+  NSString *nsJS = [NSString stringWithUTF8String:js];
+  [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
+  return 0;
 }
 
 static void webview_exit(struct webview *w) {
