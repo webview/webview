@@ -8,6 +8,7 @@ static void usage(char *app) { printf("USAGE: %s <html|url>\n", app); }
 
 static void external_invoke_cb(struct webview *w, const char *arg) {
   printf("external_invoke_cb(%s)\n", arg);
+  webview_eval(w, "console.log('callback is invoked')");
 }
 
 int main(int argc, char *argv[]) {
