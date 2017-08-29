@@ -221,6 +221,7 @@ typedef struct {
   IOleClientSite client;
   _IOleInPlaceSiteEx inplace;
   _IDocHostUIHandlerEx ui;
+  IDispatch external;
 } _IOleClientSiteEx;
 
 static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
@@ -258,14 +259,19 @@ static HRESULT STDMETHODCALLTYPE
 JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
           WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult,
           EXCEPINFO *pExcepInfo, UINT *puArgErr) {
+  size_t offset = (size_t) & ((_IOleClientSiteEx *)NULL)->external;
+  _IOleClientSiteEx *ex = (_IOleClientSiteEx *)((char *)(This)-offset);
+  struct webview *w = (struct webview *)GetWindowLongPtr(
+      ex->inplace.frame.window, GWLP_USERDATA);
   if (pDispParams->cArgs == 1 && pDispParams->rgvarg[0].vt == VT_BSTR) {
     BSTR bstr = pDispParams->rgvarg[0].bstrVal;
     int n = WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, NULL, 0, NULL, NULL);
     char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
     if (s != NULL) {
       WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, &s[0], n, NULL, NULL);
-      // TODO: trigger user-provided callback here
-      printf("JS_Invoke: %s\n", s);
+      if (w->external_invoke_cb != NULL) {
+        w->external_invoke_cb(w, s);
+      }
       GlobalFree(s);
     }
   }
@@ -275,8 +281,6 @@ JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
 static IDispatchVtbl ExternalDispatchTable = {
     JS_QueryInterface, JS_AddRef,        JS_Release, JS_GetTypeInfoCount,
     JS_GetTypeInfo,    JS_GetIDsOfNames, JS_Invoke};
-
-static IDispatch ExternalDispatch = {&ExternalDispatchTable};
 
 static ULONG STDMETHODCALLTYPE Site_AddRef(IOleClientSite FAR *This) {
   return 1;
@@ -537,7 +541,7 @@ static HRESULT STDMETHODCALLTYPE UI_GetDropTarget(
 }
 static HRESULT STDMETHODCALLTYPE UI_GetExternal(
     IDocHostUIHandler FAR *This, IDispatch __RPC_FAR *__RPC_FAR *ppDispatch) {
-  *ppDispatch = &ExternalDispatch;
+  *ppDispatch = (IDispatch *)(This + 1);
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE UI_TranslateUrl(
@@ -639,6 +643,7 @@ static int EmbedBrowserObject(struct webview *w) {
   _iOleClientSiteEx->inplace.frame.frame.lpVtbl = &MyIOleInPlaceFrameTable;
   _iOleClientSiteEx->inplace.frame.window = w->priv.hwnd;
   _iOleClientSiteEx->ui.ui.lpVtbl = &MyIDocHostUIHandlerTable;
+  _iOleClientSiteEx->external.lpVtbl = &ExternalDispatchTable;
 
   if (CoGetClassObject(&CLSID_WebBrowser,
                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
