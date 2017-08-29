@@ -18,7 +18,11 @@ struct webview_priv {
 #include <exdisp.h>
 #include <mshtmhst.h>
 #include <mshtml.h>
-struct webview_priv {};
+
+struct webview_priv {
+  HWND hwnd;
+  IOleObject **browser;
+};
 #elif defined(WEBVIEW_COCOA)
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
@@ -610,75 +614,83 @@ static IDocHostUIHandlerVtbl MyIDocHostUIHandlerTable = {
     UI_TranslateUrl,
     UI_FilterDataObject};
 
-static void UnEmbedBrowserObject(HWND hwnd) {
-  IOleObject **browserHandle;
-  IOleObject *browserObject;
-  if ((browserHandle = (IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA))) {
-    browserObject = *browserHandle;
-    browserObject->lpVtbl->Close(browserObject, OLECLOSE_NOSAVE);
-    browserObject->lpVtbl->Release(browserObject);
-    GlobalFree(browserHandle);
+static void UnEmbedBrowserObject(struct webview *w) {
+  if (w->priv.browser != NULL) {
+    (*w->priv.browser)->lpVtbl->Close(*w->priv.browser, OLECLOSE_NOSAVE);
+    (*w->priv.browser)->lpVtbl->Release(*w->priv.browser);
+    GlobalFree(w->priv.browser);
+    w->priv.browser = NULL;
   }
 }
 
-static int EmbedBrowserObject(HWND hwnd) {
-  LPCLASSFACTORY pClassFactory;
-  IOleObject *browserObject;
-  IWebBrowser2 *webBrowser2;
-  RECT rect;
-  char *ptr;
-  _IOleClientSiteEx *_iOleClientSiteEx;
-  ptr = (char *)GlobalAlloc(GMEM_FIXED,
-                            sizeof(_IOleClientSiteEx) + sizeof(IOleObject *));
-  if (ptr == NULL) {
-    return -1;
+static int EmbedBrowserObject(struct webview *w) {
+  IWebBrowser2 *webBrowser2 = NULL;
+  LPCLASSFACTORY pClassFactory = NULL;
+  IOleObject **browser = (IOleObject **)GlobalAlloc(
+      GMEM_FIXED, sizeof(IOleObject *) + sizeof(_IOleClientSiteEx));
+  if (browser == NULL) {
+    goto error;
   }
-  _iOleClientSiteEx = (_IOleClientSiteEx *)(ptr + sizeof(IOleObject *));
+  w->priv.browser = browser;
+
+  _IOleClientSiteEx *_iOleClientSiteEx = (_IOleClientSiteEx *)(browser + 1);
   _iOleClientSiteEx->client.lpVtbl = &MyIOleClientSiteTable;
   _iOleClientSiteEx->inplace.inplace.lpVtbl = &MyIOleInPlaceSiteTable;
   _iOleClientSiteEx->inplace.frame.frame.lpVtbl = &MyIOleInPlaceFrameTable;
-  _iOleClientSiteEx->inplace.frame.window = hwnd;
+  _iOleClientSiteEx->inplace.frame.window = w->priv.hwnd;
   _iOleClientSiteEx->ui.ui.lpVtbl = &MyIDocHostUIHandlerTable;
-  pClassFactory = 0;
-  if (!CoGetClassObject(&CLSID_WebBrowser,
-                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
-                        &IID_IClassFactory, (void **)&pClassFactory) &&
-      pClassFactory) {
-    if (!pClassFactory->lpVtbl->CreateInstance(
-            pClassFactory, 0, &IID_IOleObject, (void **)&browserObject)) {
-      pClassFactory->lpVtbl->Release(pClassFactory);
-      *((IOleObject **)ptr) = browserObject;
-      SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG)ptr);
-      if (!browserObject->lpVtbl->SetClientSite(
-              browserObject, (IOleClientSite *)_iOleClientSiteEx)) {
-        browserObject->lpVtbl->SetHostNames(browserObject, L"My Host Name", 0);
 
-        GetClientRect(hwnd, &rect);
-        if (!OleSetContainedObject((struct IUnknown *)browserObject, TRUE) &&
-
-            !browserObject->lpVtbl->DoVerb(browserObject, OLEIVERB_SHOW, NULL,
-                                           (IOleClientSite *)_iOleClientSiteEx,
-                                           -1, hwnd, &rect) &&
-
-            !browserObject->lpVtbl->QueryInterface(
-                browserObject, &IID_IWebBrowser2, (void **)&webBrowser2)) {
-          webBrowser2->lpVtbl->put_Left(webBrowser2, 0);
-          webBrowser2->lpVtbl->put_Top(webBrowser2, 0);
-          webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
-          webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
-
-          webBrowser2->lpVtbl->Release(webBrowser2);
-          return (0);
-        }
-      }
-      UnEmbedBrowserObject(hwnd);
-      return -1;
-    }
-    pClassFactory->lpVtbl->Release(pClassFactory);
-    GlobalFree(ptr);
-    return -1;
+  if (CoGetClassObject(&CLSID_WebBrowser,
+                       CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
+                       &IID_IClassFactory, (void **)&pClassFactory) != S_OK) {
+    goto error;
   }
-  GlobalFree(ptr);
+
+  if (pClassFactory == NULL) {
+    goto error;
+  }
+
+  if (pClassFactory->lpVtbl->CreateInstance(pClassFactory, 0, &IID_IOleObject,
+                                            (void **)browser) != S_OK) {
+    goto error;
+  }
+  pClassFactory->lpVtbl->Release(pClassFactory);
+  if ((*browser)->lpVtbl->SetClientSite(
+          *browser, (IOleClientSite *)_iOleClientSiteEx) != S_OK) {
+    goto error;
+  }
+  (*browser)->lpVtbl->SetHostNames(*browser, L"My Host Name", 0);
+
+  if (OleSetContainedObject((struct IUnknown *)(*browser), TRUE) != S_OK) {
+    goto error;
+  }
+  RECT rect;
+  GetClientRect(w->priv.hwnd, &rect);
+  if ((*browser)->lpVtbl->DoVerb((*browser), OLEIVERB_SHOW, NULL,
+                                 (IOleClientSite *)_iOleClientSiteEx, -1,
+                                 w->priv.hwnd, &rect) != S_OK) {
+    goto error;
+  }
+  if ((*browser)->lpVtbl->QueryInterface((*browser), &IID_IWebBrowser2,
+                                         (void **)&webBrowser2) != S_OK) {
+    goto error;
+  }
+
+  webBrowser2->lpVtbl->put_Left(webBrowser2, 0);
+  webBrowser2->lpVtbl->put_Top(webBrowser2, 0);
+  webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
+  webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
+  webBrowser2->lpVtbl->Release(webBrowser2);
+
+  return 0;
+error:
+  UnEmbedBrowserObject(w);
+  if (pClassFactory != NULL) {
+    pClassFactory->lpVtbl->Release(pClassFactory);
+  }
+  if (browser != NULL) {
+    GlobalFree(browser);
+  }
   return -1;
 }
 
@@ -743,13 +755,14 @@ static long DisplayHTMLStr(HWND hwnd, LPCTSTR string) {
 }
 #endif
 
-static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
+static long DisplayHTMLPage(struct webview *w) {
   IWebBrowser2 *webBrowser2;
   VARIANT myURL;
   IOleObject *browserObject;
-  browserObject = *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
+  browserObject = *w->priv.browser;
   if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
                                              (void **)&webBrowser2)) {
+    LPCSTR webPageName = (LPCSTR)w->url;
     VariantInit(&myURL);
     myURL.vt = VT_BSTR;
 #ifndef UNICODE
@@ -782,19 +795,21 @@ static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
 
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
                                 LPARAM lParam) {
+  struct webview *w = (struct webview *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   switch (uMsg) {
   case WM_CREATE:
-    return EmbedBrowserObject(hwnd);
+    w = (struct webview *)((CREATESTRUCT *)lParam)->lpCreateParams;
+    w->priv.hwnd = hwnd;
+    return EmbedBrowserObject(w);
   case WM_DESTROY:
-    UnEmbedBrowserObject(hwnd);
+    UnEmbedBrowserObject(w);
     PostQuitMessage(0);
     return TRUE;
   case WM_SIZE: {
     IWebBrowser2 *webBrowser2;
-    IOleObject *browserObject =
-        *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
-                                               (void **)&webBrowser2)) {
+    IOleObject *browser = *w->priv.browser;
+    if (!browser->lpVtbl->QueryInterface(browser, &IID_IWebBrowser2,
+                                         (void **)&webBrowser2)) {
       RECT rect;
       GetClientRect(hwnd, &rect);
       webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
@@ -813,7 +828,6 @@ static int webview_init(struct webview *w) {
   DWORD style;
   IWebBrowser2 *browser;
   RECT rect;
-  HWND hwnd;
 
   hInstance = GetModuleHandle(NULL);
   if (hInstance == NULL) {
@@ -839,19 +853,22 @@ static int webview_init(struct webview *w) {
   rect.left = (rect.right / 2) - (w->width / 2);
   rect.top = (rect.bottom / 2) - (w->height / 2);
 
-  hwnd = CreateWindowEx(0, classname, w->title, style, rect.left, rect.top,
-                        w->width, w->height, HWND_DESKTOP, NULL, hInstance, 0);
-  if (hwnd == 0) {
+  w->priv.hwnd = CreateWindowEx(0, classname, w->title, style, rect.left,
+                                rect.top, w->width, w->height, HWND_DESKTOP,
+                                NULL, hInstance, (void *)w);
+  if (w->priv.hwnd == 0) {
     OleUninitialize();
     return -1;
   }
 
-  SetWindowText(hwnd, w->title);
+  SetWindowLongPtr(w->priv.hwnd, GWLP_USERDATA, (LONG)w);
 
-  DisplayHTMLPage(hwnd, (LPTSTR)w->url);
-  ShowWindow(hwnd, info.wShowWindow);
-  UpdateWindow(hwnd);
-  SetFocus(hwnd);
+  DisplayHTMLPage(w);
+
+  SetWindowText(w->priv.hwnd, w->title);
+  ShowWindow(w->priv.hwnd, info.wShowWindow);
+  UpdateWindow(w->priv.hwnd);
+  SetFocus(w->priv.hwnd);
 
   return 0;
 }
@@ -871,7 +888,10 @@ static int webview_loop(struct webview *w, int blocking) {
   return 0;
 }
 
-static int webview_eval(struct webview *w, const char *js) { return 0; }
+static int webview_eval(struct webview *w, const char *js) {
+  // TODO
+  return 0;
+}
 
 static void webview_exit(struct webview *w) { OleUninitialize(); }
 
