@@ -750,15 +750,14 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-static int webview(const char *title, const char *url, int width, int height,
-		   int resizable) {
-  MSG msg;
+static int webview_init(struct webview *w) {
   WNDCLASSEX wc;
   HINSTANCE hInstance;
   STARTUPINFO info;
   DWORD style;
   IWebBrowser2 *browser;
   RECT rect;
+  HWND hwnd;
 
   hInstance = GetModuleHandle(NULL);
   if (hInstance == NULL) {
@@ -776,35 +775,54 @@ static int webview(const char *title, const char *url, int width, int height,
   RegisterClassEx(&wc);
 
   style = WS_OVERLAPPEDWINDOW;
-  if (!resizable) {
+  if (!w->resizable) {
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
   GetClientRect(GetDesktopWindow(), &rect);
-  rect.left = (rect.right / 2) - (width / 2);
-  rect.top = (rect.bottom / 2) - (height / 2);
+  rect.left = (rect.right / 2) - (w->width / 2);
+  rect.top = (rect.bottom / 2) - (w->height / 2);
 
-  msg.hwnd = CreateWindowEx(0, classname, title, style, rect.left, rect.top,
-			    width, height, HWND_DESKTOP, NULL, hInstance, 0);
-  if (msg.hwnd == 0) {
+  hwnd = CreateWindowEx(0, classname, w->title, style, rect.left, rect.top,
+			    w->width, w->height, HWND_DESKTOP, NULL, hInstance, 0);
+  if (hwnd == 0) {
     OleUninitialize();
     return -1;
   }
 
-  SetWindowText(msg.hwnd, title);
+  SetWindowText(hwnd, w->title);
 
-  DisplayHTMLPage(msg.hwnd, (LPTSTR)url);
-  ShowWindow(msg.hwnd, info.wShowWindow);
-  UpdateWindow(msg.hwnd);
-  SetFocus(msg.hwnd);
+  DisplayHTMLPage(hwnd, (LPTSTR)w->url);
+  ShowWindow(hwnd, info.wShowWindow);
+  UpdateWindow(hwnd);
+  SetFocus(hwnd);
 
-  while (GetMessage(&msg, 0, 0, 0) == 1) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-  }
-  OleUninitialize();
   return 0;
 }
+
+static int webview_loop(struct webview *w, int blocking) {
+  MSG msg;
+  if (blocking) {
+    GetMessage(&msg, 0, 0, 0);
+  } else {
+    PeekMessage(&msg, 0, 0, 0, PM_REMOVE);
+  }
+  if (msg.message == WM_QUIT) {
+    return -1;
+  }
+  TranslateMessage(&msg);
+  DispatchMessage(&msg);
+  return 0;
+}
+
+static int webview_eval(struct webview *w, const char *js) {
+  return 0;
+}
+
+static void webview_exit(struct webview *w) {
+  OleUninitialize();
+}
+
 #endif /* WEBVIEW_WINAPI */
 
 #if defined(WEBVIEW_COCOA)
