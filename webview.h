@@ -23,8 +23,9 @@ struct webview_priv {};
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
 
-@interface WebViewWindowDelegate: NSObject <NSWindowDelegate, WebFrameLoadDelegate>
-@property (nonatomic, assign) struct webview *webview;
+@interface WebViewWindowDelegate
+    : NSObject <NSWindowDelegate, WebFrameLoadDelegate>
+@property(nonatomic, assign) struct webview *webview;
 @end
 
 struct webview_priv {
@@ -54,7 +55,7 @@ static int webview_eval(struct webview *w, const char *js);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
-		   int resizable) {
+                   int resizable) {
   struct webview webview = {
       .title = title,
       .url = url,
@@ -75,8 +76,8 @@ static int webview(const char *title, const char *url, int w, int h,
 #if defined(WEBVIEW_GTK)
 static JSValueRef
 webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
-			   JSObjectRef thisObject, size_t argc,
-			   const JSValueRef args[], JSValueRef *err) {
+                           JSObjectRef thisObject, size_t argc,
+                           const JSValueRef args[], JSValueRef *err) {
   (void)fn;
   (void)thisObject;
   (void)argc;
@@ -100,7 +101,7 @@ static const JSStaticFunction webview_external_static_funcs[] = {
 };
 
 static const JSClassDefinition webview_external_def = {
-    0,		kJSClassAttributeNone,
+    0,          kJSClassAttributeNone,
     "external", NULL,
     NULL,       webview_external_static_funcs,
     NULL,       NULL,
@@ -118,10 +119,10 @@ static void webview_desroy_cb(GtkWidget *widget, gpointer arg) {
 }
 
 static gboolean webview_context_menu_cb(WebKitWebView *webview,
-					GtkWidget *default_menu,
-					WebKitHitTestResult *hit_test_result,
-					gboolean triggered_with_keyboard,
-					gpointer userdata) {
+                                        GtkWidget *default_menu,
+                                        WebKitHitTestResult *hit_test_result,
+                                        gboolean triggered_with_keyboard,
+                                        gpointer userdata) {
   (void)webview;
   (void)default_menu;
   (void)hit_test_result;
@@ -131,10 +132,10 @@ static gboolean webview_context_menu_cb(WebKitWebView *webview,
 }
 
 static void webview_window_object_cleared_cb(WebKitWebView *webview,
-					     WebKitWebFrame *frame,
-					     gpointer context,
-					     gpointer window_object,
-					     gpointer arg) {
+                                             WebKitWebFrame *frame,
+                                             gpointer context,
+                                             gpointer window_object,
+                                             gpointer arg) {
   (void)webview;
   (void)frame;
   (void)window_object;
@@ -155,7 +156,7 @@ static int webview_init(struct webview *w) {
 
   if (w->resizable) {
     gtk_window_set_default_size(GTK_WINDOW(w->priv.window), w->width,
-				w->height);
+                                w->height);
   } else {
     gtk_widget_set_size_request(w->priv.window, w->width, w->height);
   }
@@ -172,11 +173,11 @@ static int webview_init(struct webview *w) {
   gtk_widget_show_all(w->priv.window);
 
   g_signal_connect(G_OBJECT(w->priv.window), "destroy",
-		   G_CALLBACK(webview_desroy_cb), w);
+                   G_CALLBACK(webview_desroy_cb), w);
   g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
-		   G_CALLBACK(webview_context_menu_cb), w);
+                   G_CALLBACK(webview_context_menu_cb), w);
   g_signal_connect(G_OBJECT(w->priv.webview), "window-object-cleared",
-		   G_CALLBACK(webview_window_object_cleared_cb), w);
+                   G_CALLBACK(webview_window_object_cleared_cb), w);
   return 0;
 }
 
@@ -219,8 +220,8 @@ typedef struct {
 } _IOleClientSiteEx;
 
 static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
-               REFIID riid,
-               LPVOID FAR *ppvObj) {
+                                                   REFIID riid,
+                                                   LPVOID FAR *ppvObj) {
   if (!memcmp(riid, &IID_IDispatch, sizeof(GUID))) {
     *ppvObj = This;
     return S_OK;
@@ -228,47 +229,42 @@ static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
   *ppvObj = 0;
   return E_NOINTERFACE;
 }
-static HRESULT STDMETHODCALLTYPE JS_AddRef(IDispatch FAR *This) {
-  return S_OK;
-}
+static HRESULT STDMETHODCALLTYPE JS_AddRef(IDispatch FAR *This) { return S_OK; }
 static HRESULT STDMETHODCALLTYPE JS_Release(IDispatch FAR *This) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE JS_GetTypeInfoCount(IDispatch FAR *This,
-        UINT *pctinfo) {
+                                                     UINT *pctinfo) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE JS_GetTypeInfo(IDispatch FAR *This,
-		UINT iTInfo, LCID lcid, ITypeInfo **ppTInfo) {
+                                                UINT iTInfo, LCID lcid,
+                                                ITypeInfo **ppTInfo) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
-		REFIID riid, LPOLESTR *rgszNames, UINT cNames, LCID lcid,
-		DISPID *rgDispId) {
-  for(int i=0; i<cNames; i++) {
-    rgDispId[i] = i+0x1000;
+                                                  REFIID riid,
+                                                  LPOLESTR *rgszNames,
+                                                  UINT cNames, LCID lcid,
+                                                  DISPID *rgDispId) {
+  for (int i = 0; i < cNames; i++) {
+    rgDispId[i] = i + 0x1000;
   }
   return S_OK;
 }
-static HRESULT STDMETHODCALLTYPE JS_Invoke(IDispatch FAR *This,
-		DISPID dispIdMember, REFIID riid, LCID lcid, WORD wFlags,
-		DISPPARAMS *pDispParams, VARIANT *pVarResult,
-		EXCEPINFO *pExcepInfo, UINT *puArgErr) {
-  MessageBox(0, "JS_Invoke", "", 0); 
+static HRESULT STDMETHODCALLTYPE
+JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
+          WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult,
+          EXCEPINFO *pExcepInfo, UINT *puArgErr) {
+  MessageBox(0, "JS_Invoke", "", 0);
   return S_OK;
 }
 
 static IDispatchVtbl ExternalDispatchTable = {
-  JS_QueryInterface,
-  JS_AddRef,
-  JS_Release,
-  JS_GetTypeInfoCount,
-  JS_GetTypeInfo,
-  JS_GetIDsOfNames,
-  JS_Invoke
-};
+    JS_QueryInterface, JS_AddRef,        JS_Release, JS_GetTypeInfoCount,
+    JS_GetTypeInfo,    JS_GetIDsOfNames, JS_Invoke};
 
-static IDispatch ExternalDispatch = { &ExternalDispatchTable };
+static IDispatch ExternalDispatch = {&ExternalDispatchTable};
 
 static HRESULT STDMETHODCALLTYPE Site_AddRef(IOleClientSite FAR *This) {
   return 1;
@@ -280,9 +276,9 @@ static HRESULT STDMETHODCALLTYPE Site_SaveObject(IOleClientSite FAR *This) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Site_GetMoniker(IOleClientSite FAR *This,
-						 DWORD dwAssign,
-						 DWORD dwWhichMoniker,
-						 IMoniker **ppmk) {
+                                                 DWORD dwAssign,
+                                                 DWORD dwWhichMoniker,
+                                                 IMoniker **ppmk) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE
@@ -294,7 +290,7 @@ static HRESULT STDMETHODCALLTYPE Site_ShowObject(IOleClientSite FAR *This) {
   return NOERROR;
 }
 static HRESULT STDMETHODCALLTYPE Site_OnShowWindow(IOleClientSite FAR *This,
-						   BOOL fShow) {
+                                                   BOOL fShow) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE
@@ -302,8 +298,8 @@ Site_RequestNewObjectLayout(IOleClientSite FAR *This) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Site_QueryInterface(IOleClientSite FAR *This,
-						     REFIID riid,
-						     void **ppvObject) {
+                                                     REFIID riid,
+                                                     void **ppvObject) {
   if (!memcmp(riid, &IID_IUnknown, sizeof(GUID)) ||
       !memcmp(riid, &IID_IOleClientSite, sizeof(GUID)))
     *ppvObject = &((_IOleClientSiteEx *)This)->client;
@@ -329,7 +325,7 @@ static HRESULT STDMETHODCALLTYPE InPlace_Release(IOleInPlaceSite FAR *This) {
   return (1);
 }
 static HRESULT STDMETHODCALLTYPE InPlace_GetWindow(IOleInPlaceSite FAR *This,
-						   HWND FAR *lphwnd) {
+                                                   HWND FAR *lphwnd) {
   *lphwnd = ((_IOleInPlaceSiteEx FAR *)This)->frame.window;
   return S_OK;
 }
@@ -362,7 +358,7 @@ static HRESULT STDMETHODCALLTYPE InPlace_GetWindowContext(
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE InPlace_Scroll(IOleInPlaceSite FAR *This,
-						SIZE scrollExtent) {
+                                                SIZE scrollExtent) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE
@@ -386,9 +382,9 @@ InPlace_OnPosRectChange(IOleInPlaceSite FAR *This, LPCRECT lprcPosRect) {
   IOleObject *browserObject;
   IOleInPlaceObject *inplace;
   browserObject = *((IOleObject **)((char *)This - sizeof(IOleObject *) -
-				    sizeof(IOleClientSite)));
+                                    sizeof(IOleClientSite)));
   if (!browserObject->lpVtbl->QueryInterface(
-	  browserObject, &IID_IOleInPlaceObject, (void **)&inplace)) {
+          browserObject, &IID_IOleInPlaceObject, (void **)&inplace)) {
     inplace->lpVtbl->SetObjectRects(inplace, lprcPosRect, lprcPosRect);
     inplace->lpVtbl->Release(inplace);
   }
@@ -405,7 +401,7 @@ static HRESULT STDMETHODCALLTYPE Frame_Release(IOleInPlaceFrame FAR *This) {
   return (1);
 }
 static HRESULT STDMETHODCALLTYPE Frame_GetWindow(IOleInPlaceFrame FAR *This,
-						 HWND FAR *lphwnd) {
+                                                 HWND FAR *lphwnd) {
   *lphwnd = ((_IOleInPlaceFrameEx *)This)->window;
   return S_OK;
 }
@@ -414,7 +410,7 @@ Frame_ContextSensitiveHelp(IOleInPlaceFrame FAR *This, BOOL fEnterMode) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Frame_GetBorder(IOleInPlaceFrame FAR *This,
-						 LPRECT lprectBorder) {
+                                                 LPRECT lprectBorder) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Frame_RequestBorderSpace(
@@ -432,21 +428,21 @@ static HRESULT STDMETHODCALLTYPE Frame_SetActiveObject(
 }
 static HRESULT STDMETHODCALLTYPE
 Frame_InsertMenus(IOleInPlaceFrame FAR *This, HMENU hmenuShared,
-		  LPOLEMENUGROUPWIDTHS lpMenuWidths) {
+                  LPOLEMENUGROUPWIDTHS lpMenuWidths) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Frame_SetMenu(IOleInPlaceFrame FAR *This,
-					       HMENU hmenuShared,
-					       HOLEMENU holemenu,
-					       HWND hwndActiveObject) {
+                                               HMENU hmenuShared,
+                                               HOLEMENU holemenu,
+                                               HWND hwndActiveObject) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE Frame_RemoveMenus(IOleInPlaceFrame FAR *This,
-						   HMENU hmenuShared) {
+                                                   HMENU hmenuShared) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE Frame_SetStatusText(IOleInPlaceFrame FAR *This,
-						     LPCOLESTR pszStatusText) {
+                                                     LPCOLESTR pszStatusText) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE
@@ -458,12 +454,12 @@ Frame_TranslateAccelerator(IOleInPlaceFrame FAR *This, LPMSG lpmsg, WORD wID) {
   return E_NOTIMPL;
 }
 static HRESULT STDMETHODCALLTYPE UI_QueryInterface(IDocHostUIHandler FAR *This,
-						   REFIID riid,
-						   LPVOID FAR *ppvObj) {
+                                                   REFIID riid,
+                                                   LPVOID FAR *ppvObj) {
   return (Site_QueryInterface((IOleClientSite *)((char *)This -
-						 sizeof(IOleClientSite) -
-						 sizeof(_IOleInPlaceSiteEx)),
-			      riid, ppvObj));
+                                                 sizeof(IOleClientSite) -
+                                                 sizeof(_IOleInPlaceSiteEx)),
+                              riid, ppvObj));
 }
 static HRESULT STDMETHODCALLTYPE UI_AddRef(IDocHostUIHandler FAR *This) {
   return 1;
@@ -497,7 +493,7 @@ static HRESULT STDMETHODCALLTYPE UI_UpdateUI(IDocHostUIHandler FAR *This) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE UI_EnableModeless(IDocHostUIHandler FAR *This,
-						   BOOL fEnable) {
+                                                   BOOL fEnable) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE
@@ -510,12 +506,12 @@ UI_OnFrameWindowActivate(IDocHostUIHandler FAR *This, BOOL fActivate) {
 }
 static HRESULT STDMETHODCALLTYPE
 UI_ResizeBorder(IDocHostUIHandler FAR *This, LPCRECT prcBorder,
-		IOleInPlaceUIWindow __RPC_FAR *pUIWindow, BOOL fRameWindow) {
+                IOleInPlaceUIWindow __RPC_FAR *pUIWindow, BOOL fRameWindow) {
   return S_OK;
 }
 static HRESULT STDMETHODCALLTYPE
 UI_TranslateAccelerator(IDocHostUIHandler FAR *This, LPMSG lpMsg,
-			const GUID __RPC_FAR *pguidCmdGroup, DWORD nCmdID) {
+                        const GUID __RPC_FAR *pguidCmdGroup, DWORD nCmdID) {
   return S_FALSE;
 }
 static HRESULT STDMETHODCALLTYPE UI_GetOptionKeyPath(
@@ -540,7 +536,7 @@ static HRESULT STDMETHODCALLTYPE UI_TranslateUrl(
 }
 static HRESULT STDMETHODCALLTYPE
 UI_FilterDataObject(IDocHostUIHandler FAR *This, IDataObject __RPC_FAR *pDO,
-		    IDataObject __RPC_FAR *__RPC_FAR *ppDORet) {
+                    IDataObject __RPC_FAR *__RPC_FAR *ppDORet) {
   *ppDORet = 0;
   return S_FALSE;
 }
@@ -625,7 +621,7 @@ static int EmbedBrowserObject(HWND hwnd) {
   char *ptr;
   _IOleClientSiteEx *_iOleClientSiteEx;
   ptr = (char *)GlobalAlloc(GMEM_FIXED,
-			    sizeof(_IOleClientSiteEx) + sizeof(IOleObject *));
+                            sizeof(_IOleClientSiteEx) + sizeof(IOleObject *));
   if (ptr == NULL) {
     return -1;
   }
@@ -637,35 +633,35 @@ static int EmbedBrowserObject(HWND hwnd) {
   _iOleClientSiteEx->ui.ui.lpVtbl = &MyIDocHostUIHandlerTable;
   pClassFactory = 0;
   if (!CoGetClassObject(&CLSID_WebBrowser,
-			CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
-			&IID_IClassFactory, (void **)&pClassFactory) &&
+                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
+                        &IID_IClassFactory, (void **)&pClassFactory) &&
       pClassFactory) {
     if (!pClassFactory->lpVtbl->CreateInstance(
-	    pClassFactory, 0, &IID_IOleObject, &browserObject)) {
+            pClassFactory, 0, &IID_IOleObject, &browserObject)) {
       pClassFactory->lpVtbl->Release(pClassFactory);
       *((IOleObject **)ptr) = browserObject;
       SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG)ptr);
       if (!browserObject->lpVtbl->SetClientSite(
-	      browserObject, (IOleClientSite *)_iOleClientSiteEx)) {
-	browserObject->lpVtbl->SetHostNames(browserObject, L"My Host Name", 0);
+              browserObject, (IOleClientSite *)_iOleClientSiteEx)) {
+        browserObject->lpVtbl->SetHostNames(browserObject, L"My Host Name", 0);
 
-	GetClientRect(hwnd, &rect);
-	if (!OleSetContainedObject((struct IUnknown *)browserObject, TRUE) &&
+        GetClientRect(hwnd, &rect);
+        if (!OleSetContainedObject((struct IUnknown *)browserObject, TRUE) &&
 
-	    !browserObject->lpVtbl->DoVerb(browserObject, OLEIVERB_SHOW, NULL,
-					   (IOleClientSite *)_iOleClientSiteEx,
-					   -1, hwnd, &rect) &&
+            !browserObject->lpVtbl->DoVerb(browserObject, OLEIVERB_SHOW, NULL,
+                                           (IOleClientSite *)_iOleClientSiteEx,
+                                           -1, hwnd, &rect) &&
 
-	    !browserObject->lpVtbl->QueryInterface(
-		browserObject, &IID_IWebBrowser2, (void **)&webBrowser2)) {
-	  webBrowser2->lpVtbl->put_Left(webBrowser2, 0);
-	  webBrowser2->lpVtbl->put_Top(webBrowser2, 0);
-	  webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
-	  webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
+            !browserObject->lpVtbl->QueryInterface(
+                browserObject, &IID_IWebBrowser2, (void **)&webBrowser2)) {
+          webBrowser2->lpVtbl->put_Left(webBrowser2, 0);
+          webBrowser2->lpVtbl->put_Top(webBrowser2, 0);
+          webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
+          webBrowser2->lpVtbl->put_Height(webBrowser2, rect.bottom);
 
-	  webBrowser2->lpVtbl->Release(webBrowser2);
-	  return (0);
-	}
+          webBrowser2->lpVtbl->Release(webBrowser2);
+          return (0);
+        }
       }
       UnEmbedBrowserObject(hwnd);
       return -1;
@@ -745,7 +741,7 @@ static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
   IOleObject *browserObject;
   browserObject = *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
-					     (void **)&webBrowser2)) {
+                                             (void **)&webBrowser2)) {
     VariantInit(&myURL);
     myURL.vt = VT_BSTR;
 #ifndef UNICODE
@@ -754,8 +750,8 @@ static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
       DWORD size;
       size = MultiByteToWideChar(CP_ACP, 0, webPageName, -1, 0, 0);
       if (!(buffer =
-		(wchar_t *)GlobalAlloc(GMEM_FIXED, sizeof(wchar_t) * size)))
-	goto badalloc;
+                (wchar_t *)GlobalAlloc(GMEM_FIXED, sizeof(wchar_t) * size)))
+        goto badalloc;
       MultiByteToWideChar(CP_ACP, 0, webPageName, -1, buffer, size);
       myURL.bstrVal = SysAllocString(buffer);
       GlobalFree(buffer);
@@ -777,7 +773,7 @@ static long DisplayHTMLPage(HWND hwnd, LPTSTR webPageName) {
 }
 
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
-				LPARAM lParam) {
+                                LPARAM lParam) {
   switch (uMsg) {
   case WM_CREATE:
     return EmbedBrowserObject(hwnd);
@@ -788,9 +784,9 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_SIZE: {
     IWebBrowser2 *webBrowser2;
     IOleObject *browserObject =
-	*((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
+        *((IOleObject **)GetWindowLongPtr(hwnd, GWLP_USERDATA));
     if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
-					       (void **)&webBrowser2)) {
+                                               (void **)&webBrowser2)) {
       RECT rect;
       GetClientRect(hwnd, &rect);
       webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
@@ -836,7 +832,7 @@ static int webview_init(struct webview *w) {
   rect.top = (rect.bottom / 2) - (w->height / 2);
 
   hwnd = CreateWindowEx(0, classname, w->title, style, rect.left, rect.top,
-			    w->width, w->height, HWND_DESKTOP, NULL, hInstance, 0);
+                        w->width, w->height, HWND_DESKTOP, NULL, hInstance, 0);
   if (hwnd == 0) {
     OleUninitialize();
     return -1;
@@ -867,30 +863,31 @@ static int webview_loop(struct webview *w, int blocking) {
   return 0;
 }
 
-static int webview_eval(struct webview *w, const char *js) {
-  return 0;
-}
+static int webview_eval(struct webview *w, const char *js) { return 0; }
 
-static void webview_exit(struct webview *w) {
-  OleUninitialize();
-}
+static void webview_exit(struct webview *w) { OleUninitialize(); }
 
 #endif /* WEBVIEW_WINAPI */
 
 #if defined(WEBVIEW_COCOA)
 @implementation WebViewWindowDelegate
-- (void)windowWillClose:(NSNotification*)notification {
+- (void)windowWillClose:(NSNotification *)notification {
   self.webview->priv.loop_result = -1;
 }
-+ (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector { return NO; }
-- (void)webView:(WebView*)webView didClearWindowObject:(WebScriptObject*)windowScriptObject forFrame:(WebFrame*)frame {
-  [windowScriptObject setValue:self forKey:@"external"];
-  [windowScriptObject evaluateWebScript:@"window.console={log:function(s){window.external.consoleLog_(s);}};"];
++ (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector {
+  return NO;
 }
-- (void)consoleLog:(NSString*)arg {
+- (void)webView:(WebView *)webView
+    didClearWindowObject:(WebScriptObject *)windowScriptObject
+                forFrame:(WebFrame *)frame {
+  [windowScriptObject setValue:self forKey:@"external"];
+  [windowScriptObject evaluateWebScript:@"window.console={log:function(s){"
+                                        @"window.external.consoleLog_(s);}};"];
+}
+- (void)consoleLog:(NSString *)arg {
   NSLog(@"console.log(): %@", arg);
 }
-- (void)invoke:(NSString*)arg {
+- (void)invoke:(NSString *)arg {
   if (self.webview->external_invoke_cb != NULL) {
     self.webview->external_invoke_cb(self.webview, [arg UTF8String]);
   }
@@ -904,14 +901,14 @@ static int webview_init(struct webview *w) {
   NSString *nsTitle = [NSString stringWithUTF8String:w->title];
   NSRect r = NSMakeRect(0, 0, w->width, w->height);
   NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-		     NSWindowStyleMaskMiniaturizable;
+                     NSWindowStyleMaskMiniaturizable;
   if (w->resizable) {
     style = style | NSWindowStyleMaskResizable;
   }
   w->priv.window = [[NSWindow alloc] initWithContentRect:r
-					    styleMask:style
-					      backing:NSBackingStoreBuffered
-						defer:NO];
+                                               styleMask:style
+                                                 backing:NSBackingStoreBuffered
+                                                   defer:NO];
   [w->priv.window autorelease];
   [w->priv.window setTitle:nsTitle];
   w->priv.windowDelegate = [WebViewWindowDelegate new];
@@ -924,7 +921,8 @@ static int webview_init(struct webview *w) {
   [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
   [w->priv.webview setAutoresizesSubviews:YES];
-  [w->priv.webview setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [w->priv.webview
+      setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
 
@@ -935,9 +933,9 @@ static int webview_init(struct webview *w) {
 static int webview_loop(struct webview *w, int blocking) {
   NSDate *until = (blocking ? [NSDate distantFuture] : [NSDate distantPast]);
   NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                             untilDate:until
-                                inMode:NSDefaultRunLoopMode
-                               dequeue:YES];
+                                      untilDate:until
+                                         inMode:NSDefaultRunLoopMode
+                                        dequeue:YES];
   if (event) {
     [NSApp sendEvent:event];
   }
@@ -950,9 +948,7 @@ static int webview_eval(struct webview *w, const char *js) {
   return 0;
 }
 
-static void webview_exit(struct webview *w) {
-  [NSApp terminate:NSApp];
-}
+static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
 
 #endif /* WEBVIEW_COCOA */
 
