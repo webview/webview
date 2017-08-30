@@ -848,7 +848,6 @@ static int webview_init(struct webview *w) {
   HINSTANCE hInstance;
   STARTUPINFO info;
   DWORD style;
-  IWebBrowser2 *browser;
   RECT rect;
 
   hInstance = GetModuleHandle(NULL);
