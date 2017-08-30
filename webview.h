@@ -883,7 +883,7 @@ static int webview_init(struct webview *w) {
     return -1;
   }
 
-  SetWindowLongPtr(w->priv.hwnd, GWLP_USERDATA, (LONG)w);
+  SetWindowLongPtr(w->priv.hwnd, GWLP_USERDATA, (LONG_PTR)w);
 
   DisplayHTMLPage(w);
 
