@@ -245,15 +245,25 @@ static HRESULT STDMETHODCALLTYPE JS_GetTypeInfo(IDispatch FAR *This,
                                                 ITypeInfo **ppTInfo) {
   return S_OK;
 }
+#define WEBVIEW_JS_LOG_ID 0x1000
+#define WEBVIEW_JS_INVOKE_ID 0x1001
 static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
                                                   REFIID riid,
                                                   LPOLESTR *rgszNames,
                                                   UINT cNames, LCID lcid,
                                                   DISPID *rgDispId) {
-  for (int i = 0; i < cNames; i++) {
-    rgDispId[i] = i + 0x1000;
+  if (cNames != 1) {
+    return S_FALSE;
   }
-  return S_OK;
+  if (wcscmp(rgszNames[0], L"invoke") == 0) {
+    rgDispId[0] = WEBVIEW_JS_INVOKE_ID;
+    return S_OK;
+  }
+  if (wcscmp(rgszNames[0], L"log") == 0) {
+    rgDispId[0] = WEBVIEW_JS_LOG_ID;
+    return S_OK;
+  }
+  return S_FALSE;
 }
 static HRESULT STDMETHODCALLTYPE
 JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
@@ -269,8 +279,15 @@ JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
     char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
     if (s != NULL) {
       WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, &s[0], n, NULL, NULL);
-      if (w->external_invoke_cb != NULL) {
-        w->external_invoke_cb(w, s);
+      if (dispIdMember == WEBVIEW_JS_LOG_ID) {
+        OutputDebugString(s);
+        printf("console.log: %s\n", s);
+      } else if (dispIdMember == WEBVIEW_JS_INVOKE_ID) {
+        if (w->external_invoke_cb != NULL) {
+          w->external_invoke_cb(w, s);
+        }
+      } else {
+        return S_FALSE;
       }
       GlobalFree(s);
     }
