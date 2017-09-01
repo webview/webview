@@ -100,7 +100,7 @@ webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
   return JSValueMakeUndefined(context);
 }
 static const JSStaticFunction webview_external_static_funcs[] = {
-    {"invoke", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
+    {"invoke_", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
     {NULL, NULL, 0},
 };
 
@@ -254,7 +254,7 @@ static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
   if (cNames != 1) {
     return S_FALSE;
   }
-  if (wcscmp(rgszNames[0], L"invoke") == 0) {
+  if (wcscmp(rgszNames[0], L"invoke_") == 0) {
     rgDispId[0] = WEBVIEW_JS_INVOKE_ID;
     return S_OK;
   }
