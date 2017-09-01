@@ -708,67 +708,6 @@ error:
   return -1;
 }
 
-#if 0
-static long DisplayHTMLStr(HWND hwnd, LPCTSTR string) {
-  IWebBrowser2 *webBrowser2;
-  LPDISPATCH lpDispatch;
-  IHTMLDocument2 *htmlDoc2;
-  IOleObject *browserObject;
-  SAFEARRAY *sfArray;
-  VARIANT myURL;
-  VARIANT *pVar;
-  BSTR bstr;
-  browserObject = *((IOleObject **)GetWindowLong(hwnd, GWL_USERDATA));
-  bstr = 0;
-  if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
-					     (void **)&webBrowser2)) {
-    VariantInit(&myURL);
-    myURL.vt = VT_BSTR;
-    myURL.bstrVal = SysAllocString(L"about:blank");
-    webBrowser2->lpVtbl->Navigate2(webBrowser2, &myURL, 0, 0, 0, 0);
-    VariantClear(&myURL);
-    if (!webBrowser2->lpVtbl->get_Document(webBrowser2, &lpDispatch)) {
-      if (!lpDispatch->lpVtbl->QueryInterface(lpDispatch, &IID_IHTMLDocument2,
-					      (void **)&htmlDoc2)) {
-	if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
-				       (SAFEARRAYBOUND *)&ArrayBound))) {
-	  if (!SafeArrayAccessData(sfArray, (void **)&pVar)) {
-	    pVar->vt = VT_BSTR;
-#ifndef UNICODE
-	    {
-	      wchar_t *buffer;
-	      DWORD size;
-	      size = MultiByteToWideChar(CP_ACP, 0, string, -1, 0, 0);
-	      if (!(buffer = (wchar_t *)GlobalAlloc(GMEM_FIXED,
-						    sizeof(wchar_t) * size)))
-		goto bad;
-	      MultiByteToWideChar(CP_ACP, 0, string, -1, buffer, size);
-	      bstr = SysAllocString(buffer);
-	      GlobalFree(buffer);
-	    }
-#else
-	    bstr = SysAllocString(string);
-#endif
-	    if ((pVar->bstrVal = bstr)) {
-	      htmlDoc2->lpVtbl->write(htmlDoc2, sfArray);
-	      htmlDoc2->lpVtbl->close(htmlDoc2);
-	    }
-	  }
-	  SafeArrayDestroy(sfArray);
-	}
-      bad:
-	htmlDoc2->lpVtbl->Release(htmlDoc2);
-      }
-      lpDispatch->lpVtbl->Release(lpDispatch);
-    }
-    webBrowser2->lpVtbl->Release(webBrowser2);
-  }
-  if (bstr)
-    return (0);
-  return (-1);
-}
-#endif
-
 static long DisplayHTMLPage(struct webview *w) {
   IWebBrowser2 *webBrowser2;
   VARIANT myURL;
