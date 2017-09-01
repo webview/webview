@@ -245,8 +245,7 @@ static HRESULT STDMETHODCALLTYPE JS_GetTypeInfo(IDispatch FAR *This,
                                                 ITypeInfo **ppTInfo) {
   return S_OK;
 }
-#define WEBVIEW_JS_LOG_ID 0x1000
-#define WEBVIEW_JS_INVOKE_ID 0x1001
+#define WEBVIEW_JS_INVOKE_ID 0x1000
 static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
                                                   REFIID riid,
                                                   LPOLESTR *rgszNames,
@@ -257,10 +256,6 @@ static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
   }
   if (wcscmp(rgszNames[0], L"invoke") == 0) {
     rgDispId[0] = WEBVIEW_JS_INVOKE_ID;
-    return S_OK;
-  }
-  if (wcscmp(rgszNames[0], L"log") == 0) {
-    rgDispId[0] = WEBVIEW_JS_LOG_ID;
     return S_OK;
   }
   return S_FALSE;
@@ -279,10 +274,7 @@ JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
     char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
     if (s != NULL) {
       WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, &s[0], n, NULL, NULL);
-      if (dispIdMember == WEBVIEW_JS_LOG_ID) {
-        OutputDebugString(s);
-        printf("console.log: %s\n", s);
-      } else if (dispIdMember == WEBVIEW_JS_INVOKE_ID) {
+      if (dispIdMember == WEBVIEW_JS_INVOKE_ID) {
         if (w->external_invoke_cb != NULL) {
           w->external_invoke_cb(w, s);
         }
@@ -987,11 +979,6 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
     didClearWindowObject:(WebScriptObject *)windowScriptObject
                 forFrame:(WebFrame *)frame {
   [windowScriptObject setValue:self forKey:@"external"];
-  [windowScriptObject evaluateWebScript:@"window.console={log:function(s){"
-                                        @"window.external.consoleLog_(s);}};"];
-}
-- (void)consoleLog:(NSString *)arg {
-  NSLog(@"console.log(): %@", arg);
 }
 - (void)invoke:(NSString *)arg {
   if (self.webview->external_invoke_cb != NULL) {
