@@ -1,0 +1,17 @@
+language: go
+
+go: 
+ - 1.x
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - libwebkitgtk-3.0-dev
+    - os: osx
+
+script:
+  - cd examples/minimal && make && cd ../..
+  - cd examples/minimal-go && go build && cd ../..
