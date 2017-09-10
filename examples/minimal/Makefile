@@ -1,6 +1,10 @@
+TARGET = minimal
+
 CFLAGS ?= -std=c99 -Wall -Wextra -pedantic -I../..
 
-ifeq ($(OS),Windows_NT)
+TARGET_OS ?= $(OS)
+ifeq ($(TARGET_OS),Windows_NT)
+	TARGET=minimal.exe
 	WEBVIEW_CFLAGS := -DWEBVIEW_WINAPI=1
 	WEBVIEW_LDFLAGS := -lole32 -lcomctl32 -loleaut32 -luuid -mwindows
 else ifeq ($(shell uname -s),Linux)
@@ -11,10 +15,10 @@ else ifeq ($(shell uname -s),Darwin)
 	WEBVIEW_LDFLAGS := -framework Cocoa -framework WebKit
 endif
 
-minimal: main.c
+$(TARGET): main.c
 	$(CC) $(CFLAGS) $(WEBVIEW_CFLAGS) main.c $(LDFLAGS) $(WEBVIEW_LDFLAGS) -o $@
 
 clean:
-	rm -f minimal
+	rm -f $(TARGET)
 
 .PHONY: clean
