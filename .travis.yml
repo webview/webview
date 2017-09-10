@@ -11,6 +11,7 @@ matrix:
           packages:
             - libwebkitgtk-3.0-dev
     - os: osx
+      osx_image: xcode8.3
 
 script:
   - cd examples/minimal && make && cd ../..
