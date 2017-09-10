@@ -29,5 +29,5 @@ matrix:
       osx_image: xcode8.3
 
 script:
-  - cd examples/minimal && make && cd ../..
-  - cd examples/minimal-go && go build && cd ../..
+  - cd examples/minimal && make && ls -l && cd ../..
+  - cd examples/minimal-go && go build && ls -l && cd ../..
