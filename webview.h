@@ -51,6 +51,7 @@ struct webview {
   int resizable;
   void (*external_invoke_cb)(struct webview *w, const char *arg);
   struct webview_priv priv;
+  void *userdata;
 };
 
 static int webview_init(struct webview *w);
