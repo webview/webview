@@ -54,9 +54,19 @@ struct webview {
   void *userdata;
 };
 
+struct webview_dispatch_arg {
+  void (*f)(struct webview *w, void *arg);
+  struct webview *w;
+  void *arg;
+};
+
+typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
+
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
+static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
+                             void *arg);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
@@ -194,6 +204,24 @@ static int webview_loop(struct webview *w, int blocking) {
 static int webview_eval(struct webview *w, const char *js) {
   webkit_web_view_execute_script(WEBKIT_WEB_VIEW(w->priv.webview), js);
   return 0;
+}
+
+static gboolean webview_dispatch_wrapper(gpointer userdata) {
+  struct webview_dispatch_arg *arg = (struct webview_dispatch_arg *)userdata;
+  (*(arg->f))(arg->w, arg->arg);
+  g_free(arg);
+  return FALSE;
+}
+
+static void webview_dispatch(struct webview *w,
+                             void (*f)(struct webview *w, void *arg),
+                             void *arg) {
+  struct webview_dispatch_arg *context =
+      (struct webview_dispatch_arg *)g_new(struct webview_dispatch_arg *, 1);
+  context->w = w;
+  context->arg = arg;
+  context->f = f;
+  gdk_threads_add_idle(webview_dispatch_wrapper, context);
 }
 
 static void webview_exit(struct webview *w) { w->priv.loop_result = -1; }
