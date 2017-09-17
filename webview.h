@@ -75,13 +75,12 @@ static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
                    int resizable) {
-  struct webview webview = {
-      .title = title,
-      .url = url,
-      .width = w,
-      .height = h,
-      .resizable = resizable,
-  };
+  struct webview webview = {0};
+  webview.title = title;
+  webview.url = url;
+  webview.width = w;
+  webview.height = h;
+  webview.resizable = resizable;
   int r = webview_init(&webview);
   if (r != 0) {
     return r;
