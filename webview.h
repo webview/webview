@@ -151,12 +151,13 @@ static gboolean webview_context_menu_cb(WebKitWebView *webview,
 
 static void webview_window_object_cleared_cb(WebKitWebView *webview,
                                              WebKitWebFrame *frame,
-                                             gpointer context,
+                                             gpointer context_ptr,
                                              gpointer window_object,
                                              gpointer arg) {
   (void)webview;
   (void)frame;
   (void)window_object;
+  JSContextRef context = (JSContextRef) context_ptr;
   JSClassRef cls = JSClassCreate(&webview_external_def);
   JSObjectRef obj = JSObjectMake(context, cls, arg);
   JSObjectRef glob = JSContextGetGlobalObject(context);
