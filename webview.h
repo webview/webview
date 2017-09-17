@@ -1,6 +1,10 @@
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
@@ -1012,5 +1016,9 @@ static int webview_eval(struct webview *w, const char *js) {
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
 
 #endif /* WEBVIEW_COCOA */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* WEBVIEW_H */
