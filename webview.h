@@ -14,7 +14,7 @@ struct webview_priv {
   GtkWidget *window;
   GtkWidget *scroller;
   GtkWidget *webview;
-  int loop_result;
+  int should_exit;
 };
 #elif defined(WEBVIEW_WINAPI)
 #define CINTERFACE
@@ -42,7 +42,7 @@ struct webview_priv {
   NSWindow *window;
   WebView *webview;
   WebViewWindowDelegate *windowDelegate;
-  int loop_result;
+  int should_exit;
 };
 #else
 #error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
@@ -72,6 +72,7 @@ static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
 static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
+static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
@@ -134,7 +135,7 @@ static const JSClassDefinition webview_external_def = {
 static void webview_desroy_cb(GtkWidget *widget, gpointer arg) {
   (void)widget;
   struct webview *w = (struct webview *)arg;
-  webview_exit(w);
+  webview_terminate(w);
 }
 
 static gboolean webview_context_menu_cb(WebKitWebView *webview,
@@ -158,7 +159,7 @@ static void webview_window_object_cleared_cb(WebKitWebView *webview,
   (void)webview;
   (void)frame;
   (void)window_object;
-  JSContextRef context = (JSContextRef) context_ptr;
+  JSContextRef context = (JSContextRef)context_ptr;
   JSClassRef cls = JSClassCreate(&webview_external_def);
   JSObjectRef obj = JSObjectMake(context, cls, arg);
   JSObjectRef glob = JSContextGetGlobalObject(context);
@@ -203,7 +204,7 @@ static int webview_init(struct webview *w) {
 
 static int webview_loop(struct webview *w, int blocking) {
   gtk_main_iteration_do(blocking);
-  return w->priv.loop_result;
+  return w->priv.should_exit;
 }
 
 static int webview_eval(struct webview *w, const char *js) {
@@ -228,7 +229,9 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
   gdk_threads_add_idle(webview_dispatch_wrapper, context);
 }
 
-static void webview_exit(struct webview *w) { w->priv.loop_result = -1; }
+static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
+
+static void webview_exit(struct webview *w) {}
 
 #endif /* WEBVIEW_GTK */
 
@@ -268,7 +271,7 @@ typedef struct {
 #endif
 
 static int iid_eq(REFIID a, const IID *b) {
-	return memcmp((const void *)iid_ref(a), (const void  *)b, sizeof(GUID)) == 0;
+  return memcmp((const void *)iid_ref(a), (const void *)b, sizeof(GUID)) == 0;
 }
 
 static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
@@ -372,8 +375,7 @@ Site_RequestNewObjectLayout(IOleClientSite FAR *This) {
 static HRESULT STDMETHODCALLTYPE Site_QueryInterface(IOleClientSite FAR *This,
                                                      REFIID riid,
                                                      void **ppvObject) {
-  if (iid_eq(riid, &IID_IUnknown) ||
-      iid_eq(riid, &IID_IOleClientSite))
+  if (iid_eq(riid, &IID_IUnknown) || iid_eq(riid, &IID_IOleClientSite))
     *ppvObject = &((_IOleClientSiteEx *)This)->client;
   else if (iid_eq(riid, &IID_IOleInPlaceSite))
     *ppvObject = &((_IOleClientSiteEx *)This)->inplace;
@@ -455,8 +457,9 @@ InPlace_OnPosRectChange(IOleInPlaceSite FAR *This, LPCRECT lprcPosRect) {
   IOleInPlaceObject *inplace;
   browserObject = *((IOleObject **)((char *)This - sizeof(IOleObject *) -
                                     sizeof(IOleClientSite)));
-  if (!browserObject->lpVtbl->QueryInterface(
-          browserObject, iid_unref(&IID_IOleInPlaceObject), (void **)&inplace)) {
+  if (!browserObject->lpVtbl->QueryInterface(browserObject,
+                                             iid_unref(&IID_IOleInPlaceObject),
+                                             (void **)&inplace)) {
     inplace->lpVtbl->SetObjectRects(inplace, lprcPosRect, lprcPosRect);
     inplace->lpVtbl->Release(inplace);
   }
@@ -703,7 +706,8 @@ static int EmbedBrowserObject(struct webview *w) {
 
   if (CoGetClassObject(iid_unref(&CLSID_WebBrowser),
                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
-                       iid_unref(&IID_IClassFactory), (void **)&pClassFactory) != S_OK) {
+                       iid_unref(&IID_IClassFactory),
+                       (void **)&pClassFactory) != S_OK) {
     goto error;
   }
 
@@ -711,7 +715,8 @@ static int EmbedBrowserObject(struct webview *w) {
     goto error;
   }
 
-  if (pClassFactory->lpVtbl->CreateInstance(pClassFactory, 0, iid_unref(&IID_IOleObject),
+  if (pClassFactory->lpVtbl->CreateInstance(pClassFactory, 0,
+                                            iid_unref(&IID_IOleObject),
                                             (void **)browser) != S_OK) {
     goto error;
   }
@@ -732,7 +737,8 @@ static int EmbedBrowserObject(struct webview *w) {
                                  w->priv.hwnd, &rect) != S_OK) {
     goto error;
   }
-  if ((*browser)->lpVtbl->QueryInterface((*browser), iid_unref(&IID_IWebBrowser2),
+  if ((*browser)->lpVtbl->QueryInterface((*browser),
+                                         iid_unref(&IID_IWebBrowser2),
                                          (void **)&webBrowser2) != S_OK) {
     goto error;
   }
@@ -760,8 +766,8 @@ static long DisplayHTMLPage(struct webview *w) {
   VARIANT myURL;
   IOleObject *browserObject;
   browserObject = *w->priv.browser;
-  if (!browserObject->lpVtbl->QueryInterface(browserObject, iid_unref(&IID_IWebBrowser2),
-                                             (void **)&webBrowser2)) {
+  if (!browserObject->lpVtbl->QueryInterface(
+          browserObject, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2)) {
     LPCSTR webPageName = (LPCSTR)w->url;
     VariantInit(&myURL);
     myURL.vt = VT_BSTR;
@@ -899,7 +905,8 @@ static int webview_eval(struct webview *w, const char *js) {
   IDispatch *docDispatch;
   IDispatch *scriptDispatch;
   if ((*w->priv.browser)
-          ->lpVtbl->QueryInterface((*w->priv.browser), iid_unref(&IID_IWebBrowser2),
+          ->lpVtbl->QueryInterface((*w->priv.browser),
+                                   iid_unref(&IID_IWebBrowser2),
                                    (void **)&webBrowser2) != S_OK) {
     return -1;
   }
@@ -907,7 +914,8 @@ static int webview_eval(struct webview *w, const char *js) {
   if (webBrowser2->lpVtbl->get_Document(webBrowser2, &docDispatch) != S_OK) {
     return -1;
   }
-  if (docDispatch->lpVtbl->QueryInterface(docDispatch, iid_unref(&IID_IHTMLDocument2),
+  if (docDispatch->lpVtbl->QueryInterface(docDispatch,
+                                          iid_unref(&IID_IHTMLDocument2),
                                           (void **)&htmlDoc2) != S_OK) {
     return -1;
   }
@@ -916,9 +924,9 @@ static int webview_eval(struct webview *w, const char *js) {
   }
   DISPID dispid;
   BSTR evalStr = L"eval";
-  if (scriptDispatch->lpVtbl->GetIDsOfNames(scriptDispatch, iid_unref(&IID_NULL), &evalStr,
-                                            1, LOCALE_SYSTEM_DEFAULT,
-                                            &dispid) != S_OK) {
+  if (scriptDispatch->lpVtbl->GetIDsOfNames(
+          scriptDispatch, iid_unref(&IID_NULL), &evalStr, 1,
+          LOCALE_SYSTEM_DEFAULT, &dispid) != S_OK) {
     return -1;
   }
 
@@ -942,9 +950,9 @@ static int webview_eval(struct webview *w, const char *js) {
   wchar_t *buf = (wchar_t *)GlobalAlloc(GMEM_FIXED, m * sizeof(wchar_t));
   MultiByteToWideChar(CP_ACP, 0, eval, -1, buf, m);
   arg.bstrVal = SysAllocString(buf);
-  if (scriptDispatch->lpVtbl->Invoke(scriptDispatch, dispid, iid_unref(&IID_NULL), 0,
-                                     DISPATCH_METHOD, &params, &result,
-                                     &excepInfo, &nArgErr) != S_OK) {
+  if (scriptDispatch->lpVtbl->Invoke(
+          scriptDispatch, dispid, iid_unref(&IID_NULL), 0, DISPATCH_METHOD,
+          &params, &result, &excepInfo, &nArgErr) != S_OK) {
     return -1;
   }
   SysFreeString(arg.bstrVal);
@@ -960,6 +968,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
   PostMessageW(w->priv.hwnd, WM_WEBVIEW_DISPATCH, (WPARAM)fn, (LPARAM)arg);
 }
 
+static void webview_terminate(struct webview *w) {}
 static void webview_exit(struct webview *w) { OleUninitialize(); }
 
 #endif /* WEBVIEW_WINAPI */
@@ -967,7 +976,7 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #if defined(WEBVIEW_COCOA)
 @implementation WebViewWindowDelegate
 - (void)windowWillClose:(NSNotification *)notification {
-  self.webview->priv.loop_result = -1;
+  webview_terminate(self.webview);
 }
 + (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector {
   return NO;
@@ -1029,7 +1038,7 @@ static int webview_loop(struct webview *w, int blocking) {
   if (event) {
     [NSApp sendEvent:event];
   }
-  return w->priv.loop_result;
+  return w->priv.should_exit;
 }
 
 static int webview_eval(struct webview *w, const char *js) {
@@ -1039,21 +1048,22 @@ static int webview_eval(struct webview *w, const char *js) {
 }
 
 static void webview_dispatch_cb(void *arg) {
-  struct webview_dispatch_arg *context = (struct webview_dispatch_arg *) arg;
+  struct webview_dispatch_arg *context = (struct webview_dispatch_arg *)arg;
   (context->fn)(context->w, context->arg);
   free(context);
 }
 
 static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg) {
-  struct webview_dispatch_arg *context =
-      (struct webview_dispatch_arg *)malloc(sizeof(struct webview_dispatch_arg));
+  struct webview_dispatch_arg *context = (struct webview_dispatch_arg *)malloc(
+      sizeof(struct webview_dispatch_arg));
   context->w = w;
   context->arg = arg;
   context->fn = fn;
   dispatch_async_f(dispatch_get_main_queue(), context, webview_dispatch_cb);
 }
 
+static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
 
 #endif /* WEBVIEW_COCOA */
