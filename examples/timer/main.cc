@@ -1,7 +1,6 @@
 #include <chrono>
-#include <iostream>
-#include <sstream>
 #include <mutex>
+#include <sstream>
 #include <thread>
 
 #include <cstdio>
@@ -32,17 +31,15 @@ public:
   }
   void render(struct webview *w) {
     auto n = this->get();
-	std::ostringstream jscode;
-	jscode << "updateTicks(" << n << ")";
+    std::ostringstream jscode;
+    jscode << "updateTicks(" << n << ")";
     webview_eval(w, jscode.str().c_str());
   }
 
 private:
   void run(struct webview *w) {
     for (;;) {
-      // std::this_thread::sleep_for(std::chrono::seconds(1));
       std::this_thread::sleep_for(std::chrono::microseconds(100000));
-      std::cout << "tick" << std::endl;
       this->incr();
       webview_dispatch(w,
                        [](struct webview *w, void *arg) {
@@ -68,11 +65,10 @@ public:
   }
   ~TempFile() { unlink(this->path.c_str()); }
   std::string url() { return "file://" + path; }
-private:
-	std::string path;
-};
 
-static int should_exit = 0;
+private:
+  std::string path;
+};
 
 static const char *html = R"html(
 <html>
@@ -95,12 +91,13 @@ static void timer_cb(struct webview *w, const char *arg) {
     timer->set(0);
     timer->render(w);
   } else if (strcmp(arg, "exit") == 0) {
-    should_exit = 1;
+    webview_terminate(w);
   }
 }
 
 #ifdef WIN32
-int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow) {
+int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
+                   int nCmdShow) {
 #else
 int main() {
 #endif
@@ -120,7 +117,7 @@ int main() {
 
   webview_init(&webview);
   timer.start(&webview);
-  while (webview_loop(&webview, 1) == 0 && should_exit == 0)
+  while (webview_loop(&webview, 1) == 0)
     ;
   webview_exit(&webview);
   return 0;
