@@ -10,25 +10,10 @@ matrix:
         apt:
           packages:
             - libwebkitgtk-3.0-dev
-    - os: linux
-      compiler: i686-w64-mingw32-g++
-      before_install:
-        - sudo dpkg --add-architecture i386
-        - echo "deb http://pkg.mxe.cc/repos/apt/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mxeapt.list
-        - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D43A795B73B16ABE9643FE1AFD8FFF16DB45C6AB
-        - sudo apt-get -qq update
-        - sudo apt-get install -y mxe-i686-w64-mingw32.static-binutils mxe-i686-w64-mingw32.static-gcc
-      before_script:
-        - export PATH=/usr/lib/mxe/usr/bin:$PATH
-        - export CC=i686-w64-mingw32.static-gcc
-        - export CXX=i686-w64-mingw32.static-g++
-        - export TARGET_OS=Windows_NT
-        - export CGO_ENABLED=1
-        - export GOOS=windows
-        - export GOARCH=386
     - os: osx
       osx_image: xcode8.3
 
 script:
   - cd examples/minimal && mkdir -p build && cd build && cmake .. && make && ls -l && cd ../../..
+  - cd examples/timer-cxx && mkdir -p build && cd build && cmake .. && make && ls -l && cd ../../..
   - cd examples/minimal-go && go build && ls -l && cd ../..
