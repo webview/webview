@@ -50,7 +50,7 @@ struct webview_priv {
 
 struct webview;
 
-typedef (*webview_external_invoke_cb_t)(struct webview *w, const char *arg);
+typedef void (*webview_external_invoke_cb_t)(struct webview *w, const char *arg);
 
 struct webview {
   const char *url;
