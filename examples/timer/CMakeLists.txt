@@ -9,4 +9,6 @@ add_executable(timer main.cc)
 if (APPLE)
   set_source_files_properties(main.cc PROPERTIES COMPILE_FLAGS "-x objective-c++")
 endif()
-target_link_libraries(timer PUBLIC webview pthread)
+
+find_package(Threads REQUIRED)
+target_link_libraries(timer PUBLIC webview ${CMAKE_THREADS_LIB_INIT})
