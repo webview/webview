@@ -46,7 +46,7 @@ func Open(title, url string, w, h int, resizable bool) error {
 	return nil
 }
 
-type ExternalInvokeCallbackFunc func(data string)
+type ExternalInvokeCallbackFunc func(w WebView, data string)
 
 type Settings struct {
 	Title                  string
@@ -57,16 +57,27 @@ type Settings struct {
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
 
+type WebView interface {
+	Run()
+	Loop(blocking bool) bool
+	Eval(js string)
+	Dispatch(func())
+	Exit()
+	Terminate()
+}
+
 var (
 	m     sync.Mutex
 	index uintptr
 	fns   = map[uintptr]func(){}
-	cbs   = map[*C.struct_webview]ExternalInvokeCallbackFunc{}
+	cbs   = map[*webview]ExternalInvokeCallbackFunc{}
 )
 
 type webview struct {
 	w C.struct_webview
 }
+
+var _ WebView = &webview{}
 
 func New(settings Settings) *webview {
 	if settings.Width == 0 {
@@ -94,7 +105,7 @@ func New(settings Settings) *webview {
 	if settings.ExternalInvokeCallback != nil {
 		w.w.external_invoke_cb = (C.webview_external_invoke_cb_t)(unsafe.Pointer(C._webview_external_invoke_callback))
 		m.Lock()
-		cbs[&w.w] = settings.ExternalInvokeCallback
+		cbs[w] = settings.ExternalInvokeCallback
 		m.Unlock()
 	}
 	if r := C.webview_init(&w.w); r != 0 {
@@ -145,10 +156,17 @@ func _webview_dispatch_go_callback(index unsafe.Pointer) {
 //export _webview_external_invoke_callback
 func _webview_external_invoke_callback(w *C.struct_webview, data *C.char) {
 	m.Lock()
-	defer m.Unlock()
-	if cb, ok := cbs[w]; ok {
-		cb(C.GoString(data))
+	var (
+		cb ExternalInvokeCallbackFunc
+		wv WebView
+	)
+	for wv, cb = range cbs {
+		if &wv.(*webview).w == w {
+			break
+		}
 	}
+	m.Unlock()
+	cb(wv, C.GoString(data))
 }
 
 func (w *webview) Eval(js string) {
