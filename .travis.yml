@@ -21,6 +21,7 @@ matrix:
       before_script:
         - export PATH=/usr/lib/mxe/usr/bin:$PATH
         - export CC=i686-w64-mingw32.static-gcc
+        - export CXX=i686-w64-mingw32.static-g++
         - export TARGET_OS=Windows_NT
         - export CGO_ENABLED=1
         - export GOOS=windows
@@ -29,5 +30,5 @@ matrix:
       osx_image: xcode8.3
 
 script:
-  - cd examples/minimal && make && ls -l && cd ../..
+  - cd examples/minimal && mkdir -p build && cd build && cmake .. && make && ls -l && cd ../../..
   - cd examples/minimal-go && go build && ls -l && cd ../..
