@@ -10,14 +10,14 @@ environment:
   matrix:
     - GETH_ARCH: amd64
       GOARCH: amd64
-      CGO_ENABLED=1
+      CGO_ENABLED: 1
       MSYS2_ARCH: x86_64
       MSYS2_BITS: 64
       MSYSTEM: MINGW64
       PATH: C:\msys64\mingw64\bin\;C:\Program Files (x86)\NSIS\;%PATH%
     - GETH_ARCH: 386
       GOARCH: 386
-      CGO_ENABLED=1
+      CGO_ENABLED: 1
       MSYS2_ARCH: i686
       MSYS2_BITS: 32
       MSYSTEM: MINGW32
