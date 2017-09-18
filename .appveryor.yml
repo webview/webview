@@ -1,0 +1,16 @@
+version: {build}
+
+clone_folder: c:\gopath\src\github.com\zserge\webview
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go version
+  - go env
+
+build_script:
+  - go build -o buildOutput\minimal -i ./examples/minimal-go
