@@ -59,13 +59,13 @@ struct webview {
   void *userdata;
 };
 
+typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
+
 struct webview_dispatch_arg {
-  void (*f)(struct webview *w, void *arg);
+  webview_dispatch_fn fn;
   struct webview *w;
   void *arg;
 };
-
-typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
 
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
@@ -213,19 +213,18 @@ static int webview_eval(struct webview *w, const char *js) {
 
 static gboolean webview_dispatch_wrapper(gpointer userdata) {
   struct webview_dispatch_arg *arg = (struct webview_dispatch_arg *)userdata;
-  (*(arg->f))(arg->w, arg->arg);
+  (arg->fn)(arg->w, arg->arg);
   g_free(arg);
   return FALSE;
 }
 
-static void webview_dispatch(struct webview *w,
-                             void (*f)(struct webview *w, void *arg),
+static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg) {
   struct webview_dispatch_arg *context =
       (struct webview_dispatch_arg *)g_new(struct webview_dispatch_arg *, 1);
   context->w = w;
   context->arg = arg;
-  context->f = f;
+  context->fn = fn;
   gdk_threads_add_idle(webview_dispatch_wrapper, context);
 }
 
@@ -238,6 +237,8 @@ static void webview_exit(struct webview *w) { w->priv.loop_result = -1; }
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
+
+#define WM_WEBVIEW_DISPATCH (WM_APP + 1)
 
 typedef struct {
   IOleInPlaceFrame frame;
@@ -261,7 +262,7 @@ typedef struct {
 static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
                                                    REFIID riid,
                                                    LPVOID FAR *ppvObj) {
-  if (!memcmp(riid, &IID_IDispatch, sizeof(GUID))) {
+  if (!memcmp((const void *) riid, (const void  *)&IID_IDispatch, sizeof(GUID))) {
     *ppvObj = This;
     return S_OK;
   }
@@ -804,6 +805,12 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
     }
     return TRUE;
   }
+  case WM_WEBVIEW_DISPATCH: {
+    webview_dispatch_fn f = (webview_dispatch_fn)wParam;
+    void *arg = (void *)lParam;
+    (*f)(w, arg);
+    return TRUE;
+  }
   }
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -936,6 +943,11 @@ static int webview_eval(struct webview *w, const char *js) {
   return 0;
 }
 
+static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
+                             void *arg) {
+  PostMessageW(w->priv.hwnd, WM_WEBVIEW_DISPATCH, (WPARAM)fn, (LPARAM)arg);
+}
+
 static void webview_exit(struct webview *w) { OleUninitialize(); }
 
 #endif /* WEBVIEW_WINAPI */
@@ -1012,6 +1024,11 @@ static int webview_eval(struct webview *w, const char *js) {
   NSString *nsJS = [NSString stringWithUTF8String:js];
   [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
   return 0;
+}
+
+static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
+                             void *arg) {
+  dispatch_async_f(dispatch_get_main_queue(), arg, fn);
 }
 
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
