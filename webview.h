@@ -48,13 +48,17 @@ struct webview_priv {
 #error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
 #endif
 
+struct webview;
+
+typedef (*webview_external_invoke_cb_t)(struct webview *w, const char *arg);
+
 struct webview {
   const char *url;
   const char *title;
   int width;
   int height;
   int resizable;
-  void (*external_invoke_cb)(struct webview *w, const char *arg);
+  webview_external_invoke_cb_t external_invoke_cb;
   struct webview_priv priv;
   void *userdata;
 };
