@@ -28,6 +28,7 @@ public:
   }
   void start(struct webview *w) {
     this->thread = std::thread(&Timer::run, this, w);
+    this->thread.detach();
   }
   void render(struct webview *w) {
     auto n = this->get();
