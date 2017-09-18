@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 2.8)
+
+project(webview)
+
+add_library(webview INTERFACE)
+target_include_directories(webview INTERFACE "${PROJECT_SOURCE_DIR}")
+if(APPLE)
+	target_compile_definitions(webview INTERFACE "-DWEBVIEW_COCOA=1")
+	target_link_libraries(webview INTERFACE "-framework Cocoa" "-framework WebKit")
+elseif(WIN32)
+	target_compile_definitions(webview INTERFACE "-DWEBVIEW_WINAPI=1")
+	target_link_libraries(webview INTERFACE ole32 comctl32 oleaut32 uuid)
+	if (MSVC)
+		# TODO
+	else()
+		target_link_libraries(webview INTERFACE "-mwindows -Wl,-subsystem,windows")
+	endif()
+else()
+	target_compile_definitions(webview INTERFACE "-DWEBVIEW_GTK=1")
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+	pkg_check_modules(WEBKIT REQUIRED webkitgtk-3.0)
+	target_include_directories(webview INTERFACE ${GTK3_INCLUDE_DIRS} ${WEBKIT_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR})
+	target_link_libraries(webview INTERFACE ${GTK3_LIBRARIES} ${WEBKIT_LIBRARIES})
+endif()
+target_sources(webview INTERFACE "${PROJECT_SOURCE_DIR}/webview.h")
+
