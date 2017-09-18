@@ -85,6 +85,23 @@ window.external.invoke_('some arg');
 window.external.invoke_(JSON.stringify({fn: 'sum', x: 5, y: 3}));
 ```
 
+### Multithreading support
+
+Webview library is meant to be used from a single UI thread only. So if you
+want to call `webview_eval` or `webview_terminate` from some background thread
+- you have to use `webview_dispatch` to post some arbitrary function with some
+context to be executed inside the main UI thread:
+
+```c
+// This function will be executed on the UI thread
+void render(struct webview *w, void *arg) {
+  webview_eval(w, ......);
+}
+
+// Dispatch render() function from another thread:
+webview_dispatch(w, render, some_arg);
+```
+
 ## License
 
 Code is distributed under MIT license, feel free to use it in your proprietary
