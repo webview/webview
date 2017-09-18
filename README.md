@@ -50,12 +50,15 @@ If you want to have more control over the app you can use the following function
       .height = h,
       .resizable = resizable,
   };
-	/* Create webview window using the provided options */
+  /* Create webview window using the provided options */
   webview_init(&webview);
-	/* Main app loop, can be either blocking or non-blocking */
+  /* Main app loop, can be either blocking or non-blocking */
   while (webview_loop(&webview, blocking) == 0);
-	/* Destroy webview window, often exits the app */
+  /* Destroy webview window, often exits the app */
   webview_exit(&webview);
+
+  /* To terminate the webview main loop: */
+  webview_terminate(&webview);
 ```
 
 ### Two-way bindings API
