@@ -6,4 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../.. ${CMAKE_CURRENT_BINARY_DIR}/webview)
 add_executable(timer main.cc)
+if (APPLE)
+  set_source_files_properties(main.cc PROPERTIES COMPILE_FLAGS "-x objective-c++")
+endif()
 target_link_libraries(timer PUBLIC webview pthread)
