@@ -17,6 +17,7 @@ struct webview_priv {
   int loop_result;
 };
 #elif defined(WEBVIEW_WINAPI)
+#define CINTERFACE
 #include <windows.h>
 
 #include <exdisp.h>
