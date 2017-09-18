@@ -968,7 +968,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
   PostMessageW(w->priv.hwnd, WM_WEBVIEW_DISPATCH, (WPARAM)fn, (LPARAM)arg);
 }
 
-static void webview_terminate(struct webview *w) {}
+static void webview_terminate(struct webview *w) { PostQuitMessage(0); }
 static void webview_exit(struct webview *w) { OleUninitialize(); }
 
 #endif /* WEBVIEW_WINAPI */
