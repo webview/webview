@@ -1026,9 +1026,20 @@ static int webview_eval(struct webview *w, const char *js) {
   return 0;
 }
 
+static void webview_dispatch_cb(void *arg) {
+  struct webview_dispatch_arg *context = (struct webview_dispatch_arg *) arg;
+  (context->fn)(context->w, context->arg);
+  free(context);
+}
+
 static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg) {
-  dispatch_async_f(dispatch_get_main_queue(), arg, fn);
+  struct webview_dispatch_arg *context =
+      (struct webview_dispatch_arg *)malloc(sizeof(struct webview_dispatch_arg));
+  context->w = w;
+  context->arg = arg;
+  context->fn = fn;
+  dispatch_async_f(dispatch_get_main_queue(), context, webview_dispatch_cb);
 }
 
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
