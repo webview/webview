@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <sstream>
 #include <mutex>
 #include <thread>
 
@@ -31,8 +32,9 @@ public:
   }
   void render(struct webview *w) {
     auto n = this->get();
-    auto jscode = "updateTicks(" + std::to_string(n) + ")";
-    webview_eval(w, jscode.c_str());
+	std::ostringstream jscode;
+	jscode << "updateTicks(" << n << ")";
+    webview_eval(w, jscode.str().c_str());
   }
 
 private:
@@ -52,19 +54,22 @@ private:
   }
   std::thread thread;
   std::mutex mutex;
-  int ticks;
+  int ticks = 0;
   struct webview *w;
 };
 
 class TempFile {
 public:
   TempFile(std::string contents) {
-    FILE *f = fopen("/tmp/index.html", "wb");
+    this->path = std::tmpnam(nullptr);
+    FILE *f = fopen(this->path.c_str(), "wb");
     fwrite(contents.c_str(), contents.length(), 1, f);
     fclose(f);
   }
-  ~TempFile() { unlink("/tmp/index.html"); }
-  std::string url() { return "file:///tmp/index.html"; }
+  ~TempFile() { unlink(this->path.c_str()); }
+  std::string url() { return "file://" + path; }
+private:
+	std::string path;
 };
 
 static int should_exit = 0;
@@ -94,7 +99,11 @@ static void timer_cb(struct webview *w, const char *arg) {
   }
 }
 
+#ifdef WIN32
+int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nCmdShow) {
+#else
 int main() {
+#endif
   Timer timer;
   TempFile tmp(html);
   struct webview webview = {};
