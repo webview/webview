@@ -1,3 +1,5 @@
+os: Visual Studio 2017
+
 version: "{build}"
 
 clone_folder: c:\gopath\src\github.com\zserge\webview
@@ -23,6 +25,7 @@ install:
   - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
   - go version
   - go env
+  - gcc --version
 
 build_script:
   - go build -o buildOutput\minimal -i ./examples/minimal-go
