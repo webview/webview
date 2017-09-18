@@ -11,4 +11,4 @@ if (APPLE)
 endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(timer PUBLIC webview ${CMAKE_THREADS_LIB_INIT})
+target_link_libraries(timer PUBLIC webview ${CMAKE_THREAD_LIBS_INIT})
