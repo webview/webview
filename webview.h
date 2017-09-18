@@ -259,10 +259,22 @@ typedef struct {
   IDispatch external;
 } _IOleClientSiteEx;
 
+#ifdef __cplusplus
+#define iid_ref(x) &(x)
+#define iid_unref(x) *(x)
+#else
+#define iid_ref(x) (x)
+#define iid_unref(x) (x)
+#endif
+
+static int iid_eq(REFIID a, const IID *b) {
+	return memcmp((const void *)iid_ref(a), (const void  *)b, sizeof(GUID)) == 0;
+}
+
 static HRESULT STDMETHODCALLTYPE JS_QueryInterface(IDispatch FAR *This,
                                                    REFIID riid,
                                                    LPVOID FAR *ppvObj) {
-  if (!memcmp((const void *) riid, (const void  *)&IID_IDispatch, sizeof(GUID))) {
+  if (iid_eq(riid, &IID_IDispatch)) {
     *ppvObj = This;
     return S_OK;
   }
@@ -360,12 +372,12 @@ Site_RequestNewObjectLayout(IOleClientSite FAR *This) {
 static HRESULT STDMETHODCALLTYPE Site_QueryInterface(IOleClientSite FAR *This,
                                                      REFIID riid,
                                                      void **ppvObject) {
-  if (!memcmp(riid, &IID_IUnknown, sizeof(GUID)) ||
-      !memcmp(riid, &IID_IOleClientSite, sizeof(GUID)))
+  if (iid_eq(riid, &IID_IUnknown) ||
+      iid_eq(riid, &IID_IOleClientSite))
     *ppvObject = &((_IOleClientSiteEx *)This)->client;
-  else if (!memcmp(riid, &IID_IOleInPlaceSite, sizeof(GUID)))
+  else if (iid_eq(riid, &IID_IOleInPlaceSite))
     *ppvObject = &((_IOleClientSiteEx *)This)->inplace;
-  else if (!memcmp(riid, &IID_IDocHostUIHandler, sizeof(GUID)))
+  else if (iid_eq(riid, &IID_IDocHostUIHandler))
     *ppvObject = &((_IOleClientSiteEx *)This)->ui;
   else {
     *ppvObject = 0;
@@ -444,7 +456,7 @@ InPlace_OnPosRectChange(IOleInPlaceSite FAR *This, LPCRECT lprcPosRect) {
   browserObject = *((IOleObject **)((char *)This - sizeof(IOleObject *) -
                                     sizeof(IOleClientSite)));
   if (!browserObject->lpVtbl->QueryInterface(
-          browserObject, &IID_IOleInPlaceObject, (void **)&inplace)) {
+          browserObject, iid_unref(&IID_IOleInPlaceObject), (void **)&inplace)) {
     inplace->lpVtbl->SetObjectRects(inplace, lprcPosRect, lprcPosRect);
     inplace->lpVtbl->Release(inplace);
   }
@@ -689,9 +701,9 @@ static int EmbedBrowserObject(struct webview *w) {
   _iOleClientSiteEx->ui.ui.lpVtbl = &MyIDocHostUIHandlerTable;
   _iOleClientSiteEx->external.lpVtbl = &ExternalDispatchTable;
 
-  if (CoGetClassObject(&CLSID_WebBrowser,
+  if (CoGetClassObject(iid_unref(&CLSID_WebBrowser),
                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
-                       &IID_IClassFactory, (void **)&pClassFactory) != S_OK) {
+                       iid_unref(&IID_IClassFactory), (void **)&pClassFactory) != S_OK) {
     goto error;
   }
 
@@ -699,7 +711,7 @@ static int EmbedBrowserObject(struct webview *w) {
     goto error;
   }
 
-  if (pClassFactory->lpVtbl->CreateInstance(pClassFactory, 0, &IID_IOleObject,
+  if (pClassFactory->lpVtbl->CreateInstance(pClassFactory, 0, iid_unref(&IID_IOleObject),
                                             (void **)browser) != S_OK) {
     goto error;
   }
@@ -720,7 +732,7 @@ static int EmbedBrowserObject(struct webview *w) {
                                  w->priv.hwnd, &rect) != S_OK) {
     goto error;
   }
-  if ((*browser)->lpVtbl->QueryInterface((*browser), &IID_IWebBrowser2,
+  if ((*browser)->lpVtbl->QueryInterface((*browser), iid_unref(&IID_IWebBrowser2),
                                          (void **)&webBrowser2) != S_OK) {
     goto error;
   }
@@ -748,7 +760,7 @@ static long DisplayHTMLPage(struct webview *w) {
   VARIANT myURL;
   IOleObject *browserObject;
   browserObject = *w->priv.browser;
-  if (!browserObject->lpVtbl->QueryInterface(browserObject, &IID_IWebBrowser2,
+  if (!browserObject->lpVtbl->QueryInterface(browserObject, iid_unref(&IID_IWebBrowser2),
                                              (void **)&webBrowser2)) {
     LPCSTR webPageName = (LPCSTR)w->url;
     VariantInit(&myURL);
@@ -796,7 +808,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_SIZE: {
     IWebBrowser2 *webBrowser2;
     IOleObject *browser = *w->priv.browser;
-    if (!browser->lpVtbl->QueryInterface(browser, &IID_IWebBrowser2,
+    if (!browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
                                          (void **)&webBrowser2)) {
       RECT rect;
       GetClientRect(hwnd, &rect);
@@ -887,7 +899,7 @@ static int webview_eval(struct webview *w, const char *js) {
   IDispatch *docDispatch;
   IDispatch *scriptDispatch;
   if ((*w->priv.browser)
-          ->lpVtbl->QueryInterface((*w->priv.browser), &IID_IWebBrowser2,
+          ->lpVtbl->QueryInterface((*w->priv.browser), iid_unref(&IID_IWebBrowser2),
                                    (void **)&webBrowser2) != S_OK) {
     return -1;
   }
@@ -895,7 +907,7 @@ static int webview_eval(struct webview *w, const char *js) {
   if (webBrowser2->lpVtbl->get_Document(webBrowser2, &docDispatch) != S_OK) {
     return -1;
   }
-  if (docDispatch->lpVtbl->QueryInterface(docDispatch, &IID_IHTMLDocument2,
+  if (docDispatch->lpVtbl->QueryInterface(docDispatch, iid_unref(&IID_IHTMLDocument2),
                                           (void **)&htmlDoc2) != S_OK) {
     return -1;
   }
@@ -904,7 +916,7 @@ static int webview_eval(struct webview *w, const char *js) {
   }
   DISPID dispid;
   BSTR evalStr = L"eval";
-  if (scriptDispatch->lpVtbl->GetIDsOfNames(scriptDispatch, &IID_NULL, &evalStr,
+  if (scriptDispatch->lpVtbl->GetIDsOfNames(scriptDispatch, iid_unref(&IID_NULL), &evalStr,
                                             1, LOCALE_SYSTEM_DEFAULT,
                                             &dispid) != S_OK) {
     return -1;
@@ -930,7 +942,7 @@ static int webview_eval(struct webview *w, const char *js) {
   wchar_t *buf = (wchar_t *)GlobalAlloc(GMEM_FIXED, m * sizeof(wchar_t));
   MultiByteToWideChar(CP_ACP, 0, eval, -1, buf, m);
   arg.bstrVal = SysAllocString(buf);
-  if (scriptDispatch->lpVtbl->Invoke(scriptDispatch, dispid, &IID_NULL, 0,
+  if (scriptDispatch->lpVtbl->Invoke(scriptDispatch, dispid, iid_unref(&IID_NULL), 0,
                                      DISPATCH_METHOD, &params, &result,
                                      &excepInfo, &nArgErr) != S_OK) {
     return -1;
