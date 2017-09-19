@@ -13,13 +13,51 @@ package webview
 #include <stdlib.h>
 #include "webview.h"
 
-extern void _webview_external_invoke_callback(struct webview *, char *);
+extern void _webview_external_invoke_callback(void *, void *);
+
+static inline void CgoWebViewFree(void *w) {
+	free((void *)((struct webview *)w)->title);
+	free((void *)((struct webview *)w)->url);
+	free(w);
+}
+
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable) {
+	struct webview *w = (struct webview *) malloc(sizeof(*w));
+	w->width = width;
+	w->height = height;
+	w->title = title;
+	w->url = url;
+	w->resizable = resizable;
+	w->external_invoke_cb = (webview_external_invoke_cb_t) _webview_external_invoke_callback;
+	if (webview_init(w) != 0) {
+		CgoWebViewFree(w);
+		return NULL;
+	}
+	return (void *)w;
+}
+
+static inline int CgoWebViewLoop(void *w, int blocking) {
+	return webview_loop((struct webview *)w, blocking);
+}
+
+static inline void CgoWebViewTerminate(void *w) {
+	webview_terminate((struct webview *)w);
+}
+
+static inline void CgoWebViewExit(void *w) {
+	webview_exit((struct webview *)w);
+}
+
+static inline int CgoWebViewEval(void *w, char *js) {
+	return webview_eval((struct webview *)w, js);
+}
+
 extern void _webview_dispatch_go_callback(void *);
-static void _webview_dispatch_cb(struct webview *w, void *arg) {
+static inline void _webview_dispatch_cb(struct webview *w, void *arg) {
 	_webview_dispatch_go_callback(arg);
 }
-static inline void WebviewDispatchBridge(struct webview *w, void *arg) {
-	webview_dispatch(w, _webview_dispatch_cb, arg);
+static inline void CgoWebViewDispatch(void *w, void *arg) {
+	webview_dispatch((struct webview *)w, _webview_dispatch_cb, arg);
 }
 */
 import "C"
@@ -70,11 +108,11 @@ var (
 	m     sync.Mutex
 	index uintptr
 	fns   = map[uintptr]func(){}
-	cbs   = map[*webview]ExternalInvokeCallbackFunc{}
+	cbs   = map[WebView]ExternalInvokeCallbackFunc{}
 )
 
 type webview struct {
-	w C.struct_webview
+	w unsafe.Pointer
 }
 
 var _ WebView = &webview{}
@@ -92,24 +130,16 @@ func New(settings Settings) *webview {
 	if settings.URL == "" {
 		return nil
 	}
-	w := &webview{}
-	w.w.width = C.int(settings.Width)
-	w.w.height = C.int(settings.Height)
-	w.w.title = C.CString(settings.Title)
-	w.w.url = C.CString(settings.URL)
+	resizable := 0
 	if settings.Resizable {
-		w.w.resizable = 1
-	} else {
-		w.w.resizable = 0
+		resizable = 1
 	}
+	w := &webview{}
+	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.CString(settings.Title), C.CString(settings.URL), C.int(resizable))
 	if settings.ExternalInvokeCallback != nil {
-		w.w.external_invoke_cb = (C.webview_external_invoke_cb_t)(unsafe.Pointer(C._webview_external_invoke_callback))
 		m.Lock()
 		cbs[w] = settings.ExternalInvokeCallback
 		m.Unlock()
-	}
-	if r := C.webview_init(&w.w); r != 0 {
-		return nil
 	}
 	return w
 }
@@ -119,8 +149,7 @@ func (w *webview) Loop(blocking bool) bool {
 	if blocking {
 		block = 1
 	}
-	r := C.webview_loop(&w.w, block)
-	return r == 0
+	return C.CgoWebViewLoop(w.w, block) == 0
 }
 
 func (w *webview) Run() {
@@ -129,9 +158,7 @@ func (w *webview) Run() {
 }
 
 func (w *webview) Exit() {
-	C.webview_exit(&w.w)
-	C.free(unsafe.Pointer(w.w.title))
-	C.free(unsafe.Pointer(w.w.url))
+	C.CgoWebViewExit(w.w)
 }
 
 func (w *webview) Dispatch(f func()) {
@@ -140,10 +167,20 @@ func (w *webview) Dispatch(f func()) {
 	}
 	fns[index] = f
 	m.Unlock()
-	C.WebviewDispatchBridge(&w.w, unsafe.Pointer(index))
+	C.CgoWebViewDispatch(w.w, unsafe.Pointer(index))
 	m.Lock()
 	delete(fns, index)
 	m.Unlock()
+}
+
+func (w *webview) Eval(js string) {
+	p := C.CString(js)
+	defer C.free(unsafe.Pointer(p))
+	C.CgoWebViewEval(w.w, p)
+}
+
+func (w *webview) Terminate() {
+	C.CgoWebViewTerminate(w.w)
 }
 
 //export _webview_dispatch_go_callback
@@ -154,27 +191,19 @@ func _webview_dispatch_go_callback(index unsafe.Pointer) {
 }
 
 //export _webview_external_invoke_callback
-func _webview_external_invoke_callback(w *C.struct_webview, data *C.char) {
+func _webview_external_invoke_callback(w unsafe.Pointer, data unsafe.Pointer) {
 	m.Lock()
 	var (
 		cb ExternalInvokeCallbackFunc
 		wv WebView
 	)
 	for wv, cb = range cbs {
-		if &wv.(*webview).w == w {
+		if wv.(*webview).w == w {
 			break
 		}
 	}
 	m.Unlock()
-	cb(wv, C.GoString(data))
+	cb(wv, C.GoString((*C.char)(data)))
 }
 
-func (w *webview) Eval(js string) {
-	p := C.CString(js)
-	defer C.free(unsafe.Pointer(p))
-	C.webview_eval(&w.w, p)
-}
 
-func (w *webview) Terminate() {
-	C.webview_terminate(&w.w)
-}
