@@ -31,17 +31,13 @@ struct webview_priv {
 #elif defined(WEBVIEW_COCOA)
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
-
-@interface WebViewWindowDelegate
-    : NSObject <NSWindowDelegate, WebFrameLoadDelegate>
-@property(nonatomic, assign) struct webview *webview;
-@end
+#import <objc/runtime.h>
 
 struct webview_priv {
   NSAutoreleasePool *pool;
   NSWindow *window;
   WebView *webview;
-  WebViewWindowDelegate *windowDelegate;
+  id windowDelegate;
   int should_exit;
 };
 #else
@@ -978,28 +974,48 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #endif /* WEBVIEW_WINAPI */
 
 #if defined(WEBVIEW_COCOA)
-@implementation WebViewWindowDelegate
-- (void)windowWillClose:(NSNotification *)notification {
-  webview_terminate(self.webview);
+static void webview_window_will_close(id self, SEL cmd, id notification) {
+  struct webview *w = (struct webview *) objc_getAssociatedObject(self, "webview");
+  webview_terminate(w);
 }
-+ (BOOL)isSelectorExcludedFromWebScript:(SEL)aSelector {
-  return NO;
+
+static BOOL webview_is_selector_excluded_from_web_script(id self, SEL cmd, SEL selector) {
+  return selector != @selector(invoke:);
 }
-- (void)webView:(WebView *)webView
-    didClearWindowObject:(WebScriptObject *)windowScriptObject
-                forFrame:(WebFrame *)frame {
-  [windowScriptObject setValue:self forKey:@"external"];
+
+static void webview_did_clear_window_object(id self, SEL cmd, id webview, id script, id frame) {
+  [script setValue:self forKey:@"external"];
 }
-- (void)invoke:(NSString *)arg {
-  if (self.webview->external_invoke_cb != NULL) {
-    self.webview->external_invoke_cb(self.webview, [arg UTF8String]);
+
+static void webview_external_invoke(id self, SEL cmd, id arg) {
+  struct webview *w = (struct webview *) objc_getAssociatedObject(self, "webview");
+  if (w == NULL || w->external_invoke_cb == NULL) {
+    return;
   }
+  if ([arg isKindOfClass:[NSString class]] == NO) {
+    return;
+  }
+  w->external_invoke_cb(w, [(NSString *)(arg) UTF8String]);
 }
-@end
 
 static int webview_init(struct webview *w) {
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
+
+  Class webViewDelegateClass = objc_allocateClassPair([NSObject class], "WebViewDelegate", 0);
+  class_addMethod(webViewDelegateClass, sel_registerName("windowWillClose:"),
+    (IMP)webview_window_will_close, "v@:@");
+  class_addMethod(object_getClass(webViewDelegateClass),
+    sel_registerName("isSelectorExcludedFromWebScript:"),
+    (IMP)webview_is_selector_excluded_from_web_script, "c@::");
+  class_addMethod(webViewDelegateClass, sel_registerName("webView:didClearWindowObject:forFrame:"),
+    (IMP)webview_did_clear_window_object, "v@:@@@");
+  class_addMethod(webViewDelegateClass, sel_registerName("invoke:"),
+    (IMP)webview_external_invoke, "v@:@");
+  objc_registerClassPair(webViewDelegateClass);
+
+  w->priv.windowDelegate = [[webViewDelegateClass alloc] init];
+  objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w), OBJC_ASSOCIATION_ASSIGN);
 
   NSString *nsTitle = [NSString stringWithUTF8String:w->title];
   NSRect r = NSMakeRect(0, 0, w->width, w->height);
@@ -1014,8 +1030,6 @@ static int webview_init(struct webview *w) {
                                                    defer:NO];
   [w->priv.window autorelease];
   [w->priv.window setTitle:nsTitle];
-  w->priv.windowDelegate = [WebViewWindowDelegate new];
-  w->priv.windowDelegate.webview = w;
   [w->priv.window setDelegate:w->priv.windowDelegate];
 
   w->priv.webview =
