@@ -4,6 +4,34 @@
 	box-sizing: border-box;
 }
 
+html, body {
+	height: 100%;
+	overflow: none;
+}
+
+.ie-upgrade-container {
+	width: 100%;
+	height: 100%;
+	font-family: Arial, sans-serif;
+	font-size: 32px;
+	color: #ffffff;
+	background-color: #1ebbee;
+	padding: 3em 1em 1em 1em;
+}
+.ie-upgrade-link {
+	margin: 2em 0em;
+	padding: 0 1em;
+	color: #1ebbee;
+	background-color: #ffffff;
+	font-weight: bold;
+	text-align: center;
+	display: block;
+	width: 100%;
+	height: 2em;
+	line-height: 2em;
+	text-transform: uppercase;
+}
+
 body {
 	font-size: 28px;
 }
