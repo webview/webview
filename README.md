@@ -1,5 +1,7 @@
 # webview
 
+[![Build Status](https://travis-ci.org/zserge/webview.svg?branch=master)](https://travis-ci.org/zserge/webview) [![Build status](https://ci.appveyor.com/api/projects/status/ksii33qx18d94h6v?svg=true)](https://ci.appveyor.com/project/zserge/webview)
+
 A tiny cross-platform webview library for C/C++/Golang.
 
 It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Windows.
