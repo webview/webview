@@ -7,36 +7,40 @@ var text = IncrementalDOM.text;
 var patch = IncrementalDOM.patch;
 
 function renderDOM(items) {
-  elementOpen('div', '', ['class', 'container']);
-  elementOpen('form', '', ['class', 'text-input-wrapper'], 'onsubmit', function(e) {
-  	var el = document.getElementById('task-name-input');
-	rpc.addTask(el.value);
-	el.value = '';
-  });
-  elementVoid('input', 'id-add', ['type', 'text', 'class', 'text-input', 'id', 'task-name-input']);
+  elementOpen('div', '', [ 'class', 'container' ]);
+  elementOpen('form', '', [ 'class', 'text-input-wrapper' ], 'onsubmit',
+	      function(e) {
+		var el = document.getElementById('task-name-input');
+		rpc.addTask(el.value);
+		el.value = '';
+	      });
+  elementVoid('input', '', [
+    'type', 'text', 'class', 'text-input', 'id', 'task-name-input', 'autofocus',
+    'true'
+  ]);
+  elementOpen('div', '', [ 'class', 'task-list' ]);
   for (var i = 0; i < items.length; i++) {
     (function(i) {
-      elementOpen('div');
-      var el =
-	  elementVoid('input', i, ['type', 'checkbox', 'class', 'checkbox'],
-		      'checked', items[i].done || undefined, 'onchange',
-		      function(e) { rpc.markTask(i, e.target.checked); });
-      el.checked = items[i].done;
+      var checkedClass = (items[i].done ? 'checked' : 'unchecked');
+      elementOpen('div', '', null, 'class', 'task-item ' + checkedClass,
+		  'onclick', function() { rpc.markTask(i, !items[i].done); });
       text(items[i].name);
       elementClose();
     })(i);
   }
-  elementVoid('input', 'id-clear', ['type', 'button', 'class', 'btn clear-tasks',
-	      'value', 'Clear completed tasks'], 'onclick',
-	      function() { 
-	      rpc.clearDoneTasks(); });
+  elementClose();
+  elementOpen('div', '', [ 'class', 'footer' ]);
+  elementOpen('div', '', [ 'class', 'btn-clear-tasks' ], 'onclick',
+	      function() { rpc.clearDoneTasks(); });
+  text('Delete completed');
+  elementClose();
+  elementClose();
   elementClose();
   elementClose();
 }
 
 var rpc = {
-  invoke : function(arg) { 
-  window.external.invoke_(JSON.stringify(arg)); },
+  invoke : function(arg) { window.external.invoke_(JSON.stringify(arg)); },
   init : function() { rpc.invoke({cmd : 'init'}); },
   log : function() {
     var s = '';

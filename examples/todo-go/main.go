@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net"
 	"net/http"
+	"path/filepath"
 
 	"github.com/zserge/webview"
 )
@@ -33,6 +35,7 @@ func startServer() string {
 			if bs, err := Asset(path); err != nil {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
+				w.Header().Add("Content-Type", mime.TypeByExtension(filepath.Ext(path)))
 				io.Copy(w, bytes.NewBuffer(bs))
 			}
 		})
@@ -79,7 +82,7 @@ func handleRPC(w webview.WebView, data string) {
 		task := Task{}
 		if err := json.Unmarshal([]byte(data), &task); err != nil {
 			log.Println(err)
-		} else {
+		} else if len(task.Name) > 0 {
 			Tasks = append(Tasks, task)
 			render(w, Tasks)
 		}
