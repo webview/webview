@@ -1,3 +1,13 @@
+//
+// Package webview implements Go bindings to https://github.com/zserge/webview C library.
+//
+// Bindings closely repeat the C APIs and include both, a simplified
+// single-function API to just open a full-screen webview window, and a more
+// advanced and featureful set of APIs, including Go-to-JavaScript bindings.
+//
+// The library uses gtk-webkit, Cocoa/Webkit and MSHTML (IE8..11) as a browser
+// engine and supports Linux, MacOS and Windows 7..10 respectively.
+//
 package webview
 
 /*
@@ -67,6 +77,14 @@ import (
 	"unsafe"
 )
 
+// Open() is a simplified API to open a single native window with a full-size webview in
+// it. It can be helpful if you want to communicate with the core app using XHR
+// or WebSockets (as opposed to using JavaScript bindings).
+//
+// Window appearance can be customized using title, width, height and resizable parameters.
+// URL must be provided and can user either a http or https protocol, or be a
+// local file:// URL. On some platforms "data:" URLs are also supported
+// (Linux/MacOS).
 func Open(title, url string, w, h int, resizable bool) error {
 	titleStr := C.CString(title)
 	defer C.free(unsafe.Pointer(titleStr))
@@ -84,24 +102,49 @@ func Open(title, url string, w, h int, resizable bool) error {
 	return nil
 }
 
+// ExternalInvokeCallbackFunc is a function type that is called every time
+// "window.external.invoke_()" is called from JavaScript. Data is the only
+// obligatory string parameter passed into the "invoke_(data)" function from
+// JavaScript. To pass more complex data serialized JSON or base64 encoded
+// string can be used.
 type ExternalInvokeCallbackFunc func(w WebView, data string)
 
+// Settings is a set of parameters to customize the initial WebView appearance
+// and behavior. It is passed into the webview.New() constructor.
 type Settings struct {
-	Title                  string
-	URL                    string
-	Width                  int
-	Height                 int
-	Resizable              bool
+	// WebView main window title
+	Title string
+	// URL to open in a webview
+	URL string
+	// Window width in pixels
+	Width int
+	// Window height in pixels
+	Height int
+	// Allows/disallows window resizing
+	Resizable bool
+	// A callback that is executed when JavaScript calls "window.external.invoke_()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
 
 type WebView interface {
+	// Run() starts the main UI loop until the user closes the webview window or
+	// Terminate() is called.
 	Run()
+	// Loop() runs a single iteration of the main UI.
 	Loop(blocking bool) bool
+	// Eval() evaluates an arbitrary JS code inside the webview. This method must
+	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
-	Dispatch(func())
-	Exit()
+	// Terminate() breaks the main UI loop. This method must be called from the main thread
+	// only. See Dispatch() for more details.
 	Terminate()
+	// Dispatch() schedules some arbitrary function to be executed on the main UI
+	// thread. This may be helpful if you want to run some JavaScript from
+	// background threads/goroutines, or to terminate the app.
+	Dispatch(func())
+	// Exit() closes the window and cleans up the resources. Use Terminate() to
+	// forcefully break out of the main UI loop.
+	Exit()
 }
 
 var (
@@ -117,6 +160,9 @@ type webview struct {
 
 var _ WebView = &webview{}
 
+// New() creates and opens a new webview window using the given settings. The
+// returned object implements the WebView interface. This function returns nil
+// if a window can not be created.
 func New(settings Settings) *webview {
 	if settings.Width == 0 {
 		settings.Width = 640
@@ -205,5 +251,3 @@ func _webview_external_invoke_callback(w unsafe.Pointer, data unsafe.Pointer) {
 	m.Unlock()
 	cb(wv, C.GoString((*C.char)(data)))
 }
-
-
