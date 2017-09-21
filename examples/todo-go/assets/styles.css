@@ -51,7 +51,7 @@ html, body {
 .text-input {
 	width: 100%;
 	line-height: 1.5em;
-	padding: 0.2em;
+	padding: 0 0.2em;
 	height: 1.5em;
 	outline: none;
 	border: none;
