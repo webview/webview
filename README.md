@@ -9,9 +9,7 @@ A tiny cross-platform webview library for C/C++/Golang.
 
 It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Windows.
 
-<p align="center"><img alt="linux" src="screenshot-macos.png"></p>
-<p align="center"><img alt="linux" src="screenshot-ubuntu.png"></p>
-<p align="center"><img alt="linux" src="screenshot-windows.png"></p>
+<p align="center"><img alt="linux" src="examples/todo-go/screenshots/screenshots.png"></p>
 
 ## API
 
