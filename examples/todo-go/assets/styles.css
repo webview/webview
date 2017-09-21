@@ -55,8 +55,8 @@ html, body {
 	height: 1.5em;
 	outline: none;
 	border: none;
-	color: #9c27b0;
-	background-color: rgba(255, 255, 255, 0.6);
+	color: #4a148c;
+	background-color: rgba(255, 255, 255, 0.87);
 }
 .text-input:focus {
 	background-color: #ffffff;
@@ -73,13 +73,13 @@ html, body {
 
 .task-item {
 	height: 1.5em;
-	color: #ffffff;
+	color: rgba(255, 255, 255, 0.87);
 	padding: 0.5em;
 	cursor: pointer;
 }
 .task-item.checked {
 	text-decoration: line-through;
-	color: rgba(255, 255, 255, 0.6);
+	color: rgba(255, 255, 255, 0.38);
 }
 .footer {
 	position: fixed;
