@@ -1,44 +1,39 @@
 'use strict';
 
-var elementOpen = IncrementalDOM.elementOpen;
-var elementClose = IncrementalDOM.elementClose;
-var elementVoid = IncrementalDOM.elementVoid;
-var text = IncrementalDOM.text;
-var patch = IncrementalDOM.patch;
-
-function renderDOM(items) {
-  elementOpen('div', '', [ 'class', 'container' ]);
-  elementOpen('form', '', [ 'class', 'text-input-wrapper' ], 'onsubmit',
-	      function(e) {
-		var el = document.getElementById('task-name-input');
-		rpc.addTask(el.value);
-		el.value = '';
-	      });
-  elementVoid('input', '', [
-    'type', 'text', 'class', 'text-input', 'id', 'task-name-input', 'autofocus',
-    'true'
-  ]);
-  elementOpen('div', '', [ 'class', 'task-list' ]);
-  for (var i = 0; i < items.length; i++) {
-    (function(i) {
-      var checkedClass = (items[i].done ? 'checked' : 'unchecked');
-      elementOpen('div', '', null, 'class', 'task-item ' + checkedClass,
-		  'onclick', function() { rpc.markTask(i, !items[i].done); });
-      text(items[i].name);
-      elementClose();
-    })(i);
+function UI(items) {
+  var h = picodom.h;
+  function submit(e) {
+    var el = document.getElementById('task-name-input');
+    rpc.addTask(el.value);
+    el.value = '';
   }
-  elementClose();
-  elementOpen('div', '', [ 'class', 'footer' ]);
-  elementOpen('div', '', [ 'class', 'btn-clear-tasks' ], 'onclick',
-	      function() { rpc.clearDoneTasks(); });
-  text('Delete completed');
-  elementClose();
-  elementClose();
-  elementClose();
-  elementClose();
+  function clearTasks() { rpc.clearDoneTasks(); }
+  function markTask(i){return function() { rpc.markTask(i, !items[i].done); }};
+
+  var taskItems = [];
+  for (var i = 0; i < items.length; i++) {
+    var checked = (items[i].done ? 'checked' : 'unchecked');
+    taskItems.push(
+	h('div', {className : 'task-item ' + checked, onclick : markTask(i)},
+	  items[i].name));
+  }
+
+  return h('div', {className : 'container'},
+	   h('form', {className : 'text-input-wrapper', onsubmit : submit},
+	     h('input', {
+	       id : 'task-name-input',
+	       className : 'text-input',
+	       type : 'text',
+	       autofocus : true
+	     })),
+	   h('div', {className : 'task-list'}, taskItems),
+	   h('div', {className : 'footer'},
+	     h('div', {className : 'btn-clear-tasks', onclick : clearTasks},
+	       'Delete completed')));
 }
 
+var element;
+var oldNode;
 var rpc = {
   invoke : function(arg) { window.external.invoke_(JSON.stringify(arg)); },
   init : function() { rpc.invoke({cmd : 'init'}); },
@@ -58,8 +53,8 @@ var rpc = {
     rpc.invoke({cmd : 'markTask', index : index, done : done});
   },
   render : function(items) {
-    patch(document.body, function() { renderDOM(items); });
-  }
+    return element = picodom.patch(oldNode, (oldNode = UI(items)), element);
+  },
 };
 
 window.onload = function() { rpc.init(); };
