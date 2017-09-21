@@ -17,3 +17,4 @@ script:
   - cd examples/minimal && mkdir -p build && cd build && cmake .. && make && ls -l && cd ../../..
   - cd examples/timer-cxx && mkdir -p build && cd build && cmake .. && make && ls -l && cd ../../..
   - cd examples/minimal-go && go build && ls -l && cd ../..
+  - cd examples/todo-go && go build && ls -l && cd ../..
