@@ -21,6 +21,7 @@ var indexHTML = fmt.Sprintf(`
 <html>
 	<head>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
 	</head>
 	<body>
 		<canvas id="canvas" width="%d" height="%d">
