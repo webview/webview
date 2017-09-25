@@ -20,11 +20,12 @@ var indexHTML = fmt.Sprintf(`
 <!doctype html>
 <html>
 	<head>
-		<style>
-		</style>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	</head>
 	<body>
-		<canvas id="canvas" width="%d" height="%d" />
+		<canvas id="canvas" width="%d" height="%d">
+			Your browser doesn't support HTML5 canvas element.
+		</canvas>
 		<script type="text/javascript">
 			window.drawData = {};
 			function draw() {
