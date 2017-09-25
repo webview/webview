@@ -840,6 +840,7 @@ static int webview_init(struct webview *w) {
   HINSTANCE hInstance;
   STARTUPINFO info;
   DWORD style;
+  RECT clientRect;
   RECT rect;
 
   hInstance = GetModuleHandle(NULL);
@@ -862,13 +863,24 @@ static int webview_init(struct webview *w) {
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
-  GetClientRect(GetDesktopWindow(), &rect);
-  rect.left = (rect.right / 2) - (w->width / 2);
-  rect.top = (rect.bottom / 2) - (w->height / 2);
+  rect.left = 0;
+  rect.top = 0;
+  rect.right = w->width;
+  rect.bottom = w->height;
+  AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, 0);
 
-  w->priv.hwnd = CreateWindowEx(0, classname, w->title, style, rect.left,
-                                rect.top, w->width, w->height, HWND_DESKTOP,
-                                NULL, hInstance, (void *)w);
+  GetClientRect(GetDesktopWindow(), &clientRect);
+  int left = (clientRect.right / 2) - ((rect.right - rect.left) / 2);
+  int top = (clientRect.bottom / 2) - ((rect.bottom - rect.top) / 2);
+  rect.right = rect.right - rect.left + left;
+  rect.left = left;
+  rect.bottom = rect.bottom - rect.top + top;
+  rect.top = top;
+
+  w->priv.hwnd =
+      CreateWindowEx(0, classname, w->title, style, rect.left, rect.top,
+                     rect.right - rect.left, rect.bottom - rect.top,
+                     HWND_DESKTOP, NULL, hInstance, (void *)w);
   if (w->priv.hwnd == 0) {
     OleUninitialize();
     return -1;
