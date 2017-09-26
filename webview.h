@@ -988,13 +988,14 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #endif /* WEBVIEW_WINAPI */
 
 #if defined(WEBVIEW_COCOA)
-#if (! defined MAC_OS_X_VERSION_10_12) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
-#define NSWindowStyleMaskMiniaturizable  NSMiniaturizableWindowMask
-#define NSWindowStyleMaskTitled          NSTitledWindowMask
-#define NSWindowStyleMaskClosable        NSClosableWindowMask
-#define NSEventMaskAny                   NSAnyEventMask
-#define NSEventModifierFlagCommand       NSCommandKeyMask
-#define NSEventModifierFlagOption        NSAlternateKeyMask
+#if (!defined MAC_OS_X_VERSION_10_12) ||                                       \
+    MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
+#define NSWindowStyleMaskTitled NSTitledWindowMask
+#define NSWindowStyleMaskClosable NSClosableWindowMask
+#define NSEventMaskAny NSAnyEventMask
+#define NSEventModifierFlagCommand NSCommandKeyMask
+#define NSEventModifierFlagOption NSAlternateKeyMask
 #endif /* MAC_OS_X_VERSION_10_12 */
 static void webview_window_will_close(id self, SEL cmd, id notification) {
   struct webview *w =
@@ -1080,23 +1081,34 @@ static int webview_init(struct webview *w) {
   NSMenu *menubar = [[[NSMenu alloc] initWithTitle:@""] autorelease];
 
   NSString *appName = [[NSProcessInfo processInfo] processName];
-  NSMenuItem *appMenuItem = [[[NSMenuItem alloc] initWithTitle:appName action:NULL keyEquivalent:@""] autorelease];
+  NSMenuItem *appMenuItem =
+      [[[NSMenuItem alloc] initWithTitle:appName action:NULL keyEquivalent:@""]
+          autorelease];
   NSMenu *appMenu = [[[NSMenu alloc] initWithTitle:appName] autorelease];
   [appMenuItem setSubmenu:appMenu];
   [menubar addItem:appMenuItem];
 
   NSString *title = [@"Hide " stringByAppendingString:appName];
-  NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:title action:@selector(hide:) keyEquivalent:@"h"] autorelease];
+  NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:title
+                                                 action:@selector(hide:)
+                                          keyEquivalent:@"h"] autorelease];
   [appMenu addItem:item];
-  item = [[[NSMenuItem alloc] initWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"] autorelease];
-  [item setKeyEquivalentModifierMask:(NSEventModifierFlagOption| NSEventModifierFlagCommand)];
+  item = [[[NSMenuItem alloc] initWithTitle:@"Hide Others"
+                                     action:@selector(hideOtherApplications:)
+                              keyEquivalent:@"h"] autorelease];
+  [item setKeyEquivalentModifierMask:(NSEventModifierFlagOption |
+                                      NSEventModifierFlagCommand)];
   [appMenu addItem:item];
-  item = [[[NSMenuItem alloc] initWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""] autorelease];
+  item = [[[NSMenuItem alloc] initWithTitle:@"Show All"
+                                     action:@selector(unhideAllApplications:)
+                              keyEquivalent:@""] autorelease];
   [appMenu addItem:item];
   [appMenu addItem:[NSMenuItem separatorItem]];
 
   title = [@"Quit " stringByAppendingString:appName];
-  item = [[[NSMenuItem alloc] initWithTitle:title action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
+  item = [[[NSMenuItem alloc] initWithTitle:title
+                                     action:@selector(terminate:)
+                              keyEquivalent:@"q"] autorelease];
   [appMenu addItem:item];
 
   [NSApp setMainMenu:menubar];
