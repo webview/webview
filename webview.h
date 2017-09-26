@@ -1063,9 +1063,36 @@ static int webview_init(struct webview *w) {
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
-
   [w->priv.window orderFrontRegardless];
+
+  [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
   [NSApp finishLaunching];
+  [NSApp activateIgnoringOtherApps:YES];
+
+  NSMenu *menubar = [[[NSMenu alloc] initWithTitle:@""] autorelease];
+
+  NSString *appName = [[NSProcessInfo processInfo] processName];
+  NSMenuItem *appMenuItem = [[[NSMenuItem alloc] initWithTitle:appName action:NULL keyEquivalent:@""] autorelease];
+  NSMenu *appMenu = [[[NSMenu alloc] initWithTitle:appName] autorelease];
+  [appMenuItem setSubmenu:appMenu];
+  [menubar addItem:appMenuItem];
+
+  NSString *title = [@"Hide " stringByAppendingString:appName];
+  NSMenuItem *item = [[[NSMenuItem alloc] initWithTitle:title action:@selector(hide:) keyEquivalent:@"h"] autorelease];
+  [appMenu addItem:item];
+  item = [[[NSMenuItem alloc] initWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"] autorelease];
+  [item setKeyEquivalentModifierMask:(NSAlternateKeyMask | NSCommandKeyMask)];
+  [appMenu addItem:item];
+  item = [[[NSMenuItem alloc] initWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""] autorelease];
+  [appMenu addItem:item];
+  [appMenu addItem:[NSMenuItem separatorItem]];
+
+  title = [@"Quit " stringByAppendingString:appName];
+  item = [[[NSMenuItem alloc] initWithTitle:title action:@selector(terminate:) keyEquivalent:@"q"] autorelease];
+  [appMenu addItem:item];
+
+  [NSApp setMainMenu:menubar];
+
   w->priv.should_exit = 0;
   return 0;
 }
