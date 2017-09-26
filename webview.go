@@ -23,7 +23,7 @@ package webview
 #include <stdlib.h>
 #include "webview.h"
 
-extern void _webview_external_invoke_callback(void *, void *);
+extern void _webviewExternalInvokeCallback(void *, void *);
 
 static inline void CgoWebViewFree(void *w) {
 	free((void *)((struct webview *)w)->title);
@@ -38,7 +38,7 @@ static inline void *CgoWebViewCreate(int width, int height, char *title, char *u
 	w->title = title;
 	w->url = url;
 	w->resizable = resizable;
-	w->external_invoke_cb = (webview_external_invoke_cb_t) _webview_external_invoke_callback;
+	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
 	if (webview_init(w) != 0) {
 		CgoWebViewFree(w);
 		return NULL;
@@ -62,9 +62,9 @@ static inline int CgoWebViewEval(void *w, char *js) {
 	return webview_eval((struct webview *)w, js);
 }
 
-extern void _webview_dispatch_go_callback(void *);
+extern void _webviewDispatchGoCallback(void *);
 static inline void _webview_dispatch_cb(struct webview *w, void *arg) {
-	_webview_dispatch_go_callback(arg);
+	_webviewDispatchGoCallback(arg);
 }
 static inline void CgoWebViewDispatch(void *w, void *arg) {
 	webview_dispatch((struct webview *)w, _webview_dispatch_cb, arg);
@@ -77,7 +77,7 @@ import (
 	"unsafe"
 )
 
-// Open() is a simplified API to open a single native window with a full-size webview in
+// Open is a simplified API to open a single native window with a full-size webview in
 // it. It can be helpful if you want to communicate with the core app using XHR
 // or WebSockets (as opposed to using JavaScript bindings).
 //
@@ -126,6 +126,8 @@ type Settings struct {
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
 
+// WebView is an interface that wraps the basic methods for controlling the UI
+// loop, handling multithreading and providing JavaScript bindings.
 type WebView interface {
 	// Run() starts the main UI loop until the user closes the webview window or
 	// Terminate() is called.
@@ -160,10 +162,10 @@ type webview struct {
 
 var _ WebView = &webview{}
 
-// New() creates and opens a new webview window using the given settings. The
+// New creates and opens a new webview window using the given settings. The
 // returned object implements the WebView interface. This function returns nil
 // if a window can not be created.
-func New(settings Settings) *webview {
+func New(settings Settings) WebView {
 	if settings.Width == 0 {
 		settings.Width = 640
 	}
@@ -229,15 +231,15 @@ func (w *webview) Terminate() {
 	C.CgoWebViewTerminate(w.w)
 }
 
-//export _webview_dispatch_go_callback
-func _webview_dispatch_go_callback(index unsafe.Pointer) {
+//export _webviewDispatchGoCallback
+func _webviewDispatchGoCallback(index unsafe.Pointer) {
 	m.Lock()
 	defer m.Unlock()
 	fns[uintptr(index)]()
 }
 
-//export _webview_external_invoke_callback
-func _webview_external_invoke_callback(w unsafe.Pointer, data unsafe.Pointer) {
+//export _webviewExternalInvokeCallback
+func _webviewExternalInvokeCallback(w unsafe.Pointer, data unsafe.Pointer) {
 	m.Lock()
 	var (
 		cb ExternalInvokeCallbackFunc
