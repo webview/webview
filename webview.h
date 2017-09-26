@@ -1065,6 +1065,7 @@ static int webview_init(struct webview *w) {
   [[w->priv.window contentView] addSubview:w->priv.webview];
 
   [w->priv.window orderFrontRegardless];
+  [NSApp finishLaunching];
   w->priv.should_exit = 0;
   return 0;
 }
