@@ -44,11 +44,13 @@ func startServer() string {
 	return "http://" + ln.Addr().String()
 }
 
+// Task is a data model type, it contains information about task name and status (done/not done).
 type Task struct {
 	Name string `json:"name"`
 	Done bool   `json:"done"`
 }
 
+// Tasks is a global data model, to keep things simple.
 var Tasks = []Task{}
 
 func render(w webview.WebView, tasks []Task) {
