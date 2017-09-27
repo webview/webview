@@ -58,6 +58,10 @@ static inline void CgoWebViewExit(void *w) {
 	webview_exit((struct webview *)w);
 }
 
+static inline void CgoWebViewSetTitle(void *w, char *title) {
+	webview_set_title((struct webview *)w, title);
+}
+
 static inline int CgoWebViewEval(void *w, char *js) {
 	return webview_eval((struct webview *)w, js);
 }
@@ -134,6 +138,9 @@ type WebView interface {
 	Run()
 	// Loop() runs a single iteration of the main UI.
 	Loop(blocking bool) bool
+	// SetTitle() changes window title. This method must be called from the main
+	// thread only. See Dispatch() for more details.
+	SetTitle(title string)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
@@ -219,6 +226,12 @@ func (w *webview) Dispatch(f func()) {
 	m.Lock()
 	delete(fns, index)
 	m.Unlock()
+}
+
+func (w *webview) SetTitle(title string) {
+	p := C.CString(title)
+	defer C.free(unsafe.Pointer(p))
+	C.CgoWebViewSetTitle(w.w, p)
 }
 
 func (w *webview) Eval(js string) {
