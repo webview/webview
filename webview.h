@@ -71,6 +71,7 @@ struct webview_dispatch_arg {
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
+static void webview_set_title(struct webview *w, const char *title);
 static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
 static void webview_terminate(struct webview *w);
@@ -207,6 +208,10 @@ static int webview_init(struct webview *w) {
 static int webview_loop(struct webview *w, int blocking) {
   gtk_main_iteration_do(blocking);
   return w->priv.should_exit;
+}
+
+static void webview_set_title(struct webview *w, const char *title) {
+  gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
 }
 
 static int webview_eval(struct webview *w, const char *js) {
