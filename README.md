@@ -61,6 +61,9 @@ If you want to have more control over the app you can use the following function
   /* Destroy webview window, often exits the app */
   webview_exit(&webview);
 
+  /* To change window title later: */
+  webview_set_title(&webview, "New title");
+
   /* To terminate the webview main loop: */
   webview_terminate(&webview);
 ```
