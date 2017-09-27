@@ -1140,6 +1140,11 @@ static int webview_eval(struct webview *w, const char *js) {
   return 0;
 }
 
+static void webview_set_title(struct webview *w, const char *title) {
+  NSString *nsTitle = [NSString stringWithUTF8String:title];
+  [w->priv.window setTitle:nsTitle];
+}
+
 static void webview_dispatch_cb(void *arg) {
   struct webview_dispatch_arg *context = (struct webview_dispatch_arg *)arg;
   (context->fn)(context->w, context->arg);
