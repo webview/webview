@@ -63,6 +63,12 @@ static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
 }
 
+static inline void CgoDialog(void *w, int dlgtype, int flags,
+		char *title, char *arg, char *res, size_t ressz) {
+	webview_dialog(w, dlgtype, flags,
+		(const char*)title, (const char*) arg, res, ressz);
+}
+
 static inline int CgoWebViewEval(void *w, char *js) {
 	return webview_eval((struct webview *)w, js);
 }
@@ -145,6 +151,8 @@ type WebView interface {
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
+	// TODO
+	Dialog(dlgType DialogType, flags int, title string, arg string) string
 	// Terminate() breaks the main UI loop. This method must be called from the main thread
 	// only. See Dispatch() for more details.
 	Terminate()
@@ -156,6 +164,14 @@ type WebView interface {
 	// forcefully break out of the main UI loop.
 	Exit()
 }
+
+type DialogType int
+
+const (
+	DialogTypeOpen DialogType = iota
+	DialogTypeSave
+	DialogTypeAlert
+)
 
 var (
 	m     sync.Mutex
@@ -233,6 +249,19 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) Dialog(dlgType DialogType, flags int, title string, arg string) string {
+	const maxPath = 4096
+	titlePtr := C.CString(title)
+	defer C.free(unsafe.Pointer(titlePtr))
+	argPtr := C.CString(arg)
+	defer C.free(unsafe.Pointer(argPtr))
+	resultPtr := (*C.char)(C.malloc(maxPath))
+	defer C.free(unsafe.Pointer(resultPtr))
+	C.CgoDialog(w.w, C.int(dlgType), C.int(flags), titlePtr,
+		argPtr, resultPtr, C.size_t(maxPath))
+	return C.GoString(resultPtr)
 }
 
 func (w *webview) Eval(js string) {
