@@ -1205,7 +1205,29 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
   }
   if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ||
       dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
-
+    NSSavePanel *panel;
+    if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN) {
+      NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+      [openPanel setCanChooseFiles:YES];
+      [openPanel setCanChooseDirectories:NO];
+      [openPanel setResolvesAliases:NO];
+      [openPanel setAllowsMultipleSelection:NO];
+      panel = openPanel;
+    } else {
+      panel = [NSSavePanel savePanel];
+    }
+    [panel setCanCreateDirectories:YES];
+    [panel setShowsHiddenFiles:YES];
+    [panel setExtensionHidden:NO];
+    [panel setCanSelectHiddenExtension:NO];
+    [panel setTreatsFilePackagesAsDirectories:YES];
+    [panel beginSheetModalForWindow:w->priv.window completionHandler:^(NSInteger result) {
+	    [NSApp stopModalWithCode:result];
+    }];
+    if ([NSApp runModalForWindow:panel] == NSFileHandlingPanelOKButton) {
+      char *filename = [[[panel URL] path] UTF8String];
+      strlcpy(result, filename, resultsz);
+    }
   } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
     NSAlert *a = [NSAlert new];
     [a setAlertStyle:NSAlertStyleInformational];
