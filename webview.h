@@ -60,6 +60,12 @@ struct webview {
   void *userdata;
 };
 
+enum webview_dialog_type {
+  WEBVIEW_DIALOG_TYPE_OPEN = 0,
+  WEBVIEW_DIALOG_TYPE_SAVE = 1,
+  WEBVIEW_DIALOG_TYPE_ALERT = 2
+};
+
 typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
 
 struct webview_dispatch_arg {
@@ -72,6 +78,9 @@ static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
 static void webview_set_title(struct webview *w, const char *title);
+static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
+                           int flags, const char *title, const char *arg,
+                           char *result, size_t resultsz);
 static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
 static void webview_terminate(struct webview *w);
@@ -212,6 +221,45 @@ static int webview_loop(struct webview *w, int blocking) {
 
 static void webview_set_title(struct webview *w, const char *title) {
   gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
+}
+
+static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
+                           int flags, const char *title, const char *arg,
+                           char *result, size_t resultsz) {
+  GtkWidget *dlg;
+  if (result != NULL) {
+    result[0] = '\0';
+  }
+  if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ||
+      dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
+    dlg = gtk_file_chooser_dialog_new(
+        title, GTK_WINDOW(w->priv.window),
+        (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ? GTK_FILE_CHOOSER_ACTION_OPEN
+                                             : GTK_FILE_CHOOSER_ACTION_SAVE),
+        "_Cancel", GTK_RESPONSE_CANCEL,
+        (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ? "_Open" : "_Save"),
+        GTK_RESPONSE_ACCEPT, NULL);
+    gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(dlg), FALSE);
+    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dlg), FALSE);
+    gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dlg), TRUE);
+    gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dlg), TRUE);
+    gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(dlg), TRUE);
+    gint response = gtk_dialog_run(GTK_DIALOG(dlg));
+    if (response == GTK_RESPONSE_ACCEPT) {
+      gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
+      g_strlcpy(result, filename, resultsz);
+      g_free(filename);
+    }
+    gtk_widget_destroy(dlg);
+  } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
+    dlg =
+        gtk_message_dialog_new(GTK_WINDOW(w->priv.window), GTK_DIALOG_MODAL,
+                               GTK_MESSAGE_OTHER, GTK_BUTTONS_OK, "%s", title);
+    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dlg), "%s",
+                                             arg);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+  }
 }
 
 static int webview_eval(struct webview *w, const char *js) {
