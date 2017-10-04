@@ -20,6 +20,7 @@ struct webview_priv {
 #define CINTERFACE
 #include <windows.h>
 
+#include <commctrl.h>
 #include <exdisp.h>
 #include <mshtmhst.h>
 #include <mshtml.h>
@@ -325,6 +326,26 @@ typedef struct {
 #define iid_unref(x) (x)
 #endif
 
+static inline WCHAR *webview_to_utf16(const char *s) {
+  DWORD size = MultiByteToWideChar(CP_ACP, 0, s, -1, 0, 0);
+  WCHAR *ws = (WCHAR *)GlobalAlloc(GMEM_FIXED, sizeof(WCHAR) * size);
+  if (ws == NULL) {
+    return NULL;
+  }
+  MultiByteToWideChar(CP_ACP, 0, s, -1, ws, size);
+  return ws;
+}
+
+static inline char *webview_from_utf16(WCHAR *ws) {
+  int n = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+  char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
+  if (s == NULL) {
+    return NULL;
+  }
+  WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, n, NULL, NULL);
+  return s;
+}
+
 static int iid_eq(REFIID a, const IID *b) {
   return memcmp((const void *)iid_ref(a), (const void *)b, sizeof(GUID)) == 0;
 }
@@ -365,6 +386,7 @@ static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
   }
   return S_FALSE;
 }
+
 static HRESULT STDMETHODCALLTYPE
 JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
           WORD wFlags, DISPPARAMS *pDispParams, VARIANT *pVarResult,
@@ -375,10 +397,8 @@ JS_Invoke(IDispatch FAR *This, DISPID dispIdMember, REFIID riid, LCID lcid,
       ex->inplace.frame.window, GWLP_USERDATA);
   if (pDispParams->cArgs == 1 && pDispParams->rgvarg[0].vt == VT_BSTR) {
     BSTR bstr = pDispParams->rgvarg[0].bstrVal;
-    int n = WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, NULL, 0, NULL, NULL);
-    char *s = (char *)GlobalAlloc(GMEM_FIXED, n);
+    char *s = webview_from_utf16(bstr);
     if (s != NULL) {
-      WideCharToMultiByte(CP_UTF8, 0, &bstr[0], -1, &s[0], n, NULL, NULL);
       if (dispIdMember == WEBVIEW_JS_INVOKE_ID) {
         if (w->external_invoke_cb != NULL) {
           w->external_invoke_cb(w, s);
@@ -828,13 +848,10 @@ static long DisplayHTMLPage(struct webview *w) {
     myURL.vt = VT_BSTR;
 #ifndef UNICODE
     {
-      wchar_t *buffer;
-      DWORD size;
-      size = MultiByteToWideChar(CP_ACP, 0, webPageName, -1, 0, 0);
-      if (!(buffer =
-                (wchar_t *)GlobalAlloc(GMEM_FIXED, sizeof(wchar_t) * size)))
+      wchar_t *buffer = webview_to_utf16(webPageName);
+      if (buffer == NULL) {
         goto badalloc;
-      MultiByteToWideChar(CP_ACP, 0, webPageName, -1, buffer, size);
+      }
       myURL.bstrVal = SysAllocString(buffer);
       GlobalFree(buffer);
     }
@@ -1013,9 +1030,10 @@ static int webview_eval(struct webview *w, const char *js) {
   strcpy(eval, prologue);
   strcat(eval, js);
   strcat(eval, epilogue);
-  int m = MultiByteToWideChar(CP_ACP, 0, eval, -1, 0, 0);
-  wchar_t *buf = (wchar_t *)GlobalAlloc(GMEM_FIXED, m * sizeof(wchar_t));
-  MultiByteToWideChar(CP_ACP, 0, eval, -1, buf, m);
+  wchar_t *buf = webview_to_utf16(eval);
+  if (buf == NULL) {
+    return -1;
+  }
   arg.bstrVal = SysAllocString(buf);
   if (scriptDispatch->lpVtbl->Invoke(
           scriptDispatch, dispid, iid_unref(&IID_NULL), 0, DISPATCH_METHOD,
@@ -1038,6 +1056,26 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 static void webview_set_title(struct webview *w, const char *title) {
   SetWindowText(w->priv.hwnd, title);
 }
+
+static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
+                           int flags, const char *title, const char *arg,
+                           char *result, size_t resultsz) {
+  if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ||
+      dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
+  } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
+    /* MinGW often doesn't contain TaskDialog, so we'll use MessageBox for now */
+#if 0
+    WCHAR *wtitle = webview_to_utf16(title);
+    WCHAR *warg = webview_to_utf16(arg);
+    HRESULT hr = TaskDialog(w->priv.hwnd, NULL, NULL, wtitle, warg, 0, NULL, NULL);
+    GlobalFree(warg);
+    GlobalFree(wtitle);
+#else
+    MessageBox(w->priv.hwnd, arg, title, MB_OK);
+#endif
+  }
+}
+
 static void webview_terminate(struct webview *w) { PostQuitMessage(0); }
 static void webview_exit(struct webview *w) { OleUninitialize(); }
 
