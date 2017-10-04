@@ -151,7 +151,9 @@ type WebView interface {
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
-	// TODO
+	// Dialog() opens a system dialog of the given type and title. String
+	// argument can be provided for certain dialogs, such as alert boxes. For
+	// alert boxes argument is a message inside the dialog box.
 	Dialog(dlgType DialogType, flags int, title string, arg string) string
 	// Terminate() breaks the main UI loop. This method must be called from the main thread
 	// only. See Dispatch() for more details.
@@ -165,11 +167,15 @@ type WebView interface {
 	Exit()
 }
 
+// DialogType is an enumeration of all supported system dialog types
 type DialogType int
 
 const (
+	// DialogTypeOpen is a system file open dialog
 	DialogTypeOpen DialogType = iota
+	// DialogTypeSave is a system file save dialog
 	DialogTypeSave
+	// DialogTypeAlert is a system alert dialog (message box)
 	DialogTypeAlert
 )
 
