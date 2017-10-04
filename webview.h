@@ -1052,6 +1052,7 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #define NSEventMaskAny NSAnyEventMask
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagOption NSAlternateKeyMask
+#define NSAlertStyleInformational NSInformationalAlertStyle
 #endif /* MAC_OS_X_VERSION_10_12 */
 static void webview_window_will_close(id self, SEL cmd, id notification) {
   struct webview *w =
@@ -1194,6 +1195,28 @@ static int webview_eval(struct webview *w, const char *js) {
 static void webview_set_title(struct webview *w, const char *title) {
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   [w->priv.window setTitle:nsTitle];
+}
+
+static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
+                           int flags, const char *title, const char *arg,
+                           char *result, size_t resultsz) {
+  if (result != NULL) {
+    result[0] = '\0';
+  }
+  if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ||
+      dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
+
+  } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
+    NSAlert *a = [NSAlert new];
+    [a setAlertStyle:NSAlertStyleInformational];
+    [a setShowsHelp:NO];
+    [a setShowsSuppressionButton:NO];
+    [a setMessageText:[NSString stringWithUTF8String:title]];
+    [a setInformativeText:[NSString stringWithUTF8String:arg]];
+    [a addButtonWithTitle:@"OK"];
+    [a runModal];
+    [a release];
+  }
 }
 
 static void webview_dispatch_cb(void *arg) {
