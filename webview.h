@@ -1221,9 +1221,10 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     [panel setExtensionHidden:NO];
     [panel setCanSelectHiddenExtension:NO];
     [panel setTreatsFilePackagesAsDirectories:YES];
-    [panel beginSheetModalForWindow:w->priv.window completionHandler:^(NSInteger result) {
-	    [NSApp stopModalWithCode:result];
-    }];
+    [panel beginSheetModalForWindow:w->priv.window
+                  completionHandler:^(NSInteger result) {
+                    [NSApp stopModalWithCode:result];
+                  }];
     if ([NSApp runModalForWindow:panel] == NSFileHandlingPanelOKButton) {
       char *filename = [[[panel URL] path] UTF8String];
       strlcpy(result, filename, resultsz);
