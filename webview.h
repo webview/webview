@@ -1226,7 +1226,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                     [NSApp stopModalWithCode:result];
                   }];
     if ([NSApp runModalForWindow:panel] == NSFileHandlingPanelOKButton) {
-      char *filename = [[[panel URL] path] UTF8String];
+      const char *filename = [[[panel URL] path] UTF8String];
       strlcpy(result, filename, resultsz);
     }
   } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
