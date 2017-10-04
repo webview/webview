@@ -21,6 +21,7 @@ package webview
 #cgo darwin LDFLAGS: -framework Cocoa -framework WebKit
 
 #include <stdlib.h>
+#include <stdint.h>
 #include "webview.h"
 
 extern void _webviewExternalInvokeCallback(void *, void *);
@@ -70,8 +71,8 @@ extern void _webviewDispatchGoCallback(void *);
 static inline void _webview_dispatch_cb(struct webview *w, void *arg) {
 	_webviewDispatchGoCallback(arg);
 }
-static inline void CgoWebViewDispatch(void *w, void *arg) {
-	webview_dispatch((struct webview *)w, _webview_dispatch_cb, arg);
+static inline void CgoWebViewDispatch(void *w, uintptr_t arg) {
+	webview_dispatch((struct webview *)w, _webview_dispatch_cb, (void *)arg);
 }
 */
 import "C"
@@ -222,7 +223,7 @@ func (w *webview) Dispatch(f func()) {
 	}
 	fns[index] = f
 	m.Unlock()
-	C.CgoWebViewDispatch(w.w, unsafe.Pointer(index))
+	C.CgoWebViewDispatch(w.w, C.uintptr_t(index))
 	m.Lock()
 	delete(fns, index)
 	m.Unlock()
