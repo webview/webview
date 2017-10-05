@@ -14,6 +14,9 @@ It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Window
 
 ## API
 
+WebView library prrovides C API. For Go API please see
+[godoc](https://godoc.org/github.com/zserge/webview).
+
 ### Simple API
 
 For the most simple use cases there is only one function:
