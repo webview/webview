@@ -1220,6 +1220,7 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #if defined(WEBVIEW_COCOA)
 #if (!defined MAC_OS_X_VERSION_10_12) ||                                       \
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSWindowStyleMaskResizable NSResizableWindowMask
 #define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
 #define NSWindowStyleMaskClosable NSClosableWindowMask
