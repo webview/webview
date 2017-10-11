@@ -1293,6 +1293,7 @@ static int webview_init(struct webview *w) {
   [w->priv.window autorelease];
   [w->priv.window setTitle:nsTitle];
   [w->priv.window setDelegate:w->priv.windowDelegate];
+  [w->priv.window center];
 
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
