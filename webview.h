@@ -1229,6 +1229,10 @@ static void webview_exit(struct webview *w) { OleUninitialize(); }
 #define NSEventModifierFlagOption NSAlternateKeyMask
 #define NSAlertStyleInformational NSInformationalAlertStyle
 #endif /* MAC_OS_X_VERSION_10_12 */
+#if (!defined MAC_OS_X_VERSION_10_13) ||                                       \
+    MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
+#define NSModalResponseOK NSFileHandlingPanelOKButton
+#endif /* MAC_OS_X_VERSION_10_12, MAC_OS_X_VERSION_10_13 */
 static void webview_window_will_close(id self, SEL cmd, id notification) {
   struct webview *w =
       (struct webview *)objc_getAssociatedObject(self, "webview");
@@ -1401,7 +1405,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                   completionHandler:^(NSInteger result) {
                     [NSApp stopModalWithCode:result];
                   }];
-    if ([NSApp runModalForWindow:panel] == NSFileHandlingPanelOKButton) {
+    if ([NSApp runModalForWindow:panel] == NSModalResponseOK) {
       const char *filename = [[[panel URL] path] UTF8String];
       strlcpy(result, filename, resultsz);
     }
