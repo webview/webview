@@ -887,8 +887,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
   case WM_SIZE: {
     IWebBrowser2 *webBrowser2;
     IOleObject *browser = *w->priv.browser;
-    if (!browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
-                                         (void **)&webBrowser2)) {
+    if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
+                                         (void **)&webBrowser2) == S_OK) {
       RECT rect;
       GetClientRect(hwnd, &rect);
       webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
@@ -976,11 +976,27 @@ static int webview_loop(struct webview *w, int blocking) {
   } else {
     PeekMessage(&msg, 0, 0, 0, PM_REMOVE);
   }
-  if (msg.message == WM_QUIT) {
+  switch (msg.message) {
+  case WM_QUIT:
     return -1;
+  case WM_COMMAND:
+  case WM_KEYDOWN:
+  case WM_KEYUP: {
+    IWebBrowser2 *webBrowser2;
+    IOleObject *browser = *w->priv.browser;
+    if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2) == S_OK) {
+      IOleInPlaceActiveObject* pIOIPAO;
+      if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IOleInPlaceActiveObject), (void**)&pIOIPAO) == S_OK) {
+        pIOIPAO->lpVtbl->TranslateAccelerator(pIOIPAO, &msg);
+        pIOIPAO->lpVtbl->Release(pIOIPAO);
+      }
+      webBrowser2->lpVtbl->Release(webBrowser2);
+    }
   }
-  TranslateMessage(&msg);
-  DispatchMessage(&msg);
+  default:
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+  }
   return 0;
 }
 
