@@ -246,9 +246,6 @@ func (w *webview) Dispatch(f func()) {
 	fns[index] = f
 	m.Unlock()
 	C.CgoWebViewDispatch(w.w, C.uintptr_t(index))
-	m.Lock()
-	delete(fns, index)
-	m.Unlock()
 }
 
 func (w *webview) SetTitle(title string) {
@@ -285,6 +282,7 @@ func _webviewDispatchGoCallback(index unsafe.Pointer) {
 	m.Lock()
 	defer m.Unlock()
 	fns[uintptr(index)]()
+	delete(fns, uintptr(index))
 }
 
 //export _webviewExternalInvokeCallback
