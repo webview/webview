@@ -84,9 +84,15 @@ static inline void CgoWebViewDispatch(void *w, uintptr_t arg) {
 import "C"
 import (
 	"errors"
+	"runtime"
 	"sync"
 	"unsafe"
 )
+
+func init() {
+	// Ensure that main.main is called from the main thread
+	runtime.LockOSThread()
+}
 
 // Open is a simplified API to open a single native window with a full-size webview in
 // it. It can be helpful if you want to communicate with the core app using XHR
