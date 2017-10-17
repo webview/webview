@@ -116,3 +116,7 @@ webview_dispatch(w, render, some_arg);
 
 Code is distributed under MIT license, feel free to use it in your proprietary
 projects as well.
+
+## Notes
+
+Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
