@@ -11,8 +11,8 @@
 package webview
 
 /*
-#cgo linux CFLAGS: -DWEBVIEW_GTK=1
-#cgo linux pkg-config: gtk+-3.0 webkitgtk-3.0
+#cgo linux openbsd CFLAGS: -DWEBVIEW_GTK=1
+#cgo linux openbsd pkg-config: gtk+-3.0 webkitgtk-3.0
 
 #cgo windows CFLAGS: -DWEBVIEW_WINAPI=1
 #cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -mwindows
