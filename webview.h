@@ -26,6 +26,8 @@ struct webview_priv {
 #include <mshtml.h>
 #include <shobjidl.h>
 
+#include <stdio.h>
+
 struct webview_priv {
   HWND hwnd;
   IOleObject **browser;
@@ -837,14 +839,27 @@ error:
   return -1;
 }
 
+#define WEBVIEW_DATA_URL_PREFIX "data:text/html,"
 static long DisplayHTMLPage(struct webview *w) {
   IWebBrowser2 *webBrowser2;
   VARIANT myURL;
+  LPDISPATCH lpDispatch;
+  IHTMLDocument2 *htmlDoc2;
+  BSTR bstr;
   IOleObject *browserObject;
+  SAFEARRAY *sfArray;
+  VARIANT *pVar;
   browserObject = *w->priv.browser;
+  int isDataURL = 0;
   if (!browserObject->lpVtbl->QueryInterface(
           browserObject, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2)) {
-    LPCSTR webPageName = (LPCSTR)w->url;
+    LPCSTR webPageName;
+    isDataURL = (strncmp(w->url, WEBVIEW_DATA_URL_PREFIX, strlen(WEBVIEW_DATA_URL_PREFIX)) == 0);
+    if (isDataURL) {
+      webPageName = "about:blank";
+    } else {
+      webPageName = (LPCSTR)w->url;
+    }
     VariantInit(&myURL);
     myURL.vt = VT_BSTR;
 #ifndef UNICODE
@@ -866,6 +881,51 @@ static long DisplayHTMLPage(struct webview *w) {
     }
     webBrowser2->lpVtbl->Navigate2(webBrowser2, &myURL, 0, 0, 0, 0);
     VariantClear(&myURL);
+    if (!isDataURL) {
+      return 0;
+    }
+
+    char *url = calloc(1, strlen(w->url) + 1);
+    char *q = url;
+    for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p; p++, q++) {
+      if (*q == '%' && *(p+1) && *(p+2)) {
+	sscanf(p+1, "%02x", q);
+	p = p + 2;
+      }
+    }
+
+    if (webBrowser2->lpVtbl->get_Document(webBrowser2, &lpDispatch) == S_OK) {
+      if (lpDispatch->lpVtbl->QueryInterface(lpDispatch, &IID_IHTMLDocument2,
+					      (void **)&htmlDoc2) == S_OK) {
+	if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
+				       (SAFEARRAYBOUND *)&ArrayBound))) {
+	  if (!SafeArrayAccessData(sfArray, (void **)&pVar)) {
+	    pVar->vt = VT_BSTR;
+#ifndef UNICODE
+	    {
+	      wchar_t *buffer = webview_to_utf16(url);
+	      if (buffer == NULL) {
+	        goto release;
+	      }
+	      bstr = SysAllocString(buffer);
+	      GlobalFree(buffer);
+	    }
+#else
+	    bstr = SysAllocString(string);
+#endif
+	    if ((pVar->bstrVal = bstr)) {
+	      htmlDoc2->lpVtbl->write(htmlDoc2, sfArray);
+	      htmlDoc2->lpVtbl->close(htmlDoc2);
+	    }
+	  }
+	  SafeArrayDestroy(sfArray);
+	}
+      release:
+	free(url);
+	htmlDoc2->lpVtbl->Release(htmlDoc2);
+      }
+      lpDispatch->lpVtbl->Release(lpDispatch);
+    }
     webBrowser2->lpVtbl->Release(webBrowser2);
     return (0);
   }
