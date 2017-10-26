@@ -854,7 +854,8 @@ static long DisplayHTMLPage(struct webview *w) {
   if (!browserObject->lpVtbl->QueryInterface(
           browserObject, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2)) {
     LPCSTR webPageName;
-    isDataURL = (strncmp(w->url, WEBVIEW_DATA_URL_PREFIX, strlen(WEBVIEW_DATA_URL_PREFIX)) == 0);
+    isDataURL = (strncmp(w->url, WEBVIEW_DATA_URL_PREFIX,
+                         strlen(WEBVIEW_DATA_URL_PREFIX)) == 0);
     if (isDataURL) {
       webPageName = "about:blank";
     } else {
@@ -887,42 +888,43 @@ static long DisplayHTMLPage(struct webview *w) {
 
     char *url = calloc(1, strlen(w->url) + 1);
     char *q = url;
-    for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p; p++, q++) {
-      if (*q == '%' && *(p+1) && *(p+2)) {
-	sscanf(p+1, "%02x", q);
-	p = p + 2;
+    for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p;
+         p++, q++) {
+      if (*q == '%' && *(p + 1) && *(p + 2)) {
+        sscanf(p + 1, "%02x", q);
+        p = p + 2;
       }
     }
 
     if (webBrowser2->lpVtbl->get_Document(webBrowser2, &lpDispatch) == S_OK) {
       if (lpDispatch->lpVtbl->QueryInterface(lpDispatch, &IID_IHTMLDocument2,
-					      (void **)&htmlDoc2) == S_OK) {
-	if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
-				       (SAFEARRAYBOUND *)&ArrayBound))) {
-	  if (!SafeArrayAccessData(sfArray, (void **)&pVar)) {
-	    pVar->vt = VT_BSTR;
+                                             (void **)&htmlDoc2) == S_OK) {
+        if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
+                                       (SAFEARRAYBOUND *)&ArrayBound))) {
+          if (!SafeArrayAccessData(sfArray, (void **)&pVar)) {
+            pVar->vt = VT_BSTR;
 #ifndef UNICODE
-	    {
-	      wchar_t *buffer = webview_to_utf16(url);
-	      if (buffer == NULL) {
-	        goto release;
-	      }
-	      bstr = SysAllocString(buffer);
-	      GlobalFree(buffer);
-	    }
+            {
+              wchar_t *buffer = webview_to_utf16(url);
+              if (buffer == NULL) {
+                goto release;
+              }
+              bstr = SysAllocString(buffer);
+              GlobalFree(buffer);
+            }
 #else
-	    bstr = SysAllocString(string);
+            bstr = SysAllocString(string);
 #endif
-	    if ((pVar->bstrVal = bstr)) {
-	      htmlDoc2->lpVtbl->write(htmlDoc2, sfArray);
-	      htmlDoc2->lpVtbl->close(htmlDoc2);
-	    }
-	  }
-	  SafeArrayDestroy(sfArray);
-	}
+            if ((pVar->bstrVal = bstr)) {
+              htmlDoc2->lpVtbl->write(htmlDoc2, sfArray);
+              htmlDoc2->lpVtbl->close(htmlDoc2);
+            }
+          }
+          SafeArrayDestroy(sfArray);
+        }
       release:
-	free(url);
-	htmlDoc2->lpVtbl->Release(htmlDoc2);
+        free(url);
+        htmlDoc2->lpVtbl->Release(htmlDoc2);
       }
       lpDispatch->lpVtbl->Release(lpDispatch);
     }
@@ -948,7 +950,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
     IWebBrowser2 *webBrowser2;
     IOleObject *browser = *w->priv.browser;
     if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
-                                         (void **)&webBrowser2) == S_OK) {
+                                        (void **)&webBrowser2) == S_OK) {
       RECT rect;
       GetClientRect(hwnd, &rect);
       webBrowser2->lpVtbl->put_Width(webBrowser2, rect.right);
@@ -1044,9 +1046,12 @@ static int webview_loop(struct webview *w, int blocking) {
   case WM_KEYUP: {
     IWebBrowser2 *webBrowser2;
     IOleObject *browser = *w->priv.browser;
-    if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2) == S_OK) {
-      IOleInPlaceActiveObject* pIOIPAO;
-      if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IOleInPlaceActiveObject), (void**)&pIOIPAO) == S_OK) {
+    if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
+                                        (void **)&webBrowser2) == S_OK) {
+      IOleInPlaceActiveObject *pIOIPAO;
+      if (browser->lpVtbl->QueryInterface(
+              browser, iid_unref(&IID_IOleInPlaceActiveObject),
+              (void **)&pIOIPAO) == S_OK) {
         pIOIPAO->lpVtbl->TranslateAccelerator(pIOIPAO, &msg);
         pIOIPAO->lpVtbl->Release(pIOIPAO);
       }
