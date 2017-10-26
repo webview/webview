@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/url"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func runLocalFile() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(abs)
+	log.Println("local tmp file: ", abs)
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Local file URL",
 		URL:   "file://" + abs,
@@ -70,7 +71,7 @@ func runLocalFile() {
 func runDataURL() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Data URL",
-		URL:   "data:text/html," + indexHTML,
+		URL:   "data:text/html," + url.PathEscape(indexHTML),
 	})
 	defer w.Exit()
 	w.Run()
