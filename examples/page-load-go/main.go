@@ -80,7 +80,7 @@ func runDataURL() {
 func runInjectJS() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Injected via JavaScript",
-		URL:   "data:text/html,<html><script></script></html>",
+		URL:   `data:text/html,<html><script type="text/javascript"></script></html>`,
 	})
 	defer w.Exit()
 	w.Dispatch(func() {
