@@ -34,3 +34,5 @@ install:
 build_script:
   - go build -o buildOutput\minimal -i ./examples/minimal-go
   - go build -o buildOutput\todo -i ./examples/todo-go
+  - go build -o buildOutput\window -i ./examples/window-go
+  - go build -o buildOutput\pageload -i ./examples/page-load-go
