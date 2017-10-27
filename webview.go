@@ -285,10 +285,12 @@ func (w *webview) Terminate() {
 
 //export _webviewDispatchGoCallback
 func _webviewDispatchGoCallback(index unsafe.Pointer) {
+	var f func()
 	m.Lock()
-	defer m.Unlock()
-	fns[uintptr(index)]()
+	f = fns[uintptr(index)]
 	delete(fns, uintptr(index))
+	m.Unlock()
+	f()
 }
 
 //export _webviewExternalInvokeCallback
