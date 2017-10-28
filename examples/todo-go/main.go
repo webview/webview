@@ -119,6 +119,8 @@ func main() {
 		Title:  "Todo App",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,
+		Color: 0x9c27b0,
+		Alpha: 1.0,
 	})
 	defer w.Exit()
 	w.Run()

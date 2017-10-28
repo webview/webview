@@ -21,11 +21,7 @@ var indexHTML = fmt.Sprintf(`
 <html>
 	<head>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<style>
-			* { margin: 0; padding: 0; box-sizing: border-box; }
-			html, body {background-color:rgba(0,0,0,0.5)}
-			
-		</style>
+		<style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
 	</head>
 	<body>
 		<canvas id="canvas" width="%d" height="%d">
@@ -96,7 +92,8 @@ func main() {
 		Title:  "Simple canvas demo",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,
-		Transparent:            true,
+		Color: 0x000000,
+		Alpha: 0.5,
 	})
 	defer w.Exit()
 	w.Run()

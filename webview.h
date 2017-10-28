@@ -59,7 +59,8 @@ struct webview {
   int width;
   int height;
   int resizable;
-  int transparent;
+  unsigned int color;
+  float alpha;
   webview_external_invoke_cb_t external_invoke_cb;
   struct webview_priv priv;
   void *userdata;
@@ -92,14 +93,15 @@ static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
-                   int resizable, int transparent) {
+                   int resizable, unsigned int color, float alpha) {
   struct webview webview = {0};
   webview.title = title;
   webview.url = url;
   webview.width = w;
   webview.height = h;
   webview.resizable = resizable;
-  webview.transparent = transparent;
+  webview.color = color;
+  webview.alpha = alpha;
   int r = webview_init(&webview);
   if (r != 0) {
     return r;
@@ -1332,6 +1334,13 @@ static void webview_did_clear_window_object(id self, SEL cmd, id webview,
   [script setValue:self forKey:@"external"];
 }
 
+/*
+static void webview_did_finish_load_for_frame(id self, SEL cmd, id webview, id frame) {
+
+  struct webview *w = (struct webview *)objc_getAssociatedObject(self, "webview");
+  [w->priv.window setBackgroundColor:[NSColor clearColor]];
+}*/
+
 static void webview_external_invoke(id self, SEL cmd, id arg) {
   struct webview *w =
       (struct webview *)objc_getAssociatedObject(self, "webview");
@@ -1358,6 +1367,9 @@ static int webview_init(struct webview *w) {
   class_addMethod(webViewDelegateClass,
                   sel_registerName("webView:didClearWindowObject:forFrame:"),
                   (IMP)webview_did_clear_window_object, "v@:@@@");
+  /*class_addMethod(webViewDelegateClass,
+                  sel_registerName("webView:didFinishLoadForFrame:"),
+                  (IMP)webview_did_finish_load_for_frame, "v@:@@");*/
   class_addMethod(webViewDelegateClass, sel_registerName("invoke:"),
                   (IMP)webview_external_invoke, "v@:@");
   objc_registerClassPair(webViewDelegateClass);
@@ -1381,20 +1393,22 @@ static int webview_init(struct webview *w) {
   [w->priv.window setTitle:nsTitle];
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
-  if (w->transparent) {
-    [w->priv.window setOpaque:NO];
-    [w->priv.window setHasShadow:NO];
-    [w->priv.window setBackgroundColor:[NSColor clearColor]];
-  }
+
+  [w->priv.window setOpaque:NO];
+  [w->priv.window setHasShadow:NO];
+  //[w->priv.window setBackgroundColor:[NSColor clearColor]];
+  [w->priv.window setBackgroundColor:[NSColor 
+    colorWithSRGBRed:((w->color >> 16) & 0xFF) / 255.0
+    green:((w->color >> 8) & 0xFF) / 255.0
+    blue:((w->color) & 0xFF) / 255.0
+    alpha:w->alpha]];
 
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
   NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
   [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
-  if (w->transparent) {
-    [w->priv.webview setDrawsBackground:NO];
-  }
+  [w->priv.webview setDrawsBackground:NO];
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];

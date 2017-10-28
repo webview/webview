@@ -32,14 +32,15 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int transparent) {
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, unsigned int color, float alpha) {
 	struct webview *w = (struct webview *) malloc(sizeof(*w));
 	w->width = width;
 	w->height = height;
 	w->title = title;
 	w->url = url;
 	w->resizable = resizable;
-	w->transparent = transparent;
+	w->color = color;
+	w->alpha = alpha;
 	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
 	if (webview_init(w) != 0) {
 		CgoWebViewFree(w);
@@ -113,7 +114,7 @@ func Open(title, url string, w, h int, resizable bool) error {
 		resize = C.int(1)
 	}
 
-	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.int(0))
+	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.uint(0xFFFFFF), C.float(1.0))
 	if r != 0 {
 		return errors.New("failed to create webview")
 	}
@@ -140,8 +141,10 @@ type Settings struct {
 	Height int
 	// Allows/disallows window resizing
 	Resizable bool
-	// Allows/disallows tranparent window
-	Transparent bool
+	// Window background color
+	Color int
+	// Window background alpha
+	Alpha float32
 	// A callback that is executed when JavaScript calls "window.external.invoke_()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
@@ -221,12 +224,8 @@ func New(settings Settings) WebView {
 	if settings.Resizable {
 		resizable = 1
 	}
-	transparent := 0
-	if settings.Transparent {
-		transparent = 1
-	}
 	w := &webview{}
-	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.CString(settings.Title), C.CString(settings.URL), C.int(resizable), C.int(transparent))
+	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.CString(settings.Title), C.CString(settings.URL), C.int(resizable), C.uint(settings.Color), C.float(settings.Alpha))
 	if settings.ExternalInvokeCallback != nil {
 		m.Lock()
 		cbs[w] = settings.ExternalInvokeCallback
