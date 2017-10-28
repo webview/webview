@@ -37,6 +37,7 @@ var indexHTML = fmt.Sprintf(`
 				ctx.beginPath();
 				ctx.moveTo(drawData.x1, drawData.y1);
 				ctx.lineTo(drawData.x2, drawData.y2);
+				ctx.strokeStyle = '#fff';
 				ctx.stroke();
 				window.requestAnimationFrame(draw);
 			}
@@ -91,6 +92,8 @@ func main() {
 		Title:  "Simple canvas demo",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,
+		Color: 0x000000,
+		Alpha: 0.5,
 	})
 	defer w.Exit()
 	w.Run()
