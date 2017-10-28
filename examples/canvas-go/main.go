@@ -21,7 +21,11 @@ var indexHTML = fmt.Sprintf(`
 <html>
 	<head>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<style>* { margin: 0; padding: 0; box-sizing: border-box; }</style>
+		<style>
+			* { margin: 0; padding: 0; box-sizing: border-box; }
+			html, body {background-color:rgba(0,0,0,0.5)}
+			
+		</style>
 	</head>
 	<body>
 		<canvas id="canvas" width="%d" height="%d">
@@ -37,6 +41,7 @@ var indexHTML = fmt.Sprintf(`
 				ctx.beginPath();
 				ctx.moveTo(drawData.x1, drawData.y1);
 				ctx.lineTo(drawData.x2, drawData.y2);
+				ctx.strokeStyle = '#fff';
 				ctx.stroke();
 				window.requestAnimationFrame(draw);
 			}
@@ -91,6 +96,7 @@ func main() {
 		Title:  "Simple canvas demo",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,
+		Transparent:            true,
 	})
 	defer w.Exit()
 	w.Run()

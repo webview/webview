@@ -59,6 +59,7 @@ struct webview {
   int width;
   int height;
   int resizable;
+  int transparent;
   webview_external_invoke_cb_t external_invoke_cb;
   struct webview_priv priv;
   void *userdata;
@@ -91,13 +92,14 @@ static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
 
 static int webview(const char *title, const char *url, int w, int h,
-                   int resizable) {
+                   int resizable, int transparent) {
   struct webview webview = {0};
   webview.title = title;
   webview.url = url;
   webview.width = w;
   webview.height = h;
   webview.resizable = resizable;
+  webview.transparent = transparent;
   int r = webview_init(&webview);
   if (r != 0) {
     return r;
@@ -1379,12 +1381,20 @@ static int webview_init(struct webview *w) {
   [w->priv.window setTitle:nsTitle];
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
+  if (w->transparent) {
+    [w->priv.window setOpaque:NO];
+    [w->priv.window setHasShadow:NO];
+    [w->priv.window setBackgroundColor:[NSColor clearColor]];
+  }
 
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
   NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
   [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
+  if (w->transparent) {
+    [w->priv.webview setDrawsBackground:NO];
+  }
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
