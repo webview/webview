@@ -1395,7 +1395,7 @@ static int webview_init(struct webview *w) {
   [w->priv.window center];
 
   [w->priv.window setOpaque:NO];
-  [w->priv.window setHasShadow:NO];
+  //[w->priv.window setHasShadow:NO];
   //[w->priv.window setBackgroundColor:[NSColor clearColor]];
   [w->priv.window setBackgroundColor:[NSColor 
     colorWithSRGBRed:((w->color >> 16) & 0xFF) / 255.0
