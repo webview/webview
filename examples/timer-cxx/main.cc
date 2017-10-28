@@ -113,6 +113,7 @@ int main() {
   webview.width = 400;
   webview.height = 300;
   webview.resizable = 0;
+  webview.transparent = 0;
   webview.external_invoke_cb = timer_cb;
   webview.userdata = &timer;
 
