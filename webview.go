@@ -227,11 +227,13 @@ func New(settings Settings) WebView {
 	}
 	w := &webview{}
 	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.CString(settings.Title), C.CString(settings.URL), C.int(resizable))
+	m.Lock()
 	if settings.ExternalInvokeCallback != nil {
-		m.Lock()
 		cbs[w] = settings.ExternalInvokeCallback
-		m.Unlock()
+	} else {
+		cbs[w] = func(w WebView, data string) {}
 	}
+	m.Unlock()
 	return w
 }
 
