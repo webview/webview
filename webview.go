@@ -84,6 +84,7 @@ static inline void CgoWebViewDispatch(void *w, uintptr_t arg) {
 import "C"
 import (
 	"errors"
+	"net/url"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -196,6 +197,12 @@ type webview struct {
 	w unsafe.Pointer
 }
 
+const DefaultIndexHTML = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"></head>
+<body><script type="text/javscript></script></body>
+</html>`
+
 var _ WebView = &webview{}
 
 // New creates and opens a new webview window using the given settings. The
@@ -212,7 +219,7 @@ func New(settings Settings) WebView {
 		settings.Title = "WebView"
 	}
 	if settings.URL == "" {
-		return nil
+		settings.URL = `data:text/html,` + url.PathEscape(DefaultIndexHTML)
 	}
 	resizable := 0
 	if settings.Resizable {
