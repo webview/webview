@@ -366,7 +366,7 @@ func (b *binding) JS() (string, error) {
 func (b *binding) Sync() (string, error) {
 	js, err := json.Marshal(b.Value)
 	if err == nil {
-		return fmt.Sprintf("%[1]s.data=%[2]s;if(%[1]s.render){%[1]s.render();}", b.Name, string(js)), nil
+		return fmt.Sprintf("%[1]s.data=%[2]s;if(%[1]s.render){%[1]s.render(%[2]s);}", b.Name, string(js)), nil
 	}
 	return "", err
 }
