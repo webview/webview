@@ -214,7 +214,7 @@ type webview struct {
 const defaultIndexHTML = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"></head>
-<body><div id="app"></div><script type="text/javscript></script></body>
+<body><div id="app"></div><script type="text/javascript"></script></body>
 </html>`
 
 var _ WebView = &webview{}
