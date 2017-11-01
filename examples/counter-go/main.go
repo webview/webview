@@ -33,6 +33,7 @@ func main() {
 		w.Eval(fmt.Sprintf(`(function(css){
 			var style = document.createElement('style');
 			var head = document.head || document.getElementsByTagName('head')[0];
+			style.setAttribute('type', 'text/css');
 			if (style.styleSheet) {
 				style.styleSheet.cssText = css;
 			} else {
