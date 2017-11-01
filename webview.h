@@ -968,6 +968,29 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT uMsg, WPARAM wParam,
   return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
+#define WEBVIEW_KEY_FEATURE_BROWSER_EMULATION "Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION"
+
+static int webview_fix_ie_compat_mode() {
+  HKEY hKey;
+  DWORD ie_version = 11000;
+  TCHAR appname[MAX_PATH + 1];
+  TCHAR *p;
+  if (GetModuleFileName(NULL, appname, MAX_PATH + 1) == 0) {
+    return -1;
+  }
+  for (p = &appname[strlen(appname)-1]; p != appname && *p != '\\'; p--);
+  p++;
+  if (RegCreateKey(HKEY_CURRENT_USER, WEBVIEW_KEY_FEATURE_BROWSER_EMULATION, &hKey) != ERROR_SUCCESS) {
+    return -1;
+  }
+  if (RegSetValueEx(hKey, p, 0, REG_DWORD, (BYTE*) &ie_version, sizeof(ie_version)) != ERROR_SUCCESS) {
+    RegCloseKey(hKey);
+    return -1;
+  }
+  RegCloseKey(hKey);
+  return 0;
+}
+
 static int webview_init(struct webview *w) {
   WNDCLASSEX wc;
   HINSTANCE hInstance;
@@ -975,6 +998,10 @@ static int webview_init(struct webview *w) {
   DWORD style;
   RECT clientRect;
   RECT rect;
+
+  if (webview_fix_ie_compat_mode() < 0) {
+    return -1;
+  }
 
   hInstance = GetModuleHandle(NULL);
   if (hInstance == NULL) {
