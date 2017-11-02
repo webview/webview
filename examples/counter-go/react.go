@@ -15,9 +15,8 @@ var UIFrameworkName = "ReactJS+Babel"
 
 func LoadUIFramework(w webview.WebView) {
 	// Inject React and Babel
-	w.Eval(string(MustAsset("js/react/vendor/react.production.min.js")))
-	w.Eval(string(MustAsset("js/react/vendor/react-dom.production.min.js")))
 	w.Eval(string(MustAsset("js/react/vendor/babel.min.js")))
+	w.Eval(string(MustAsset("js/react/vendor/preact.min.js")))
 
 	// Inject our app code
 	w.Eval(fmt.Sprintf(`(function(){
