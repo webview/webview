@@ -1,13 +1,15 @@
+/** @jsx preact.h */
+
 // A simple click counter component, can be a functional compontent as well
-class Counter extends React.Component {
+class Counter extends preact.Component {
 	constructor(props) {
 		super(props)
 	}
   render() {
     return (
       <div>
-        <div>count:{this.props.value}</div>
-				<button onClick={this.props.incr}>click!</button>
+        <div>count:{counter.data.value}</div>
+				<button onClick={() => counter.add(1)}>click!</button>
       </div>
     )
   }
@@ -15,8 +17,7 @@ class Counter extends React.Component {
 
 // Render top-level component, pass controller data as props
 const render = () =>
-	ReactDOM.render(<Counter value={counter.data.value} incr={()=>counter.add(1)}/>,
-									document.getElementById('app'));
+	preact.render(<Counter />, document.getElementById('app'), document.getElementById('app').lastElementChild);
 
 // Call global render() when controller changes
 counter.render = render;
