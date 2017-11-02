@@ -330,12 +330,12 @@ typedef struct {
 #endif
 
 static inline WCHAR *webview_to_utf16(const char *s) {
-  DWORD size = MultiByteToWideChar(CP_ACP, 0, s, -1, 0, 0);
+  DWORD size = MultiByteToWideChar(CP_UTF8, 0, s, -1, 0, 0);
   WCHAR *ws = (WCHAR *)GlobalAlloc(GMEM_FIXED, sizeof(WCHAR) * size);
   if (ws == NULL) {
     return NULL;
   }
-  MultiByteToWideChar(CP_ACP, 0, s, -1, ws, size);
+  MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, size);
   return ws;
 }
 
