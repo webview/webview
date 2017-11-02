@@ -85,7 +85,7 @@ func jsPicodomAppJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "js/picodom/app.js", size: 272, mode: os.FileMode(436), modTime: time.Unix(1509532064, 0)}
+	info := bindataFileInfo{name: "js/picodom/app.js", size: 272, mode: os.FileMode(436), modTime: time.Unix(1509657363, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -105,7 +105,7 @@ func jsPicodomVendorPicodomJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "js/picodom/vendor/picodom.js", size: 2410, mode: os.FileMode(436), modTime: time.Unix(1509567086, 0)}
+	info := bindataFileInfo{name: "js/picodom/vendor/picodom.js", size: 2410, mode: os.FileMode(436), modTime: time.Unix(1509657363, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -125,7 +125,7 @@ func jsStylesCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "js/styles.css", size: 213, mode: os.FileMode(436), modTime: time.Unix(1509531250, 0)}
+	info := bindataFileInfo{name: "js/styles.css", size: 213, mode: os.FileMode(436), modTime: time.Unix(1509657363, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

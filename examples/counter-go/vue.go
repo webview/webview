@@ -8,9 +8,9 @@ import (
 	"github.com/zserge/webview"
 )
 
-var UIFrameworkName = "VueJS"
+var uiFrameworkName = "VueJS"
 
-func LoadUIFramework(w webview.WebView) {
+func loadUIFramework(w webview.WebView) {
 	// Inject Vue.js
 	w.Eval(string(MustAsset("js/vue/vendor/vue.min.js")))
 	// Inject app code

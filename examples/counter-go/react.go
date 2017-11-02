@@ -11,9 +11,9 @@ import (
 	"github.com/zserge/webview"
 )
 
-var UIFrameworkName = "ReactJS+Babel"
+var uiFrameworkName = "ReactJS+Babel"
 
-func LoadUIFramework(w webview.WebView) {
+func loadUIFramework(w webview.WebView) {
 	// Inject React and Babel
 	w.Eval(string(MustAsset("js/react/vendor/babel.min.js")))
 	w.Eval(string(MustAsset("js/react/vendor/preact.min.js")))

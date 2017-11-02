@@ -8,9 +8,9 @@ import (
 	"github.com/zserge/webview"
 )
 
-var UIFrameworkName = "Picodom"
+var uiFrameworkName = "Picodom"
 
-func LoadUIFramework(w webview.WebView) {
+func loadUIFramework(w webview.WebView) {
 	// Inject Picodom.js
 	w.Eval(string(MustAsset("js/picodom/vendor/picodom.js")))
 	// Inject app code
