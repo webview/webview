@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"net/url"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
