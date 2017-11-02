@@ -181,7 +181,7 @@ type WebView interface {
 	Exit()
 	// Bind() registers a binding between a given value and a JavaScript object with the
 	// given name.  A value must be a struct or a struct pointer. All methods are
-	// availble under their camel-case names, starting with a lower-case letter,
+	// available under their camel-case names, starting with a lower-case letter,
 	// e.g. "FooBar" becomes "fooBar" in JavaScript.
 	// Bind() returns a function that updates JavaScript object with the current
 	// Go value. You only need to call it if you change Go value asynchronously.
