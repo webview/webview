@@ -105,6 +105,16 @@ window.external.invoke_('some arg');
 window.external.invoke_(JSON.stringify({fn: 'sum', x: 5, y: 3}));
 ```
 
+In Go you can reduce the boilerplate by using `WebView.Bind()` method. It binds
+an existing Go struct or struct pointer so that it appears under the same name
+in JS, all its methods and fields are accessible directly from JS. `Bind()`
+also returns a function that may be used to update the JS "mirrored" object
+when you have asynchronously modified Go struct.
+
+You may find a `counter-go` example that shows how to bind a Go "controller"
+and use it from the various JavaScript UI frameworks, such as Vue.js, Preact or
+Picodom.
+
 ### Multithreading support
 
 Webview library is meant to be used from a single UI thread only. So if you
