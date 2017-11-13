@@ -887,7 +887,7 @@ static long DisplayHTMLPage(struct webview *w) {
       return 0;
     }
 
-    char *url = (char *) calloc(1, strlen(w->url) + 1);
+    char *url = (char *)calloc(1, strlen(w->url) + 1);
     char *q = url;
     for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p;
          p++, q++) {
@@ -898,7 +898,8 @@ static long DisplayHTMLPage(struct webview *w) {
     }
 
     if (webBrowser2->lpVtbl->get_Document(webBrowser2, &lpDispatch) == S_OK) {
-      if (lpDispatch->lpVtbl->QueryInterface(lpDispatch, iid_unref(&IID_IHTMLDocument2),
+      if (lpDispatch->lpVtbl->QueryInterface(lpDispatch,
+                                             iid_unref(&IID_IHTMLDocument2),
                                              (void **)&htmlDoc2) == S_OK) {
         if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
                                        (SAFEARRAYBOUND *)&ArrayBound))) {
