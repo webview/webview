@@ -1,4 +1,5 @@
 #include <chrono>
+#include <iomanip>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -56,33 +57,33 @@ private:
   struct webview *w;
 };
 
-class TempFile {
-public:
-  TempFile(std::string contents) {
-    this->path = std::tmpnam(nullptr);
-    FILE *f = fopen(this->path.c_str(), "wb");
-    fwrite(contents.c_str(), contents.length(), 1, f);
-    fclose(f);
+static std::string url_encode(const std::string &value) {
+  const char hex[] = "0123456789ABCDEF";
+  std::string escaped;
+  for (char c : value) {
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~' ||
+        c == '=') {
+      escaped = escaped + c;
+    } else {
+      escaped = escaped + '%' + hex[(c >> 4) & 0xf] + hex[c & 0xf];
+    }
   }
-  ~TempFile() { unlink(this->path.c_str()); }
-  std::string url() { return "file://" + path; }
-
-private:
-  std::string path;
-};
+  return escaped;
+}
 
 static const char *html = R"html(
+<!doctype html>
 <html>
-  <body>
-    <p id='ticks'></p>
-    <button onclick='external.invoke_("reset")'>reset</button>
-    <button onclick='external.invoke_("exit")'>exit</button>
-    <script>
-      function updateTicks(n) { 
-        document.getElementById('ticks').innerHTML = 'ticks '+n;
-      }
-    </script>
-  </body>
+<body>
+  <p id="ticks"></p>
+  <button onclick="external.invoke_('reset')">reset</button>
+  <button onclick="external.invoke_('exit')">exit</button>
+  <script type="text/javascript">
+    function updateTicks(n) {
+      document.getElementById('ticks').innerText = 'ticks ' + n;
+    }
+  </script>
+</body>
 </html>
 )html";
 
@@ -103,13 +104,11 @@ int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
 int main() {
 #endif
   Timer timer;
-  TempFile tmp(html);
   struct webview webview = {};
-
-  std::string url = tmp.url();
+  std::string html_data = "data:text/html," + url_encode(html);
 
   webview.title = "Timer";
-  webview.url = url.c_str();
+  webview.url = html_data.c_str();
   webview.width = 400;
   webview.height = 300;
   webview.resizable = 0;
