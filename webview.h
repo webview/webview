@@ -765,8 +765,10 @@ static void UnEmbedBrowserObject(struct webview *w) {
 }
 
 static int EmbedBrowserObject(struct webview *w) {
+  RECT rect;
   IWebBrowser2 *webBrowser2 = NULL;
   LPCLASSFACTORY pClassFactory = NULL;
+  _IOleClientSiteEx *_iOleClientSiteEx = NULL;
   IOleObject **browser = (IOleObject **)GlobalAlloc(
       GMEM_FIXED, sizeof(IOleObject *) + sizeof(_IOleClientSiteEx));
   if (browser == NULL) {
@@ -774,7 +776,7 @@ static int EmbedBrowserObject(struct webview *w) {
   }
   w->priv.browser = browser;
 
-  _IOleClientSiteEx *_iOleClientSiteEx = (_IOleClientSiteEx *)(browser + 1);
+  _iOleClientSiteEx = (_IOleClientSiteEx *)(browser + 1);
   _iOleClientSiteEx->client.lpVtbl = &MyIOleClientSiteTable;
   _iOleClientSiteEx->inplace.inplace.lpVtbl = &MyIOleInPlaceSiteTable;
   _iOleClientSiteEx->inplace.frame.frame.lpVtbl = &MyIOleInPlaceFrameTable;
@@ -808,7 +810,6 @@ static int EmbedBrowserObject(struct webview *w) {
   if (OleSetContainedObject((struct IUnknown *)(*browser), TRUE) != S_OK) {
     goto error;
   }
-  RECT rect;
   GetClientRect(w->priv.hwnd, &rect);
   if ((*browser)->lpVtbl->DoVerb((*browser), OLEIVERB_SHOW, NULL,
                                  (IOleClientSite *)_iOleClientSiteEx, -1,
@@ -886,7 +887,7 @@ static long DisplayHTMLPage(struct webview *w) {
       return 0;
     }
 
-    char *url = calloc(1, strlen(w->url) + 1);
+    char *url = (char *) calloc(1, strlen(w->url) + 1);
     char *q = url;
     for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p;
          p++, q++) {
@@ -897,7 +898,7 @@ static long DisplayHTMLPage(struct webview *w) {
     }
 
     if (webBrowser2->lpVtbl->get_Document(webBrowser2, &lpDispatch) == S_OK) {
-      if (lpDispatch->lpVtbl->QueryInterface(lpDispatch, &IID_IHTMLDocument2,
+      if (lpDispatch->lpVtbl->QueryInterface(lpDispatch, iid_unref(&IID_IHTMLDocument2),
                                              (void **)&htmlDoc2) == S_OK) {
         if ((sfArray = SafeArrayCreate(VT_VARIANT, 1,
                                        (SAFEARRAYBOUND *)&ArrayBound))) {
@@ -1262,8 +1263,9 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
       dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
     IFileDialog *dlg = NULL;
     IShellItem *res = NULL;
+    WCHAR *ws = NULL;
+    char *s = NULL;
     FILEOPENDIALOGOPTIONS opts, add_opts;
-    WCHAR *ws;
     if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN) {
       if (CoCreateInstance(
               iid_unref(&CLSID_FileOpenDialog), NULL, CLSCTX_INPROC_SERVER,
@@ -1302,7 +1304,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     if (res->lpVtbl->GetDisplayName(res, SIGDN_FILESYSPATH, &ws) != S_OK) {
       goto error_result;
     }
-    char *s = webview_from_utf16(ws);
+    s = webview_from_utf16(ws);
     strncpy(result, s, resultsz);
     result[resultsz - 1] = '\0';
     CoTaskMemFree(ws);
