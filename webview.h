@@ -1078,6 +1078,7 @@ static int webview_loop(struct webview *w, int blocking) {
   case WM_COMMAND:
   case WM_KEYDOWN:
   case WM_KEYUP: {
+    HRESULT r = S_OK;
     IWebBrowser2 *webBrowser2;
     IOleObject *browser = *w->priv.browser;
     if (browser->lpVtbl->QueryInterface(browser, iid_unref(&IID_IWebBrowser2),
@@ -1086,10 +1087,13 @@ static int webview_loop(struct webview *w, int blocking) {
       if (browser->lpVtbl->QueryInterface(
               browser, iid_unref(&IID_IOleInPlaceActiveObject),
               (void **)&pIOIPAO) == S_OK) {
-        pIOIPAO->lpVtbl->TranslateAccelerator(pIOIPAO, &msg);
+        r = pIOIPAO->lpVtbl->TranslateAccelerator(pIOIPAO, &msg);
         pIOIPAO->lpVtbl->Release(pIOIPAO);
       }
       webBrowser2->lpVtbl->Release(webBrowser2);
+    }
+    if (r != S_FALSE) {
+      break;
     }
   }
   default:
