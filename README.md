@@ -105,6 +105,16 @@ w.Dispatch(func() {
 
 This works fairly well across the platforms, see `counter-go` example for more details about how make a webview app with no web server. It also demonstrates how to use ReactJS, VueJS or Picodom with webview.
 
+### How to communicate between native Go and web UI?
+
+You already have seen how to use `w.Eval()` to run Javascript inside the webview. There is also a way to call Go code from JavaScript.
+
+On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke_(someString)`.
+
+This might seem very inconvenient, and that is why there is a dedicated `webview.Bind()` API call. It binds an existing Go object (struct or struct pointer) and creates/injects JS API for it. Now you can call JS methods and they will result in calling native Go methods. Even more, if you modify the Go object - it can be automatically serialized to JSON and passed to the web UI to keep things in sync.
+
+Please, see `counter-go` example for more details about how to bind Go controllers to the web UI.
+
 ## Webview for C/C++ developers
 
 ### Getting started
