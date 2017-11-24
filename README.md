@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang for building modern cross-platform GUI.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUI.
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
