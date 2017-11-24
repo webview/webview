@@ -132,6 +132,14 @@ This might seem very inconvenient, and that is why there is a dedicated `webview
 
 Please, see `counter-go` example for more details about how to bind Go controllers to the web UI.
 
+## Debugging and development tips
+
+On Linux every `log.Println()` would appear in the terminal output. So does every `console.log()` from the JS code and every JS error, so development is a very pleasant experience.
+
+On Windows you will see native logs only if you omit the `-H windowsgui` linker flag. In this case you will see a black CMD console attached to your app and output will be shown there. JS errors will be shown as popup dialogs. Unfortunately, `console.log()` output won't be shown at all.
+
+On MacOS if you run an app from the terminal - you get its standard output printed. If you run it from Finder or using `open` command - you don't see any logs.
+
 ## Webview for C/C++ developers
 
 ### Getting started
