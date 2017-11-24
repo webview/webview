@@ -6,7 +6,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang.
+A tiny cross-platform webview library for C/C++/Golang for building modern cross-platform GUI.
+
+It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
 It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Windows.
 
@@ -16,7 +18,7 @@ It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Window
 
 If you are interested in writing Webview apps in C/C++ - skip to the next section.
 
-### How to start using the library?
+### Getting started
 
 Install Webview library with `go get`:
 
@@ -70,7 +72,7 @@ Injecting the content via JS bindings is a bit more complicated, but feels more 
 
 ## Webview for C/C++ developers
 
-### How to start using the library?
+### Getting started
 
 Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
 
