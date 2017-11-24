@@ -70,6 +70,41 @@ webview.Open("Hello", "http://"+ln.Addr().String(), 400, 300, false)
 
 Injecting the content via JS bindings is a bit more complicated, but feels more solid and does not expose any additional open TCP ports.
 
+Leave `webview.Settings.URL` empty to start with a bare minimal HTML5. It will open a webview with `<div id="app"></div>` in it. Alternatively, use data URI to inject custom HTML code (don't forget to URL-encode it):
+
+```go
+const myHTML = `<!doctype html><html>....</html>`
+w := webview.New(webview.Settings{
+	URL: `data:text/html,` + url.PathEscape(myHTML),
+})
+```
+
+Keep your initial HTML short (a few kilobytes maximum).
+
+Now you can inject more JavaScrtipt once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
+
+```go
+w.Dispatch(func() {
+	// Inject CSS
+	w.Eval(fmt.Sprintf(`(function(css){
+		var style = document.createElement('style');
+		var head = document.head || document.getElementsByTagName('head')[0];
+		style.setAttribute('type', 'text/css');
+		if (style.styleSheet) {
+			style.styleSheet.cssText = css;
+		} else {
+			style.appendChild(document.createTextNode(css));
+		}
+		head.appendChild(style);
+	})("%s")`, template.JSEscapeString(myStylesCSS)))
+	// Inject JS
+	w.Eval(myJSFramework)
+	w.Eval(myAppJS)
+})
+```
+
+This works fairly well across the platforms, see `counter-go` example for more details about how make a webview app with no web server. It also demonstrates how to use ReactJS, VueJS or Picodom with webview.
+
 ## Webview for C/C++ developers
 
 ### Getting started
