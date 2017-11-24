@@ -12,35 +12,46 @@ It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Window
 
 <p align="center"><img alt="linux" src="examples/todo-go/screenshots/screenshots.png"></p>
 
-## API
+## Webview for Go developers
 
-WebView library prrovides C API. For Go API please see
-[godoc](https://godoc.org/github.com/zserge/webview).
+If you are interested in writing Webview apps in C/C++ - skip to the next section.
 
-### Simple API
+### How to start using the library?
 
-For the most simple use cases there is only one function:
+Install Webview library with `go get`:
 
 ```
-// C (#include "webview.h")
-int webview(const char *title, const char *url,	int width, int height, int resizable);
-// Go (package github.com/zserge/webview)
-func Open(title, url string, w, h int, resizable bool) error
+$ go get github.com/zserge/webview
 ```
 
-The following URL schemes are supported:
+Import the package and start using it:
 
-* `http://` and `https://`, no surprises here.
-* `file:///` can be useful if you want to unpack HTML/CSS assets to some
-  temporary directory and point a webview to open index.html from there.
-* `data:text/html,<html>...</html>` allows to pass short HTML data inline
-  without using a web server or pulluting the file system. Furhter
-  modifications of the webview contents can be done via JavaScript bindings.
+```go
+package main
 
-If you write in C/C++ and have choosen a regular http URL scheme, you can use
-Mongoose or any other web server/framework you like.
+import "github.com/zserge/webview"
 
-You may also use Go web server running on a random port:
+func main() {
+	// Open wikipedia in a 800x600 resizable window
+	webview.Open("Minimal webview example",
+		"https://en.m.wikipedia.org/wiki/Main_Page", 800, 600, true)
+}
+```
+
+### API
+
+See [godoc](https://godoc.org/github.com/zserge/webview).
+
+### How to serve or inject the initial HTML/CSS/JavaScript into the webview?
+
+First of all, you probably want to embed your assets (HTML/CSS/JavaScript) into the binary to have a standalone executable. Consider using [go-bindata](https://github.com/jteeuwen/go-bindata) or any other similar tools.
+
+Now there are two major approaches to deploy the content:
+
+* Serve HTML/CSS/JS with an embedded HTTP server
+* Injecting HTML/CSS/JS via JavaScript binding API
+
+To serve the content it is recommended to use ephemeral ports:
 
 ```go
 ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -55,9 +66,62 @@ go func() {
 webview.Open("Hello", "http://"+ln.Addr().String(), 400, 300, false)
 ```
 
-### App lifecycle API
+Injecting the content via JS bindings is a bit more complicated, but feels more solid and does not expose any additional open TCP ports.
 
-If you want to have more control over the app you can use the following functions:
+## Webview for C/C++ developers
+
+### How to start using the library?
+
+Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
+
+```c
+// main.c
+#include "webview.h"
+
+#ifdef WIN32
+int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
+                   int nCmdShow) {
+#else
+int main() {
+#endif
+  /* Open wikipedia in a 800x600 resizable window */
+  webview("Minimal webview example",
+	  "https://en.m.wikipedia.org/wiki/Main_Page", 800, 600, 1);
+  return 0;
+}
+```
+
+Build it:
+
+```bash
+# Linux
+$ cc main.c -DWEBVIEW_GTK=1 $(shell pkg-config --cflags --libs gtk+-3.0 webkitgtk-3.0) -o webview-example
+# MacOS
+$ cc main.c -DWEBVIEW_COCOA=1 -x objective-c -framework Cocoa -framework WebKit -o webview-example
+# Windows (mingw)
+$ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
+```
+
+### API
+
+For the most simple use cases there is only one function:
+
+```c
+int webview(const char *title, const char *url,	int width, int height, int resizable);
+```
+
+The following URL schemes are supported:
+
+* `http://` and `https://`, no surprises here.
+* `file:///` can be useful if you want to unpack HTML/CSS assets to some
+  temporary directory and point a webview to open index.html from there.
+* `data:text/html,<html>...</html>` allows to pass short HTML data inline
+  without using a web server or pulluting the file system. Furhter
+  modifications of the webview contents can be done via JavaScript bindings.
+
+If have choosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
+
+If you want to have more control over the app lifecycle you can use the following functions:
 
 ```c
   struct webview webview = {
@@ -81,8 +145,6 @@ If you want to have more control over the app you can use the following function
   webview_terminate(&webview);
 ```
 
-### Two-way bindings API
-
 To evaluate arbitrary javascript code use the following C function:
 
 ```c
@@ -105,18 +167,6 @@ window.external.invoke_('some arg');
 window.external.invoke_(JSON.stringify({fn: 'sum', x: 5, y: 3}));
 ```
 
-In Go you can reduce the boilerplate by using `WebView.Bind()` method. It binds
-an existing Go struct or struct pointer so that it appears under the same name
-in JS, all its methods and fields are accessible directly from JS. `Bind()`
-also returns a function that may be used to update the JS "mirrored" object
-when you have asynchronously modified Go struct.
-
-You may find a `counter-go` example that shows how to bind a Go "controller"
-and use it from the various JavaScript UI frameworks, such as Vue.js, Preact or
-Picodom.
-
-### Multithreading support
-
 Webview library is meant to be used from a single UI thread only. So if you
 want to call `webview_eval` or `webview_terminate` from some background thread
 - you have to use `webview_dispatch` to post some arbitrary function with some
@@ -132,11 +182,11 @@ void render(struct webview *w, void *arg) {
 webview_dispatch(w, render, some_arg);
 ```
 
+## Notes
+
+Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
+
 ## License
 
 Code is distributed under MIT license, feel free to use it in your proprietary
 projects as well.
-
-## Notes
-
-Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
