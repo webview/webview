@@ -10,7 +10,7 @@ A tiny cross-platform webview library for C/C++/Golang for building modern cross
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
-It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and good old MSHTML on Windows.
+It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and MSHTML (IE10/11) on Windows.
 
 <p align="center"><img alt="linux" src="examples/todo-go/screenshots/screenshots.png"></p>
 
