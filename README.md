@@ -278,6 +278,10 @@ void render(struct webview *w, void *arg) {
 webview_dispatch(w, render, some_arg);
 ```
 
+You may find some C/C++ examples in this repo that demonstrate the API above.
+
+Also, there is a more more advanced complete C++ app, [Slide](https://github.com/zserge/slide), that uses webview as a GUI. You may have a look how webview apps can be built, packages and how automatic CI/CD can be set up.
+
 ## Notes
 
 Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
