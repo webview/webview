@@ -140,6 +140,30 @@ On Windows you will see native logs only if you omit the `-H windowsgui` linker 
 
 On MacOS if you run an app from the terminal - you get its standard output printed. If you run it from Finder or using `open` command - you don't see any logs.
 
+## Distributing webview apps
+
+On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit, so if you distribute your app in DEB or RPM format include those dependencies. Application icon can be specified by providing a `.desktop` file.
+
+On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
+
+```
+example.app
+└── Contents
+    ├── Info.plist
+    ├── MacOS
+    |   └── example
+    └── Resources
+        └── example.icns
+```
+
+Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](iconverticons.com/online/).
+
+On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and and linking with it. Typically, `windres` utility is used to compile resources.
+
+You may find some example build scripts for all three platforms [here](https://github.com/naivesound/glitch/tree/master/dist).
+
+Also, if you want to cross-compile your webview app - use [xgo](https://github.com/karalabe/xgo).
+
 ## Webview for C/C++ developers
 
 ### Getting started
