@@ -1467,6 +1467,8 @@ static int webview_init(struct webview *w) {
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
+  [[NSUserDefaults standardUserDefaults] setBool:!!w->debug forKey:@"WebKitDeveloperExtras"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
   NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
