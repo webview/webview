@@ -91,6 +91,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
 static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
+static void webview_print_log(const char *s);
 
 static int webview(const char *title, const char *url, int w, int h,
                    int resizable) {
@@ -108,6 +109,15 @@ static int webview(const char *title, const char *url, int w, int h,
     ;
   webview_exit(&webview);
   return 0;
+}
+
+static void webview_debug(const char *format, ...) {
+  char buf[4096];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  webview_print_log(buf);
+  va_end(ap);
 }
 
 #if defined(WEBVIEW_GTK)
@@ -337,6 +347,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 
 static void webview_exit(struct webview *w) {}
+static void webview_print_log(const char *s) { fprintf(stderr, "%s\n", s); }
 
 #endif /* WEBVIEW_GTK */
 
@@ -1382,6 +1393,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
 
 static void webview_terminate(struct webview *w) { PostQuitMessage(0); }
 static void webview_exit(struct webview *w) { OleUninitialize(); }
+static void webview_print_log(const char *s) { OutputDebugString(s); }
 
 #endif /* WEBVIEW_WINAPI */
 
@@ -1467,7 +1479,8 @@ static int webview_init(struct webview *w) {
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
-  [[NSUserDefaults standardUserDefaults] setBool:!!w->debug forKey:@"WebKitDeveloperExtras"];
+  [[NSUserDefaults standardUserDefaults] setBool:!!w->debug
+                                          forKey:@"WebKitDeveloperExtras"];
   [[NSUserDefaults standardUserDefaults] synchronize];
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
@@ -1610,6 +1623,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 
 static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
+static void webview_print_log(const char *s) { NSLog(@"%s", s); }
 
 #endif /* WEBVIEW_COCOA */
 
