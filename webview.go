@@ -32,13 +32,14 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable) {
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int debug) {
 	struct webview *w = (struct webview *) malloc(sizeof(*w));
 	w->width = width;
 	w->height = height;
 	w->title = title;
 	w->url = url;
 	w->resizable = resizable;
+	w->debug = debug;
 	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
 	if (webview_init(w) != 0) {
 		CgoWebViewFree(w);
@@ -147,6 +148,8 @@ type Settings struct {
 	Height int
 	// Allows/disallows window resizing
 	Resizable bool
+	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
+	Debug bool
 	// A callback that is executed when JavaScript calls "window.external.invoke_()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
@@ -219,6 +222,14 @@ const defaultIndexHTML = `<!DOCTYPE html>
 
 var _ WebView = &webview{}
 
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 // New creates and opens a new webview window using the given settings. The
 // returned object implements the WebView interface. This function returns nil
 // if a window can not be created.
@@ -235,12 +246,10 @@ func New(settings Settings) WebView {
 	if settings.URL == "" {
 		settings.URL = `data:text/html,` + url.PathEscape(defaultIndexHTML)
 	}
-	resizable := 0
-	if settings.Resizable {
-		resizable = 1
-	}
 	w := &webview{}
-	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height), C.CString(settings.Title), C.CString(settings.URL), C.int(resizable))
+	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),
+		C.CString(settings.Title), C.CString(settings.URL),
+		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)))
 	m.Lock()
 	if settings.ExternalInvokeCallback != nil {
 		cbs[w] = settings.ExternalInvokeCallback
