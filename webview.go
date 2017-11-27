@@ -128,6 +128,22 @@ func Open(title, url string, w, h int, resizable bool) error {
 	return nil
 }
 
+// Output a debug string. Uses stderr on Linux/BSD, NSLog on MacOS and
+// OutputDebugString on Windows.
+func Debug(a ...interface{}) {
+	s := C.CString(fmt.Sprint(a...))
+	defer C.free(unsafe.Pointer(s))
+	C.webview_print_log(s)
+}
+
+// Output formatted debug string. Uses stderr on Linux/BSD, NSLog on MacOS and
+// OutputDebugString on Windows.
+func Debugf(format string, a ...interface{}) {
+	s := C.CString(fmt.Sprintf(format, a...))
+	defer C.free(unsafe.Pointer(s))
+	C.webview_print_log(s)
+}
+
 // ExternalInvokeCallbackFunc is a function type that is called every time
 // "window.external.invoke_()" is called from JavaScript. Data is the only
 // obligatory string parameter passed into the "invoke_(data)" function from
