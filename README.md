@@ -134,11 +134,24 @@ Please, see `counter-go` example for more details about how to bind Go controlle
 
 ## Debugging and development tips
 
-On Linux every `log.Println()` would appear in the terminal output. So does every `console.log()` from the JS code and every JS error, so development is a very pleasant experience.
+If terminal output is unavailable (e.g. if you launch app bundle on MacOS or
+GUI app on Windows) you may use `webview.Debug()` and `webview.Debugf()` to
+print logs. On MacOS such logs will be printed via NSLog and can be seen in the
+`Console` app. On Windows they use `OutputDebugString` and can be seen using
+`DebugView` app. On Linux logging is done to stderr and can be seen in the
+terminal or redirected to a file.
 
-On Windows you will see native logs only if you omit the `-H windowsgui` linker flag. In this case you will see a black CMD console attached to your app and output will be shown there. JS errors will be shown as popup dialogs. Unfortunately, `console.log()` output won't be shown at all.
+To debug the web part of your app you may use `webview.Settings.Debug` flag. It
+enables Web Inspector in WebKit and work on Linux and MacOS (use popup menu to
+open the web inspector). On Windows there is no easy to way to enable
+debugging, but you may include Firebug in your HTML code:
 
-On MacOS if you run an app from the terminal - you get its standard output printed. If you run it from Finder or using `open` command - you don't see any logs.
+```html
+<script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>
+```
+
+Even though Firebug browser extension development has been stopped, Firebug
+Lite is still available and just works.
 
 ## Distributing webview apps
 
@@ -225,6 +238,8 @@ If you want to have more control over the app lifecycle you can use the followin
       .url = url,
       .width = w,
       .height = h,
+      .resizable = 1,
+      .debug = 0,
       .resizable = resizable,
   };
   /* Create webview window using the provided options */
@@ -239,6 +254,9 @@ If you want to have more control over the app lifecycle you can use the followin
 
   /* To terminate the webview main loop: */
   webview_terminate(&webview);
+
+  /* To print logs to stderr, MacOS Console or DebugView: */
+  webview_debug("exited: %d\n", 1);
 ```
 
 To evaluate arbitrary javascript code use the following C function:
