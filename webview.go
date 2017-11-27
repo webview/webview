@@ -128,7 +128,7 @@ func Open(title, url string, w, h int, resizable bool) error {
 	return nil
 }
 
-// Debug() prints a debug string using stderr on Linux/BSD, NSLog on MacOS and
+// Debug prints a debug string using stderr on Linux/BSD, NSLog on MacOS and
 // OutputDebugString on Windows.
 func Debug(a ...interface{}) {
 	s := C.CString(fmt.Sprint(a...))
@@ -136,7 +136,7 @@ func Debug(a ...interface{}) {
 	C.webview_print_log(s)
 }
 
-// Debugf() prints a formatted debug string using stderr on Linux/BSD, NSLog on
+// Debugf prints a formatted debug string using stderr on Linux/BSD, NSLog on
 // MacOS and OutputDebugString on Windows.
 func Debugf(format string, a ...interface{}) {
 	s := C.CString(fmt.Sprintf(format, a...))
