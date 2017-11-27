@@ -258,7 +258,7 @@ static int webview_init(struct webview *w) {
                      G_CALLBACK(webview_inspector_create_cb), w);
     g_signal_connect(G_OBJECT(inspector), "show-window",
                      G_CALLBACK(webview_inspector_show_cb), w);
-    g_signal_connect(G_OBJECT(inspector), "hide-window",
+    g_signal_connect(G_OBJECT(inspector), "close-window",
                      G_CALLBACK(webview_inspector_hide_cb), w);
   } else {
     g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
