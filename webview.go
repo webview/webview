@@ -128,7 +128,7 @@ func Open(title, url string, w, h int, resizable bool) error {
 	return nil
 }
 
-// Output a debug string. Uses stderr on Linux/BSD, NSLog on MacOS and
+// Debug() prints a debug string using stderr on Linux/BSD, NSLog on MacOS and
 // OutputDebugString on Windows.
 func Debug(a ...interface{}) {
 	s := C.CString(fmt.Sprint(a...))
@@ -136,8 +136,8 @@ func Debug(a ...interface{}) {
 	C.webview_print_log(s)
 }
 
-// Output formatted debug string. Uses stderr on Linux/BSD, NSLog on MacOS and
-// OutputDebugString on Windows.
+// Debugf() prints a formatted debug string using stderr on Linux/BSD, NSLog on
+// MacOS and OutputDebugString on Windows.
 func Debugf(format string, a ...interface{}) {
 	s := C.CString(fmt.Sprintf(format, a...))
 	defer C.free(unsafe.Pointer(s))
@@ -241,9 +241,8 @@ var _ WebView = &webview{}
 func boolToInt(b bool) int {
 	if b {
 		return 1
-	} else {
-		return 0
 	}
+	return 0
 }
 
 // New creates and opens a new webview window using the given settings. The
