@@ -14,6 +14,7 @@ struct webview_priv {
   GtkWidget *window;
   GtkWidget *scroller;
   GtkWidget *webview;
+  GtkWidget *inspector_window;
   int should_exit;
 };
 #elif defined(WEBVIEW_WINAPI)
@@ -59,6 +60,7 @@ struct webview {
   int width;
   int height;
   int resizable;
+  int debug;
   webview_external_invoke_cb_t external_invoke_cb;
   struct webview_priv priv;
   void *userdata;
@@ -89,6 +91,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
 static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
+static void webview_print_log(const char *s);
 
 static int webview(const char *title, const char *url, int w, int h,
                    int resizable) {
@@ -106,6 +109,15 @@ static int webview(const char *title, const char *url, int w, int h,
     ;
   webview_exit(&webview);
   return 0;
+}
+
+static void webview_debug(const char *format, ...) {
+  char buf[4096];
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buf, sizeof(buf), format, ap);
+  webview_print_log(buf);
+  va_end(ap);
 }
 
 #if defined(WEBVIEW_GTK)
@@ -182,6 +194,35 @@ static void webview_window_object_cleared_cb(WebKitWebView *webview,
   JSObjectSetProperty(context, glob, s, obj, kJSPropertyAttributeNone, NULL);
 }
 
+static WebKitWebView *webview_inspector_create_cb(WebKitWebInspector *inspector,
+                                                  WebKitWebView *view,
+                                                  gpointer arg) {
+  struct webview *w = (struct webview *)arg;
+  w->priv.inspector_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(w->priv.inspector_window), "WebInspector");
+  gtk_window_set_default_size(GTK_WINDOW(w->priv.inspector_window), 640, 480);
+  GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
+                                 GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_container_add(GTK_CONTAINER(w->priv.inspector_window), scroll);
+  gtk_widget_show(scroll);
+  GtkWidget *webview = webkit_web_view_new();
+  gtk_container_add(GTK_CONTAINER(scroll), webview);
+  return WEBKIT_WEB_VIEW(webview);
+}
+
+static gboolean webview_inspector_show_cb(WebKitWebInspector *inspector,
+                                          gpointer arg) {
+  gtk_widget_show(((struct webview *)arg)->priv.inspector_window);
+  return TRUE;
+}
+
+static gboolean webview_inspector_hide_cb(WebKitWebInspector *inspector,
+                                          gpointer arg) {
+  gtk_widget_hide(((struct webview *)arg)->priv.inspector_window);
+  return TRUE;
+}
+
 static int webview_init(struct webview *w) {
   if (gtk_init_check(0, NULL) == FALSE) {
     return -1;
@@ -207,12 +248,27 @@ static int webview_init(struct webview *w) {
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview), w->url);
   gtk_container_add(GTK_CONTAINER(w->priv.scroller), w->priv.webview);
 
+  if (w->debug) {
+    WebKitWebSettings *settings =
+        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(w->priv.webview));
+    g_object_set(G_OBJECT(settings), "enable-developer-extras", TRUE, NULL);
+    WebKitWebInspector *inspector =
+        webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(w->priv.webview));
+    g_signal_connect(G_OBJECT(inspector), "inspect-web-view",
+                     G_CALLBACK(webview_inspector_create_cb), w);
+    g_signal_connect(G_OBJECT(inspector), "show-window",
+                     G_CALLBACK(webview_inspector_show_cb), w);
+    g_signal_connect(G_OBJECT(inspector), "close-window",
+                     G_CALLBACK(webview_inspector_hide_cb), w);
+  } else {
+    g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
+                     G_CALLBACK(webview_context_menu_cb), w);
+  }
+
   gtk_widget_show_all(w->priv.window);
 
   g_signal_connect(G_OBJECT(w->priv.window), "destroy",
                    G_CALLBACK(webview_desroy_cb), w);
-  g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
-                   G_CALLBACK(webview_context_menu_cb), w);
   g_signal_connect(G_OBJECT(w->priv.webview), "window-object-cleared",
                    G_CALLBACK(webview_window_object_cleared_cb), w);
   return 0;
@@ -291,6 +347,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 
 static void webview_exit(struct webview *w) {}
+static void webview_print_log(const char *s) { fprintf(stderr, "%s\n", s); }
 
 #endif /* WEBVIEW_GTK */
 
@@ -1336,6 +1393,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
 
 static void webview_terminate(struct webview *w) { PostQuitMessage(0); }
 static void webview_exit(struct webview *w) { OleUninitialize(); }
+static void webview_print_log(const char *s) { OutputDebugString(s); }
 
 #endif /* WEBVIEW_WINAPI */
 
@@ -1421,6 +1479,9 @@ static int webview_init(struct webview *w) {
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
+  [[NSUserDefaults standardUserDefaults] setBool:!!w->debug
+                                          forKey:@"WebKitDeveloperExtras"];
+  [[NSUserDefaults standardUserDefaults] synchronize];
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
   NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
@@ -1562,6 +1623,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 
 static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 static void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
+static void webview_print_log(const char *s) { NSLog(@"%s", s); }
 
 #endif /* WEBVIEW_COCOA */
 
