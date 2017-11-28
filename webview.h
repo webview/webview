@@ -108,6 +108,7 @@ static const char *webview_check_url(const char *url) {
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
+static int webview_inject_css(struct webview *w, const char *css);
 static void webview_set_title(struct webview *w, const char *title);
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
@@ -116,6 +117,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                              void *arg);
 static void webview_terminate(struct webview *w);
 static void webview_exit(struct webview *w);
+static void webview_debug(const char *format, ...);
 static void webview_print_log(const char *s);
 
 static int webview(const char *title, const char *url, int w, int h,
@@ -146,7 +148,7 @@ static void webview_debug(const char *format, ...) {
 }
 
 static int webview_js_encode(const char *s, char *esc, size_t n) {
-  int r = 0;
+  int r = 1; /* At least one byte for trailing zero */
   for (; *s; s++) {
     if (*s >= 0x20 && *s < 0x80 && strchr("<>\\'\"", *s) == NULL) {
       if (n > 0) {
@@ -166,16 +168,19 @@ static int webview_js_encode(const char *s, char *esc, size_t n) {
   return r;
 }
 
-static void webview_inject_css(struct webview *w, const char *css) {
+static int webview_inject_css(struct webview *w, const char *css) {
   int n = webview_js_encode(css, NULL, 0);
   char *esc = (char *)calloc(1, sizeof(CSS_INJECT_FUNCTION) + n + 4);
+  if (esc == NULL) {
+    return -1;
+  }
   strcpy(esc, CSS_INJECT_FUNCTION);
   strcat(esc, "(\"");
-  webview_js_encode(css, esc + strlen(esc), n - strlen(esc));
+  webview_js_encode(css, esc + strlen(esc), n);
   strcat(esc, "\")");
-  printf("%s\n", esc);
-  webview_eval(w, esc);
+  int r = webview_eval(w, esc);
   free(esc);
+  return r;
 }
 
 #if defined(WEBVIEW_GTK)
