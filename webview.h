@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+#include <string.h>
+
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
@@ -87,8 +90,16 @@ struct webview_dispatch_arg {
   "20content=%22IE=edge%22%3E%3C%2Fhead%3E%0A%3Cbody%3E%3Cdiv%20id=%22app%22%" \
   "3E%3C%2Fdiv%3E%3Cscript%20type=%22text%2Fjavascript%22%3E%3C%2Fscript%3E%"  \
   "3C%2Fbody%3E%0A%3C%2Fhtml%3E"
+
+#define CSS_INJECT_FUNCTION                                                    \
+  "(function(e){var "                                                           \
+  "t=document.createElement('style'),d=document.head||document."               \
+  "getElementsByTagName('head')[0];t.setAttribute('type','text/"               \
+  "css'),t.styleSheet?t.styleSheet.cssText=e:t.appendChild(document."          \
+  "createTextNode(e)),d.appendChild(t)})"
+
 static const char *webview_check_url(const char *url) {
-  if (url == NULL || url[0] == 0) {
+  if (url == NULL || strlen(url) == 0) {
     return DEFAULT_URL;
   }
   return url;
@@ -132,6 +143,39 @@ static void webview_debug(const char *format, ...) {
   vsnprintf(buf, sizeof(buf), format, ap);
   webview_print_log(buf);
   va_end(ap);
+}
+
+static int webview_js_encode(const char *s, char *esc, size_t n) {
+  int r = 0;
+  for (; *s; s++) {
+    if (*s >= 0x20 && *s < 0x80 && strchr("<>\\'\"", *s) == NULL) {
+      if (n > 0) {
+        *esc++ = *s;
+        n--;
+      }
+      r++;
+    } else {
+      if (n > 0) {
+        snprintf(esc, n, "\\x%02x", (int)*s);
+        esc += 4;
+        n -= 4;
+      }
+      r+= 4;
+    }
+  }
+  return r;
+}
+
+static void webview_inject_css(struct webview *w, const char *css) {
+  int n = webview_js_encode(css, NULL, 0);
+  char *esc = (char *)calloc(1, sizeof(CSS_INJECT_FUNCTION) + n + 4);
+  strcpy(esc, CSS_INJECT_FUNCTION);
+  strcat(esc, "(\"");
+  webview_js_encode(css, esc + strlen(esc), n - strlen(esc));
+  strcat(esc, "\")");
+  printf("%s\n", esc);
+  webview_eval(w, esc);
+  free(esc);
 }
 
 #if defined(WEBVIEW_GTK)
