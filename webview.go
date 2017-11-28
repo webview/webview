@@ -74,6 +74,10 @@ static inline int CgoWebViewEval(void *w, char *js) {
 	return webview_eval((struct webview *)w, js);
 }
 
+static inline void CgoWebViewInjectCSS(void *w, char *css) {
+	webview_inject_css((struct webview *)w, css);
+}
+
 extern void _webviewDispatchGoCallback(void *);
 static inline void _webview_dispatch_cb(struct webview *w, void *arg) {
 	_webviewDispatchGoCallback(arg);
@@ -183,6 +187,10 @@ type WebView interface {
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
+	// InjectJS() injects an arbitrary block of CSS code using the JS API. This
+	// method must be called from the main thread only. See Dispatch() for more
+	// details.
+	InjectCSS(css string)
 	// Dialog() opens a system dialog of the given type and title. String
 	// argument can be provided for certain dialogs, such as alert boxes. For
 	// alert boxes argument is a message inside the dialog box.
@@ -314,6 +322,12 @@ func (w *webview) Eval(js string) {
 	p := C.CString(js)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewEval(w.w, p)
+}
+
+func (w *webview) InjectCSS(css string) {
+	p := C.CString(css)
+	defer C.free(unsafe.Pointer(p))
+	C.CgoWebViewInjectCSS(w.w, p)
 }
 
 func (w *webview) Terminate() {
