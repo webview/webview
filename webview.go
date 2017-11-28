@@ -90,7 +90,6 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"net/url"
 	"reflect"
 	"runtime"
 	"sync"
@@ -230,12 +229,6 @@ type webview struct {
 	w unsafe.Pointer
 }
 
-const defaultIndexHTML = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"></head>
-<body><div id="app"></div><script type="text/javascript"></script></body>
-</html>`
-
 var _ WebView = &webview{}
 
 func boolToInt(b bool) int {
@@ -257,9 +250,6 @@ func New(settings Settings) WebView {
 	}
 	if settings.Title == "" {
 		settings.Title = "WebView"
-	}
-	if settings.URL == "" {
-		settings.URL = `data:text/html,` + url.PathEscape(defaultIndexHTML)
 	}
 	w := &webview{}
 	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),

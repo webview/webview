@@ -80,6 +80,20 @@ struct webview_dispatch_arg {
   void *arg;
 };
 
+#define DEFAULT_URL                                                            \
+  "data:text/"                                                                 \
+  "html,%3C%21DOCTYPE%20html%3E%0A%3Chtml%20lang=%22en%22%3E%0A%3Chead%3E%"    \
+  "3Cmeta%20charset=%22utf-8%22%3E%3Cmeta%20http-equiv=%22X-UA-Compatible%22%" \
+  "20content=%22IE=edge%22%3E%3C%2Fhead%3E%0A%3Cbody%3E%3Cdiv%20id=%22app%22%" \
+  "3E%3C%2Fdiv%3E%3Cscript%20type=%22text%2Fjavascript%22%3E%3C%2Fscript%3E%"  \
+  "3C%2Fbody%3E%0A%3C%2Fhtml%3E"
+static const char *webview_check_url(const char *url) {
+  if (url == NULL || url[0] == 0) {
+    return DEFAULT_URL;
+  }
+  return url;
+}
+
 static int webview_init(struct webview *w);
 static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
@@ -245,7 +259,8 @@ static int webview_init(struct webview *w) {
   gtk_container_add(GTK_CONTAINER(w->priv.window), w->priv.scroller);
 
   w->priv.webview = webkit_web_view_new();
-  webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview), w->url);
+  webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview),
+                           webview_check_url(w->url));
   gtk_container_add(GTK_CONTAINER(w->priv.scroller), w->priv.webview);
 
   if (w->debug) {
@@ -909,15 +924,16 @@ static long DisplayHTMLPage(struct webview *w) {
   VARIANT *pVar;
   browserObject = *w->priv.browser;
   int isDataURL = 0;
+  const char *webview_url = webview_check_url(w->url);
   if (!browserObject->lpVtbl->QueryInterface(
           browserObject, iid_unref(&IID_IWebBrowser2), (void **)&webBrowser2)) {
     LPCSTR webPageName;
-    isDataURL = (strncmp(w->url, WEBVIEW_DATA_URL_PREFIX,
+    isDataURL = (strncmp(webview_url, WEBVIEW_DATA_URL_PREFIX,
                          strlen(WEBVIEW_DATA_URL_PREFIX)) == 0);
     if (isDataURL) {
       webPageName = "about:blank";
     } else {
-      webPageName = (LPCSTR)w->url;
+      webPageName = (LPCSTR)webview_url;
     }
     VariantInit(&myURL);
     myURL.vt = VT_BSTR;
@@ -944,9 +960,9 @@ static long DisplayHTMLPage(struct webview *w) {
       return 0;
     }
 
-    char *url = (char *)calloc(1, strlen(w->url) + 1);
+    char *url = (char *)calloc(1, strlen(webview_url) + 1);
     char *q = url;
-    for (const char *p = w->url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p;
+    for (const char *p = webview_url + strlen(WEBVIEW_DATA_URL_PREFIX); *q = *p;
          p++, q++) {
       if (*q == '%' && *(p + 1) && *(p + 2)) {
         sscanf(p + 1, "%02x", q);
@@ -1484,7 +1500,8 @@ static int webview_init(struct webview *w) {
   [[NSUserDefaults standardUserDefaults] synchronize];
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
-  NSURL *nsURL = [NSURL URLWithString:[NSString stringWithUTF8String:w->url]];
+  NSURL *nsURL = [NSURL
+      URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
   [w->priv.webview setAutoresizesSubviews:YES];
