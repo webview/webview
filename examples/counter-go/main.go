@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"html/template"
-
 	"github.com/zserge/webview"
 )
 
@@ -33,17 +30,7 @@ func main() {
 		w.Bind("counter", &Counter{})
 
 		// Inject CSS
-		w.Eval(fmt.Sprintf(`(function(css){
-			var style = document.createElement('style');
-			var head = document.head || document.getElementsByTagName('head')[0];
-			style.setAttribute('type', 'text/css');
-			if (style.styleSheet) {
-				style.styleSheet.cssText = css;
-			} else {
-				style.appendChild(document.createTextNode(css));
-			}
-			head.appendChild(style);
-		})("%s")`, template.JSEscapeString(string(MustAsset("js/styles.css")))))
+		w.InjectCSS(string(MustAsset("js/styles.css")))
 
 		// Inject web UI framework and app UI code
 		loadUIFramework(w)
