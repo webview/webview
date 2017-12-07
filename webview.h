@@ -207,7 +207,7 @@ webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
   return JSValueMakeUndefined(context);
 }
 static const JSStaticFunction webview_external_static_funcs[] = {
-    {"invoke_", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
+    {"invoke", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
     {NULL, NULL, 0},
 };
 
@@ -505,7 +505,7 @@ static HRESULT STDMETHODCALLTYPE JS_GetIDsOfNames(IDispatch FAR *This,
   if (cNames != 1) {
     return S_FALSE;
   }
-  if (wcscmp(rgszNames[0], L"invoke_") == 0) {
+  if (wcscmp(rgszNames[0], L"invoke") == 0) {
     rgDispId[0] = WEBVIEW_JS_INVOKE_ID;
     return S_OK;
   }
@@ -1490,6 +1490,10 @@ static BOOL webview_is_selector_excluded_from_web_script(id self, SEL cmd,
   return selector != @selector(invoke:);
 }
 
+static NSString *webview_webscript_name_for_selector(id self, SEL cmd, SEL selector) {
+  return selector == @selector(invoke:) ? @"invoke" : nil;
+}
+
 static void webview_did_clear_window_object(id self, SEL cmd, id webview,
                                             id script, id frame) {
   [script setValue:self forKey:@"external"];
@@ -1518,6 +1522,9 @@ static int webview_init(struct webview *w) {
   class_addMethod(object_getClass(webViewDelegateClass),
                   sel_registerName("isSelectorExcludedFromWebScript:"),
                   (IMP)webview_is_selector_excluded_from_web_script, "c@::");
+  class_addMethod(object_getClass(webViewDelegateClass),
+                  sel_registerName("webScriptNameForSelector:"),
+                  (IMP)webview_webscript_name_for_selector, "c@::");
   class_addMethod(webViewDelegateClass,
                   sel_registerName("webView:didClearWindowObject:forFrame:"),
                   (IMP)webview_did_clear_window_object, "v@:@@@");
