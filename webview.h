@@ -150,15 +150,16 @@ static void webview_debug(const char *format, ...) {
 static int webview_js_encode(const char *s, char *esc, size_t n) {
   int r = 1; /* At least one byte for trailing zero */
   for (; *s; s++) {
-    if (*s >= 0x20 && strchr("<>\\'\"", *s) == NULL) {
+    const unsigned char c = *s;
+    if (c >= 0x20 && c < 0x80 && strchr("<>\\'\"", c) == NULL) {
       if (n > 0) {
-        *esc++ = *s;
+        *esc++ = c;
         n--;
       }
       r++;
     } else {
       if (n > 0) {
-        snprintf(esc, n, "\\x%02x", (int)*s);
+        snprintf(esc, n, "\\x%02x", (int)c);
         esc += 4;
         n -= 4;
       }
