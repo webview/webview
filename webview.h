@@ -150,7 +150,7 @@ static void webview_debug(const char *format, ...) {
 static int webview_js_encode(const char *s, char *esc, size_t n) {
   int r = 1; /* At least one byte for trailing zero */
   for (; *s; s++) {
-    if (*s >= 0x20 && *s < 0x80 && strchr("<>\\'\"", *s) == NULL) {
+    if (*s >= 0x20 && strchr("<>\\'\"", *s) == NULL) {
       if (n > 0) {
         *esc++ = *s;
         n--;
