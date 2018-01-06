@@ -126,7 +126,7 @@ This works fairly well across the platforms, see `counter-go` example for more d
 
 You already have seen how to use `w.Eval()` to run Javascript inside the webview. There is also a way to call Go code from JavaScript.
 
-On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke_(someString)`.
+On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke(someString)`.
 
 This might seem very inconvenient, and that is why there is a dedicated `webview.Bind()` API call. It binds an existing Go object (struct or struct pointer) and creates/injects JS API for it. Now you can call JS methods and they will result in calling native Go methods. Even more, if you modify the Go object - it can be automatically serialized to JSON and passed to the web UI to keep things in sync.
 
@@ -274,11 +274,11 @@ void my_cb(struct webview *w, const char *arg) {
 }
 
 // JS (note the trailing underscore)
-window.external.invoke_('some arg');
+window.external.invoke('some arg');
 // Exactly one string argument must be provided, to pass more complex objects
 // serialize them to JSON and parse it in C. To pass binary data consider using
 // base64.
-window.external.invoke_(JSON.stringify({fn: 'sum', x: 5, y: 3}));
+window.external.invoke(JSON.stringify({fn: 'sum', x: 5, y: 3}));
 ```
 
 Webview library is meant to be used from a single UI thread only. So if you
