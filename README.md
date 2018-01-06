@@ -273,7 +273,7 @@ void my_cb(struct webview *w, const char *arg) {
 	...
 }
 
-// JS (note the trailing underscore)
+// JS
 window.external.invoke('some arg');
 // Exactly one string argument must be provided, to pass more complex objects
 // serialize them to JSON and parse it in C. To pass binary data consider using
