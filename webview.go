@@ -12,7 +12,7 @@ package webview
 
 /*
 #cgo linux openbsd CFLAGS: -DWEBVIEW_GTK=1
-#cgo linux openbsd pkg-config: gtk+-3.0 webkitgtk-3.0
+#cgo linux openbsd pkg-config: gtk+-3.0 webkit2gtk-4.0
 
 #cgo windows CFLAGS: -DWEBVIEW_WINAPI=1
 #cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -mwindows
@@ -148,8 +148,8 @@ func Debugf(format string, a ...interface{}) {
 }
 
 // ExternalInvokeCallbackFunc is a function type that is called every time
-// "window.external.invoke_()" is called from JavaScript. Data is the only
-// obligatory string parameter passed into the "invoke_(data)" function from
+// "window.external.invoke()" is called from JavaScript. Data is the only
+// obligatory string parameter passed into the "invoke(data)" function from
 // JavaScript. To pass more complex data serialized JSON or base64 encoded
 // string can be used.
 type ExternalInvokeCallbackFunc func(w WebView, data string)
@@ -169,7 +169,7 @@ type Settings struct {
 	Resizable bool
 	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
 	Debug bool
-	// A callback that is executed when JavaScript calls "window.external.invoke_()"
+	// A callback that is executed when JavaScript calls "window.external.invoke()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
 }
 
@@ -366,7 +366,7 @@ if (typeof {{.Name}} === 'undefined') {
 }
 {{ range .Methods }}
 {{$.Name}}.{{.JSName}} = function({{.JSArgs}}) {
-	window.external.invoke_(JSON.stringify({scope: "{{$.Name}}", method: "{{.Name}}", params: [{{.JSArgs}}]}));
+	window.external.invoke(JSON.stringify({scope: "{{$.Name}}", method: "{{.Name}}", params: [{{.JSArgs}}]}));
 };
 {{ end }}
 `))

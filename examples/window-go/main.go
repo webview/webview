@@ -21,11 +21,11 @@ var indexHTML = `
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	</head>
 	<body>
-		<button onclick="external.invoke_('close')">Close</button>
-		<button onclick="external.invoke_('open')">Open</button>
-		<button onclick="external.invoke_('save')">Save</button>
-		<button onclick="external.invoke_('message')">Message</button>
-		<button onclick="external.invoke_('changeTitle:'+document.getElementById('new-title').value)">
+		<button onclick="external.invoke('close')">Close</button>
+		<button onclick="external.invoke('open')">Open</button>
+		<button onclick="external.invoke('save')">Save</button>
+		<button onclick="external.invoke('message')">Message</button>
+		<button onclick="external.invoke('changeTitle:'+document.getElementById('new-title').value)">
 			Change title
 		</button>
 		<input id="new-title" type="text" />

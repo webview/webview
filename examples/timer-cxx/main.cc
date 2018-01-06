@@ -76,8 +76,8 @@ static const char *html = R"html(
 <html>
 <body>
   <p id="ticks"></p>
-  <button onclick="external.invoke_('reset')">reset</button>
-  <button onclick="external.invoke_('exit')">exit</button>
+  <button onclick="external.invoke('reset')">reset</button>
+  <button onclick="external.invoke('exit')">exit</button>
   <script type="text/javascript">
     function updateTicks(n) {
       document.getElementById('ticks').innerText = 'ticks ' + n;
