@@ -33,7 +33,7 @@ static inline void CgoWebViewFree(void *w) {
 }
 
 static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int debug) {
-	struct webview *w = (struct webview *) malloc(sizeof(*w));
+	struct webview *w = (struct webview *) calloc(1, sizeof(*w));
 	w->width = width;
 	w->height = height;
 	w->title = title;
@@ -311,7 +311,7 @@ func (w *webview) Dialog(dlgType DialogType, flags int, title string, arg string
 	defer C.free(unsafe.Pointer(titlePtr))
 	argPtr := C.CString(arg)
 	defer C.free(unsafe.Pointer(argPtr))
-	resultPtr := (*C.char)(C.malloc(maxPath))
+	resultPtr := (*C.char)(C.calloc((C.size_t)(unsafe.Sizeof((*C.char)(nil))), (C.size_t)(maxPath)))
 	defer C.free(unsafe.Pointer(resultPtr))
 	C.CgoDialog(w.w, C.int(dlgType), C.int(flags), titlePtr,
 		argPtr, resultPtr, C.size_t(maxPath))

@@ -1594,9 +1594,6 @@ static void webview_set_title(struct webview *w, const char *title) {
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz) {
-  if (result != NULL) {
-    result[0] = '\0';
-  }
   if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ||
       dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
     NSSavePanel *panel;
