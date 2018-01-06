@@ -3,6 +3,8 @@
 function UI(items) {
   var h = picodom.h;
   function submit(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
     var el = document.getElementById('task-name-input');
     rpc.addTask(el.value);
     el.value = '';
@@ -35,7 +37,7 @@ function UI(items) {
 var element;
 var oldNode;
 var rpc = {
-  invoke : function(arg) { window.external.invoke_(JSON.stringify(arg)); },
+  invoke : function(arg) { window.external.invoke(JSON.stringify(arg)); },
   init : function() { rpc.invoke({cmd : 'init'}); },
   log : function() {
     var s = '';

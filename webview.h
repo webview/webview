@@ -11,9 +11,10 @@ extern "C" {
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
-#include <webkit/webkit.h>
+#include <webkit2/webkit2.h>
 
 struct webview_priv {
+  int ready;
   GtkWidget *window;
   GtkWidget *scroller;
   GtkWidget *webview;
@@ -92,7 +93,7 @@ struct webview_dispatch_arg {
   "3C%2Fbody%3E%0A%3C%2Fhtml%3E"
 
 #define CSS_INJECT_FUNCTION                                                    \
-  "(function(e){var "                                                           \
+  "(function(e){var "                                                          \
   "t=document.createElement('style'),d=document.head||document."               \
   "getElementsByTagName('head')[0];t.setAttribute('type','text/"               \
   "css'),t.styleSheet?t.styleSheet.cssText=e:t.appendChild(document."          \
@@ -163,7 +164,7 @@ static int webview_js_encode(const char *s, char *esc, size_t n) {
         esc += 4;
         n -= 4;
       }
-      r+= 4;
+      r += 4;
     }
   }
   return r;
@@ -185,43 +186,33 @@ static int webview_inject_css(struct webview *w, const char *css) {
 }
 
 #if defined(WEBVIEW_GTK)
-static JSValueRef
-webview_external_invoke_cb(JSContextRef context, JSObjectRef fn,
-                           JSObjectRef thisObject, size_t argc,
-                           const JSValueRef args[], JSValueRef *err) {
-  (void)fn;
-  (void)thisObject;
-  (void)argc;
-  (void)args;
-  (void)err;
-  struct webview *w = (struct webview *)JSObjectGetPrivate(thisObject);
-  if (w->external_invoke_cb != NULL && argc == 1) {
-    JSStringRef js = JSValueToStringCopy(context, args[0], NULL);
-    size_t n = JSStringGetMaximumUTF8CStringSize(js);
-    char *s = g_new(char, n);
-    JSStringGetUTF8CString(js, s, n);
-    w->external_invoke_cb(w, s);
-    JSStringRelease(js);
-    g_free(s);
+static void external_message_received_cb(WebKitUserContentManager *m,
+                                         WebKitJavascriptResult *r,
+                                         gpointer arg) {
+  (void)m;
+  struct webview *w = (struct webview *)arg;
+  if (w->external_invoke_cb == NULL) {
+    return;
   }
-  return JSValueMakeUndefined(context);
+  JSGlobalContextRef context = webkit_javascript_result_get_global_context(r);
+  JSValueRef value = webkit_javascript_result_get_value(r);
+  JSStringRef js = JSValueToStringCopy(context, value, NULL);
+  size_t n = JSStringGetMaximumUTF8CStringSize(js);
+  char *s = g_new(char, n);
+  JSStringGetUTF8CString(js, s, n);
+  w->external_invoke_cb(w, s);
+  JSStringRelease(js);
+  g_free(s);
 }
-static const JSStaticFunction webview_external_static_funcs[] = {
-    {"invoke", webview_external_invoke_cb, kJSPropertyAttributeReadOnly},
-    {NULL, NULL, 0},
-};
 
-static const JSClassDefinition webview_external_def = {
-    0,          kJSClassAttributeNone,
-    "external", NULL,
-    NULL,       webview_external_static_funcs,
-    NULL,       NULL,
-    NULL,       NULL,
-    NULL,       NULL,
-    NULL,       NULL,
-    NULL,       NULL,
-    NULL,
-};
+static void webview_load_changed_cb(WebKitWebView *webview,
+                                    WebKitLoadEvent event, gpointer arg) {
+  (void)webview;
+  struct webview *w = (struct webview *)arg;
+  if (event == WEBKIT_LOAD_FINISHED) {
+    w->priv.ready = 1;
+  }
+}
 
 static void webview_desroy_cb(GtkWidget *widget, gpointer arg) {
   (void)widget;
@@ -242,56 +233,12 @@ static gboolean webview_context_menu_cb(WebKitWebView *webview,
   return TRUE;
 }
 
-static void webview_window_object_cleared_cb(WebKitWebView *webview,
-                                             WebKitWebFrame *frame,
-                                             gpointer context_ptr,
-                                             gpointer window_object,
-                                             gpointer arg) {
-  (void)webview;
-  (void)frame;
-  (void)window_object;
-  JSContextRef context = (JSContextRef)context_ptr;
-  JSClassRef cls = JSClassCreate(&webview_external_def);
-  JSObjectRef obj = JSObjectMake(context, cls, arg);
-  JSObjectRef glob = JSContextGetGlobalObject(context);
-  JSStringRef s = JSStringCreateWithUTF8CString("external");
-  JSObjectSetProperty(context, glob, s, obj, kJSPropertyAttributeNone, NULL);
-}
-
-static WebKitWebView *webview_inspector_create_cb(WebKitWebInspector *inspector,
-                                                  WebKitWebView *view,
-                                                  gpointer arg) {
-  struct webview *w = (struct webview *)arg;
-  w->priv.inspector_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_title(GTK_WINDOW(w->priv.inspector_window), "WebInspector");
-  gtk_window_set_default_size(GTK_WINDOW(w->priv.inspector_window), 640, 480);
-  GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
-                                 GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-  gtk_container_add(GTK_CONTAINER(w->priv.inspector_window), scroll);
-  gtk_widget_show(scroll);
-  GtkWidget *webview = webkit_web_view_new();
-  gtk_container_add(GTK_CONTAINER(scroll), webview);
-  return WEBKIT_WEB_VIEW(webview);
-}
-
-static gboolean webview_inspector_show_cb(WebKitWebInspector *inspector,
-                                          gpointer arg) {
-  gtk_widget_show(((struct webview *)arg)->priv.inspector_window);
-  return TRUE;
-}
-
-static gboolean webview_inspector_hide_cb(WebKitWebInspector *inspector,
-                                          gpointer arg) {
-  gtk_widget_hide(((struct webview *)arg)->priv.inspector_window);
-  return TRUE;
-}
-
 static int webview_init(struct webview *w) {
   if (gtk_init_check(0, NULL) == FALSE) {
     return -1;
   }
 
+  w->priv.ready = 0;
   w->priv.should_exit = 0;
   w->priv.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(w->priv.window), w->title);
@@ -308,23 +255,23 @@ static int webview_init(struct webview *w) {
   w->priv.scroller = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_add(GTK_CONTAINER(w->priv.window), w->priv.scroller);
 
-  w->priv.webview = webkit_web_view_new();
+  WebKitUserContentManager *m = webkit_user_content_manager_new();
+  webkit_user_content_manager_register_script_message_handler(m, "external");
+  g_signal_connect(m, "script-message-received::external",
+                   G_CALLBACK(external_message_received_cb), w);
+
+  w->priv.webview = webkit_web_view_new_with_user_content_manager(m);
   webkit_web_view_load_uri(WEBKIT_WEB_VIEW(w->priv.webview),
                            webview_check_url(w->url));
+  g_signal_connect(G_OBJECT(w->priv.webview), "load-changed",
+                   G_CALLBACK(webview_load_changed_cb), w);
   gtk_container_add(GTK_CONTAINER(w->priv.scroller), w->priv.webview);
 
   if (w->debug) {
-    WebKitWebSettings *settings =
+    WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(w->priv.webview));
-    g_object_set(G_OBJECT(settings), "enable-developer-extras", TRUE, NULL);
-    WebKitWebInspector *inspector =
-        webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(w->priv.webview));
-    g_signal_connect(G_OBJECT(inspector), "inspect-web-view",
-                     G_CALLBACK(webview_inspector_create_cb), w);
-    g_signal_connect(G_OBJECT(inspector), "show-window",
-                     G_CALLBACK(webview_inspector_show_cb), w);
-    g_signal_connect(G_OBJECT(inspector), "close-window",
-                     G_CALLBACK(webview_inspector_hide_cb), w);
+    webkit_settings_set_enable_write_console_messages_to_stdout(settings, true);
+    webkit_settings_set_enable_developer_extras(settings, true);
   } else {
     g_signal_connect(G_OBJECT(w->priv.webview), "context-menu",
                      G_CALLBACK(webview_context_menu_cb), w);
@@ -332,10 +279,14 @@ static int webview_init(struct webview *w) {
 
   gtk_widget_show_all(w->priv.window);
 
+  webkit_web_view_run_javascript(
+      WEBKIT_WEB_VIEW(w->priv.webview),
+      "window.external={invoke:function(x){"
+      "window.webkit.messageHandlers.external.postMessage(x);}}",
+      NULL, NULL, NULL);
+
   g_signal_connect(G_OBJECT(w->priv.window), "destroy",
                    G_CALLBACK(webview_desroy_cb), w);
-  g_signal_connect(G_OBJECT(w->priv.webview), "window-object-cleared",
-                   G_CALLBACK(webview_window_object_cleared_cb), w);
   return 0;
 }
 
@@ -351,6 +302,7 @@ static void webview_set_title(struct webview *w, const char *title) {
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz) {
+  (void)flags;
   GtkWidget *dlg;
   if (result != NULL) {
     result[0] = '\0';
@@ -388,7 +340,11 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
 }
 
 static int webview_eval(struct webview *w, const char *js) {
-  webkit_web_view_execute_script(WEBKIT_WEB_VIEW(w->priv.webview), js);
+  while (w->priv.ready == 0) {
+    g_main_context_iteration(0, FALSE);
+  }
+  webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(w->priv.webview), js, NULL,
+                                 NULL, NULL);
   return 0;
 }
 
@@ -411,7 +367,7 @@ static void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
 
 static void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 
-static void webview_exit(struct webview *w) {}
+static void webview_exit(struct webview *w) { (void)w; }
 static void webview_print_log(const char *s) { fprintf(stderr, "%s\n", s); }
 
 #endif /* WEBVIEW_GTK */
@@ -1490,7 +1446,8 @@ static BOOL webview_is_selector_excluded_from_web_script(id self, SEL cmd,
   return selector != @selector(invoke:);
 }
 
-static NSString *webview_webscript_name_for_selector(id self, SEL cmd, SEL selector) {
+static NSString *webview_webscript_name_for_selector(id self, SEL cmd,
+                                                     SEL selector) {
   return selector == @selector(invoke:) ? @"invoke" : nil;
 }
 

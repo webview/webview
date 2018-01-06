@@ -6,10 +6,10 @@ go:
 matrix:
   include:
     - os: linux
-      addons:
-        apt:
-          packages:
-            - libwebkitgtk-3.0-dev
+      before_install:
+        - sudo add-apt-repository ppa:webkit-team/ppa -y
+        - sudo apt-get update
+        - sudo apt-get install libwebkit2gtk-4.0-dev -y
     - os: osx
       osx_image: xcode8.3
 
