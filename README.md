@@ -10,7 +10,7 @@ A tiny cross-platform webview library for C/C++/Golang to build modern cross-pla
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
-It uses Cocoa/WebKit on macOS, gtk-webkit on Linux and MSHTML (IE10/11) on Windows.
+It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and MSHTML (IE10/11) on Windows.
 
 <p align="center"><img alt="linux" src="examples/todo-go/screenshots/screenshots.png"></p>
 
@@ -155,7 +155,7 @@ Lite is still available and just works.
 
 ## Distributing webview apps
 
-On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit, so if you distribute your app in DEB or RPM format include those dependencies. Application icon can be specified by providing a `.desktop` file.
+On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit2, so if you distribute your app in DEB or RPM format include those dependencies. Application icon can be specified by providing a `.desktop` file.
 
 On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
 
@@ -204,7 +204,7 @@ Build it:
 
 ```bash
 # Linux
-$ cc main.c -DWEBVIEW_GTK=1 $(shell pkg-config --cflags --libs gtk+-3.0 webkitgtk-3.0) -o webview-example
+$ cc main.c -DWEBVIEW_GTK=1 $(shell pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0) -o webview-example
 # MacOS
 $ cc main.c -DWEBVIEW_COCOA=1 -x objective-c -framework Cocoa -framework WebKit -o webview-example
 # Windows (mingw)
