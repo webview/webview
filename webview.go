@@ -226,6 +226,13 @@ const (
 	DialogTypeAlert
 )
 
+const (
+	// DialogFlagFile is a normal file picker dialog
+	DialogFlagFile = C.WEBVIEW_DIALOG_FLAG_FILE
+	// DialogFlagDirectory is an open directory dialog
+	DialogFlagDirectory = C.WEBVIEW_DIALOG_FLAG_DIRECTORY
+)
+
 var (
 	m     sync.Mutex
 	index uintptr

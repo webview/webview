@@ -23,6 +23,7 @@ var indexHTML = `
 	<body>
 		<button onclick="external.invoke('close')">Close</button>
 		<button onclick="external.invoke('open')">Open</button>
+		<button onclick="external.invoke('opendir')">Open directory</button>
 		<button onclick="external.invoke('save')">Save</button>
 		<button onclick="external.invoke('message')">Message</button>
 		<button onclick="external.invoke('changeTitle:'+document.getElementById('new-title').value)">
@@ -54,6 +55,8 @@ func handleRPC(w webview.WebView, data string) {
 		w.Terminate()
 	case data == "open":
 		log.Println("open", w.Dialog(webview.DialogTypeOpen, 0, "Open file", ""))
+	case data == "opendir":
+		log.Println("open", w.Dialog(webview.DialogTypeOpen, webview.DialogFlagDirectory, "Open directory", ""))
 	case data == "save":
 		log.Println("save", w.Dialog(webview.DialogTypeSave, 0, "Save file", ""))
 	case data == "message":
