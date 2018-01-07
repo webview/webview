@@ -76,6 +76,9 @@ enum webview_dialog_type {
   WEBVIEW_DIALOG_TYPE_ALERT = 2
 };
 
+#define WEBVIEW_DIALOG_FLAG_FILE (0 << 0)
+#define WEBVIEW_DIALOG_FLAG_DIRECTORY (1 << 0)
+
 typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
 
 struct webview_dispatch_arg {
@@ -302,7 +305,6 @@ static void webview_set_title(struct webview *w, const char *title) {
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz) {
-  (void)flags;
   GtkWidget *dlg;
   if (result != NULL) {
     result[0] = '\0';
@@ -311,8 +313,11 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
       dlgtype == WEBVIEW_DIALOG_TYPE_SAVE) {
     dlg = gtk_file_chooser_dialog_new(
         title, GTK_WINDOW(w->priv.window),
-        (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ? (flags==1?GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER:GTK_FILE_CHOOSER_ACTION_OPEN)
-                                             : GTK_FILE_CHOOSER_ACTION_SAVE),
+        (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN
+             ? (flags & WEBVIEW_DIALOG_FLAG_DIRECTORY
+                    ? GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER
+                    : GTK_FILE_CHOOSER_ACTION_OPEN)
+             : GTK_FILE_CHOOSER_ACTION_SAVE),
         "_Cancel", GTK_RESPONSE_CANCEL,
         (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN ? "_Open" : "_Save"),
         GTK_RESPONSE_ACCEPT, NULL);
@@ -1358,8 +1363,8 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
               iid_unref(&IID_IFileOpenDialog), (void **)&dlg) != S_OK) {
         goto error_dlg;
       }
-      if (flags ==1 ){
-              add_opts |= FOS_PICKFOLDERS;
+      if (flags & WEBVIEW_DIALOG_FLAG_DIRECTORY) {
+        add_opts |= FOS_PICKFOLDERS;
       }
       add_opts |= FOS_NOCHANGEDIR | FOS_ALLNONSTORAGEITEMS | FOS_NOVALIDATE |
                   FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST | FOS_SHAREAWARE |
@@ -1602,10 +1607,10 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     NSSavePanel *panel;
     if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN) {
       NSOpenPanel *openPanel = [NSOpenPanel openPanel];
-      if(flags==1){
+      if (flags & WEBVIEW_DIALOG_FLAG_DIRECTORY) {
         [openPanel setCanChooseFiles:NO];
         [openPanel setCanChooseDirectories:YES];
-      }else{
+      } else {
         [openPanel setCanChooseFiles:YES];
         [openPanel setCanChooseDirectories:NO];
       }
