@@ -1652,17 +1652,17 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
   } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
     NSAlert *a = [NSAlert new];
     switch (flags & WEBVIEW_DIALOG_FLAG_ALERT_MASK) {
-	    case WEBVIEW_DIALOG_FLAG_INFO:
-		    [a setAlertStyle:NSAlertStyleInformational];
-		    break;
-	    case WEBVIEW_DIALOG_FLAG_WARNING:
-		    NSLog(@"warning");
-		    [a setAlertStyle:NSAlertStyleWarning];
-		    break;
-	    case WEBVIEW_DIALOG_FLAG_ERROR:
-		    NSLog(@"error");
-		    [a setAlertStyle:NSAlertStyleCritical];
-		    break;
+    case WEBVIEW_DIALOG_FLAG_INFO:
+      [a setAlertStyle:NSAlertStyleInformational];
+      break;
+    case WEBVIEW_DIALOG_FLAG_WARNING:
+      NSLog(@"warning");
+      [a setAlertStyle:NSAlertStyleWarning];
+      break;
+    case WEBVIEW_DIALOG_FLAG_ERROR:
+      NSLog(@"error");
+      [a setAlertStyle:NSAlertStyleCritical];
+      break;
     }
     [a setShowsHelp:NO];
     [a setShowsSuppressionButton:NO];
