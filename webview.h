@@ -1432,7 +1432,19 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     GlobalFree(warg);
     GlobalFree(wtitle);
 #else
-    MessageBox(w->priv.hwnd, arg, title, MB_OK);
+    UINT type = MB_OK;
+    switch (flags & WEBVIEW_DIALOG_FLAG_ALERT_MASK) {
+    case WEBVIEW_DIALOG_FLAG_INFO:
+      type |= MB_ICONINFORMATION;
+      break;
+    case WEBVIEW_DIALOG_FLAG_WARNING:
+      type |= MB_ICONWARNING;
+      break;
+    case WEBVIEW_DIALOG_FLAG_ERROR:
+      type |= MB_ICONERROR;
+      break;
+    }
+    MessageBox(w->priv.hwnd, arg, title, type);
 #endif
   }
 }
