@@ -119,6 +119,7 @@ static int webview_loop(struct webview *w, int blocking);
 static int webview_eval(struct webview *w, const char *js);
 static int webview_inject_css(struct webview *w, const char *css);
 static void webview_set_title(struct webview *w, const char *title);
+static void webview_set_fullscreen(struct webview *w, int fullscreen);
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz);
@@ -305,6 +306,14 @@ static int webview_loop(struct webview *w, int blocking) {
 
 static void webview_set_title(struct webview *w, const char *title) {
   gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
+}
+
+static void webview_set_fullscreen(struct webview *w, int fullscreen) {
+  if (fullscreen) {
+    gtk_window_fullscreen(GTK_WINDOW(w->priv.window));
+  } else {
+    gtk_window_unfullscreen(GTK_WINDOW(w->priv.window));
+  }
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,

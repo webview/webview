@@ -22,6 +22,8 @@ var indexHTML = `
 	</head>
 	<body>
 		<button onclick="external.invoke('close')">Close</button>
+		<button onclick="external.invoke('fullscreen')">Fullscreen</button>
+		<button onclick="external.invoke('unfullscreen')">Unfullscreen</button>
 		<button onclick="external.invoke('open')">Open</button>
 		<button onclick="external.invoke('opendir')">Open directory</button>
 		<button onclick="external.invoke('save')">Save</button>
@@ -56,6 +58,10 @@ func handleRPC(w webview.WebView, data string) {
 	switch {
 	case data == "close":
 		w.Terminate()
+	case data == "fullscreen":
+		w.SetFullscreen(true)
+	case data == "unfullscreen":
+		w.SetFullscreen(false)
 	case data == "open":
 		log.Println("open", w.Dialog(webview.DialogTypeOpen, 0, "Open file", ""))
 	case data == "opendir":
@@ -78,10 +84,11 @@ func handleRPC(w webview.WebView, data string) {
 func main() {
 	url := startServer()
 	w := webview.New(webview.Settings{
-		Width:  windowWidth,
-		Height: windowHeight,
-		Title:  "Simple window demo",
-		URL:    url,
+		Width:     windowWidth,
+		Height:    windowHeight,
+		Title:     "Simple window demo",
+		Resizable: true,
+		URL:       url,
 		ExternalInvokeCallback: handleRPC,
 	})
 	defer w.Exit()

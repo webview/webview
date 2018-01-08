@@ -64,6 +64,10 @@ static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
 }
 
+static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
+	webview_set_fullscreen((struct webview *)w, fullscreen);
+}
+
 static inline void CgoDialog(void *w, int dlgtype, int flags,
 		char *title, char *arg, char *res, size_t ressz) {
 	webview_dialog(w, dlgtype, flags,
@@ -184,6 +188,9 @@ type WebView interface {
 	// SetTitle() changes window title. This method must be called from the main
 	// thread only. See Dispatch() for more details.
 	SetTitle(title string)
+	// SetFullscreen() controls window full-screen mode. This method must be
+	// called from the main thread only. See Dispatch() for more details.
+	SetFullscreen(fullscreen bool)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
@@ -316,6 +323,10 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) SetFullscreen(fullscreen bool) {
+	C.CgoWebViewSetFullscreen(w.w, C.int(boolToInt(fullscreen)))
 }
 
 func (w *webview) Dialog(dlgType DialogType, flags int, title string, arg string) string {
