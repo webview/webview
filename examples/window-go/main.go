@@ -26,6 +26,9 @@ var indexHTML = `
 		<button onclick="external.invoke('opendir')">Open directory</button>
 		<button onclick="external.invoke('save')">Save</button>
 		<button onclick="external.invoke('message')">Message</button>
+		<button onclick="external.invoke('info')">Info</button>
+		<button onclick="external.invoke('warning')">Warning</button>
+		<button onclick="external.invoke('error')">Error</button>
 		<button onclick="external.invoke('changeTitle:'+document.getElementById('new-title').value)">
 			Change title
 		</button>
@@ -61,6 +64,12 @@ func handleRPC(w webview.WebView, data string) {
 		log.Println("save", w.Dialog(webview.DialogTypeSave, 0, "Save file", ""))
 	case data == "message":
 		w.Dialog(webview.DialogTypeAlert, 0, "Hello", "Hello, world!")
+	case data == "info":
+		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagInfo, "Hello", "Hello, info!")
+	case data == "warning":
+		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagWarning, "Hello", "Hello, warning!")
+	case data == "error":
+		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagError, "Hello", "Hello, error!")
 	case strings.HasPrefix(data, "changeTitle:"):
 		w.SetTitle(strings.TrimPrefix(data, "changeTitle:"))
 	}

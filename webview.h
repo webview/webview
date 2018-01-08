@@ -79,6 +79,11 @@ enum webview_dialog_type {
 #define WEBVIEW_DIALOG_FLAG_FILE (0 << 0)
 #define WEBVIEW_DIALOG_FLAG_DIRECTORY (1 << 0)
 
+#define WEBVIEW_DIALOG_FLAG_INFO (1 << 1)
+#define WEBVIEW_DIALOG_FLAG_WARNING (2 << 1)
+#define WEBVIEW_DIALOG_FLAG_ERROR (3 << 1)
+#define WEBVIEW_DIALOG_FLAG_ALERT_MASK (3 << 1)
+
 typedef void (*webview_dispatch_fn)(struct webview *w, void *arg);
 
 struct webview_dispatch_arg {
@@ -334,9 +339,20 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     }
     gtk_widget_destroy(dlg);
   } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
-    dlg =
-        gtk_message_dialog_new(GTK_WINDOW(w->priv.window), GTK_DIALOG_MODAL,
-                               GTK_MESSAGE_OTHER, GTK_BUTTONS_OK, "%s", title);
+    GtkMessageType type = GTK_MESSAGE_OTHER;
+    switch (flags & WEBVIEW_DIALOG_FLAG_ALERT_MASK) {
+    case WEBVIEW_DIALOG_FLAG_INFO:
+      type = GTK_MESSAGE_INFO;
+      break;
+    case WEBVIEW_DIALOG_FLAG_WARNING:
+      type = GTK_MESSAGE_WARNING;
+      break;
+    case WEBVIEW_DIALOG_FLAG_ERROR:
+      type = GTK_MESSAGE_ERROR;
+      break;
+    }
+    dlg = gtk_message_dialog_new(GTK_WINDOW(w->priv.window), GTK_DIALOG_MODAL,
+                                 type, GTK_BUTTONS_OK, "%s", title);
     gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dlg), "%s",
                                              arg);
     gtk_dialog_run(GTK_DIALOG(dlg));

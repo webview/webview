@@ -231,6 +231,12 @@ const (
 	DialogFlagFile = C.WEBVIEW_DIALOG_FLAG_FILE
 	// DialogFlagDirectory is an open directory dialog
 	DialogFlagDirectory = C.WEBVIEW_DIALOG_FLAG_DIRECTORY
+	// DialogFlagInfo is an info alert dialog
+	DialogFlagInfo = C.WEBVIEW_DIALOG_FLAG_INFO
+	// DialogFlagWarning is a warning alert dialog
+	DialogFlagWarning = C.WEBVIEW_DIALOG_FLAG_WARNING
+	// DialogFlagError is an error dialog
+	DialogFlagError = C.WEBVIEW_DIALOG_FLAG_ERROR
 )
 
 var (
