@@ -123,7 +123,7 @@ func init() {
 // URL must be provided and can user either a http or https protocol, or be a
 // local file:// URL. On some platforms "data:" URLs are also supported
 // (Linux/MacOS).
-func Open(title, url string, w, h int, color uint64, resizable bool) error {
+func Open(title, url string, w, h int, resizable bool) error {
 	titleStr := C.CString(title)
 	defer C.free(unsafe.Pointer(titleStr))
 	urlStr := C.CString(url)
@@ -133,7 +133,7 @@ func Open(title, url string, w, h int, color uint64, resizable bool) error {
 		resize = C.int(1)
 	}
 
-	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.ulong(color))
+	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.ulong(0xffffff))
 	if r != 0 {
 		return errors.New("failed to create webview")
 	}
