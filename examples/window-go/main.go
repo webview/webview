@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/zserge/webview"
@@ -35,6 +36,10 @@ var indexHTML = `
 			Change title
 		</button>
 		<input id="new-title" type="text" />
+		<button onclick="external.invoke('changeColor:'+document.getElementById('new-color').value)">
+			Change color
+		</button>
+		<input id="new-color" type="text" />
 	</body>
 </html>
 `
@@ -78,6 +83,13 @@ func handleRPC(w webview.WebView, data string) {
 		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagError, "Hello", "Hello, error!")
 	case strings.HasPrefix(data, "changeTitle:"):
 		w.SetTitle(strings.TrimPrefix(data, "changeTitle:"))
+	case strings.HasPrefix(data, "changeColor:"):
+		col, err := strconv.ParseUint(strings.TrimPrefix(data, "changeColor:"), 16, 32)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		w.SetColor(uint32(col))
 	}
 }
 
@@ -86,6 +98,7 @@ func main() {
 	w := webview.New(webview.Settings{
 		Width:     windowWidth,
 		Height:    windowHeight,
+		Color:     0xffffff,
 		Title:     "Simple window demo",
 		Resizable: true,
 		URL:       url,
