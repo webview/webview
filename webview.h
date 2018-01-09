@@ -67,7 +67,7 @@ struct webview {
   const char *title;
   int width;
   int height;
-  unsigned int color;
+  unsigned long color;
   int resizable;
   int debug;
   webview_external_invoke_cb_t external_invoke_cb;
@@ -125,7 +125,7 @@ static int webview_eval(struct webview *w, const char *js);
 static int webview_inject_css(struct webview *w, const char *css);
 static void webview_set_title(struct webview *w, const char *title);
 static void webview_set_fullscreen(struct webview *w, int fullscreen);
-static void webview_set_color(struct webview *w, unsigned int color);
+static void webview_set_color(struct webview *w, unsigned long color);
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz);
@@ -137,7 +137,7 @@ static void webview_debug(const char *format, ...);
 static void webview_print_log(const char *s);
 
 static int webview(const char *title, const char *url, int w, int h,
-                   int resizable, unsigned int color) {
+                   int resizable, unsigned long color) {
   struct webview webview = {0};
   webview.title = title;
   webview.url = url;
@@ -321,6 +321,10 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   } else {
     gtk_window_unfullscreen(GTK_WINDOW(w->priv.window));
   }
+}
+
+static void webview_set_color(struct webview *w, unsigned long color){
+
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
@@ -1324,6 +1328,10 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
+static void webview_set_color(struct webview *w, unsigned long color){
+  
+}
+
 /* These are missing parts from MinGW */
 #ifndef __IFileDialog_INTERFACE_DEFINED__
 #define __IFileDialog_INTERFACE_DEFINED__
@@ -1684,7 +1692,7 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-static void webview_set_color(struct webview *w, unsigned int color) {
+static void webview_set_color(struct webview *w, unsigned long color) {
   [w->priv.window setBackgroundColor:[NSColor
                                       colorWithSRGBRed:((color >> 16) & 0xFF) / 255.0
                                       green:((color >> 8) & 0xFF) / 255.0

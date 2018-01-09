@@ -89,7 +89,7 @@ func handleRPC(w webview.WebView, data string) {
 			log.Println(err)
 			return
 		}
-		w.SetColor(uint32(col))
+		w.SetColor(col)
 	}
 }
 

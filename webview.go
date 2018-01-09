@@ -32,7 +32,7 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, unsigned int color, int resizable, int debug) {
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, unsigned long color, int resizable, int debug) {
 	struct webview *w = (struct webview *) calloc(1, sizeof(*w));
 	w->width = width;
 	w->height = height;
@@ -69,7 +69,7 @@ static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
 	webview_set_fullscreen((struct webview *)w, fullscreen);
 }
 
-static inline void CgoWebViewSetColor(void *w, unsigned int color) {
+static inline void CgoWebViewSetColor(void *w, unsigned long color) {
 	webview_set_color((struct webview *)w, color);
 }
 
@@ -123,7 +123,7 @@ func init() {
 // URL must be provided and can user either a http or https protocol, or be a
 // local file:// URL. On some platforms "data:" URLs are also supported
 // (Linux/MacOS).
-func Open(title, url string, w, h int, color uint32, resizable bool) error {
+func Open(title, url string, w, h int, color uint64, resizable bool) error {
 	titleStr := C.CString(title)
 	defer C.free(unsafe.Pointer(titleStr))
 	urlStr := C.CString(url)
@@ -133,7 +133,7 @@ func Open(title, url string, w, h int, color uint32, resizable bool) error {
 		resize = C.int(1)
 	}
 
-	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.uint(color))
+	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, C.ulong(color))
 	if r != 0 {
 		return errors.New("failed to create webview")
 	}
@@ -175,7 +175,7 @@ type Settings struct {
 	// Window height in pixels
 	Height int
 	// Window color
-	Color uint32
+	Color uint64
 	// Allows/disallows window resizing
 	Resizable bool
 	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
@@ -199,7 +199,7 @@ type WebView interface {
 	// called from the main thread only. See Dispatch() for more details.
 	SetFullscreen(fullscreen bool)
 	//
-	SetColor(color uint32)
+	SetColor(color uint64)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
@@ -290,7 +290,7 @@ func New(settings Settings) WebView {
 	}
 	w := &webview{}
 	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),
-		C.CString(settings.Title), C.CString(settings.URL), C.uint(settings.Color),
+		C.CString(settings.Title), C.CString(settings.URL), C.ulong(settings.Color),
 		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)))
 	m.Lock()
 	if settings.ExternalInvokeCallback != nil {
@@ -338,8 +338,8 @@ func (w *webview) SetFullscreen(fullscreen bool) {
 	C.CgoWebViewSetFullscreen(w.w, C.int(boolToInt(fullscreen)))
 }
 
-func (w *webview) SetColor(color uint32) {
-	C.CgoWebViewSetColor(w.w, C.uint(color))
+func (w *webview) SetColor(color uint64) {
+	C.CgoWebViewSetColor(w.w, C.ulong(color))
 }
 
 func (w *webview) Dialog(dlgType DialogType, flags int, title string, arg string) string {
