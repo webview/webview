@@ -1698,6 +1698,7 @@ static void webview_set_color(struct webview *w, unsigned int color) {
     [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];
   }
   free(colors);
+  w->color = color;
 };
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
