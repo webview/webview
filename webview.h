@@ -323,7 +323,7 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-static void webview_set_color(struct webview *w, unsigned long color){
+static void webview_set_color(struct webview *w, unsigned long color) {
 
 }
 
@@ -1328,8 +1328,8 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-static void webview_set_color(struct webview *w, unsigned long color){
-  
+static void webview_set_color(struct webview *w, unsigned long color) {
+
 }
 
 /* These are missing parts from MinGW */
@@ -1598,7 +1598,6 @@ static int webview_init(struct webview *w) {
   [w->priv.window setTitle:nsTitle];
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
-  //[w->priv.window setOpaque:NO];
   [w->priv.window setTitlebarAppearsTransparent:YES];
   webview_set_color(w, w->color);
 

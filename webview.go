@@ -198,7 +198,8 @@ type WebView interface {
 	// SetFullscreen() controls window full-screen mode. This method must be
 	// called from the main thread only. See Dispatch() for more details.
 	SetFullscreen(fullscreen bool)
-	//
+	// SetColor() changes window color. This method must be called from the main
+	// thread only. See Dispatch() for more details.
 	SetColor(color uint64)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
