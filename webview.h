@@ -1471,6 +1471,7 @@ static void webview_print_log(const char *s) { OutputDebugString(s); }
 #define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
 #define NSWindowStyleMaskClosable NSClosableWindowMask
+#define NSWindowStyleMaskFullScreen NSFullScreenWindowMask
 #define NSEventMaskAny NSAnyEventMask
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagOption NSAlternateKeyMask
@@ -1634,6 +1635,13 @@ static int webview_eval(struct webview *w, const char *js) {
 static void webview_set_title(struct webview *w, const char *title) {
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   [w->priv.window setTitle:nsTitle];
+}
+
+static void webview_set_fullscreen(struct webview *w, int fullscreen) {
+  int b = ((([w->priv.window styleMask] & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen) ? 1 : 0);
+  if (b != fullscreen) {
+    [w->priv.window toggleFullScreen:nil];
+  }
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
