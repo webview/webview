@@ -67,6 +67,7 @@ struct webview {
   const char *title;
   int width;
   int height;
+  const char *color;
   int resizable;
   int debug;
   webview_external_invoke_cb_t external_invoke_cb;
@@ -124,6 +125,7 @@ static int webview_eval(struct webview *w, const char *js);
 static int webview_inject_css(struct webview *w, const char *css);
 static void webview_set_title(struct webview *w, const char *title);
 static void webview_set_fullscreen(struct webview *w, int fullscreen);
+static void webview_set_color(struct webview *w, const char *color);
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
                            int flags, const char *title, const char *arg,
                            char *result, size_t resultsz);
@@ -318,6 +320,10 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   } else {
     gtk_window_unfullscreen(GTK_WINDOW(w->priv.window));
   }
+}
+
+static void webview_set_color(struct webview *w, const char *color) {
+
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
@@ -1321,6 +1327,10 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
+static void webview_set_color(struct webview *w, const char *color) {
+
+}
+
 /* These are missing parts from MinGW */
 #ifndef __IFileDialog_INTERFACE_DEFINED__
 #define __IFileDialog_INTERFACE_DEFINED__
@@ -1593,6 +1603,7 @@ static int webview_init(struct webview *w) {
   [[NSUserDefaults standardUserDefaults] synchronize];
   w->priv.webview =
       [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
+  webview_set_color(w, w->color);
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
@@ -1675,6 +1686,31 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   if (b != fullscreen) {
     [w->priv.window toggleFullScreen:nil];
   }
+}
+
+static void webview_set_color(struct webview *w, const char *color) {
+  if (color == NULL || color[0] == '\0') {
+    [w->priv.window setBackgroundColor:[NSColor windowBackgroundColor]];
+    [w->priv.window setTitlebarAppearsTransparent:NO];
+    [w->priv.webview setDrawsBackground:YES];
+    return;
+  }
+  unsigned long col = strtoul(color, NULL, 16);
+  [w->priv.window setBackgroundColor:[NSColor
+                                      colorWithSRGBRed:((col >> 16) & 0xFF) / 255.0
+                                      green:((col >> 8) & 0xFF) / 255.0
+                                      blue:((col) & 0xFF) / 255.0
+                                      alpha:255.0]];
+  CGFloat *colors = (CGFloat *)malloc(4 * sizeof(CGFloat));
+  [[w->priv.window backgroundColor] getComponents:colors];
+  if (0.5 >= ((colors[0] * 299.0) + (colors[1] * 587.0) + (colors[2] * 114.0)) / 1000.0) {
+    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantDark]];
+  } else {
+    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];
+  }
+  free(colors);
+  [w->priv.window setTitlebarAppearsTransparent:YES];
+  [w->priv.webview setDrawsBackground:NO];
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,

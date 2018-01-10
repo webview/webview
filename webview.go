@@ -32,12 +32,13 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int debug) {
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, char *color, int resizable, int debug) {
 	struct webview *w = (struct webview *) calloc(1, sizeof(*w));
 	w->width = width;
 	w->height = height;
 	w->title = title;
 	w->url = url;
+	w->color = color;
 	w->resizable = resizable;
 	w->debug = debug;
 	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
@@ -62,6 +63,10 @@ static inline void CgoWebViewExit(void *w) {
 
 static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
+}
+
+static inline void CgoWebViewSetColor(void *w, char *color) {
+	webview_set_color((struct webview *)w, color);
 }
 
 static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
@@ -171,6 +176,8 @@ type Settings struct {
 	Height int
 	// Allows/disallows window resizing
 	Resizable bool
+	// Window color in 6-digits RGB hex
+	Color string
 	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
 	Debug bool
 	// A callback that is executed when JavaScript calls "window.external.invoke()"
@@ -188,6 +195,9 @@ type WebView interface {
 	// SetTitle() changes window title. This method must be called from the main
 	// thread only. See Dispatch() for more details.
 	SetTitle(title string)
+	// SetColor() changes window background color. This method must be called from
+	// the main thread only. See Dispatch() for more details.
+	SetColor(color string)
 	// SetFullscreen() controls window full-screen mode. This method must be
 	// called from the main thread only. See Dispatch() for more details.
 	SetFullscreen(fullscreen bool)
@@ -281,7 +291,7 @@ func New(settings Settings) WebView {
 	}
 	w := &webview{}
 	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),
-		C.CString(settings.Title), C.CString(settings.URL),
+		C.CString(settings.Title), C.CString(settings.URL), C.CString(settings.Color),
 		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)))
 	m.Lock()
 	if settings.ExternalInvokeCallback != nil {
@@ -323,6 +333,12 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) SetColor(color string) {
+	p := C.CString(color)
+	defer C.free(unsafe.Pointer(p))
+	C.CgoWebViewSetColor(w.w, p)
 }
 
 func (w *webview) SetFullscreen(fullscreen bool) {
