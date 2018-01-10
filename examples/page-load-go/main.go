@@ -40,6 +40,7 @@ func runLocalHTTP() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Local HTTP Server",
 		URL:   url,
+		Color: 0xffffff,
 	})
 	defer w.Exit()
 	w.Run()
@@ -63,6 +64,7 @@ func runLocalFile() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Local file URL",
 		URL:   "file://" + abs,
+		Color: 0xffffff,
 	})
 	defer w.Exit()
 	w.Run()
@@ -72,6 +74,7 @@ func runDataURL() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Data URL",
 		URL:   "data:text/html," + url.PathEscape(indexHTML),
+		Color: 0xffffff,
 	})
 	defer w.Exit()
 	w.Run()
@@ -81,6 +84,7 @@ func runInjectJS() {
 	w := webview.New(webview.Settings{
 		Title: "Loaded: Injected via JavaScript",
 		URL:   `data:text/html,<html><script type="text/javascript"></script></html>`,
+		Color: 0xffffff,
 	})
 	defer w.Exit()
 	w.Dispatch(func() {

@@ -88,6 +88,7 @@ func main() {
 	w := webview.New(webview.Settings{
 		Width:  windowWidth,
 		Height: windowHeight,
+		Color:  0xffffff,
 		Title:  "Simple canvas demo",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,

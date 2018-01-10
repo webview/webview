@@ -116,6 +116,7 @@ func main() {
 	w := webview.New(webview.Settings{
 		Width:  320,
 		Height: 480,
+		Color:  0x9c27b0,
 		Title:  "Todo App",
 		URL:    url,
 		ExternalInvokeCallback: handleRPC,

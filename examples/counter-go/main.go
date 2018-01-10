@@ -22,6 +22,7 @@ func (c *Counter) Reset() {
 func main() {
 	w := webview.New(webview.Settings{
 		Title: "Click counter: " + uiFrameworkName,
+		Color: 0xe91e63,
 	})
 	defer w.Exit()
 
