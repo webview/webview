@@ -304,6 +304,8 @@ Also, there is a more more advanced complete C++ app, [Slide](https://github.com
 
 Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
 
+FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
+
 ## License
 
 Code is distributed under MIT license, feel free to use it in your proprietary
