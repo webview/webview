@@ -36,6 +36,10 @@ struct webview_priv {
 struct webview_priv {
   HWND hwnd;
   IOleObject **browser;
+  BOOL is_fullscreen;
+  DWORD saved_style;
+  DWORD saved_ex_style;
+  RECT saved_rect;
 };
 #elif defined(WEBVIEW_COCOA)
 #import <Cocoa/Cocoa.h>
@@ -1288,6 +1292,35 @@ static void webview_set_title(struct webview *w, const char *title) {
   SetWindowText(w->priv.hwnd, title);
 }
 
+static void webview_set_fullscreen(struct webview *w, int fullscreen) {
+  if (w->priv.is_fullscreen == !!fullscreen) {
+    return;
+  }
+  if (w->priv.is_fullscreen == 0) {
+    w->priv.saved_style = GetWindowLong(w->priv.hwnd, GWL_STYLE);
+    w->priv.saved_ex_style = GetWindowLong(w->priv.hwnd, GWL_EXSTYLE);
+    GetWindowRect(w->priv.hwnd, &w->priv.saved_rect);
+  }
+  w->priv.is_fullscreen = !!fullscreen;
+  if (fullscreen) {
+    MONITORINFO monitor_info;
+    SetWindowLong(w->priv.hwnd, GWL_STYLE, w->priv.saved_style & ~(WS_CAPTION | WS_THICKFRAME));
+    SetWindowLong(w->priv.hwnd, GWL_EXSTYLE, w->priv.saved_ex_style & ~(WS_EX_DLGMODALFRAME |  WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+    monitor_info.cbSize = sizeof(monitor_info);
+    GetMonitorInfo(MonitorFromWindow(w->priv.hwnd, MONITOR_DEFAULTTONEAREST), &monitor_info);
+    RECT r;
+    r.left = monitor_info.rcMonitor.left;
+    r.top = monitor_info.rcMonitor.top;
+    r.right = monitor_info.rcMonitor.right;
+    r.bottom = monitor_info.rcMonitor.bottom;
+    SetWindowPos(w->priv.hwnd, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+  } else {
+    SetWindowLong(w->priv.hwnd, GWL_STYLE, w->priv.saved_style);
+    SetWindowLong(w->priv.hwnd, GWL_EXSTYLE, w->priv.saved_ex_style);
+    SetWindowPos(w->priv.hwnd, NULL, w->priv.saved_rect.left, w->priv.saved_rect.top, w->priv.saved_rect.right - w->priv.saved_rect.left, w->priv.saved_rect.bottom - w->priv.saved_rect.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+  }
+}
+
 /* These are missing parts from MinGW */
 #ifndef __IFileDialog_INTERFACE_DEFINED__
 #define __IFileDialog_INTERFACE_DEFINED__
@@ -1471,6 +1504,7 @@ static void webview_print_log(const char *s) { OutputDebugString(s); }
 #define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
 #define NSWindowStyleMaskClosable NSClosableWindowMask
+#define NSWindowStyleMaskFullScreen NSFullScreenWindowMask
 #define NSEventMaskAny NSAnyEventMask
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagOption NSAlternateKeyMask
@@ -1634,6 +1668,13 @@ static int webview_eval(struct webview *w, const char *js) {
 static void webview_set_title(struct webview *w, const char *title) {
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   [w->priv.window setTitle:nsTitle];
+}
+
+static void webview_set_fullscreen(struct webview *w, int fullscreen) {
+  int b = ((([w->priv.window styleMask] & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen) ? 1 : 0);
+  if (b != fullscreen) {
+    [w->priv.window toggleFullScreen:nil];
+  }
 }
 
 static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
