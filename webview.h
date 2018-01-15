@@ -146,8 +146,8 @@ static int webview(const char *title, const char *url, int w, int h,
   if (r != 0) {
     return r;
   }
-  while (webview_loop(&webview, 1) == 0)
-    ;
+  while (webview_loop(&webview, 1) == 0) {
+  }
   webview_exit(&webview);
   return 0;
 }
@@ -189,11 +189,12 @@ static int webview_inject_css(struct webview *w, const char *css) {
   if (esc == NULL) {
     return -1;
   }
-  strcpy(esc, CSS_INJECT_FUNCTION);
-  strcat(esc, "(\"");
-  webview_js_encode(css, esc + strlen(esc), n);
-  strcat(esc, "\")");
+  char *js = (char *) calloc(1, n);
+  webview_js_encode(css, js, n);
+  snprintf(esc, sizeof(CSS_INJECT_FUNCTION) + n + 4, "%s(\"%s\")",
+           CSS_INJECT_FUNCTION, js);
   int r = webview_eval(w, esc);
+  free(js);
   free(esc);
   return r;
 }
@@ -565,13 +566,13 @@ Site_RequestNewObjectLayout(IOleClientSite FAR *This) {
 static HRESULT STDMETHODCALLTYPE Site_QueryInterface(IOleClientSite FAR *This,
                                                      REFIID riid,
                                                      void **ppvObject) {
-  if (iid_eq(riid, &IID_IUnknown) || iid_eq(riid, &IID_IOleClientSite))
+  if (iid_eq(riid, &IID_IUnknown) || iid_eq(riid, &IID_IOleClientSite)) {
     *ppvObject = &((_IOleClientSiteEx *)This)->client;
-  else if (iid_eq(riid, &IID_IOleInPlaceSite))
+  } else if (iid_eq(riid, &IID_IOleInPlaceSite)) {
     *ppvObject = &((_IOleClientSiteEx *)This)->inplace;
-  else if (iid_eq(riid, &IID_IDocHostUIHandler))
+  } else if (iid_eq(riid, &IID_IDocHostUIHandler)) {
     *ppvObject = &((_IOleClientSiteEx *)This)->ui;
-  else {
+  } else {
     *ppvObject = 0;
     return (E_NOINTERFACE);
   }
@@ -953,7 +954,7 @@ error:
 }
 
 #define WEBVIEW_DATA_URL_PREFIX "data:text/html,"
-static long DisplayHTMLPage(struct webview *w) {
+static int DisplayHTMLPage(struct webview *w) {
   IWebBrowser2 *webBrowser2;
   VARIANT myURL;
   LPDISPATCH lpDispatch;
@@ -1095,8 +1096,8 @@ static int webview_fix_ie_compat_mode() {
   if (GetModuleFileName(NULL, appname, MAX_PATH + 1) == 0) {
     return -1;
   }
-  for (p = &appname[strlen(appname) - 1]; p != appname && *p != '\\'; p--)
-    ;
+  for (p = &appname[strlen(appname) - 1]; p != appname && *p != '\\'; p--) {
+  }
   p++;
   if (RegCreateKey(HKEY_CURRENT_USER, WEBVIEW_KEY_FEATURE_BROWSER_EMULATION,
                    &hKey) != ERROR_SUCCESS) {
@@ -1262,9 +1263,7 @@ static int webview_eval(struct webview *w, const char *js) {
   static const char *epilogue = ";})();";
   int n = strlen(prologue) + strlen(epilogue) + strlen(js) + 1;
   char *eval = (char *)malloc(n);
-  strcpy(eval, prologue);
-  strcat(eval, js);
-  strcat(eval, epilogue);
+  snprintf(eval, n, "%s%s%s", prologue, js, epilogue);
   wchar_t *buf = webview_to_utf16(eval);
   if (buf == NULL) {
     return -1;
@@ -1304,20 +1303,31 @@ static void webview_set_fullscreen(struct webview *w, int fullscreen) {
   w->priv.is_fullscreen = !!fullscreen;
   if (fullscreen) {
     MONITORINFO monitor_info;
-    SetWindowLong(w->priv.hwnd, GWL_STYLE, w->priv.saved_style & ~(WS_CAPTION | WS_THICKFRAME));
-    SetWindowLong(w->priv.hwnd, GWL_EXSTYLE, w->priv.saved_ex_style & ~(WS_EX_DLGMODALFRAME |  WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+    SetWindowLong(w->priv.hwnd, GWL_STYLE,
+                  w->priv.saved_style & ~(WS_CAPTION | WS_THICKFRAME));
+    SetWindowLong(w->priv.hwnd, GWL_EXSTYLE,
+                  w->priv.saved_ex_style &
+                      ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
+                        WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
     monitor_info.cbSize = sizeof(monitor_info);
-    GetMonitorInfo(MonitorFromWindow(w->priv.hwnd, MONITOR_DEFAULTTONEAREST), &monitor_info);
+    GetMonitorInfo(MonitorFromWindow(w->priv.hwnd, MONITOR_DEFAULTTONEAREST),
+                   &monitor_info);
     RECT r;
     r.left = monitor_info.rcMonitor.left;
     r.top = monitor_info.rcMonitor.top;
     r.right = monitor_info.rcMonitor.right;
     r.bottom = monitor_info.rcMonitor.bottom;
-    SetWindowPos(w->priv.hwnd, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    SetWindowPos(w->priv.hwnd, NULL, r.left, r.top, r.right - r.left,
+                 r.bottom - r.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
   } else {
     SetWindowLong(w->priv.hwnd, GWL_STYLE, w->priv.saved_style);
     SetWindowLong(w->priv.hwnd, GWL_EXSTYLE, w->priv.saved_ex_style);
-    SetWindowPos(w->priv.hwnd, NULL, w->priv.saved_rect.left, w->priv.saved_rect.top, w->priv.saved_rect.right - w->priv.saved_rect.left, w->priv.saved_rect.bottom - w->priv.saved_rect.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    SetWindowPos(w->priv.hwnd, NULL, w->priv.saved_rect.left,
+                 w->priv.saved_rect.top,
+                 w->priv.saved_rect.right - w->priv.saved_rect.left,
+                 w->priv.saved_rect.bottom - w->priv.saved_rect.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
   }
 }
 
@@ -1467,7 +1477,7 @@ static void webview_dialog(struct webview *w, enum webview_dialog_type dlgtype,
     return;
   } else if (dlgtype == WEBVIEW_DIALOG_TYPE_ALERT) {
 #if 0
-    /* MinGW often doesn't contain TaskDialog, so we'll use MessageBox for now */
+    /* MinGW often doesn't contain TaskDialog, we'll use MessageBox for now */
     WCHAR *wtitle = webview_to_utf16(title);
     WCHAR *warg = webview_to_utf16(arg);
     TaskDialog(w->priv.hwnd, NULL, NULL, wtitle, warg, 0, NULL, NULL);
@@ -1671,7 +1681,10 @@ static void webview_set_title(struct webview *w, const char *title) {
 }
 
 static void webview_set_fullscreen(struct webview *w, int fullscreen) {
-  int b = ((([w->priv.window styleMask] & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen) ? 1 : 0);
+  int b = ((([w->priv.window styleMask] & NSWindowStyleMaskFullScreen) ==
+            NSWindowStyleMaskFullScreen)
+               ? 1
+               : 0);
   if (b != fullscreen) {
     [w->priv.window toggleFullScreen:nil];
   }
