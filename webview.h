@@ -254,7 +254,7 @@ static void webview_load_changed_cb(WebKitWebView *webview,
   }
 }
 
-static void webview_desroy_cb(GtkWidget *widget, gpointer arg) {
+static void webview_destroy_cb(GtkWidget *widget, gpointer arg) {
   (void)widget;
   struct webview *w = (struct webview *)arg;
   webview_terminate(w);
@@ -326,7 +326,7 @@ int webview_init(struct webview *w) {
       NULL, NULL, NULL);
 
   g_signal_connect(G_OBJECT(w->priv.window), "destroy",
-                   G_CALLBACK(webview_desroy_cb), w);
+                   G_CALLBACK(webview_destroy_cb), w);
   return 0;
 }
 
