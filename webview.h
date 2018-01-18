@@ -10,8 +10,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -141,7 +141,8 @@ static const char *webview_check_url(const char *url) {
   return url;
 }
 
-int webview(const char *title, const char *url, int w, int h, int resizable);
+int webview(const char *title, const char *url, int width, int height,
+            int resizable);
 
 int webview_init(struct webview *w);
 int webview_loop(struct webview *w, int blocking);
@@ -161,12 +162,13 @@ void webview_print_log(const char *s);
 #ifdef WEBVIEW_IMPLEMENTATION
 #undef WEBVIEW_IMPLEMENTATION
 
-int webview(const char *title, const char *url, int w, int h, int resizable) {
+int webview(const char *title, const char *url, int width, int height,
+            int resizable) {
   struct webview webview = {0};
   webview.title = title;
   webview.url = url;
-  webview.width = w;
-  webview.height = h;
+  webview.width = width;
+  webview.height = height;
   webview.resizable = resizable;
   int r = webview_init(&webview);
   if (r != 0) {
