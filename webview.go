@@ -25,6 +25,7 @@ package webview
 #include "webview.h"
 
 extern void _webviewExternalInvokeCallback(void *, void *);
+extern void _webviewExternalDidFinishLoadForFrameCallback(void *);
 
 static inline void CgoWebViewFree(void *w) {
 	free((void *)((struct webview *)w)->title);
@@ -41,6 +42,7 @@ static inline void *CgoWebViewCreate(int width, int height, char *title, char *u
 	w->resizable = resizable;
 	w->debug = debug;
 	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
+	w->external_didFinishLoadForFrame_cb = (webview_external_didFinishLoadForFrame_cb_t) _webviewExternalDidFinishLoadForFrameCallback;
 	if (webview_init(w) != 0) {
 		CgoWebViewFree(w);
 		return NULL;
@@ -60,6 +62,10 @@ static inline void CgoWebViewExit(void *w) {
 	webview_exit((struct webview *)w);
 }
 
+static inline void CgoWebViewClearCache(void *w) {
+	webview_ClearCache((struct webview *)w);
+}
+
 static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
 }
@@ -76,6 +82,22 @@ static inline void CgoDialog(void *w, int dlgtype, int flags,
 
 static inline int CgoWebViewEval(void *w, char *js) {
 	return webview_eval((struct webview *)w, js);
+}
+
+static inline int CgoWebViewStringByEvaluatingJavaScriptFromString(void *w, char *js) {
+	return webview_stringByEvaluatingJavaScriptFromString((struct webview *)w, js);
+}
+
+static inline int CgoWebViewIsLoading(void *w) {
+	return webview_isLoading((struct webview *)w);
+}
+
+static inline void * CgoWebViewLoadingUrl(void *w) {
+	return (void *)webview_loadingUrl((struct webview *)w);
+}
+
+static inline void * CgoWebViewGetCookie(void *w) {
+	return (void *)webview_getcookie((struct webview *)w);
 }
 
 static inline void CgoWebViewInjectCSS(void *w, char *css) {
@@ -151,6 +173,7 @@ func Debugf(format string, a ...interface{}) {
 	C.webview_print_log(s)
 }
 
+type ExternalDidFinishLoadForFrameCallbackFunc func(w WebView)
 // ExternalInvokeCallbackFunc is a function type that is called every time
 // "window.external.invoke()" is called from JavaScript. Data is the only
 // obligatory string parameter passed into the "invoke(data)" function from
@@ -175,6 +198,7 @@ type Settings struct {
 	Debug bool
 	// A callback that is executed when JavaScript calls "window.external.invoke()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
+	ExternalFinishLoadForFrameCallback ExternalDidFinishLoadForFrameCallbackFunc
 }
 
 // WebView is an interface that wraps the basic methods for controlling the UI
@@ -194,6 +218,8 @@ type WebView interface {
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
+
+	StringByEvaluatingJavaScriptFromString(js string)
 	// InjectJS() injects an arbitrary block of CSS code using the JS API. This
 	// method must be called from the main thread only. See Dispatch() for more
 	// details.
@@ -212,6 +238,11 @@ type WebView interface {
 	// Exit() closes the window and cleans up the resources. Use Terminate() to
 	// forcefully break out of the main UI loop.
 	Exit()
+	ClearCache()
+
+	GetCookie() string
+	LoadUrl() string
+	IsLoading() bool
 	// Bind() registers a binding between a given value and a JavaScript object with the
 	// given name.  A value must be a struct or a struct pointer. All methods are
 	// available under their camel-case names, starting with a lower-case letter,
@@ -251,6 +282,7 @@ var (
 	index uintptr
 	fns   = map[uintptr]func(){}
 	cbs   = map[WebView]ExternalInvokeCallbackFunc{}
+	dbs   = map[WebView]ExternalDidFinishLoadForFrameCallbackFunc{}
 )
 
 type webview struct {
@@ -289,6 +321,12 @@ func New(settings Settings) WebView {
 	} else {
 		cbs[w] = func(w WebView, data string) {}
 	}
+
+	if settings.ExternalFinishLoadForFrameCallback != nil {
+		dbs[w] = settings.ExternalFinishLoadForFrameCallback
+	} else {
+		dbs[w] = func(w WebView) {}
+	}
 	m.Unlock()
 	return w
 }
@@ -308,6 +346,18 @@ func (w *webview) Run() {
 
 func (w *webview) Exit() {
 	C.CgoWebViewExit(w.w)
+}
+
+func (w *webview) IsLoading() bool {
+	return (int)(C.CgoWebViewIsLoading(w.w)) == 1
+}
+
+func (w *webview) LoadUrl() string {
+	return C.GoString((*C.char)(C.CgoWebViewLoadingUrl(w.w)))
+}
+
+func (w *webview) GetCookie() string {
+	return C.GoString((*C.char)(C.CgoWebViewGetCookie(w.w)))
 }
 
 func (w *webview) Dispatch(f func()) {
@@ -348,6 +398,18 @@ func (w *webview) Eval(js string) {
 	C.CgoWebViewEval(w.w, p)
 }
 
+func (w *webview) StringByEvaluatingJavaScriptFromString(js string) {
+	p := C.CString(js)
+	defer C.free(unsafe.Pointer(p))
+	C.CgoWebViewStringByEvaluatingJavaScriptFromString(w.w, p)
+}
+
+func (w *webview) ClearCache() {
+	C.CgoWebViewClearCache(w.w)
+}
+
+
+
 func (w *webview) InjectCSS(css string) {
 	p := C.CString(css)
 	defer C.free(unsafe.Pointer(p))
@@ -382,6 +444,22 @@ func _webviewExternalInvokeCallback(w unsafe.Pointer, data unsafe.Pointer) {
 	}
 	m.Unlock()
 	cb(wv, C.GoString((*C.char)(data)))
+}
+
+//export _webviewExternalDidFinishLoadForFrameCallback
+func _webviewExternalDidFinishLoadForFrameCallback(w unsafe.Pointer) {
+	m.Lock()
+	var (
+		cb ExternalDidFinishLoadForFrameCallbackFunc
+		wv WebView
+	)
+	for wv, cb = range dbs {
+		if wv.(*webview).w == w {
+			break
+		}
+	}
+	m.Unlock()
+	cb(wv)
 }
 
 var bindTmpl = template.Must(template.New("").Parse(`

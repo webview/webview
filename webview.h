@@ -90,6 +90,7 @@ struct webview;
 
 typedef void (*webview_external_invoke_cb_t)(struct webview *w,
                                              const char *arg);
+typedef void (*webview_external_didFinishLoadForFrame_cb_t)(struct webview *w);
 
 struct webview {
   const char *url;
@@ -99,6 +100,7 @@ struct webview {
   int resizable;
   int debug;
   webview_external_invoke_cb_t external_invoke_cb;
+  webview_external_didFinishLoadForFrame_cb_t external_didFinishLoadForFrame_cb;
   struct webview_priv priv;
   void *userdata;
 };
@@ -153,6 +155,7 @@ WEBVIEW_API int webview(const char *title, const char *url, int width,
 WEBVIEW_API int webview_init(struct webview *w);
 WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
+WEBVIEW_API int webview_stringByEvaluatingJavaScriptFromString(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
@@ -161,9 +164,10 @@ WEBVIEW_API void webview_dialog(struct webview *w,
                                 const char *title, const char *arg,
                                 char *result, size_t resultsz);
 WEBVIEW_API void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
-                                  void *arg);
+                             void *arg);
 WEBVIEW_API void webview_terminate(struct webview *w);
 WEBVIEW_API void webview_exit(struct webview *w);
+WEBVIEW_API void webview_ClearCache(struct webview *w);
 WEBVIEW_API void webview_debug(const char *format, ...);
 WEBVIEW_API void webview_print_log(const char *s);
 
@@ -1572,6 +1576,14 @@ static void webview_window_will_close(id self, SEL cmd, id notification) {
   webview_terminate(w);
 }
 
+static void didFinishLoadForFrame(id self, SEL cmd, id notification) {
+    struct webview *w =
+          (struct webview *)objc_getAssociatedObject(self, "webview");
+          w->external_didFinishLoadForFrame_cb(w);
+}
+
+
+
 static BOOL webview_is_selector_excluded_from_web_script(id self, SEL cmd,
                                                          SEL selector) {
   return selector != @selector(invoke:);
@@ -1599,6 +1611,35 @@ static void webview_external_invoke(id self, SEL cmd, id arg) {
   w->external_invoke_cb(w, [(NSString *)(arg)UTF8String]);
 }
 
+static void runJavaScriptAlertPanelWithMessage(id self, SEL cmd,id view, id message, id frame) {
+
+
+ struct webview *w =
+      (struct webview *)objc_getAssociatedObject(self, "webview");
+
+
+    NSAlert *alert = [[NSAlert alloc]init];
+    //可以设置产品的icon
+    //添加两个按钮吧
+    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:@"Cancel"];
+    //正文
+    alert.messageText = @"消息";
+    //描述文字
+    alert.informativeText = message;
+    //弹窗类型 默认类型 NSAlertStyleWarning
+    [alert setAlertStyle:NSAlertStyleWarning];
+    //回调Block
+    [alert beginSheetModalForWindow:[[w->priv.window contentView] window] completionHandler:^(NSModalResponse returnCode) {
+        if (returnCode == NSAlertFirstButtonReturn ) {
+            //NSLog(@"this is OK Button tap");
+        }else if (returnCode == NSAlertSecondButtonReturn){
+           // NSLog(@"this is Cancel Button tap");
+        }
+    }];
+
+}
+
 WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
@@ -1618,6 +1659,12 @@ WEBVIEW_API int webview_init(struct webview *w) {
                   (IMP)webview_did_clear_window_object, "v@:@@@");
   class_addMethod(webViewDelegateClass, sel_registerName("invoke:"),
                   (IMP)webview_external_invoke, "v@:@");
+
+  class_addMethod(webViewDelegateClass, sel_registerName("webView:didFinishLoadForFrame:"),
+                                    (IMP)didFinishLoadForFrame, "v@:@");
+
+class_addMethod(webViewDelegateClass, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:"),
+                                                                        (IMP)runJavaScriptAlertPanelWithMessage, "v@:@@@");
   objc_registerClassPair(webViewDelegateClass);
 
   w->priv.windowDelegate = [[webViewDelegateClass alloc] init];
@@ -1653,6 +1700,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
+  w->priv.webview.UIDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
   [w->priv.window orderFrontRegardless];
 
@@ -1715,6 +1763,35 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
   NSString *nsJS = [NSString stringWithUTF8String:js];
   [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
   return 0;
+}
+
+WEBVIEW_API int webview_stringByEvaluatingJavaScriptFromString(struct webview *w, const char *js) {
+  NSString *nsJS = [NSString stringWithUTF8String:js];
+  [w->priv.webview stringByEvaluatingJavaScriptFromString:nsJS];
+  return 0;
+}
+
+WEBVIEW_API int webview_isLoading(struct webview *w) {
+  return w->priv.webview.isLoading;
+}
+
+WEBVIEW_API const char * webview_loadingUrl(struct webview *w) {
+  return [w->priv.webview.mainFrameURL UTF8String];
+}
+
+WEBVIEW_API const char * webview_getcookie(struct webview *w) {
+        NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        for (NSHTTPCookie *cookie in [cookieStorage cookies]) {
+            if ( [cookie.domain isEqualToString:w->priv.webview.mainFrame.DOMDocument.domain]) {
+
+                //NSString *str = [[NSString alloc] initWithString:[NSString stringWithFormat:@"version=%u&name=%@",cookie.version,cookie.name]];
+                NSString *str = [[NSString alloc] initWithString:[NSString stringWithFormat:@"version=%@&name=%@&value=%@&domain=%@&path=%@",@(cookie.version),cookie.name,cookie.value,cookie.domain,cookie.path]];
+                return [str UTF8String];
+            }
+
+        }
+
+    return "";
 }
 
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
@@ -1808,10 +1885,22 @@ WEBVIEW_API void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
   dispatch_async_f(dispatch_get_main_queue(), context, webview_dispatch_cb);
 }
 
-WEBVIEW_API void webview_terminate(struct webview *w) {
-  w->priv.should_exit = 1;
-}
+WEBVIEW_API void webview_terminate(struct webview *w) { w->priv.should_exit = 1; }
 WEBVIEW_API void webview_exit(struct webview *w) { [NSApp terminate:NSApp]; }
+WEBVIEW_API void webview_ClearCache(struct webview *w) {
+//清除cookies
+    NSHTTPCookie *cookie;
+    NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+    for (cookie in [storage cookies]){
+        [storage deleteCookie:cookie];
+    }
+    //清除UIWebView的缓存
+    [[NSURLCache sharedURLCache] removeAllCachedResponses];
+    NSURLCache * cache = [NSURLCache sharedURLCache];
+    [cache removeAllCachedResponses];
+    [cache setDiskCapacity:0];
+    [cache setMemoryCapacity:0];
+ }
 WEBVIEW_API void webview_print_log(const char *s) { NSLog(@"%s", s); }
 
 #endif /* WEBVIEW_COCOA */
