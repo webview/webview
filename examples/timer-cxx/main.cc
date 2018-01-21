@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
+#define WEBVIEW_IMPLEMENTATION
 #include <webview.h>
 
 class Timer {

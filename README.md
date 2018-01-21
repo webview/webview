@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUI.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUI. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs) available.
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
@@ -185,6 +185,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 
 ```c
 // main.c
+#define WEBVIEW_IMPLEMENTATION
 #include "webview.h"
 
 #ifdef WIN32
@@ -303,6 +304,8 @@ Also, there is a more more advanced complete C++ app, [Slide](https://github.com
 ## Notes
 
 Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
+
+FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 ## License
 
