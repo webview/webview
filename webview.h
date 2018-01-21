@@ -36,6 +36,7 @@ extern "C" {
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
@@ -61,7 +62,6 @@ struct webview_priv {
 #include <shobjidl.h>
 
 #include <stdio.h>
-#include <stdint.h>
 
 struct webview_priv {
   HWND hwnd;
