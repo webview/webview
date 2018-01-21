@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/zserge/webview"
@@ -38,7 +39,7 @@ var indexHTML = `
 		<button onclick="external.invoke('changeColor:'+document.getElementById('new-color').value)">
 			Change color
 		</button>
-		<input id="new-color" type="text" />
+		<input id="new-color" value="ffffff" type="color" />
 	</body>
 </html>
 `
@@ -83,7 +84,32 @@ func handleRPC(w webview.WebView, data string) {
 	case strings.HasPrefix(data, "changeTitle:"):
 		w.SetTitle(strings.TrimPrefix(data, "changeTitle:"))
 	case strings.HasPrefix(data, "changeColor:"):
-		w.SetColor(strings.TrimPrefix(data, "changeColor:"))
+		hex := strings.TrimPrefix(data, "changeColor:")
+		num := len(hex) / 2
+		if !(num == 3 || num == 4) {
+			log.Println("Color must be RRGGBB or RRGGBBAA")
+			return
+		}
+		i, err := strconv.ParseUint(hex, 16, 64)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if num == 3 {
+			r := float64((i>>16)&0xFF) / 255.0
+			g := float64((i>>8)&0xFF) / 255.0
+			b := float64(i&0xFF) / 255.0
+			w.SetColor(r, g, b, 1.0)
+			return
+		}
+		if num == 4 {
+			r := float64((i>>24)&0xFF) / 255.0
+			g := float64((i>>16)&0xFF) / 255.0
+			b := float64((i>>8)&0xFF) / 255.0
+			a := float64(i&0xFF) / 255.0
+			w.SetColor(r, g, b, a)
+			return
+		}
 	}
 }
 
@@ -93,7 +119,6 @@ func main() {
 		Width:     windowWidth,
 		Height:    windowHeight,
 		Title:     "Simple window demo",
-		Color:     "00ffff",
 		Resizable: true,
 		URL:       url,
 		ExternalInvokeCallback: handleRPC,
