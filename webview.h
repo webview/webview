@@ -156,7 +156,7 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
-WEBVIEW_API void webview_set_color(struct webview *w, double r, double g, double b, double a);
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
                                 enum webview_dialog_type dlgtype, int flags,
                                 const char *title, const char *arg,
@@ -358,7 +358,7 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, double r, double g, double b, double a) {
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 
 }
 
@@ -1377,7 +1377,7 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, double r, double g, double b, double a) {
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 
 }
 
@@ -1741,9 +1741,13 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, double r, double g, double b, double a) {
-  [w->priv.window setBackgroundColor:[NSColor colorWithRed:(CGFloat)r green:(CGFloat)g blue:(CGFloat)b alpha:(CGFloat)a]];
-  if (0.5 >= ((r * 299.0) + (g * 587.0) + (b * 114.0)) / 1000.0) {
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+  [w->priv.window setBackgroundColor:[NSColor
+    colorWithRed:(CGFloat)r / 255.0
+    green:(CGFloat)g / 255.0
+    blue:(CGFloat)b / 255.0
+    alpha:(CGFloat)a / 255.0]];
+  if (0.5 >= ((r / 255.0 * 299.0) + (g / 255.0 * 587.0) + (b / 255.0 * 114.0)) / 1000.0) {
     [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantDark]];
   } else {
     [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];

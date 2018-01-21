@@ -68,7 +68,7 @@ static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
 	webview_set_fullscreen((struct webview *)w, fullscreen);
 }
 
-static inline void CgoWebViewSetColor(void *w, double r, double g, double b, double a) {
+static inline void CgoWebViewSetColor(void *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 	webview_set_color((struct webview *)w, r, g, b, a);
 }
 
@@ -197,7 +197,7 @@ type WebView interface {
 	SetFullscreen(fullscreen bool)
 	// SetColor() changes window background color. This method must be called from
 	// the main thread only. See Dispatch() for more details.
-	SetColor(r, g, b, a float64)
+	SetColor(r, g, b, a uint8)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
@@ -332,8 +332,8 @@ func (w *webview) SetTitle(title string) {
 	C.CgoWebViewSetTitle(w.w, p)
 }
 
-func (w *webview) SetColor(r, g, b, a float64) {
-	C.CgoWebViewSetColor(w.w, C.double(r), C.double(g), C.double(b), C.double(a))
+func (w *webview) SetColor(r, g, b, a uint8) {
+	C.CgoWebViewSetColor(w.w, C.uint8_t(r), C.uint8_t(g), C.uint8_t(b), C.uint8_t(a))
 }
 
 func (w *webview) SetFullscreen(fullscreen bool) {

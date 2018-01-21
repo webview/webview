@@ -96,17 +96,17 @@ func handleRPC(w webview.WebView, data string) {
 			return
 		}
 		if num == 3 {
-			r := float64((i>>16)&0xFF) / 255.0
-			g := float64((i>>8)&0xFF) / 255.0
-			b := float64(i&0xFF) / 255.0
-			w.SetColor(r, g, b, 1.0)
+			r := uint8((i >> 16) & 0xFF)
+			g := uint8((i >> 8) & 0xFF)
+			b := uint8(i & 0xFF)
+			w.SetColor(r, g, b, 255)
 			return
 		}
 		if num == 4 {
-			r := float64((i>>24)&0xFF) / 255.0
-			g := float64((i>>16)&0xFF) / 255.0
-			b := float64((i>>8)&0xFF) / 255.0
-			a := float64(i&0xFF) / 255.0
+			r := uint8((i >> 24) & 0xFF)
+			g := uint8((i >> 16) & 0xFF)
+			b := uint8((i >> 8) & 0xFF)
+			a := uint8(i & 0xFF)
 			w.SetColor(r, g, b, a)
 			return
 		}
@@ -123,7 +123,7 @@ func main() {
 		URL:       url,
 		ExternalInvokeCallback: handleRPC,
 	})
-	w.SetColor(1.0, 1.0, 1.0, 1.0)
+	w.SetColor(255, 255, 255, 255)
 	defer w.Exit()
 	w.Run()
 }
