@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/zserge/webview"
@@ -35,6 +36,10 @@ var indexHTML = `
 			Change title
 		</button>
 		<input id="new-title" type="text" />
+		<button onclick="external.invoke('changeColor:'+document.getElementById('new-color').value)">
+			Change color
+		</button>
+		<input id="new-color" value="ffffff" type="color" />
 	</body>
 </html>
 `
@@ -78,6 +83,33 @@ func handleRPC(w webview.WebView, data string) {
 		w.Dialog(webview.DialogTypeAlert, webview.DialogFlagError, "Hello", "Hello, error!")
 	case strings.HasPrefix(data, "changeTitle:"):
 		w.SetTitle(strings.TrimPrefix(data, "changeTitle:"))
+	case strings.HasPrefix(data, "changeColor:"):
+		hex := strings.TrimPrefix(data, "changeColor:")
+		num := len(hex) / 2
+		if !(num == 3 || num == 4) {
+			log.Println("Color must be RRGGBB or RRGGBBAA")
+			return
+		}
+		i, err := strconv.ParseUint(hex, 16, 64)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if num == 3 {
+			r := uint8((i >> 16) & 0xFF)
+			g := uint8((i >> 8) & 0xFF)
+			b := uint8(i & 0xFF)
+			w.SetColor(r, g, b, 255)
+			return
+		}
+		if num == 4 {
+			r := uint8((i >> 24) & 0xFF)
+			g := uint8((i >> 16) & 0xFF)
+			b := uint8((i >> 8) & 0xFF)
+			a := uint8(i & 0xFF)
+			w.SetColor(r, g, b, a)
+			return
+		}
 	}
 }
 
@@ -91,6 +123,7 @@ func main() {
 		URL:       url,
 		ExternalInvokeCallback: handleRPC,
 	})
+	w.SetColor(255, 255, 255, 255)
 	defer w.Exit()
 	w.Run()
 }

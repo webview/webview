@@ -36,6 +36,7 @@ extern "C" {
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
@@ -156,6 +157,7 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
                                 enum webview_dialog_type dlgtype, int flags,
                                 const char *title, const char *arg,
@@ -355,6 +357,10 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   } else {
     gtk_window_unfullscreen(GTK_WINDOW(w->priv.window));
   }
+}
+
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -1372,6 +1378,10 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+
+}
+
 /* These are missing parts from MinGW */
 #ifndef __IFileDialog_INTERFACE_DEFINED__
 #define __IFileDialog_INTERFACE_DEFINED__
@@ -1730,6 +1740,22 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   if (b != fullscreen) {
     [w->priv.window toggleFullScreen:nil];
   }
+}
+
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+  [w->priv.window setBackgroundColor:[NSColor
+    colorWithRed:(CGFloat)r / 255.0
+    green:(CGFloat)g / 255.0
+    blue:(CGFloat)b / 255.0
+    alpha:(CGFloat)a / 255.0]];
+  if (0.5 >= ((r / 255.0 * 299.0) + (g / 255.0 * 587.0) + (b / 255.0 * 114.0)) / 1000.0) {
+    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantDark]];
+  } else {
+    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];
+  }
+  [w->priv.window setOpaque:NO];
+  [w->priv.window setTitlebarAppearsTransparent:YES];
+  [w->priv.webview setDrawsBackground:NO];
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,
