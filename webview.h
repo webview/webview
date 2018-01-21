@@ -61,6 +61,7 @@ struct webview_priv {
 #include <shobjidl.h>
 
 #include <stdio.h>
+#include <stdint.h>
 
 struct webview_priv {
   HWND hwnd;
