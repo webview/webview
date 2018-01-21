@@ -185,6 +185,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 
 ```c
 // main.c
+#define WEBVIEW_IMPLEMENTATION
 #include "webview.h"
 
 #ifdef WIN32
