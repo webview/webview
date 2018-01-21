@@ -123,6 +123,7 @@ func main() {
 		URL:       url,
 		ExternalInvokeCallback: handleRPC,
 	})
+	w.SetColor(1.0, 1.0, 1.0, 1.0)
 	defer w.Exit()
 	w.Run()
 }
