@@ -39,7 +39,7 @@ var indexHTML = `
 		<button onclick="external.invoke('changeColor:'+document.getElementById('new-color').value)">
 			Change color
 		</button>
-		<input id="new-color" value="ffffff" type="color" />
+		<input id="new-color" value="#e91e63" type="color" />
 	</body>
 </html>
 `
@@ -84,7 +84,7 @@ func handleRPC(w webview.WebView, data string) {
 	case strings.HasPrefix(data, "changeTitle:"):
 		w.SetTitle(strings.TrimPrefix(data, "changeTitle:"))
 	case strings.HasPrefix(data, "changeColor:"):
-		hex := strings.TrimPrefix(data, "changeColor:")
+		hex := strings.TrimPrefix(strings.TrimPrefix(data, "changeColor:"), "#")
 		num := len(hex) / 2
 		if !(num == 3 || num == 4) {
 			log.Println("Color must be RRGGBB or RRGGBBAA")

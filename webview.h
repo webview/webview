@@ -360,7 +360,8 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
 }
 
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-
+  GdkRGBA color = {r/255.0, g/255.0, b/255.0, a/255.0};
+  webkit_web_view_set_background_color(WEBKIT_WEB_VIEW(w->priv.webview), &color);
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,
