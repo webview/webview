@@ -1380,7 +1380,8 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
 }
 
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-
+  HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
+  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);  
 }
 
 /* These are missing parts from MinGW */
