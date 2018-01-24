@@ -174,6 +174,7 @@ func Debugf(format string, a ...interface{}) {
 }
 
 type ExternalDidFinishLoadForFrameCallbackFunc func(w WebView)
+
 // ExternalInvokeCallbackFunc is a function type that is called every time
 // "window.external.invoke()" is called from JavaScript. Data is the only
 // obligatory string parameter passed into the "invoke(data)" function from
@@ -197,7 +198,7 @@ type Settings struct {
 	// Enable debugging tools (Linux/BSD/MacOS, on Windows use Firebug)
 	Debug bool
 	// A callback that is executed when JavaScript calls "window.external.invoke()"
-	ExternalInvokeCallback ExternalInvokeCallbackFunc
+	ExternalInvokeCallback             ExternalInvokeCallbackFunc
 	ExternalFinishLoadForFrameCallback ExternalDidFinishLoadForFrameCallbackFunc
 }
 
@@ -407,8 +408,6 @@ func (w *webview) StringByEvaluatingJavaScriptFromString(js string) {
 func (w *webview) ClearCache() {
 	C.CgoWebViewClearCache(w.w)
 }
-
-
 
 func (w *webview) InjectCSS(css string) {
 	p := C.CString(css)
