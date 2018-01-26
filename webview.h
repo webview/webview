@@ -156,6 +156,7 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -349,6 +350,11 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
+}
+
+
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
@@ -1339,6 +1345,13 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   SetWindowText(w->priv.hwnd, title);
 }
 
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+
+    HANDLE wIcon = LoadImage(hInstance, icon, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+    SendMessage(w->priv.hwnd, (UINT)WM_SETICON, ICON_BIG, (LPARAM)wIcon);
+}
+
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   if (w->priv.is_fullscreen == !!fullscreen) {
     return;
@@ -1732,6 +1745,10 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   NSString *nsTitle = [NSString stringWithUTF8String:title];
   [w->priv.window setTitle:nsTitle];
+}
+
+WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
