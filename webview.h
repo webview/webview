@@ -1766,7 +1766,7 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   [w->priv.window setTitle:nsTitle];
 }
 
-WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon) {
 
 }
 
