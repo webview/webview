@@ -32,7 +32,7 @@ static inline void CgoWebViewFree(void *w) {
 	free(w);
 }
 
-static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int debug) {
+static inline void *CgoWebViewCreate(int width, int height, char *title, char *url, int resizable, int debug, char *icon) {
 	struct webview *w = (struct webview *) calloc(1, sizeof(*w));
 	w->width = width;
 	w->height = height;
@@ -40,6 +40,7 @@ static inline void *CgoWebViewCreate(int width, int height, char *title, char *u
 	w->url = url;
 	w->resizable = resizable;
 	w->debug = debug;
+	w->icon = icon;
 	w->external_invoke_cb = (webview_external_invoke_cb_t) _webviewExternalInvokeCallback;
 	if (webview_init(w) != 0) {
 		CgoWebViewFree(w);
@@ -72,8 +73,8 @@ static inline void CgoWebViewSetColor(void *w, uint8_t r, uint8_t g, uint8_t b, 
 	webview_set_color((struct webview *)w, r, g, b, a);
 }
 
-static inline void CgoWebViewSetIcon(void *w, char *icon) {
-	webview_set_icon((struct webview *)w, icon);
+static inline int CgoWebViewSetIcon(void *w, char *icon) {
+	return webview_set_icon((struct webview *)w, icon);
 }
 
 static inline void CgoDialog(void *w, int dlgtype, int flags,
@@ -126,7 +127,7 @@ func init() {
 // URL must be provided and can user either a http or https protocol, or be a
 // local file:// URL. On some platforms "data:" URLs are also supported
 // (Linux/MacOS).
-func Open(title, url string, w, h int, resizable bool) error {
+func Open(title, url string, w, h int, resizable bool, icon string) error {
 	titleStr := C.CString(title)
 	defer C.free(unsafe.Pointer(titleStr))
 	urlStr := C.CString(url)
@@ -136,7 +137,10 @@ func Open(title, url string, w, h int, resizable bool) error {
 		resize = C.int(1)
 	}
 
-	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize)
+	iconStr := C.CString(icon)
+	defer C.free(unsafe.Pointer(iconStr))
+
+	r := C.webview(titleStr, urlStr, C.int(w), C.int(h), resize, iconStr)
 	if r != 0 {
 		return errors.New("failed to create webview")
 	}
@@ -183,6 +187,9 @@ type Settings struct {
 	Debug bool
 	// A callback that is executed when JavaScript calls "window.external.invoke()"
 	ExternalInvokeCallback ExternalInvokeCallbackFunc
+	// Icon filepath. On Windows, this should be a .ico file, on Linux this should be a .png file.
+	// This has no effect on macOS
+	Icon string
 }
 
 // WebView is an interface that wraps the basic methods for controlling the UI
@@ -202,9 +209,10 @@ type WebView interface {
 	// SetColor() changes window background color. This method must be called from
 	// the main thread only. See Dispatch() for more details.
 	SetColor(r, g, b, a uint8)
-	// SetIcon() changes the window icon. This method must be called from the
-	// main thread only. See Dispatch() for more details.
-	SetIcon(icon string)
+	// SetIcon() changes the window icon. On Windows, this should be a .ico file,
+	// on Linux this should be a .png file. This has no effect on macOS.
+	// This method must be called from the main thread only. See Dispatch() for more details.
+	SetIcon(icon string) error
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string)
@@ -296,7 +304,7 @@ func New(settings Settings) WebView {
 	w := &webview{}
 	w.w = C.CgoWebViewCreate(C.int(settings.Width), C.int(settings.Height),
 		C.CString(settings.Title), C.CString(settings.URL),
-		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)))
+		C.int(boolToInt(settings.Resizable)), C.int(boolToInt(settings.Debug)), C.CString(settings.Icon))
 	m.Lock()
 	if settings.ExternalInvokeCallback != nil {
 		cbs[w] = settings.ExternalInvokeCallback
@@ -343,10 +351,16 @@ func (w *webview) SetColor(r, g, b, a uint8) {
 	C.CgoWebViewSetColor(w.w, C.uint8_t(r), C.uint8_t(g), C.uint8_t(b), C.uint8_t(a))
 }
 
-func (w *webview) SetIcon(file string) {
+func (w *webview) SetIcon(file string) error {
 	p := C.CString(file)
 	defer C.free(unsafe.Pointer(p))
-	C.CgoWebViewSetIcon(w.w, p)
+	r := C.CgoWebViewSetIcon(w.w, p)
+
+	if r != 0 {
+		return errors.New("webview: unable to set icon")
+	}
+
+	return nil
 }
 
 func (w *webview) SetFullscreen(fullscreen bool) {

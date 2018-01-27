@@ -98,6 +98,7 @@ struct webview {
   int width;
   int height;
   int resizable;
+  const char *icon;
   int debug;
   webview_external_invoke_cb_t external_invoke_cb;
   struct webview_priv priv;
@@ -149,14 +150,14 @@ static const char *webview_check_url(const char *url) {
 }
 
 WEBVIEW_API int webview(const char *title, const char *url, int width,
-                        int height, int resizable);
+                        int height, int resizable, const char *icon);
 
 WEBVIEW_API int webview_init(struct webview *w);
 WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
+WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
-WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -174,13 +175,14 @@ WEBVIEW_API void webview_print_log(const char *s);
 #undef WEBVIEW_IMPLEMENTATION
 
 WEBVIEW_API int webview(const char *title, const char *url, int width,
-                        int height, int resizable) {
+                        int height, int resizable, const char *icon) {
   struct webview webview = {0};
   webview.title = title;
   webview.url = url;
   webview.width = width;
   webview.height = height;
   webview.resizable = resizable;
+  webview.icon = icon;
   int r = webview_init(&webview);
   if (r != 0) {
     return r;
@@ -294,6 +296,9 @@ WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.ready = 0;
   w->priv.should_exit = 0;
   w->priv.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+  webview_set_icon(w, w->icon);
+
   gtk_window_set_title(GTK_WINDOW(w->priv.window), w->title);
 
   if (w->resizable) {
@@ -352,9 +357,21 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
 }
 
+WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon) {
+  if (w->icon == NULL || w->icon == "") {
+    return 0;
+  }
 
-WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+  GError *gerror;
+  GdkPixbuf *image = gdk_pixbuf_new_from_file(icon, &gerror);
 
+  if (gerror != NULL) {
+    return 1;
+  }
+
+  gtk_window_set_icon(GTK_WINDOW(w->priv.window), image);
+
+  return 0;
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
@@ -1345,11 +1362,13 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
   SetWindowText(w->priv.hwnd, title);
 }
 
-WEBVIEW_API void webview_set_icon(struct webview *w, const char *icon) {
+WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon) {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     HANDLE wIcon = LoadImage(hInstance, icon, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
     SendMessage(w->priv.hwnd, (UINT)WM_SETICON, ICON_BIG, (LPARAM)wIcon);
+
+    return 0;
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
