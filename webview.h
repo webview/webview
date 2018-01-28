@@ -1240,6 +1240,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   SetWindowLongPtr(w->priv.hwnd, GWLP_USERDATA, (LONG_PTR)w);
 
+  webview_set_icon(w, w->icon);
+
   DisplayHTMLPage(w);
 
   SetWindowText(w->priv.hwnd, w->title);
