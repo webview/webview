@@ -358,11 +358,11 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
 }
 
 WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon) {
-  if (w->icon == NULL || w->icon == "") {
+  if (icon == NULL || icon == "") {
     return 0;
   }
 
-  GError *gerror;
+  GError *gerror = NULL;
   GdkPixbuf *image = gdk_pixbuf_new_from_file(icon, &gerror);
 
   if (gerror != NULL) {
@@ -1769,7 +1769,7 @@ WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
 }
 
 WEBVIEW_API int webview_set_icon(struct webview *w, const char *icon) {
-
+  return 0;
 }
 
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
