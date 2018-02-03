@@ -1725,10 +1725,7 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  id u = [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
-  if ([u isKindOfClass:[WebUndefined class]] == YES) {
-    return -1;
-  }
+  [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
   return 0;
 }
 
