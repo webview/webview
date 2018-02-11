@@ -168,6 +168,7 @@ WEBVIEW_API void webview_terminate(struct webview *w);
 WEBVIEW_API void webview_exit(struct webview *w);
 WEBVIEW_API void webview_debug(const char *format, ...);
 WEBVIEW_API void webview_print_log(const char *s);
+WEBVIEW_API void webview_set_titlebar_color(struct webview *w, float r, float g, float b, float a);
 
 #ifdef WEBVIEW_IMPLEMENTATION
 #undef WEBVIEW_IMPLEMENTATION
@@ -1667,6 +1668,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
   [w->priv.window orderFrontRegardless];
+  [w->priv.window setTitlebarAppearsTransparent:YES];
 
   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
   [NSApp finishLaunching];
@@ -1709,6 +1711,14 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   w->priv.should_exit = 0;
   return 0;
+}
+
+WEBVIEW_API void webview_set_titlebar_color(struct webview *w, float r,
+                                          float g, float b, float a) {
+
+  NSColor *rgb = [NSColor colorWithDeviceRed:r green:g blue:b alpha: a];
+  [w->priv.window setBackgroundColor:rgb];
+
 }
 
 WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
@@ -1755,9 +1765,7 @@ WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint
   } else {
     [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];
   }
-  [w->priv.window setOpaque:NO];
-  [w->priv.window setTitlebarAppearsTransparent:YES];
-  [w->priv.webview setDrawsBackground:NO];
+  [w->priv.window setOpaque:YES];
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,

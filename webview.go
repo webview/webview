@@ -93,6 +93,11 @@ static inline void _webview_dispatch_cb(struct webview *w, void *arg) {
 static inline void CgoWebViewDispatch(void *w, uintptr_t arg) {
 	webview_dispatch((struct webview *)w, _webview_dispatch_cb, (void *)arg);
 }
+
+static inline void CgoWebViewSetTitlebarColor(void *w, float r, float g, float b, float a) {
+	webview_set_titlebar_color((struct webview *)w, r, g, b, a);
+}
+
 */
 import "C"
 import (
@@ -198,6 +203,9 @@ type WebView interface {
 	// SetColor() changes window background color. This method must be called from
 	// the main thread only. See Dispatch() for more details.
 	SetColor(r, g, b, a uint8)
+	//SetTitlebarColor() changes titlebar color. Mac only. This method must be called
+	//from the main thread only. See Dispatch() for more details.
+	SetTitlebarColor(r, g, b, a float64)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
 	Eval(js string) error
@@ -330,6 +338,10 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) SetTitlebarColor(r, g, b, a float64) {
+	C.CgoWebViewSetTitlebarColor(w.w, C.float(r), C.float(g), C.float(b), C.float(a))
 }
 
 func (w *webview) SetColor(r, g, b, a uint8) {
