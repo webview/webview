@@ -1607,6 +1607,8 @@ WEBVIEW_API void webview_print_log(const char *s) { OutputDebugString(s); }
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagOption NSAlternateKeyMask
 #define NSAlertStyleInformational NSInformationalAlertStyle
+#define NSAlertStyleCritical NSCriticalAlertStyle
+#define NSAlertStyleWarning NSWarningAlertStyle
 #endif /* MAC_OS_X_VERSION_10_12 */
 #if (!defined MAC_OS_X_VERSION_10_13) ||                                       \
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
