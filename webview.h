@@ -1564,6 +1564,8 @@ WEBVIEW_API void webview_print_log(const char *s) { OutputDebugString(s); }
 #if defined(WEBVIEW_COCOA)
 #if (!defined MAC_OS_X_VERSION_10_12) ||                                       \
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSAlertStyleWarning NSWarningAlertStyle
+#define NSAlertStyleCritical NSCriticalAlertStyle
 #define NSWindowStyleMaskResizable NSResizableWindowMask
 #define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
