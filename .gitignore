@@ -4,3 +4,8 @@
 /examples/minimal/minimal.exe
 /examples/minimal/build
 /examples/timer-cxx/build
+nimcache/
+/examples/bindEx-nim/bindEx
+/examples/bindEx-nim/bindEx.exe
+/examples/minimal-nim/minimal
+/examples/minimal-nim/minimal.exe
