@@ -1,10 +1,10 @@
 # Package
 
 version       = "0.1.0"
-author        = "oskca"
-description   = "Nim bindings for zserge\'s webview"
+author        = "zserge"
+description   = "Nim bindings for webview"
 license       = "MIT"
-skipDirs      = @["tests"]
+skipDirs      = @["examples"]
 
 # Dependencies
 
