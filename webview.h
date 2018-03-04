@@ -28,10 +28,38 @@
 extern "C" {
 #endif
 
+/*
+ * When an application links to a DLL in Windows, the symbols that
+ * are imported have to be identified as such.
+ */
+
+#ifndef EXTERN_MSC
+#	ifdef _WIN32
+#		ifdef LIBRARY_EXPORTS
+#			define LIBSPEC __declspec(dllimport)
+#		else
+#			define LIBSPEC __declspec(dllexport)
+#		endif
+#	else
+#		define LIBSPEC
+#	endif
+#	define EXTERN_MSC extern LIBSPEC
+#endif
+
+#if defined(_WIN32) && (_MSC_VER <= 1800) && !defined(inline)
+#	define inline _inline
+#endif
+#if defined(_WIN32) && (_MSC_VER <= 1800) && !defined(snprintf)
+#	define snprintf _snprintf
+#endif
+#if defined(_WIN32) && (_MSC_VER <= 1800) && !defined(vsnprintf)
+#	define vsnprintf _vsnprintf
+#endif
+
 #ifdef WEBVIEW_STATIC
 #define WEBVIEW_API static
 #else
-#define WEBVIEW_API extern
+#define WEBVIEW_API EXTERN_MSC
 #endif
 
 #include <stdlib.h>
