@@ -98,7 +98,7 @@ w := webview.New(webview.Settings{
 
 Keep your initial HTML short (a few kilobytes maximum).
 
-Now you can inject more JavaScrtipt once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
+Now you can inject more JavaScript once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
 
 ```go
 w.Dispatch(func() {
@@ -124,7 +124,7 @@ This works fairly well across the platforms, see `counter-go` example for more d
 
 ### How to communicate between native Go and web UI?
 
-You already have seen how to use `w.Eval()` to run Javascript inside the webview. There is also a way to call Go code from JavaScript.
+You already have seen how to use `w.Eval()` to run JavaScript inside the webview. There is also a way to call Go code from JavaScript.
 
 On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke(someString)`.
 
@@ -171,7 +171,7 @@ example.app
 
 Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](iconverticons.com/online/).
 
-On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and and linking with it. Typically, `windres` utility is used to compile resources.
+On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources.
 
 You may find some example build scripts for all three platforms [here](https://github.com/naivesound/glitch/tree/master/dist).
 
@@ -217,7 +217,7 @@ $ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o
 For the most simple use cases there is only one function:
 
 ```c
-int webview(const char *title, const char *url,	int width, int height, int resizable);
+int webview(const char *title, const char *url, int width, int height, int resizable);
 ```
 
 The following URL schemes are supported:
@@ -226,10 +226,10 @@ The following URL schemes are supported:
 * `file:///` can be useful if you want to unpack HTML/CSS assets to some
   temporary directory and point a webview to open index.html from there.
 * `data:text/html,<html>...</html>` allows to pass short HTML data inline
-  without using a web server or pulluting the file system. Furhter
+  without using a web server or polluting the file system. Further
   modifications of the webview contents can be done via JavaScript bindings.
 
-If have choosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
+If have chosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
 
 If you want to have more control over the app lifecycle you can use the following functions:
 
@@ -260,13 +260,13 @@ If you want to have more control over the app lifecycle you can use the followin
   webview_debug("exited: %d\n", 1);
 ```
 
-To evaluate arbitrary javascript code use the following C function:
+To evaluate arbitrary JavaScript code use the following C function:
 
 ```c
 webview_eval(&webview, "alert('hello, world');");
 ```
 
-There is also a special callback (`webview.external_invoke_cb`) that can be invoked from javascript:
+There is also a special callback (`webview.external_invoke_cb`) that can be invoked from JavaScript:
 
 ```javascript
 // C
