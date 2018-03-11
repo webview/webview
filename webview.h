@@ -1163,7 +1163,6 @@ static int webview_fix_ie_compat_mode() {
 WEBVIEW_API int webview_init(struct webview *w) {
   WNDCLASSEX wc;
   HINSTANCE hInstance;
-  STARTUPINFO info;
   DWORD style;
   RECT clientRect;
   RECT rect;
@@ -1176,7 +1175,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
   if (hInstance == NULL) {
     return -1;
   }
-  GetStartupInfo(&info);
   if (OleInitialize(NULL) != S_OK) {
     return -1;
   }
@@ -1220,7 +1218,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   DisplayHTMLPage(w);
 
   SetWindowText(w->priv.hwnd, w->title);
-  ShowWindow(w->priv.hwnd, info.wShowWindow);
+  ShowWindow(w->priv.hwnd, SW_SHOWDEFAULT);
   UpdateWindow(w->priv.hwnd);
   SetFocus(w->priv.hwnd);
 
