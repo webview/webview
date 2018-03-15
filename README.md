@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUI. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs) available.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs) and [Nim bindings](https://github.com/oskca/webview) available.
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
@@ -16,7 +16,7 @@ It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and MSHTML (IE10/11) on Wind
 
 ## Webview for Go developers
 
-If you are interested in writing Webview apps in C/C++ - skip to the next section.
+If you are interested in writing Webview apps in C/C++, [skip to the next section](#webview-for-cc-developers).
 
 ### Getting started
 
@@ -68,7 +68,7 @@ First of all, you probably want to embed your assets (HTML/CSS/JavaScript) into 
 Now there are two major approaches to deploy the content:
 
 * Serve HTML/CSS/JS with an embedded HTTP server
-* Injecting HTML/CSS/JS via JavaScript binding API
+* Injecting HTML/CSS/JS via the JavaScript binding API
 
 To serve the content it is recommended to use ephemeral ports:
 
@@ -87,7 +87,7 @@ webview.Open("Hello", "http://"+ln.Addr().String(), 400, 300, false)
 
 Injecting the content via JS bindings is a bit more complicated, but feels more solid and does not expose any additional open TCP ports.
 
-Leave `webview.Settings.URL` empty to start with a bare minimal HTML5. It will open a webview with `<div id="app"></div>` in it. Alternatively, use data URI to inject custom HTML code (don't forget to URL-encode it):
+Leave `webview.Settings.URL` empty to start with bare minimal HTML5. It will open a webview with `<div id="app"></div>` in it. Alternatively, use a data URI to inject custom HTML code (don't forget to URL-encode it):
 
 ```go
 const myHTML = `<!doctype html><html>....</html>`
@@ -98,7 +98,7 @@ w := webview.New(webview.Settings{
 
 Keep your initial HTML short (a few kilobytes maximum).
 
-Now you can inject more JavaScrtipt once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
+Now you can inject more JavaScript once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
 
 ```go
 w.Dispatch(func() {
@@ -124,7 +124,7 @@ This works fairly well across the platforms, see `counter-go` example for more d
 
 ### How to communicate between native Go and web UI?
 
-You already have seen how to use `w.Eval()` to run Javascript inside the webview. There is also a way to call Go code from JavaScript.
+You already have seen how to use `w.Eval()` to run JavaScript inside the webview. There is also a way to call Go code from JavaScript.
 
 On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke(someString)`.
 
@@ -142,8 +142,8 @@ print logs. On MacOS such logs will be printed via NSLog and can be seen in the
 terminal or redirected to a file.
 
 To debug the web part of your app you may use `webview.Settings.Debug` flag. It
-enables Web Inspector in WebKit and work on Linux and MacOS (use popup menu to
-open the web inspector). On Windows there is no easy to way to enable
+enables the Web Inspector in WebKit and works on Linux and MacOS (use popup menu
+to open the web inspector). On Windows there is no easy to way to enable
 debugging, but you may include Firebug in your HTML code:
 
 ```html
@@ -155,7 +155,7 @@ Lite is still available and just works.
 
 ## Distributing webview apps
 
-On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit2, so if you distribute your app in DEB or RPM format include those dependencies. Application icon can be specified by providing a `.desktop` file.
+On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit2, so if you distribute your app in DEB or RPM format include those dependencies. An application icon can be specified by providing a `.desktop` file.
 
 On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
 
@@ -169,9 +169,9 @@ example.app
         └── example.icns
 ```
 
-Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](iconverticons.com/online/).
+Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](https://iconverticons.com/online/).
 
-On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and and linking with it. Typically, `windres` utility is used to compile resources.
+On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources.
 
 You may find some example build scripts for all three platforms [here](https://github.com/naivesound/glitch/tree/master/dist).
 
@@ -205,7 +205,7 @@ Build it:
 
 ```bash
 # Linux
-$ cc main.c -DWEBVIEW_GTK=1 $(shell pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0) -o webview-example
+$ cc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
 $ cc main.c -DWEBVIEW_COCOA=1 -x objective-c -framework Cocoa -framework WebKit -o webview-example
 # Windows (mingw)
@@ -217,7 +217,7 @@ $ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o
 For the most simple use cases there is only one function:
 
 ```c
-int webview(const char *title, const char *url,	int width, int height, int resizable);
+int webview(const char *title, const char *url, int width, int height, int resizable);
 ```
 
 The following URL schemes are supported:
@@ -226,10 +226,10 @@ The following URL schemes are supported:
 * `file:///` can be useful if you want to unpack HTML/CSS assets to some
   temporary directory and point a webview to open index.html from there.
 * `data:text/html,<html>...</html>` allows to pass short HTML data inline
-  without using a web server or pulluting the file system. Furhter
+  without using a web server or polluting the file system. Further
   modifications of the webview contents can be done via JavaScript bindings.
 
-If have choosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
+If have chosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
 
 If you want to have more control over the app lifecycle you can use the following functions:
 
@@ -239,8 +239,7 @@ If you want to have more control over the app lifecycle you can use the followin
       .url = url,
       .width = w,
       .height = h,
-      .resizable = 1,
-      .debug = 0,
+      .debug = debug,
       .resizable = resizable,
   };
   /* Create webview window using the provided options */
@@ -260,13 +259,13 @@ If you want to have more control over the app lifecycle you can use the followin
   webview_debug("exited: %d\n", 1);
 ```
 
-To evaluate arbitrary javascript code use the following C function:
+To evaluate arbitrary JavaScript code use the following C function:
 
 ```c
 webview_eval(&webview, "alert('hello, world');");
 ```
 
-There is also a special callback (`webview.external_invoke_cb`) that can be invoked from javascript:
+There is also a special callback (`webview.external_invoke_cb`) that can be invoked from JavaScript:
 
 ```javascript
 // C
@@ -299,7 +298,7 @@ webview_dispatch(w, render, some_arg);
 
 You may find some C/C++ examples in this repo that demonstrate the API above.
 
-Also, there is a more more advanced complete C++ app, [Slide](https://github.com/zserge/slide), that uses webview as a GUI. You may have a look how webview apps can be built, packages and how automatic CI/CD can be set up.
+Also, there is a more more advanced complete C++ app, [Slide](https://github.com/zserge/slide), that uses webview as a GUI. You may have a look how webview apps can be built, packaged and how automatic CI/CD can be set up.
 
 ## Notes
 

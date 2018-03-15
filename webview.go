@@ -15,7 +15,7 @@ package webview
 #cgo linux openbsd freebsd pkg-config: gtk+-3.0 webkit2gtk-4.0
 
 #cgo windows CFLAGS: -DWEBVIEW_WINAPI=1
-#cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -mwindows
+#cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -lgdi32
 
 #cgo darwin CFLAGS: -DWEBVIEW_COCOA=1 -x objective-c
 #cgo darwin LDFLAGS: -framework Cocoa -framework WebKit
@@ -200,7 +200,7 @@ type WebView interface {
 	SetColor(r, g, b, a uint8)
 	// Eval() evaluates an arbitrary JS code inside the webview. This method must
 	// be called from the main thread only. See Dispatch() for more details.
-	Eval(js string)
+	Eval(js string) error
 	// InjectJS() injects an arbitrary block of CSS code using the JS API. This
 	// method must be called from the main thread only. See Dispatch() for more
 	// details.
@@ -353,10 +353,14 @@ func (w *webview) Dialog(dlgType DialogType, flags int, title string, arg string
 	return C.GoString(resultPtr)
 }
 
-func (w *webview) Eval(js string) {
+func (w *webview) Eval(js string) error {
 	p := C.CString(js)
 	defer C.free(unsafe.Pointer(p))
-	C.CgoWebViewEval(w.w, p)
+	switch C.CgoWebViewEval(w.w, p) {
+	case -1:
+		return errors.New("evaluation failed")
+	}
+	return nil
 }
 
 func (w *webview) InjectCSS(css string) {

@@ -1191,7 +1191,6 @@ static int webview_fix_ie_compat_mode() {
 WEBVIEW_API int webview_init(struct webview *w) {
   WNDCLASSEX wc;
   HINSTANCE hInstance;
-  STARTUPINFO info;
   DWORD style;
   RECT clientRect;
   RECT rect;
@@ -1204,7 +1203,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
   if (hInstance == NULL) {
     return -1;
   }
-  GetStartupInfo(&info);
   if (OleInitialize(NULL) != S_OK) {
     return -1;
   }
@@ -1248,7 +1246,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   DisplayHTMLPage(w);
 
   SetWindowText(w->priv.hwnd, w->title);
-  ShowWindow(w->priv.hwnd, info.wShowWindow);
+  ShowWindow(w->priv.hwnd, SW_SHOWDEFAULT);
   UpdateWindow(w->priv.hwnd);
   SetFocus(w->priv.hwnd);
 
@@ -1408,7 +1406,10 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
 }
 
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
-                                   uint8_t b, uint8_t a) {}
+                                   uint8_t b, uint8_t a) {
+  HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
+  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);  
+}
 
 /* These are missing parts from MinGW */
 #ifndef __IFileDialog_INTERFACE_DEFINED__
@@ -1590,6 +1591,8 @@ WEBVIEW_API void webview_print_log(const char *s) { OutputDebugString(s); }
 #if defined(WEBVIEW_COCOA)
 #if (!defined MAC_OS_X_VERSION_10_12) ||                                       \
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define NSAlertStyleWarning NSWarningAlertStyle
+#define NSAlertStyleCritical NSCriticalAlertStyle
 #define NSWindowStyleMaskResizable NSResizableWindowMask
 #define NSWindowStyleMaskMiniaturizable NSMiniaturizableWindowMask
 #define NSWindowStyleMaskTitled NSTitledWindowMask
