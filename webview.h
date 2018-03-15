@@ -34,9 +34,9 @@ extern "C" {
 #define WEBVIEW_API extern
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
 #if defined(WEBVIEW_GTK)
 #include <JavaScriptCore/JavaScript.h>
@@ -44,11 +44,13 @@ extern "C" {
 #include <webkit2/webkit2.h>
 
 struct webview_priv {
-  int ready;
   GtkWidget *window;
   GtkWidget *scroller;
   GtkWidget *webview;
   GtkWidget *inspector_window;
+  GAsyncQueue *queue;
+  int ready;
+  int js_busy;
   int should_exit;
 };
 #elif defined(WEBVIEW_WINAPI)
@@ -157,7 +159,8 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
-WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
+                                   uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
                                 enum webview_dialog_type dlgtype, int flags,
                                 const char *title, const char *arg,
@@ -292,6 +295,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   w->priv.ready = 0;
   w->priv.should_exit = 0;
+  w->priv.queue = g_async_queue_new();
   w->priv.window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(w->priv.window), w->title);
 
@@ -359,9 +363,11 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-  GdkRGBA color = {r/255.0, g/255.0, b/255.0, a/255.0};
-  webkit_web_view_set_background_color(WEBKIT_WEB_VIEW(w->priv.webview), &color);
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
+                                   uint8_t b, uint8_t a) {
+  GdkRGBA color = {r / 255.0, g / 255.0, b / 255.0, a / 255.0};
+  webkit_web_view_set_background_color(WEBKIT_WEB_VIEW(w->priv.webview),
+                                       &color);
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -418,19 +424,36 @@ WEBVIEW_API void webview_dialog(struct webview *w,
   }
 }
 
+static void webview_eval_finished(GObject *object, GAsyncResult *result,
+                                  gpointer userdata) {
+  struct webview *w = (struct webview *)userdata;
+  w->priv.js_busy = 0;
+}
+
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
   while (w->priv.ready == 0) {
-    g_main_context_iteration(0, FALSE);
+    g_main_context_iteration(NULL, TRUE);
   }
+  w->priv.js_busy = 1;
   webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(w->priv.webview), js, NULL,
-                                 NULL, NULL);
+                                 webview_eval_finished, w);
+  while (w->priv.js_busy) {
+    g_main_context_iteration(NULL, TRUE);
+  }
   return 0;
 }
 
 static gboolean webview_dispatch_wrapper(gpointer userdata) {
-  struct webview_dispatch_arg *arg = (struct webview_dispatch_arg *)userdata;
-  (arg->fn)(arg->w, arg->arg);
-  g_free(arg);
+  struct webview *w = (struct webview *)userdata;
+  for (;;) {
+    struct webview_dispatch_arg *arg =
+        (struct webview_dispatch_arg *)g_async_queue_try_pop(w->priv.queue);
+    if (arg == NULL) {
+      break;
+    }
+    (arg->fn)(w, arg->arg);
+    g_free(arg);
+  }
   return FALSE;
 }
 
@@ -441,7 +464,12 @@ WEBVIEW_API void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
   context->w = w;
   context->arg = arg;
   context->fn = fn;
-  gdk_threads_add_idle(webview_dispatch_wrapper, context);
+  g_async_queue_lock(w->priv.queue);
+  g_async_queue_push_unlocked(w->priv.queue, context);
+  if (g_async_queue_length_unlocked(w->priv.queue) == 1) {
+    gdk_threads_add_idle(webview_dispatch_wrapper, w);
+  }
+  g_async_queue_unlock(w->priv.queue);
 }
 
 WEBVIEW_API void webview_terminate(struct webview *w) {
@@ -1377,7 +1405,8 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
+                                   uint8_t b, uint8_t a) {
   HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
   SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);  
 }
@@ -1744,16 +1773,21 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
-WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-  [w->priv.window setBackgroundColor:[NSColor
-    colorWithRed:(CGFloat)r / 255.0
-    green:(CGFloat)g / 255.0
-    blue:(CGFloat)b / 255.0
-    alpha:(CGFloat)a / 255.0]];
-  if (0.5 >= ((r / 255.0 * 299.0) + (g / 255.0 * 587.0) + (b / 255.0 * 114.0)) / 1000.0) {
-    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantDark]];
+WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
+                                   uint8_t b, uint8_t a) {
+  [w->priv.window setBackgroundColor:[NSColor colorWithRed:(CGFloat)r / 255.0
+                                                     green:(CGFloat)g / 255.0
+                                                      blue:(CGFloat)b / 255.0
+                                                     alpha:(CGFloat)a / 255.0]];
+  if (0.5 >= ((r / 255.0 * 299.0) + (g / 255.0 * 587.0) + (b / 255.0 * 114.0)) /
+                 1000.0) {
+    [w->priv.window
+        setAppearance:[NSAppearance
+                          appearanceNamed:NSAppearanceNameVibrantDark]];
   } else {
-    [w->priv.window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameVibrantLight]];
+    [w->priv.window
+        setAppearance:[NSAppearance
+                          appearanceNamed:NSAppearanceNameVibrantLight]];
   }
   [w->priv.window setOpaque:NO];
   [w->priv.window setTitlebarAppearsTransparent:YES];

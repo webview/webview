@@ -30,3 +30,10 @@ target_include_directories(webview_shared PRIVATE ${PROJECT_SOURCE_DIR} ${WEBVIE
 target_compile_definitions(webview_shared PRIVATE ${WEBVIEW_COMPILE_DEFS})
 target_compile_options(webview_shared PRIVATE ${WEBVIEW_COMPILE_OPTS})
 target_link_libraries(webview_shared ${WEBVIEW_LIBS})
+
+add_executable(webview_test webview_test.cc)
+target_compile_features(webview_test PRIVATE cxx_lambdas cxx_nullptr)
+find_package(Threads REQUIRED)
+target_link_libraries(webview_test PUBLIC webview ${CMAKE_THREAD_LIBS_INIT})
+enable_testing ()
+add_test(NAME webview_test COMMAND webview_test)
