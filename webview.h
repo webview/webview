@@ -82,7 +82,7 @@ struct webview_priv {
   NSAutoreleasePool *pool;
   NSWindow *window;
   WebView *webview;
-  id windowDelegate;
+  id delegate;
   int should_exit;
 };
 #else
@@ -1681,8 +1681,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
                   (IMP)webview_external_invoke, "v@:@");
   objc_registerClassPair(webViewDelegateClass);
 
-  w->priv.windowDelegate = [[webViewDelegateClass alloc] init];
-  objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w),
+  w->priv.delegate = [[webViewDelegateClass alloc] init];
+  objc_setAssociatedObject(w->priv.delegate, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
   NSString *nsTitle = [NSString stringWithUTF8String:w->title];
@@ -1698,7 +1698,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
                                                    defer:NO];
   [w->priv.window autorelease];
   [w->priv.window setTitle:nsTitle];
-  [w->priv.window setDelegate:w->priv.windowDelegate];
+  [w->priv.window setDelegate:w->priv.delegate];
   [w->priv.window center];
 
   [[NSUserDefaults standardUserDefaults] setBool:!!w->debug
@@ -1713,8 +1713,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
-  w->priv.webview.UIDelegate = w->priv.windowDelegate;
+  w->priv.webview.frameLoadDelegate = w->priv.delegate;
+  w->priv.webview.UIDelegate = w->priv.delegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
   [w->priv.window orderFrontRegardless];
 
