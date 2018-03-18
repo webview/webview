@@ -61,7 +61,7 @@ webview = Extension(
 
 setup(
     name='webview',
-    version='0.1.4',
+    version='0.1.5',
     description='Python WebView bindings',
     author='Serge Zaitsev',
     author_email='zaitsev.serge@gmail.com',
