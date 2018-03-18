@@ -1,7 +1,7 @@
 #!/bin/env python
 
 import os
-import commands
+import subprocess
 import shutil
 
 from distutils.core import setup
@@ -34,8 +34,10 @@ else:
 if OSNAME == 'Linux':
 
     def pkgconfig(flags):
-        return commands.getoutput(
-            "pkg-config %s gtk+-3.0 webkit2gtk-4.0" % flags)
+        return subprocess.check_output(
+            'pkg-config %s gtk+-3.0 webkit2gtk-4.0' % flags,
+            shell=True,
+            stderr=subprocess.STDOUT).decode('utf-8')
 
     define_macros = [("WEBVIEW_GTK", '1')]
     extra_cflags = pkgconfig("--cflags").split()

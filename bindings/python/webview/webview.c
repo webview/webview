@@ -155,12 +155,12 @@ static PyMemberDef WebView_members[] = {
 };
 static PyMethodDef WebView_methods[] = {
     {"run", (PyCFunction)WebView_run, METH_NOARGS, "..."},
-    {"loop", (PyCFunction)WebView_loop, METH_KEYWORDS, "..."},
+    {"loop", (PyCFunction)WebView_loop, METH_KEYWORDS | METH_VARARGS, "..."},
     {"terminate", (PyCFunction)WebView_terminate, METH_NOARGS, "..."},
     {"dispatch", (PyCFunction)WebView_dispatch, METH_VARARGS, "..."},
     {"eval", (PyCFunction)WebView_eval, METH_VARARGS, "..."},
     {"inject_css", (PyCFunction)WebView_inject_css, METH_VARARGS, "..."},
-    {"dialog", (PyCFunction)WebView_dialog, METH_KEYWORDS, "..."},
+    {"dialog", (PyCFunction)WebView_dialog, METH_KEYWORDS | METH_VARARGS, "..."},
     {"set_title", (PyCFunction)WebView_set_title, METH_VARARGS, "..."},
     {"set_fullscreen", (PyCFunction)WebView_set_fullscreen, METH_VARARGS,
      "..."},
@@ -213,22 +213,44 @@ static PyMethodDef module_methods[] = {
     {NULL} /* Sentinel */
 };
 
-#ifndef PyMODINIT_FUNC /* declarations for DLL import/export */
-#define PyMODINIT_FUNC void
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "webview",
+        "Example module",
+        0,
+        module_methods,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+};
+#define MODINIT_ERROR NULL
+#define MODINIT_NAME PyInit_webview
+#else
+#define MODINIT_ERROR
+#define MODINIT_NAME initwebview
 #endif
-PyMODINIT_FUNC initwebview(void) {
+PyMODINIT_FUNC MODINIT_NAME(void) {
   PyObject *m;
 
   if (PyType_Ready(&WebViewType) < 0) {
-    return;
+    return MODINIT_ERROR;
   }
 
-  m = Py_InitModule3("webview", module_methods,
-                     "Example module that creates an extension type.");
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&moduledef);
+#else
+    m = Py_InitModule3("webview", module_methods,
+        "Example module that creates an extension type.");
+#endif
   if (m == NULL) {
-    return;
+    return MODINIT_ERROR;
   }
 
   Py_INCREF(&WebViewType);
   PyModule_AddObject(m, "WebView", (PyObject *)&WebViewType);
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
