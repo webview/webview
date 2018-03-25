@@ -22,6 +22,8 @@ package webview
 
 #include <stdlib.h>
 #include <stdint.h>
+#define WEBVIEW_STATIC
+#define WEBVIEW_IMPLEMENTATION
 #include "webview.h"
 
 extern void _webviewExternalInvokeCallback(void *, void *);
