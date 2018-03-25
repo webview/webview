@@ -1,4 +1,5 @@
 # Build atrifacts
+/build
 /examples/minimal-go/minimal-go
 /examples/minimal/minimal
 /examples/minimal/minimal.exe

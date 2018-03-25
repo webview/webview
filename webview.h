@@ -177,7 +177,8 @@ WEBVIEW_API void webview_print_log(const char *s);
 
 WEBVIEW_API int webview(const char *title, const char *url, int width,
                         int height, int resizable) {
-  struct webview webview = {0};
+  struct webview webview;
+  memset(&webview, 0, sizeof(webview));
   webview.title = title;
   webview.url = url;
   webview.width = width;
@@ -426,6 +427,8 @@ WEBVIEW_API void webview_dialog(struct webview *w,
 
 static void webview_eval_finished(GObject *object, GAsyncResult *result,
                                   gpointer userdata) {
+  (void) object;
+  (void) result;
   struct webview *w = (struct webview *)userdata;
   w->priv.js_busy = 0;
 }

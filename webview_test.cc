@@ -39,6 +39,7 @@ public:
   }
   runner &sleep(const int millis) {
     this->queue.push_back([=](struct webview *w) {
+      (void)w;
       std::this_thread::sleep_for(std::chrono::milliseconds(millis));
     });
     return *this;
@@ -69,8 +70,12 @@ static void test_minimal() {
   w.width = 480;
   w.height = 320;
   webview_init(&w);
-  webview_dispatch(
-      &w, [](struct webview *w, void *arg) { webview_terminate(w); }, nullptr);
+  webview_dispatch(&w,
+		   [](struct webview *w, void *arg) {
+		     (void)arg;
+		     webview_terminate(w);
+		   },
+		   nullptr);
   while (webview_loop(&w, 1) == 0) {
   }
   webview_exit(&w);
