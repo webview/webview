@@ -11,7 +11,7 @@ skipDirs      = @["examples"]
 requires "nim >= 0.17.2"
 
 task test, "a simple test case":
-    exec "nim c -r examples/bindEx-nim/bindEx.nim"
+    exec "nim c -r ../../examples/bindEx-nim/bindEx.nim"
 
 task docs, "generate doc":
     exec "nim doc2 -o:webview.html webview.nim"

@@ -1,1 +1,1 @@
---path:"../.."
+--path:"../../bindings/nim"

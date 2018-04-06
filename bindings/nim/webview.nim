@@ -1,5 +1,5 @@
 {.passC: "-DWEBVIEW_STATIC -DWEBVIEW_IMPLEMENTATION".}
-{.passC: "-I" & currentSourcePath().substr(0, high(currentSourcePath()) - 11) .}
+{.passC: "-I" & currentSourcePath().substr(0, high(currentSourcePath()) - 11) & "../.." .}
 when defined(linux):
   {.passC: "-DWEBVIEW_GTK=1 " &
           staticExec"pkg-config --cflags gtk+-3.0 webkit2gtk-4.0".}
