@@ -153,6 +153,11 @@ static const char *webview_check_url(const char *url) {
 WEBVIEW_API int webview(const char *title, const char *url, int width,
                         int height, int resizable);
 
+WEBVIEW_API struct webview* webview_alloc(const char* title, const char* url,
+                                          int width, int height,
+                                          int resizeable);
+WEBVIEW_API void webview_release(struct webview* webview);
+
 WEBVIEW_API int webview_init(struct webview *w);
 WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
@@ -192,6 +197,22 @@ WEBVIEW_API int webview(const char *title, const char *url, int width,
   }
   webview_exit(&webview);
   return 0;
+}
+
+WEBVIEW_API struct webview* webview_alloc(const char *title, const char *url,
+                                          int width, int height,
+                                          int resizable) {
+  struct webview* webview = (struct webview*)calloc(1, sizeof(*webview));
+  webview->title = title;
+  webview->url = url;
+  webview->width = width;
+  webview->height = height;
+  webview->resizable = resizable;
+  return webview;
+}
+
+WEBVIEW_API void webview_release(struct webview* webview) {
+  free(webview);
 }
 
 WEBVIEW_API void webview_debug(const char *format, ...) {
