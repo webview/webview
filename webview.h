@@ -212,6 +212,13 @@ WEBVIEW_API struct webview* webview_alloc(const char* title, const char* url,
   webview->resizable = resizable;
   webview->debug = debug;
   webview->external_invoke_cb = cb;
+
+  int r = webview_init(webview);
+  if (r != 0) {
+    webview_release(webview);
+    return NULL;
+  }
+  
   return webview;
 }
 
