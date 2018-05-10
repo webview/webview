@@ -178,6 +178,9 @@ WEBVIEW_API void webview_exit(struct webview *w);
 WEBVIEW_API void webview_debug(const char *format, ...);
 WEBVIEW_API void webview_print_log(const char *s);
 
+WEBVIEW_API void webview_set_userdata(struct webview* w, void* userdata);
+WEBVIEW_API void* webview_get_userdata(struct webview* w);
+
 #ifdef WEBVIEW_IMPLEMENTATION
 #undef WEBVIEW_IMPLEMENTATION
 
@@ -224,6 +227,16 @@ WEBVIEW_API struct webview* webview_alloc(const char* title, const char* url,
 
 WEBVIEW_API void webview_release(struct webview* webview) {
   free(webview);
+}
+
+WEBVIEW_API void webview_set_userdata(struct webview* w, void* ud)
+{
+  w->userdata = ud;
+}
+
+WEBVIEW_API void* webview_get_userdata(struct webview* w)
+{
+  return w->userdata;
 }
 
 WEBVIEW_API void webview_debug(const char *format, ...) {
