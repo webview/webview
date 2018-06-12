@@ -1,4 +1,5 @@
 # Build atrifacts
+.vs/
 /build
 /examples/minimal-go/minimal-go
 /examples/minimal/minimal

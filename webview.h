@@ -31,7 +31,11 @@ extern "C" {
 #ifdef WEBVIEW_STATIC
 #define WEBVIEW_API static
 #else
+#if defined(WEBVIEW_WINAPI)
+#define WEBVIEW_API extern __declspec(dllexport)
+#else
 #define WEBVIEW_API extern
+#endif
 #endif
 
 #include <stdint.h>
@@ -153,6 +157,12 @@ static const char *webview_check_url(const char *url) {
 WEBVIEW_API int webview(const char *title, const char *url, int width,
                         int height, int resizable);
 
+WEBVIEW_API struct webview* webview_alloc(const char* title, const char* url,
+                                          int width, int height,
+                                          int resizable, int debug,
+                                          webview_external_invoke_cb_t cb);
+WEBVIEW_API void webview_release(struct webview* webview);
+
 WEBVIEW_API int webview_init(struct webview *w);
 WEBVIEW_API int webview_loop(struct webview *w, int blocking);
 WEBVIEW_API int webview_eval(struct webview *w, const char *js);
@@ -171,6 +181,9 @@ WEBVIEW_API void webview_terminate(struct webview *w);
 WEBVIEW_API void webview_exit(struct webview *w);
 WEBVIEW_API void webview_debug(const char *format, ...);
 WEBVIEW_API void webview_print_log(const char *s);
+
+WEBVIEW_API void webview_set_userdata(struct webview* w, void* userdata);
+WEBVIEW_API void* webview_get_userdata(struct webview* w);
 
 #ifdef WEBVIEW_IMPLEMENTATION
 #undef WEBVIEW_IMPLEMENTATION
@@ -192,6 +205,42 @@ WEBVIEW_API int webview(const char *title, const char *url, int width,
   }
   webview_exit(&webview);
   return 0;
+}
+
+WEBVIEW_API struct webview* webview_alloc(const char* title, const char* url,
+                                          int width, int height,
+                                          int resizable, int debug,
+                                          webview_external_invoke_cb_t cb) {
+  struct webview* webview = (struct webview*)calloc(1, sizeof(*webview));
+  webview->title = title;
+  webview->url = url;
+  webview->width = width;
+  webview->height = height;
+  webview->resizable = resizable;
+  webview->debug = debug;
+  webview->external_invoke_cb = cb;
+
+  int r = webview_init(webview);
+  if (r != 0) {
+    webview_release(webview);
+    return NULL;
+  }
+  
+  return webview;
+}
+
+WEBVIEW_API void webview_release(struct webview* webview) {
+  free(webview);
+}
+
+WEBVIEW_API void webview_set_userdata(struct webview* w, void* ud)
+{
+  w->userdata = ud;
+}
+
+WEBVIEW_API void* webview_get_userdata(struct webview* w)
+{
+  return w->userdata;
 }
 
 WEBVIEW_API void webview_debug(const char *format, ...) {
