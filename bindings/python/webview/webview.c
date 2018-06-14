@@ -101,18 +101,17 @@ static PyObject *WebView_set_fullscreen(WebView *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
-//static PyObject *WebView_set_size(WebView *self, PyObject *args)
-static string *WebView_set_size(WebView *self, PyObject *args)
+static PyObject *WebView_set_size(WebView *self, PyObject *args)
 {
   int width = 0;
   int height = 0;
   if (!PyArg_ParseTuple(args, "ii", &width, &height))
   {
-    return 5;
+    return NULL;
   }
 
-  return webview_set_size(&self->w, width, height);
-  //Py_RETURN_NONE;
+  webview_set_size(&self->w, width, height);
+  Py_RETURN_NONE;
 }
 
 static PyObject *WebView_set_color(WebView *self, PyObject *args)

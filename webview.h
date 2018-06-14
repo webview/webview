@@ -168,7 +168,7 @@ struct webview_priv
   WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
-  WEBVIEW_API char webview_set_size(struct webview *w, int width, int height);
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height);
   WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                      uint8_t b, uint8_t a);
   WEBVIEW_API void webview_dialog(struct webview *w,
@@ -395,9 +395,8 @@ struct webview_priv
     gtk_window_set_title(GTK_WINDOW(w->priv.window), title);
   }
 
-  WEBVIEW_API char webview_set_size(struct webview *w, int width, int height)
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
   {
-    return "1";
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
@@ -1589,7 +1588,7 @@ struct webview_priv
     SetWindowText(w->priv.hwnd, title);
   }
 
-  WEBVIEW_API char webview_set_size(struct webview *w, int width, int height)
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
   {
     w->priv.saved_style = GetWindowLong(w->priv.hwnd, GWL_STYLE);
     w->priv.saved_ex_style = GetWindowLong(w->priv.hwnd, GWL_EXSTYLE);
@@ -1600,8 +1599,6 @@ struct webview_priv
                  width,
                  height,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-
-    return '2';
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
@@ -2060,16 +2057,14 @@ struct webview_priv
     [w->priv.window setTitle:nsTitle];
   }
 
-  WEBVIEW_API char webview_set_size(struct webview *w, int width, int height)
+  WEBVIEW_API void webview_set_size(struct webview *w, int width, int height)
   {
     NSRect frame = [w->priv.window frame];
     frame.size.width = width;
     frame.size.height = height;
 
     // set windows properties
-    [w->priv.window setFrame:frame display:YES animate:NO];
-
-    return '3';
+    [w->priv.window setFrame:frame display:YES animate:YES];
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)

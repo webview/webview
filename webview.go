@@ -66,7 +66,7 @@ static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
 }
 
-static inline char CgoWebViewSetSize(void *w, int width, int height) {
+static inline void CgoWebViewSetSize(void *w, int width, int height) {
 	webview_set_size((struct webview *)w, width, height);
 }
 
@@ -233,7 +233,7 @@ type WebView interface {
 	// Go value. You only need to call it if you change Go value asynchronously.
 	Bind(name string, v interface{}) (sync func(), err error)
 
-	SetSize(width, height int) string
+	SetSize(width, height int)
 }
 
 // DialogType is an enumeration of all supported system dialog types
@@ -340,11 +340,8 @@ func (w *webview) SetTitle(title string) {
 	C.CgoWebViewSetTitle(w.w, p)
 }
 
-func (w *webview) SetSize(width, height int) string {
-	size := C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
-	fmt.Printf("%v \n", size)
-
-	return fmt.Sprintf("%v", size)
+func (w *webview) SetSize(width, height int) {
+	C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
 }
 
 func (w *webview) SetColor(r, g, b, a uint8) {
