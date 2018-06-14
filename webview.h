@@ -2062,7 +2062,14 @@ struct webview_priv
 
   WEBVIEW_API char webview_set_size(struct webview *w, int width, int height)
   {
-    return "3";
+    NSRect frame = [w->priv.window frame];
+    frame.size.width = width;
+    frame.size.height = height;
+
+    // set windows properties
+    [w->priv.window setFrame:frame display:YES animate:NO];
+
+    return '3';
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
