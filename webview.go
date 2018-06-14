@@ -66,6 +66,10 @@ static inline void CgoWebViewSetTitle(void *w, char *title) {
 	webview_set_title((struct webview *)w, title);
 }
 
+static inline char CgoWebViewSetSize(void *w, int width, int height) {
+	webview_set_size((struct webview *)w, width, height);
+}
+
 static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
 	webview_set_fullscreen((struct webview *)w, fullscreen);
 }
@@ -228,6 +232,8 @@ type WebView interface {
 	// Bind() returns a function that updates JavaScript object with the current
 	// Go value. You only need to call it if you change Go value asynchronously.
 	Bind(name string, v interface{}) (sync func(), err error)
+
+	SetSize(width, height int) string
 }
 
 // DialogType is an enumeration of all supported system dialog types
@@ -332,6 +338,13 @@ func (w *webview) SetTitle(title string) {
 	p := C.CString(title)
 	defer C.free(unsafe.Pointer(p))
 	C.CgoWebViewSetTitle(w.w, p)
+}
+
+func (w *webview) SetSize(width, height int) string {
+	size := C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
+	fmt.Printf("%v \n", size)
+
+	return fmt.Sprintf("%v", size)
 }
 
 func (w *webview) SetColor(r, g, b, a uint8) {
