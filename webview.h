@@ -1393,6 +1393,7 @@ struct webview_priv
     DWORD style;
     RECT clientRect;
     RECT rect;
+    HICON hIcon;
 
     if (webview_fix_ie_compat_mode() < 0)
     {
@@ -1408,9 +1409,17 @@ struct webview_priv
     {
       return -1;
     }
+
+    hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(2));
+    /*OutputDebugString("Hello :) ");
+    if (hIcon == NULL)
+    {
+      OutputDebugString("No HICON :( ");
+    }*/
     ZeroMemory(&wc, sizeof(WNDCLASSEX));
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.hInstance = hInstance;
+    wc.hIcon = hIcon;
     wc.lpfnWndProc = wndproc;
     wc.lpszClassName = classname;
     RegisterClassEx(&wc);
