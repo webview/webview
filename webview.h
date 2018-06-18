@@ -869,7 +869,7 @@ static HRESULT STDMETHODCALLTYPE UI_ShowContextMenu(
 static HRESULT STDMETHODCALLTYPE
 UI_GetHostInfo(IDocHostUIHandler FAR *This, DOCHOSTUIINFO __RPC_FAR *pInfo) {
   pInfo->cbSize = sizeof(DOCHOSTUIINFO);
-  pInfo->dwFlags = DOCHOSTUIFLAG_NO3DBORDER;
+  pInfo->dwFlags = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_DPI_AWARE;
   pInfo->dwDoubleClick = DOCHOSTUIDBLCLK_DEFAULT;
   return S_OK;
 }
@@ -1247,6 +1247,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   RECT clientRect;
   RECT rect;
 
+
   if (webview_fix_ie_compat_mode() < 0) {
     return -1;
   }
@@ -1258,6 +1259,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
   if (OleInitialize(NULL) != S_OK) {
     return -1;
   }
+
+  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
   ZeroMemory(&wc, sizeof(WNDCLASSEX));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.hInstance = hInstance;
@@ -1270,10 +1273,11 @@ WEBVIEW_API int webview_init(struct webview *w) {
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
+  double scale = GetDpiForSystem() / 96.0f;
   rect.left = 0;
   rect.top = 0;
-  rect.right = w->width;
-  rect.bottom = w->height;
+  rect.right = w->width * scale;
+  rect.bottom = w->height * scale;
   AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, 0);
 
   GetClientRect(GetDesktopWindow(), &clientRect);
