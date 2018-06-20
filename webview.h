@@ -1280,6 +1280,10 @@ WEBVIEW_API int webview_init(struct webview *w) {
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
+#ifndef GetDpiForSystem //win8.1+
+#define GetDpiForSystem() (96.0f)
+#endif
+
   double scale = GetDpiForSystem() / 96.0f;
   rect.left = 0;
   rect.top = 0;
