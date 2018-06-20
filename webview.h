@@ -543,6 +543,7 @@ WEBVIEW_API void webview_print_log(const char *s) {
 
 #define WM_WEBVIEW_DISPATCH (WM_APP + 1)
 
+
 typedef struct {
   IOleInPlaceFrame frame;
   HWND window;
@@ -1123,6 +1124,9 @@ static int DisplayHTMLPage(struct webview *w) {
       webBrowser2->lpVtbl->Release(webBrowser2);
       return (-6);
     }
+
+	webBrowser2->lpVtbl->put_Silent(webBrowser2, w->debug ? FALSE : TRUE);
+
     webBrowser2->lpVtbl->Navigate2(webBrowser2, &myURL, 0, 0, 0, 0);
     VariantClear(&myURL);
     if (!isDataURL) {
@@ -1260,7 +1264,10 @@ WEBVIEW_API int webview_init(struct webview *w) {
     return -1;
   }
 
+#ifdef DPI_AWARENESS_CONTEXT_SYSTEM_AWARE //win8.1+
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+#endif
+
   ZeroMemory(&wc, sizeof(WNDCLASSEX));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.hInstance = hInstance;
