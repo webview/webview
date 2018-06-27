@@ -208,8 +208,9 @@ type WebView interface {
 	// details.
 	InjectCSS(css string)
 	// Dialog() opens a system dialog of the given type and title. String
-	// argument can be provided for certain dialogs, such as alert boxes. For
-	// alert boxes argument is a message inside the dialog box.
+	// argument can be provided for certain dialogs, such as alert boxes or save dialogs.
+	// For alert boxes argument is a message inside the dialog box. For save dialogs
+	// argument is the pre-populated, default filename.
 	Dialog(dlgType DialogType, flags int, title string, arg string) string
 	// Terminate() breaks the main UI loop. This method must be called from the main thread
 	// only. See Dispatch() for more details.
