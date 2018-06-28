@@ -1540,9 +1540,20 @@ WEBVIEW_API void webview_dialog(struct webview *w,
       if (strncmp(arg, "", 1) != 0) {
         WCHAR *warg = webview_to_utf16(arg);
         if (dlg->lpVtbl->SetFileName(dlg, warg) != S_OK) {
+          GlobalFree(warg);
           goto error_dlg;
         }
+        GlobalFree(warg);
       }
+    }
+
+    if (strncmp(title, "", 1) != 0) {
+      WCHAR *wtitle = webview_to_utf16(title);
+      if (dlg->lpVtbl->SetTitle(dlg, wtitle) != S_OK) {
+        GlobalFree(wtitle);
+        goto error_dlg;
+      }
+      GlobalFree(wtitle);
     }
     if (dlg->lpVtbl->GetOptions(dlg, &opts) != S_OK) {
       goto error_dlg;
