@@ -463,7 +463,7 @@ static gboolean webview_dispatch_wrapper(gpointer userdata) {
 WEBVIEW_API void webview_dispatch(struct webview *w, webview_dispatch_fn fn,
                                   void *arg) {
   struct webview_dispatch_arg *context =
-      (struct webview_dispatch_arg *)g_new(struct webview_dispatch_arg *, 1);
+      (struct webview_dispatch_arg *)g_new(struct webview_dispatch_arg, 1);
   context->w = w;
   context->arg = arg;
   context->fn = fn;
