@@ -400,6 +400,10 @@ struct webview_priv
   {
   }
 
+  WEBVIEW_API void webview_toggle_close(struct webview *w)
+  {
+  }
+
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
   {
     if (fullscreen)
@@ -2086,6 +2090,10 @@ struct webview_priv
 
     // set windows properties
     [w->priv.window setFrame:frame display:YES animate:YES];
+  }
+
+  WEBVIEW_API void webview_toggle_close(struct webview *w)
+  {
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
