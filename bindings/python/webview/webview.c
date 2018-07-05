@@ -114,6 +114,12 @@ static PyObject *WebView_set_size(WebView *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+static PyObject *WebView_toggle_close(WebView *self, PyObject *args)
+{
+  webview_toggle_close(&self->w);
+  Py_RETURN_NONE;
+}
+
 static PyObject *WebView_set_color(WebView *self, PyObject *args)
 {
   int r, g, b, a = 255;
@@ -211,6 +217,7 @@ static PyMethodDef WebView_methods[] = {
      "..."},
     {"set_color", (PyCFunction)WebView_set_color, METH_VARARGS, "..."},
     {"set_size", (PyCFunction)WebView_set_size, METH_VARARGS, "..."},
+    {"toggle_close", (PyCFunction)WebView_toggle_close, METH_VARARGS, "..."},
     {"bind", (PyCFunction)WebView_bind, METH_VARARGS, "..."},
     {NULL} /* Sentinel */
 };

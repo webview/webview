@@ -70,6 +70,10 @@ static inline void CgoWebViewSetSize(void *w, int width, int height) {
 	webview_set_size((struct webview *)w, width, height);
 }
 
+static inline void CgoWebViewToggleClose(void *w) {
+	webview_toggle_close((struct webview *)w);
+}
+
 static inline void CgoWebViewSetFullscreen(void *w, int fullscreen) {
 	webview_set_fullscreen((struct webview *)w, fullscreen);
 }
@@ -234,6 +238,8 @@ type WebView interface {
 	Bind(name string, v interface{}) (sync func(), err error)
 
 	SetSize(width, height int)
+
+	ToggleClose()
 }
 
 // DialogType is an enumeration of all supported system dialog types
@@ -342,6 +348,10 @@ func (w *webview) SetTitle(title string) {
 
 func (w *webview) SetSize(width, height int) {
 	C.CgoWebViewSetSize(w.w, C.int(width), C.int(height))
+}
+
+func (w *webview) ToggleClose() {
+	C.CgoWebViewToggleClose(w.w)
 }
 
 func (w *webview) SetColor(r, g, b, a uint8) {

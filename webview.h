@@ -169,6 +169,7 @@ struct webview_priv
   WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
   WEBVIEW_API void webview_set_size(struct webview *w, int width, int height);
+  WEBVIEW_API void webview_toggle_close(struct webview *w);
   WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                      uint8_t b, uint8_t a);
   WEBVIEW_API void webview_dialog(struct webview *w,
@@ -1608,6 +1609,17 @@ struct webview_priv
                  width,
                  height,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+  }
+
+  WEBVIEW_API void webview_toggle_close(struct webview *w)
+  {
+    w->priv.saved_style = GetWindowLong(w->priv.hwnd, GWL_STYLE);
+    w->priv.saved_style ^= WS_SYSMENU;
+
+    SetWindowLong(w->priv.hwnd, GWL_STYLE, w->priv.saved_style);
+
+    SetWindowPos(w->priv.hwnd, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
