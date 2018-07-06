@@ -1604,8 +1604,24 @@ struct webview_priv
     w->priv.saved_ex_style = GetWindowLong(w->priv.hwnd, GWL_EXSTYLE);
     GetWindowRect(w->priv.hwnd, &w->priv.saved_rect);
 
-    SetWindowPos(w->priv.hwnd, NULL, w->priv.saved_rect.left,
-                 w->priv.saved_rect.top,
+    int oldHeight = w->priv.saved_rect.bottom - w->priv.saved_rect.top;
+    int oldWidth = w->priv.saved_rect.right - w->priv.saved_rect.left;
+
+    int newPositionTop = w->priv.saved_rect.top - ((height - oldHeight) / 2);
+    int newPositionLeft = w->priv.saved_rect.left - ((width - oldWidth) / 2);
+
+    if (newPositionTop < 0)
+    {
+      newPositionTop = 0;
+    }
+
+    if (newPositionLeft < 0)
+    {
+      newPositionLeft = 0;
+    }
+
+    SetWindowPos(w->priv.hwnd, NULL, newPositionLeft,
+                 newPositionTop,
                  width,
                  height,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
