@@ -400,6 +400,10 @@ struct webview_priv
   {
   }
 
+  WEBVIEW_API void webview_toggle_close(struct webview *w)
+  {
+  }
+
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
   {
     if (fullscreen)
@@ -2102,6 +2106,16 @@ struct webview_priv
 
     // set windows properties
     [w->priv.window setFrame:frame display:YES animate:YES];
+  }
+
+  WEBVIEW_API void webview_toggle_close(struct webview *w)
+  {
+    NSButton *closeButton = [w->priv.window standardWindowButton:NSWindowCloseButton];
+    bool hidden = closeButton.hidden;
+
+    [[w->priv.window standardWindowButton:NSWindowCloseButton] setHidden:!hidden];
+    [[w->priv.window standardWindowButton:NSWindowZoomButton] setHidden:!hidden];
+    [[w->priv.window standardWindowButton:NSWindowMiniaturizeButton] setHidden:!hidden];
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
