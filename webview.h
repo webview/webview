@@ -2094,6 +2094,12 @@ struct webview_priv
 
   WEBVIEW_API void webview_toggle_close(struct webview *w)
   {
+    NSButton *closeButton = [w->priv.window standardWindowButton:NSWindowCloseButton];
+    bool hidden = closeButton.hidden;
+
+    [[w->priv.window standardWindowButton:NSWindowCloseButton] setHidden:!hidden];
+    [[w->priv.window standardWindowButton:NSWindowZoomButton] setHidden:!hidden];
+    [[w->priv.window standardWindowButton:NSWindowMiniaturizeButton] setHidden:!hidden];
   }
 
   WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen)
