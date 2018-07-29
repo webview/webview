@@ -64,7 +64,7 @@ See [godoc](https://godoc.org/github.com/zserge/webview).
 
 ### How to serve or inject the initial HTML/CSS/JavaScript into the webview?
 
-First of all, you probably want to embed your assets (HTML/CSS/JavaScript) into the binary to have a standalone executable. Consider using [go-bindata](https://github.com/jteeuwen/go-bindata) or any other similar tools.
+First of all, you probably want to embed your assets (HTML/CSS/JavaScript) into the binary to have a standalone executable. Consider using [go-bindata](https://github.com/go-bindata/go-bindata) or any other similar tools.
 
 Now there are two major approaches to deploy the content:
 
