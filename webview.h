@@ -81,7 +81,7 @@ struct webview_priv {
 struct webview_priv {
   NSAutoreleasePool *pool;
   NSWindow *window;
-  WebView *webview;
+  WKWebView *webview;
   id windowDelegate;
   int should_exit;
 };
@@ -1411,7 +1411,7 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a) {
   HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
-  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);  
+  SetClassLongPtr(w->priv.hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
 }
 
 /* These are missing parts from MinGW */
@@ -1616,87 +1616,106 @@ static void webview_window_will_close(id self, SEL cmd, id notification) {
   webview_terminate(w);
 }
 
-static BOOL webview_is_selector_excluded_from_web_script(id self, SEL cmd,
-                                                         SEL selector) {
-  return selector != @selector(invoke:);
-}
-
-static NSString *webview_webscript_name_for_selector(id self, SEL cmd,
-                                                     SEL selector) {
-  return selector == @selector(invoke:) ? @"invoke" : nil;
-}
-
-static void webview_did_clear_window_object(id self, SEL cmd, id webview,
-                                            id script, id frame) {
-  [script setValue:self forKey:@"external"];
-}
-
-static void webview_external_invoke(id self, SEL cmd, id arg) {
+static void webview_external_invoke(id self, SEL cmd, id contentController,
+                                    id message) {
+  WKScriptMessage *scriptMessage = message;
   struct webview *w =
-      (struct webview *)objc_getAssociatedObject(self, "webview");
+      (struct webview *)objc_getAssociatedObject(contentController, "webview");
   if (w == NULL || w->external_invoke_cb == NULL) {
     return;
   }
-  if ([arg isKindOfClass:[NSString class]] == NO) {
+  if ([scriptMessage.body isKindOfClass:[NSString class]] == NO) {
     return;
   }
-  w->external_invoke_cb(w, [(NSString *)(arg)UTF8String]);
+
+  w->external_invoke_cb(w, [(NSString *)(scriptMessage.body)UTF8String]);
 }
 
 WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
 
-  Class webViewDelegateClass =
-      objc_allocateClassPair([NSObject class], "WebViewDelegate", 0);
-  class_addMethod(webViewDelegateClass, sel_registerName("windowWillClose:"),
-                  (IMP)webview_window_will_close, "v@:@");
-  class_addMethod(object_getClass(webViewDelegateClass),
-                  sel_registerName("isSelectorExcludedFromWebScript:"),
-                  (IMP)webview_is_selector_excluded_from_web_script, "c@::");
-  class_addMethod(object_getClass(webViewDelegateClass),
-                  sel_registerName("webScriptNameForSelector:"),
-                  (IMP)webview_webscript_name_for_selector, "c@::");
-  class_addMethod(webViewDelegateClass,
-                  sel_registerName("webView:didClearWindowObject:forFrame:"),
-                  (IMP)webview_did_clear_window_object, "v@:@@@");
-  class_addMethod(webViewDelegateClass, sel_registerName("invoke:"),
-                  (IMP)webview_external_invoke, "v@:@");
-  objc_registerClassPair(webViewDelegateClass);
+  Class scriptMessageHandlerClass =
+      objc_allocateClassPair([NSObject class], "ScriptMessageHandler", 0);
+  class_addMethod(
+      scriptMessageHandlerClass,
+      sel_registerName("userContentController:didReceiveScriptMessage:"),
+      (IMP)webview_dialog, "v@:@@");
+  objc_registerClassPair(scriptMessageHandlerClass);
 
-  w->priv.windowDelegate = [[webViewDelegateClass alloc] init];
+  id scriptMessageHandler = [[scriptMessageHandlerClass alloc] init];
+  WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+
+  Class wkPrefClass =
+      objc_allocateClassPair(objc_getClass("WKPreferences"), "WKPref", 0);
+  objc_property_attribute_t type = {"T", "c"};
+  objc_property_attribute_t ownership = {"N", ""};
+  objc_property_attribute_t attrs[] = {type, ownership};
+  class_addProperty(wkPrefClass, "developerExtrasEnabled", attrs, 2);
+  objc_registerClassPair(wkPrefClass);
+  id wkPref = [[wkPrefClass alloc] init];
+  [wkPref setValue:[NSNumber numberWithBool:!!w->debug]
+            forKey:@"developerExtrasEnabled"];
+
+  WKUserContentController *userController =
+      [[WKUserContentController alloc] init];
+  objc_setAssociatedObject(userController, "webview", (id)(w),
+                           OBJC_ASSOCIATION_ASSIGN);
+  [userController addScriptMessageHandler:scriptMessageHandler name:@"invoke"];
+
+  /***
+   In order to maintain compatibility with the other 'webviews' we need to
+  override window.external.invoke to call
+  webkit.messageHandlers.invoke.postMessage
+  ***/
+  WKUserScript *windowExternalOverrideScript = [[WKUserScript alloc]
+        initWithSource:@"window.external = this; invoke = function(arg) "
+                       @"{webkit.messageHandlers.invoke.postMessage(arg);};"
+         injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+      forMainFrameOnly:NO];
+  [userController addUserScript:windowExternalOverrideScript];
+
+  config.userContentController = userController;
+  config.preferences = wkPref;
+
+  Class windowDelegateClass =
+      objc_allocateClassPair([NSObject class], "WindowDelegate", 0);
+  class_addProtocol(windowDelegateClass, objc_getProtocol("NSWindowDelegate"));
+  class_replaceMethod(windowDelegateClass, sel_registerName("windowWillClose:"),
+                      (IMP)webview_window_will_close, "v@:@");
+  objc_registerClassPair(windowDelegateClass);
+
+  w->priv.windowDelegate = [[windowDelegateClass alloc] init];
   objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
   NSString *nsTitle = [NSString stringWithUTF8String:w->title];
   NSRect r = NSMakeRect(0, 0, w->width, w->height);
+
   NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                      NSWindowStyleMaskMiniaturizable;
   if (w->resizable) {
     style = style | NSWindowStyleMaskResizable;
   }
+
   w->priv.window = [[NSWindow alloc] initWithContentRect:r
                                                styleMask:style
                                                  backing:NSBackingStoreBuffered
                                                    defer:NO];
+
   [w->priv.window autorelease];
   [w->priv.window setTitle:nsTitle];
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
-  [[NSUserDefaults standardUserDefaults] setBool:!!w->debug
-                                          forKey:@"WebKitDeveloperExtras"];
-  [[NSUserDefaults standardUserDefaults] synchronize];
-  w->priv.webview =
-      [[WebView alloc] initWithFrame:r frameName:@"WebView" groupName:nil];
+  w->priv.webview = [[WKWebView alloc] initWithFrame:r configuration:config];
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
-  [[w->priv.webview mainFrame] loadRequest:[NSURLRequest requestWithURL:nsURL]];
+  [w->priv.webview loadRequest:[NSURLRequest requestWithURL:nsURL]];
 
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  w->priv.webview.frameLoadDelegate = w->priv.windowDelegate;
   [[w->priv.window contentView] addSubview:w->priv.webview];
   [w->priv.window orderFrontRegardless];
 
@@ -1757,7 +1776,9 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  [[w->priv.webview windowScriptObject] evaluateWebScript:nsJS];
+  [w->priv.webview evaluateJavaScript:nsJS
+                    completionHandler:^(NSString *result, NSError *error){
+                    }];
   return 0;
 }
 
@@ -1794,7 +1815,6 @@ WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
   }
   [w->priv.window setOpaque:NO];
   [w->priv.window setTitlebarAppearsTransparent:YES];
-  [w->priv.webview setDrawsBackground:NO];
 }
 
 WEBVIEW_API void webview_dialog(struct webview *w,
