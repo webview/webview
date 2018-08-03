@@ -1640,7 +1640,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   class_addMethod(
       scriptMessageHandlerClass,
       sel_registerName("userContentController:didReceiveScriptMessage:"),
-      (IMP)webview_dialog, "v@:@@");
+      (IMP)webview_external_invoke, "v@:@@");
   objc_registerClassPair(scriptMessageHandlerClass);
 
   id scriptMessageHandler = [[scriptMessageHandlerClass alloc] init];
@@ -1776,9 +1776,7 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  [w->priv.webview evaluateJavaScript:nsJS
-                    completionHandler:^(NSString *result, NSError *error){
-                    }];
+  [w->priv.webview evaluateJavaScript:nsJS completionHandler:NULL];
   return 0;
 }
 
