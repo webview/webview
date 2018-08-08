@@ -1783,17 +1783,17 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
         
-  void (^eval)(struct webview*, NSString*) = ^void(struct webview *w, NSString *js) {
+  void (^eval)(WKWebView*, NSString*) = ^void(WKWebView*w, NSString *js) {
       
-    void(^dispatch_eval)(struct webview*, NSString*) = ^void(struct webview *w, NSString *js) {
-        [w->priv.webview evaluateJavaScript:js completionHandler:NULL];
-    };
-    
-    dispatch_async(dispatch_get_main_queue(), ^{ dispatch_eval(w, js); });
+      void(^dispatch_eval)(WKWebView*, NSString*) = ^void(WKWebView *w, NSString *js) {
+          [w evaluateJavaScript:js completionHandler:NULL];
+      };
+      
+      dispatch_async(dispatch_get_main_queue(), ^{ dispatch_eval(w, js); });
   };
   
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  dispatch_async(w->priv.eval_queue, ^{ eval(w, nsJS); });
+  dispatch_async(w->priv.eval_queue, ^{ eval(w->priv.webview, nsJS); });
   return 0;
 }
 
