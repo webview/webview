@@ -85,6 +85,7 @@ struct webview_priv {
   id windowDelegate;
   int should_exit;
 };
+dispatch_queue_t eval_queue;
 #else
 #error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
 #endif
@@ -1632,6 +1633,9 @@ static void webview_external_invoke(id self, SEL cmd, id contentController,
 }
 
 WEBVIEW_API int webview_init(struct webview *w) {
+
+  eval_queue = dispatch_queue_create("eval_queue", DISPATCH_QUEUE_SERIAL_INACTIVE);
+
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
 
@@ -1709,6 +1713,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [w->priv.window center];
 
   w->priv.webview = [[WKWebView alloc] initWithFrame:r configuration:config];
+  dispatch_activate(eval_queue);
+
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [w->priv.webview loadRequest:[NSURLRequest requestWithURL:nsURL]];
@@ -1775,8 +1781,18 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 }
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
+        
+  void (^eval)(struct webview*, NSString*) = ^void(struct webview *w, NSString *js) {
+      
+    void(^dispatch_eval)(struct webview*, NSString*) = ^void(struct webview *w, NSString *js) {
+        [w->priv.webview evaluateJavaScript:js completionHandler:NULL];
+    };
+    
+    dispatch_async(dispatch_get_main_queue(), ^{ dispatch_eval(w, js); });
+  };
+  
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  [w->priv.webview evaluateJavaScript:nsJS completionHandler:NULL];
+  dispatch_async(eval_queue, ^{ eval(w, nsJS); });
   return 0;
 }
 
