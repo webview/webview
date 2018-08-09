@@ -76,7 +76,7 @@ struct webview_priv {
 #elif defined(WEBVIEW_COCOA)
 #import <Cocoa/Cocoa.h>
 #import <WebKit/WebKit.h>
-#import <objc/runtime.h>
+#import <objc/objc-runtime.h>
 
 struct webview_priv {
   NSAutoreleasePool *pool;
@@ -1631,6 +1631,83 @@ static void webview_external_invoke(id self, SEL cmd, id contentController,
   w->external_invoke_cb(w, [(NSString *)(scriptMessage.body)UTF8String]);
 }
 
+static void run_open_panel(id self, SEL cmd, id webView, id params, id frame,
+                           void (^completionHandler)(id)) {
+  WKOpenPanelParameters *parameters = (WKOpenPanelParameters *)params;
+  NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+  [openPanel setAllowsMultipleSelection:parameters.allowsMultipleSelection];
+  [openPanel setCanChooseFiles:YES];
+  [openPanel beginWithCompletionHandler:^(NSInteger result) {
+    if (result == NSModalResponseOK) {
+      completionHandler([openPanel URLs]);
+    } else {
+      completionHandler(nil);
+    }
+  }];
+}
+
+static void run_save_panel(id self, SEL cmd, id download, id filename,
+                           void (^completionHandler)(BOOL allowOverwrite,
+                                                     NSString *destination)) {
+  NSSavePanel *savePanel = [NSSavePanel savePanel];
+  savePanel.canCreateDirectories = YES;
+  savePanel.nameFieldStringValue = filename;
+  [savePanel beginWithCompletionHandler:^(NSInteger result) {
+    if (result == NSModalResponseOK) {
+      NSString *path = [[savePanel URL] path];
+      completionHandler(YES, path);
+    } else {
+      completionHandler(NO, nil);
+    }
+  }];
+}
+
+static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
+                                   id frame, void (^completionHandler)(bool)) {
+  NSAlert *alert = [NSAlert new];
+  [alert setIcon:[NSImage imageNamed:NSImageNameCaution]];
+  [alert setShowsHelp:NO];
+  [alert setInformativeText:(NSString *)message];
+  [alert addButtonWithTitle:@"OK"];
+  [alert addButtonWithTitle:@"Cancel"];
+  if ([alert runModal] == NSAlertFirstButtonReturn) {
+    completionHandler(true);
+  } else {
+    completionHandler(false);
+  }
+  [alert release];
+}
+
+static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame,
+                            void (^completionHandler)(void)) {
+  NSAlert *alert = [NSAlert new];
+  [alert setIcon:[NSImage imageNamed:NSImageNameCaution]];
+  [alert setShowsHelp:NO];
+  [alert setInformativeText:(NSString *)message];
+  [alert addButtonWithTitle:@"OK"];
+  [alert runModal];
+  [alert release];
+  completionHandler();
+}
+
+static void download_failed(id self, SEL cmd, id download, id error) {
+  printf("%s", [[(NSError *)error localizedDescription] UTF8String]);
+}
+
+static void
+make_nav_policy_decision(id self, SEL cmd, id webView, id response,
+                         void (^decisionHandler)(WKNavigationResponsePolicy)) {
+  WKNavigationResponse *wkResponse = (WKNavigationResponse *)response;
+
+  // WKNavigationResponsePolicyAllow + 1 = _WKNavigationActionPolicyDownload
+  if (!wkResponse.canShowMIMEType) {
+    decisionHandler(
+        (WKNavigationResponsePolicy)(WKNavigationResponsePolicyAllow + 1));
+  } else {
+    decisionHandler(WKNavigationResponsePolicyAllow);
+  }
+}
+
 WEBVIEW_API int webview_init(struct webview *w) {
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
@@ -1647,16 +1724,40 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   WKWebViewConfiguration *config = [[[WKWebViewConfiguration alloc] init] autorelease];
 
-  Class wkPrefClass =
-      objc_allocateClassPair(objc_getClass("WKPreferences"), "WKPref", 0);
+  /***
+   _WKDownloadDelegate is an undocumented/private protocol with methods called
+   from WKNavigationDelegate
+   References:
+   https://github.com/WebKit/webkit/blob/master/Source/WebKit/UIProcess/API/Cocoa/_WKDownload.h
+   https://github.com/WebKit/webkit/blob/master/Source/WebKit/UIProcess/API/Cocoa/_WKDownloadDelegate.h
+   https://github.com/WebKit/webkit/blob/master/Tools/TestWebKitAPI/Tests/WebKitCocoa/Download.mm
+   ***/
+  Class __WKDownloadDelegate = objc_allocateClassPair(
+      objc_getClass("NSObject"), "__WKDownloadDelegate", 0);
+  class_addMethod(
+      __WKDownloadDelegate,
+      sel_registerName("_download:decideDestinationWithSuggestedFilename:"
+                       "completionHandler:"),
+      (IMP)run_save_panel, "v@:@@?");
+  class_addMethod(__WKDownloadDelegate,
+                  sel_registerName("_download:didFailWithError:"),
+                  (IMP)download_failed, "v@:@@");
+  objc_registerClassPair(__WKDownloadDelegate);
+  id downloadDelegate = [[__WKDownloadDelegate alloc] init];
+  objc_msgSend(config.processPool, sel_registerName("_setDownloadDelegate:"),
+               downloadDelegate);
+
+  Class __WKPreferences =
+      objc_allocateClassPair(objc_getClass("WKPreferences"), "__WKPreferences", 0);
   objc_property_attribute_t type = {"T", "c"};
   objc_property_attribute_t ownership = {"N", ""};
   objc_property_attribute_t attrs[] = {type, ownership};
+
   class_addProperty(wkPrefClass, "developerExtrasEnabled", attrs, 2);
   objc_registerClassPair(wkPrefClass);
 
   id wkPref = [[[wkPrefClass alloc] init] autorelease];
-  
+
   [wkPref setValue:[NSNumber numberWithBool:!!w->debug]
             forKey:@"developerExtrasEnabled"];
 
@@ -1673,7 +1774,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   override window.external.invoke to call
   webkit.messageHandlers.invoke.postMessage
   ***/
-  WKUserScript *windowExternalOverrideScript = [[[WKUserScript alloc]
+  WKUserScript *windowExternalOverrideScript = [[WKUserScript alloc]
         initWithSource:@"window.external = this; invoke = function(arg) "
                        @"{webkit.messageHandlers.invoke.postMessage(arg);};"
          injectionTime:WKUserScriptInjectionTimeAtDocumentStart
@@ -1691,7 +1792,9 @@ WEBVIEW_API int webview_init(struct webview *w) {
                       (IMP)webview_window_will_close, "v@:@");
   objc_registerClassPair(windowDelegateClass);
 
+
   w->priv.windowDelegate = [[[windowDelegateClass alloc] init] autorelease];
+
   objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
@@ -1714,7 +1817,42 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
+
+  Class __WKUIDelegate =
+      objc_allocateClassPair(objc_getClass("NSObject"), "__WKUIDelegate", 0);
+  class_addProtocol(__WKUIDelegate, objc_getProtocol("WKUIDelegate"));
+  class_addMethod(__WKUIDelegate,
+                  sel_registerName("webView:runOpenPanelWithParameters:"
+                                   "initiatedByFrame:completionHandler:"),
+                  (IMP)run_open_panel, "v@:@@@?");
+  class_addMethod(__WKUIDelegate,
+                  sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
+                                   "initiatedByFrame:completionHandler:"),
+                  (IMP)run_alert_panel, "v@:@@@?");
+  class_addMethod(
+      __WKUIDelegate,
+      sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
+                       "initiatedByFrame:completionHandler:"),
+      (IMP)run_confirmation_panel, "v@:@@@?");
+  objc_registerClassPair(__WKUIDelegate);
+  id uiDel = [[__WKUIDelegate alloc] init];
+
+  Class __WKNavigationDelegate = objc_allocateClassPair(
+      objc_getClass("NSObject"), "__WKNavigationDelegate", 0);
+  class_addProtocol(__WKNavigationDelegate,
+                    objc_getProtocol("WKNavigationDelegate"));
+  class_addMethod(
+      __WKNavigationDelegate,
+      sel_registerName(
+          "webView:decidePolicyForNavigationResponse:decisionHandler:"),
+      (IMP)make_nav_policy_decision, "v@:@@?");
+  objc_registerClassPair(__WKNavigationDelegate);
+  id navDel = [[__WKNavigationDelegate alloc] init];
+
   w->priv.webview = [[[WKWebView alloc] initWithFrame:r configuration:config] autorelease];
+  w->priv.webview.UIDelegate = uiDel;
+  w->priv.webview.navigationDelegate = navDel;
+
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [w->priv.webview loadRequest:[NSURLRequest requestWithURL:nsURL]];
