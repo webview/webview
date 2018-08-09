@@ -1762,7 +1762,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
   WKUserContentController *userController =
       [[[WKUserContentController alloc] init] autorelease];
-
   objc_setAssociatedObject(userController, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
@@ -1793,7 +1792,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
 
 
   w->priv.windowDelegate = [[[windowDelegateClass alloc] init] autorelease];
-
   objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
@@ -1855,7 +1853,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [w->priv.webview loadRequest:[NSURLRequest requestWithURL:nsURL]];
-
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
