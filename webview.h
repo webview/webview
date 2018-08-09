@@ -1752,7 +1752,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
   objc_property_attribute_t type = {"T", "c"};
   objc_property_attribute_t ownership = {"N", ""};
   objc_property_attribute_t attrs[] = {type, ownership};
-
   class_addProperty(wkPrefClass, "developerExtrasEnabled", attrs, 2);
   objc_registerClassPair(wkPrefClass);
 
