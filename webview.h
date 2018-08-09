@@ -84,6 +84,7 @@ struct webview_priv {
   WKWebView *webview;
   id windowDelegate;
   int should_exit;
+  dispatch_queue_t eval_queue;
 };
 #else
 #error "Define one of: WEBVIEW_GTK, WEBVIEW_COCOA or WEBVIEW_WINAPI"
@@ -1610,6 +1611,7 @@ WEBVIEW_API void webview_print_log(const char *s) { OutputDebugString(s); }
     MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
 #define NSModalResponseOK NSFileHandlingPanelOKButton
 #endif /* MAC_OS_X_VERSION_10_12, MAC_OS_X_VERSION_10_13 */
+
 static void webview_window_will_close(id self, SEL cmd, id notification) {
   struct webview *w =
       (struct webview *)objc_getAssociatedObject(self, "webview");
@@ -1709,6 +1711,9 @@ make_nav_policy_decision(id self, SEL cmd, id webView, id response,
 }
 
 WEBVIEW_API int webview_init(struct webview *w) {
+
+  w->priv.eval_queue = dispatch_queue_create("eval_queue", DISPATCH_QUEUE_SERIAL_INACTIVE);
+
   w->priv.pool = [[NSAutoreleasePool alloc] init];
   [NSApplication sharedApplication];
 
@@ -1841,8 +1846,10 @@ WEBVIEW_API int webview_init(struct webview *w) {
   id navDel = [[__WKNavigationDelegate alloc] init];
 
   w->priv.webview = [[WKWebView alloc] initWithFrame:r configuration:config];
+
   w->priv.webview.UIDelegate = uiDel;
   w->priv.webview.navigationDelegate = navDel;
+
 
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
@@ -1910,8 +1917,18 @@ WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
 }
 
 WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
+        
+  void (^eval)(WKWebView*, NSString*) = ^void(WKWebView*w, NSString *js) {
+      
+      void(^dispatch_eval)(WKWebView*, NSString*) = ^void(WKWebView *w, NSString *js) {
+          [w evaluateJavaScript:js completionHandler:NULL];
+      };
+      
+      dispatch_async(dispatch_get_main_queue(), ^{ dispatch_eval(w, js); });
+  };
+  
   NSString *nsJS = [NSString stringWithUTF8String:js];
-  [w->priv.webview evaluateJavaScript:nsJS completionHandler:NULL];
+  dispatch_async(w->priv.eval_queue, ^{ eval(w->priv.webview, nsJS); });
   return 0;
 }
 
