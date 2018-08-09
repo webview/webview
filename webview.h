@@ -1752,11 +1752,9 @@ WEBVIEW_API int webview_init(struct webview *w) {
   objc_property_attribute_t type = {"T", "c"};
   objc_property_attribute_t ownership = {"N", ""};
   objc_property_attribute_t attrs[] = {type, ownership};
-  class_addProperty(wkPrefClass, "developerExtrasEnabled", attrs, 2);
-  objc_registerClassPair(wkPrefClass);
-
-  id wkPref = [[[wkPrefClass alloc] init] autorelease];
-
+  class_replaceProperty(__WKPreferences, "developerExtrasEnabled", attrs, 2);
+  objc_registerClassPair(__WKPreferences);
+  id wkPref = [[__WKPreferences alloc] init];
   [wkPref setValue:[NSNumber numberWithBool:!!w->debug]
             forKey:@"developerExtrasEnabled"];
 
