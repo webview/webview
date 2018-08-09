@@ -1812,7 +1812,6 @@ WEBVIEW_API int webview_init(struct webview *w) {
   [w->priv.window setDelegate:w->priv.windowDelegate];
   [w->priv.window center];
 
-
   Class __WKUIDelegate =
       objc_allocateClassPair(objc_getClass("NSObject"), "__WKUIDelegate", 0);
   class_addProtocol(__WKUIDelegate, objc_getProtocol("WKUIDelegate"));
