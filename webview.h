@@ -1720,8 +1720,9 @@ WEBVIEW_API int webview_init(struct webview *w) {
       (IMP)webview_external_invoke, "v@:@@");
   objc_registerClassPair(scriptMessageHandlerClass);
 
-  id scriptMessageHandler = [[scriptMessageHandlerClass alloc] init];
-  WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+  id scriptMessageHandler = [[[scriptMessageHandlerClass alloc] init] autorelease];
+
+  WKWebViewConfiguration *config = [[[WKWebViewConfiguration alloc] init] autorelease];
 
   /***
    _WKDownloadDelegate is an undocumented/private protocol with methods called
@@ -1758,21 +1759,23 @@ WEBVIEW_API int webview_init(struct webview *w) {
             forKey:@"developerExtrasEnabled"];
 
   WKUserContentController *userController =
-      [[WKUserContentController alloc] init];
+      [[[WKUserContentController alloc] init] autorelease];
   objc_setAssociatedObject(userController, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
+
   [userController addScriptMessageHandler:scriptMessageHandler name:@"invoke"];
 
   /***
    In order to maintain compatibility with the other 'webviews' we need to
-   override window.external.invoke to call
-   webkit.messageHandlers.invoke.postMessage
-   ***/
-  WKUserScript *windowExternalOverrideScript = [[WKUserScript alloc]
+  override window.external.invoke to call
+  webkit.messageHandlers.invoke.postMessage
+  ***/
+  WKUserScript *windowExternalOverrideScript = [[[WKUserScript alloc]
         initWithSource:@"window.external = this; invoke = function(arg) "
                        @"{webkit.messageHandlers.invoke.postMessage(arg);};"
          injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-      forMainFrameOnly:NO];
+      forMainFrameOnly:NO] autorelease];
+
   [userController addUserScript:windowExternalOverrideScript];
 
   config.userContentController = userController;
@@ -1785,8 +1788,8 @@ WEBVIEW_API int webview_init(struct webview *w) {
                       (IMP)webview_window_will_close, "v@:@");
   objc_registerClassPair(windowDelegateClass);
 
-  w->priv.windowDelegate = [[windowDelegateClass alloc] init];
 
+  w->priv.windowDelegate = [[[windowDelegateClass alloc] init] autorelease];
   objc_setAssociatedObject(w->priv.windowDelegate, "webview", (id)(w),
                            OBJC_ASSOCIATION_ASSIGN);
 
@@ -1840,14 +1843,13 @@ WEBVIEW_API int webview_init(struct webview *w) {
   objc_registerClassPair(__WKNavigationDelegate);
   id navDel = [[__WKNavigationDelegate alloc] init];
 
-  w->priv.webview = [[WKWebView alloc] initWithFrame:r configuration:config];
+  w->priv.webview = [[[WKWebView alloc] initWithFrame:r configuration:config] autorelease];
   w->priv.webview.UIDelegate = uiDel;
   w->priv.webview.navigationDelegate = navDel;
 
   NSURL *nsURL = [NSURL
       URLWithString:[NSString stringWithUTF8String:webview_check_url(w->url)]];
   [w->priv.webview loadRequest:[NSURLRequest requestWithURL:nsURL]];
-
   [w->priv.webview setAutoresizesSubviews:YES];
   [w->priv.webview
       setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
