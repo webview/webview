@@ -1770,7 +1770,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   override window.external.invoke to call
   webkit.messageHandlers.invoke.postMessage
   ***/
-  WKUserScript *windowExternalOverrideScript = [[WKUserScript alloc]
+  WKUserScript *windowExternalOverrideScript = [[[WKUserScript alloc]
         initWithSource:@"window.external = this; invoke = function(arg) "
                        @"{webkit.messageHandlers.invoke.postMessage(arg);};"
          injectionTime:WKUserScriptInjectionTimeAtDocumentStart
