@@ -208,7 +208,7 @@ Build it:
 # Linux
 $ cc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
-$ cc main.c -DWEBVIEW_COCOA=1 -x objective-c -framework Cocoa -framework WebKit -o webview-example
+$ cc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
 # Windows (mingw)
 $ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
 ```
