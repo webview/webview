@@ -1616,12 +1616,12 @@ WEBVIEW_API void webview_print_log(const char *s) { OutputDebugString(s); }
 #define WKUserScriptInjectionTimeAtDocumentStart 0
 #define NSApplicationActivationPolicyRegular 0
 
-id get_nsstring(const char *c_str) {
+static id get_nsstring(const char *c_str) {
   return objc_msgSend((id)objc_getClass("NSString"),
                       sel_registerName("stringWithUTF8String:"), c_str);
 }
 
-id create_menu_item(id title, const char *action, const char *key) {
+static id create_menu_item(id title, const char *action, const char *key) {
   id item =
       objc_msgSend((id)objc_getClass("NSMenuItem"), sel_registerName("alloc"));
   objc_msgSend(item, sel_registerName("initWithTitle:action:keyEquivalent:"),
