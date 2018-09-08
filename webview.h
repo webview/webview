@@ -543,6 +543,7 @@ WEBVIEW_API void webview_print_log(const char *s) {
 
 #define WM_WEBVIEW_DISPATCH (WM_APP + 1)
 
+
 typedef struct {
   IOleInPlaceFrame frame;
   HWND window;
@@ -869,7 +870,7 @@ static HRESULT STDMETHODCALLTYPE UI_ShowContextMenu(
 static HRESULT STDMETHODCALLTYPE
 UI_GetHostInfo(IDocHostUIHandler FAR *This, DOCHOSTUIINFO __RPC_FAR *pInfo) {
   pInfo->cbSize = sizeof(DOCHOSTUIINFO);
-  pInfo->dwFlags = DOCHOSTUIFLAG_NO3DBORDER;
+  pInfo->dwFlags = DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_DPI_AWARE;
   pInfo->dwDoubleClick = DOCHOSTUIDBLCLK_DEFAULT;
   return S_OK;
 }
@@ -1123,6 +1124,9 @@ static int DisplayHTMLPage(struct webview *w) {
       webBrowser2->lpVtbl->Release(webBrowser2);
       return (-6);
     }
+
+	webBrowser2->lpVtbl->put_Silent(webBrowser2, w->debug ? FALSE : TRUE);
+
     webBrowser2->lpVtbl->Navigate2(webBrowser2, &myURL, 0, 0, 0, 0);
     VariantClear(&myURL);
     if (!isDataURL) {
@@ -1247,6 +1251,7 @@ WEBVIEW_API int webview_init(struct webview *w) {
   RECT clientRect;
   RECT rect;
 
+
   if (webview_fix_ie_compat_mode() < 0) {
     return -1;
   }
@@ -1258,6 +1263,11 @@ WEBVIEW_API int webview_init(struct webview *w) {
   if (OleInitialize(NULL) != S_OK) {
     return -1;
   }
+
+#ifdef DPI_AWARENESS_CONTEXT_SYSTEM_AWARE //win8.1+
+  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
+#endif
+
   ZeroMemory(&wc, sizeof(WNDCLASSEX));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.hInstance = hInstance;
@@ -1270,10 +1280,15 @@ WEBVIEW_API int webview_init(struct webview *w) {
     style = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
   }
 
+#ifndef GetDpiForSystem //win8.1+
+#define GetDpiForSystem() (96.0f)
+#endif
+
+  double scale = GetDpiForSystem() / 96.0f;
   rect.left = 0;
   rect.top = 0;
-  rect.right = w->width;
-  rect.bottom = w->height;
+  rect.right = w->width * scale;
+  rect.bottom = w->height * scale;
   AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, 0);
 
   GetClientRect(GetDesktopWindow(), &clientRect);
