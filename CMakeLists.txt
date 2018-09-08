@@ -19,6 +19,7 @@ endif()
 
 add_library(webview ${CMAKE_CURRENT_BINARY_DIR}/webview.c)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/webview.c "#define WEBVIEW_IMPLEMENTATION\n#include <webview.h>")
+set_target_properties(webview PROPERTIES MACOSX_RPATH ON)
 target_include_directories(webview PUBLIC ${PROJECT_SOURCE_DIR} ${WEBVIEW_COMPILE_INCS})
 target_compile_definitions(webview PUBLIC ${WEBVIEW_COMPILE_DEFS})
 target_compile_options(webview PRIVATE ${WEBVIEW_COMPILE_OPTS})
