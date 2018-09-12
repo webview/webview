@@ -2098,7 +2098,7 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
 }
 
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title) {
-  objc_msgSend(w->priv.window, sel_registerName("setTitle"),
+  objc_msgSend(w->priv.window, sel_registerName("setTitle:"),
                get_nsstring(title));
 }
 
