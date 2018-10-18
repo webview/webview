@@ -509,10 +509,20 @@ typedef struct {
 } _IDocHostUIHandlerEx;
 
 typedef struct {
+  IInternetSecurityManager mgr;
+} _IInternetSecurityManagerEx;
+
+typedef struct {
+  IServiceProvider provider;
+  _IInternetSecurityManagerEx mgr;
+} _IServiceProviderEx;
+
+typedef struct {
   IOleClientSite client;
   _IOleInPlaceSiteEx inplace;
   _IDocHostUIHandlerEx ui;
   IDispatch external;
+  _IServiceProviderEx provider;
 } _IOleClientSiteEx;
 
 #ifdef __cplusplus
@@ -653,6 +663,8 @@ static HRESULT STDMETHODCALLTYPE Site_QueryInterface(IOleClientSite FAR *This,
     *ppvObject = &((_IOleClientSiteEx *)This)->inplace;
   } else if (iid_eq(riid, &IID_IDocHostUIHandler)) {
     *ppvObject = &((_IOleClientSiteEx *)This)->ui;
+  } else if (iid_eq(riid, &IID_IServiceProvider)) {
+    *ppvObject = &((_IOleClientSiteEx *)This)->provider;
   } else {
     *ppvObject = 0;
     return (E_NOINTERFACE);
@@ -949,6 +961,57 @@ static IDocHostUIHandlerVtbl MyIDocHostUIHandlerTable = {
     UI_TranslateUrl,
     UI_FilterDataObject};
 
+
+
+static HRESULT STDMETHODCALLTYPE IS_QueryInterface(IInternetSecurityManager FAR *This, REFIID riid, void **ppvObject) {
+  return E_NOTIMPL;
+}
+static ULONG STDMETHODCALLTYPE IS_AddRef(IInternetSecurityManager FAR *This) { return 1; }
+static ULONG STDMETHODCALLTYPE IS_Release(IInternetSecurityManager FAR *This) { return 1; }
+static HRESULT STDMETHODCALLTYPE IS_SetSecuritySite(IInternetSecurityManager FAR *This, IInternetSecurityMgrSite *pSited) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_GetSecuritySite(IInternetSecurityManager FAR *This, IInternetSecurityMgrSite **ppSite) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_MapUrlToZone(IInternetSecurityManager FAR *This, LPCWSTR pwszUrl, DWORD *pdwZone, DWORD dwFlags) {
+  *pdwZone = URLZONE_LOCAL_MACHINE;
+  return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE IS_GetSecurityId(IInternetSecurityManager FAR *This, LPCWSTR pwszUrl, BYTE *pbSecurityId, DWORD *pcbSecurityId, DWORD_PTR dwReserved) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_ProcessUrlAction(IInternetSecurityManager FAR *This, LPCWSTR pwszUrl, DWORD dwAction, BYTE *pPolicy,  DWORD cbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwFlags, DWORD dwReserved) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_QueryCustomPolicy(IInternetSecurityManager FAR *This, LPCWSTR pwszUrl, REFGUID guidKey, BYTE **ppPolicy, DWORD *pcbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwReserved) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_SetZoneMapping(IInternetSecurityManager FAR *This, DWORD dwZone, LPCWSTR lpszPattern, DWORD dwFlags) {
+  return INET_E_DEFAULT_ACTION;
+}
+static HRESULT STDMETHODCALLTYPE IS_GetZoneMappings(IInternetSecurityManager FAR *This, DWORD dwZone, IEnumString **ppenumString, DWORD dwFlags) {
+  return INET_E_DEFAULT_ACTION;
+}
+static IInternetSecurityManagerVtbl MyInternetSecurityManagerTable = {IS_QueryInterface, IS_AddRef, IS_Release, IS_SetSecuritySite, IS_GetSecuritySite, IS_MapUrlToZone, IS_GetSecurityId, IS_ProcessUrlAction, IS_QueryCustomPolicy, IS_SetZoneMapping, IS_GetZoneMappings};
+
+static HRESULT STDMETHODCALLTYPE SP_QueryInterface(IServiceProvider FAR *This, REFIID riid, void **ppvObject) {
+  return (Site_QueryInterface(
+      (IOleClientSite *)((char *)This - sizeof(IOleClientSite) - sizeof(_IOleInPlaceSiteEx) - sizeof(_IDocHostUIHandlerEx) - sizeof(IDispatch)), riid, ppvObject));
+}
+static ULONG STDMETHODCALLTYPE SP_AddRef(IServiceProvider FAR *This) { return 1; }
+static ULONG STDMETHODCALLTYPE SP_Release(IServiceProvider FAR *This) { return 1; }
+static HRESULT STDMETHODCALLTYPE SP_QueryService(IServiceProvider FAR *This, REFGUID siid, REFIID riid, void **ppvObject) {
+  if (iid_eq(siid, &IID_IInternetSecurityManager) && iid_eq(riid, &IID_IInternetSecurityManager)) {
+    *ppvObject = &((_IServiceProviderEx *)This)->mgr;
+  } else {
+    *ppvObject = 0;
+    return (E_NOINTERFACE);
+  }
+  return S_OK;
+}
+static IServiceProviderVtbl MyServiceProviderTable = {SP_QueryInterface, SP_AddRef, SP_Release, SP_QueryService};
+
 static void UnEmbedBrowserObject(struct webview *w) {
   if (w->priv.browser != NULL) {
     (*w->priv.browser)->lpVtbl->Close(*w->priv.browser, OLECLOSE_NOSAVE);
@@ -977,6 +1040,8 @@ static int EmbedBrowserObject(struct webview *w) {
   _iOleClientSiteEx->inplace.frame.window = w->priv.hwnd;
   _iOleClientSiteEx->ui.ui.lpVtbl = &MyIDocHostUIHandlerTable;
   _iOleClientSiteEx->external.lpVtbl = &ExternalDispatchTable;
+  _iOleClientSiteEx->provider.provider.lpVtbl = &MyServiceProviderTable;
+  _iOleClientSiteEx->provider.mgr.mgr.lpVtbl = &MyInternetSecurityManagerTable;
 
   if (CoGetClassObject(iid_unref(&CLSID_WebBrowser),
                        CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER, NULL,
