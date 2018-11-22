@@ -1575,7 +1575,7 @@ WEBVIEW_API void webview_dialog(struct webview *w,
     IShellItem *res = NULL;
     WCHAR *ws = NULL;
     char *s = NULL;
-    FILEOPENDIALOGOPTIONS opts, add_opts;
+    FILEOPENDIALOGOPTIONS opts = 0, add_opts = 0;
     if (dlgtype == WEBVIEW_DIALOG_TYPE_OPEN) {
       if (CoCreateInstance(
               iid_unref(&CLSID_FileOpenDialog), NULL, CLSCTX_INPROC_SERVER,
