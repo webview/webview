@@ -1326,9 +1326,9 @@ WEBVIEW_API int webview_init(struct webview *w) {
 WEBVIEW_API int webview_loop(struct webview *w, int blocking) {
   MSG msg;
   if (blocking) {
-    GetMessage(&msg, 0, 0, 0);
+    if (GetMessage(&msg, 0, 0, 0)<0) return 0;
   } else {
-    PeekMessage(&msg, 0, 0, 0, PM_REMOVE);
+    if (!PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) return 0;
   }
   switch (msg.message) {
   case WM_QUIT:
