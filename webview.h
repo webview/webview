@@ -55,7 +55,7 @@ WEBVIEW_API void *webview_get_window(webview_t w);
 WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 
 WEBVIEW_API void webview_set_bounds(webview_t w, int x, int y, int width,
-                                    int heigth, int flags);
+                                    int height, int flags);
 WEBVIEW_API void webview_get_bounds(webview_t w, int *x, int *y, int *width,
                                     int *height, int *flags);
 
@@ -140,12 +140,8 @@ public:
                      this);
     webkit_user_content_manager_register_script_message_handler(manager,
                                                                 "external");
-    webkit_user_content_manager_add_script(
-        manager, webkit_user_script_new(
-                     "window.external={invoke:function(s){window.webkit."
-                     "messageHandlers.external.postMessage(s);}}",
-                     WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-                     WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
+    init("window.external={invoke:function(s){window.webkit.messageHandlers."
+         "external.postMessage(s);}}");
 
     gtk_container_add(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
     gtk_widget_grab_focus(GTK_WIDGET(m_webview));
@@ -159,9 +155,6 @@ public:
     }
 
     gtk_widget_show_all(m_window);
-
-    eval("window.external={invoke:function(x){"
-         "window.webkit.messageHandlers.external.postMessage(x);}}");
   }
   void run() { gtk_main(); }
   void terminate() { gtk_main_quit(); }
@@ -191,15 +184,25 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url);
   }
 
+  void init(const char *js) {
+    WebKitUserContentManager *manager =
+        webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
+    webkit_user_content_manager_add_script(
+        manager, webkit_user_script_new(
+                     js, WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+                     WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
+    eval(js);
+  }
+
   void eval(const char *js) {
     webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js, NULL, NULL,
                                    NULL);
   }
 
-private:
+protected:
+  std::function<void(const char *)> m_cb;
   GtkWidget *m_window;
   GtkWidget *m_webview;
-  std::function<void(const char *)> m_cb;
 };
 
 } // namespace webview
@@ -355,7 +358,7 @@ public:
                  nullptr);
   }
 
-private:
+protected:
   id m_window;
   id m_webview;
   msg_cb_t m_cb;
@@ -829,41 +832,65 @@ private:
 namespace webview {
 class webview : public browser_engine {
 public:
-  webview(const char *init_js = "", bool debug = false, void *wnd = nullptr)
+  webview(bool debug = false, void *wnd = nullptr)
       : browser_engine(
             std::bind(&webview::on_message, this, std::placeholders::_1), debug,
             wnd) {}
 
+  void *window() { return (void *)m_window; }
+
 private:
   void on_message(const char *msg) { printf("msg: %s\n", msg); }
 };
-
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(const char *init_js, int debug,
-                                     void *wnd) {
-  return new webview::webview(init_js, debug, wnd);
+WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
+  return new webview::webview(debug, wnd);
 }
 
-WEBVIEW_API void webview_destroy(webview_t w) {}
+WEBVIEW_API void webview_destroy(webview_t w) {
+  delete static_cast<webview::webview *>(w);
+}
 
-WEBVIEW_API void webview_run(webview_t w) {}
+WEBVIEW_API void webview_run(webview_t w) {
+  static_cast<webview::webview *>(w)->run();
+}
 
-WEBVIEW_API void webview_terminate(webview_t w) {}
+WEBVIEW_API void webview_terminate(webview_t w) {
+  static_cast<webview::webview *>(w)->terminate();
+}
 
 WEBVIEW_API void
-webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg) {}
+webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg) {
+  static_cast<webview::webview *>(w)->dispatch([=]() { fn(w, arg); });
+}
 
-WEBVIEW_API void *webview_get_window(webview_t w) { return nullptr; }
+WEBVIEW_API void *webview_get_window(webview_t w) {
+  return static_cast<webview::webview *>(w)->window();
+}
 
-WEBVIEW_API void webview_set_title(webview_t w, const char *title) {}
+WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
+  static_cast<webview::webview *>(w)->set_title(title);
+}
 
 WEBVIEW_API void webview_set_bounds(webview_t w, int x, int y, int width,
-                                    int heigth, int flags) {}
-WEBVIEW_API void webview_get_bounds(webview_t w, int *x, int *y, int *width,
-                                    int *height, int *flags) {}
+                                    int height, int flags) {
+  // TODO: x, y, flags
+  static_cast<webview::webview *>(w)->set_size(width, height);
+}
 
-WEBVIEW_API void webview_navigate(webview_t w, const char *url) {}
+WEBVIEW_API void webview_get_bounds(webview_t w, int *x, int *y, int *width,
+                                    int *height, int *flags) {
+  // TODO
+}
+
+WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
+  static_cast<webview::webview *>(w)->navigate(url);
+}
+
+WEBVIEW_API void webview_init(webview_t w, const char *js) {
+  static_cast<webview::webview *>(w)->init(js);
+}
 
 #endif /* WEBVIEW_HEADER */
 
