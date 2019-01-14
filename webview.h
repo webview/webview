@@ -378,7 +378,7 @@ private:
 #include <windows.h>
 
 #pragma comment(lib, "user32.lib")
-
+namespace webview {
 class browser_window {
 public:
   browser_window(msg_cb_t cb, bool debug, void *window) : m_cb(cb) {
@@ -453,9 +453,9 @@ public:
     r.right = width;
     r.bottom = height;
     AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
-    SetWindowPos(
-        m_window, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top,
-        browser_engineSWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    SetWindowPos(m_window, NULL, r.left, r.top, r.right - r.left,
+                 r.bottom - r.top,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
   }
 
 protected:
@@ -464,6 +464,7 @@ protected:
   DWORD m_main_thread = GetCurrentThreadId();
   msg_cb_t m_cb;
 };
+} // namespace webview
 
 #if defined(WEBVIEW_MSHTML)
 #include <exdisp.h>
@@ -476,6 +477,7 @@ protected:
 
 #define DISPID_EXTERNAL_INVOKE 0x1000
 
+namespace webview {
 class browser_engine : public browser_window,
                        public IOleClientSite,
                        public IOleInPlaceSite,
@@ -750,17 +752,13 @@ private:
                            VARIANT *pVarResult, EXCEPINFO *pExcepInfo,
                            UINT *puArgErr) override {
     if (dispIdMember == DISPID_NAVIGATECOMPLETE2) {
-      OutputDebugString("�nvoke: navigate complete\n");
-      eval("alert('navigate complete');");
     } else if (dispIdMember == DISPID_DOCUMENTCOMPLETE) {
-      eval("alert('document complete');");
-      OutputDebugString("�nvoke: document complete\n");
     } else if (dispIdMember == DISPID_EXTERNAL_INVOKE) {
-      OutputDebugString("�nvoke: external invoke\n");
     }
     return S_OK;
   }
 };
+} // namespace webview
 
 #elif defined(WEBVIEW_EDGE)
 #include <objbase.h>
@@ -837,9 +835,7 @@ public:
             wnd) {}
 
 private:
-  void on_message(const char *msg) {
-    printf("msg: %s\n", msg);
-  }
+  void on_message(const char *msg) { printf("msg: %s\n", msg); }
 };
 
 } // namespace webview
