@@ -2,6 +2,7 @@
 
 #include "webview.h"
 
+#include <cstring>
 #include <cassert>
 
 static void test_terminate() {
