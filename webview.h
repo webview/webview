@@ -289,24 +289,19 @@ public:
 
     // Webview
     auto config = objc_msgSend("WKWebViewConfiguration"_cls, "new"_sel);
-    auto manager = objc_msgSend(config, "userContentController"_sel);
+    m_manager = objc_msgSend(config, "userContentController"_sel);
     m_webview = objc_msgSend("WKWebView"_cls, "alloc"_sel);
     objc_msgSend(m_webview, "initWithFrame:configuration:"_sel,
                  CGRectMake(0, 0, 0, 0), config);
-    objc_msgSend(manager, "addScriptMessageHandler:name:"_sel, delegate,
+    objc_msgSend(m_manager, "addScriptMessageHandler:name:"_sel, delegate,
                  "external"_str);
-    objc_msgSend(
-        manager, "addUserScript:"_sel,
-        objc_msgSend(objc_msgSend("WKUserScript"_cls, "alloc"_sel),
-                     "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-                     R"script(
+    init(R"script(
                       window.external = {
                         invoke: function(s) {
                           window.webkit.messageHandlers.external.postMessage(s);
                         },
                       };
-                     )script"_str,
-                     WKUserScriptInjectionTimeAtDocumentStart, 1));
+                     )script");
     if (debug) {
       objc_msgSend(objc_msgSend(config, "preferences"_sel),
                    "setValue:forKey:"_sel, 1, "developerExtrasEnabled"_str);
@@ -352,6 +347,16 @@ public:
         m_webview, "loadRequest:"_sel,
         objc_msgSend("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
+  void init(const char *js) {
+    objc_msgSend(
+        m_manager, "addUserScript:"_sel,
+        objc_msgSend(
+            objc_msgSend("WKUserScript"_cls, "alloc"_sel),
+            "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+            objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, js),
+            WKUserScriptInjectionTimeAtDocumentStart, 1));
+    eval(js);
+  }
   void eval(const char *js) {
     objc_msgSend(m_webview, "evaluateJavaScript:completionHandler:"_sel,
                  objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, js),
@@ -361,6 +366,7 @@ public:
 protected:
   id m_window;
   id m_webview;
+  id m_manager;
   msg_cb_t m_cb;
 };
 
