@@ -10,7 +10,7 @@ matrix:
         - sudo add-apt-repository ppa:webkit-team/ppa -y
         - sudo apt-get update
         - sudo apt-get install libwebkit2gtk-4.0-dev -y
-        - sudo apt-get clang-tidy -y
+        - sudo apt-get install clang-tidy -y
       env: WEBVIEW=gtk
     - os: osx
       osx_image: xcode8.3
