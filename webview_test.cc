@@ -1,3 +1,5 @@
+// +build ignore
+
 #include "webview.h"
 
 #include <cassert>
