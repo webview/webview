@@ -18,6 +18,9 @@ fmt: webview.h
 lint:
 	clang-tidy webview_test.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
 
+example: example.cc webview.h
+	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example
+
 test:
 	$(CXX) webview_test.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o webview_test
 	./webview_test

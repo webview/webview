@@ -171,7 +171,7 @@ public:
     gtk_window_set_title(GTK_WINDOW(m_window), title);
   }
 
-  void set_size(int width, int height, bool resizable = true) {
+  void set_size(int width, int height, bool resizable) {
     gtk_window_set_resizable(GTK_WINDOW(m_window), !!resizable);
     if (resizable) {
       gtk_window_set_default_size(GTK_WINDOW(m_window), width, height);
@@ -329,7 +329,7 @@ public:
         m_window, "setTitle:"_sel,
         objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, title));
   }
-  void set_size(int width, int height, bool resizable = true) {
+  void set_size(int width, int height, bool resizable) {
     auto style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                  NSWindowStyleMaskMiniaturizable;
     if (resizable) {
@@ -455,7 +455,7 @@ public:
 
   void set_title(const char *title) { SetWindowText(m_window, title); }
 
-  void set_size(int width, int height, bool resizable = true) {
+  void set_size(int width, int height, bool resizable) {
     RECT r;
     r.left = 50;
     r.top = 50;
@@ -882,7 +882,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 WEBVIEW_API void webview_set_bounds(webview_t w, int x, int y, int width,
                                     int height, int flags) {
   // TODO: x, y, flags
-  static_cast<webview::webview *>(w)->set_size(width, height);
+  static_cast<webview::webview *>(w)->set_size(width, height, true);
 }
 
 WEBVIEW_API void webview_get_bounds(webview_t w, int *x, int *y, int *width,

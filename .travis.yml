@@ -16,4 +16,4 @@ matrix:
       env: WEBVIEW=cocoa
 
 script:
-  - make test
+  - make example
