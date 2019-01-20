@@ -776,6 +776,8 @@ private:
 
 #pragma comment(lib, "windowsapp")
 
+namespace webview {
+
 using namespace winrt;
 using namespace Windows::Foundation;
 using namespace Windows::Web::UI;
@@ -802,12 +804,14 @@ public:
     m_webview = op.GetResults();
     m_webview.Settings().IsScriptNotifyAllowed(true);
     m_webview.IsVisible(true);
-    m_webview.AddInitializeScript(L"window.external = { invoke: function (s) { "
-                                  L"window.external.notify(s); };");
     m_webview.ScriptNotify([=](auto const &sender, auto const &args) {
       std::string s = winrt::to_string(args.Value());
       m_cb(s.c_str());
     });
+    m_webview.NavigationStarting([=](auto const &sender, auto const &args) {
+      m_webview.AddInitializeScript(winrt::to_hstring(init_js));
+    });
+    init("window.external.invoke = s => window.external.notify(s)");
     resize();
   }
 
@@ -815,6 +819,9 @@ public:
     Uri uri(winrt::to_hstring(url));
     m_webview.Navigate(uri);
     // m_webview.NavigateToString(winrt::to_hstring(url));
+  }
+  void init(const char *js) {
+    init_js = init_js + "(function(){" + js + "})();";
   }
   void eval(const char *js) {
     m_webview.InvokeScriptAsync(
@@ -830,7 +837,9 @@ private:
   }
   WebViewControlProcess m_process;
   WebViewControl m_webview = nullptr;
+  std::string init_js = "";
 };
+} // namespace webview
 #endif
 
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_MSHTML, WEBVIEW_MSHTML */
@@ -846,7 +855,13 @@ public:
   void *window() { return (void *)m_window; }
 
 private:
-  void on_message(const char *msg) { printf("msg: %s\n", msg); }
+  void on_message(const char *msg) {
+#ifdef _WIN32
+    OutputDebugString(msg);
+#else
+    printf("msg: %s\n", msg);
+#endif
+  }
 };
 } // namespace webview
 
