@@ -390,7 +390,7 @@ protected:
 namespace webview {
 class browser_window {
 public:
-  browser_window(msg_cb_t cb, bool debug, void *window) : m_cb(cb) {
+  browser_window(msg_cb_t cb, void *window) : m_cb(cb) {
     if (window == nullptr) {
       WNDCLASSEX wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -495,7 +495,7 @@ class browser_engine : public browser_window,
                        public DWebBrowserEvents2 {
 public:
   browser_engine(msg_cb_t cb, bool debug, void *window)
-      : browser_window(cb, debug, window) {
+      : browser_window(cb, window) {
     RECT rect;
     LPCLASSFACTORY cf = nullptr;
     IOleObject *obj = nullptr;
@@ -786,7 +786,7 @@ using namespace Windows::Web::UI::Interop;
 class browser_engine : public browser_window {
 public:
   browser_engine(msg_cb_t cb, bool debug, void *window)
-      : browser_window(cb, debug, window) {
+      : browser_window(cb, window) {
     init_apartment(winrt::apartment_type::single_threaded);
     m_process = WebViewControlProcess();
     auto op = m_process.CreateWebViewControlAsync(
@@ -817,6 +817,7 @@ public:
 
   void navigate(const char *url) {
     Uri uri(winrt::to_hstring(url));
+    // TODO: if url starts with 'data:text/html,' prefix then use it as a string
     m_webview.Navigate(uri);
     // m_webview.NavigateToString(winrt::to_hstring(url));
   }
