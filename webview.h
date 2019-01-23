@@ -332,18 +332,20 @@ inline std::string json_parse(std::string s, std::string key, int index) {
     json_parse_c(s.c_str(), s.length(), key.c_str(), key.length(), &value,
                  &value_sz);
   }
-  if (value == nullptr) {
-    return "";
+  if (value != nullptr) {
+    if (value[0] != '"') {
+      return std::string(value, value_sz);
+    }
+    int n = json_unescape(value, value_sz, nullptr);
+    if (n > 0) {
+      char *decoded = new char[n];
+      json_unescape(value, value_sz, decoded);
+      auto result = std::string(decoded, n);
+      delete[] decoded;
+      return result;
+    }
   }
-  if (value[0] != '"') {
-    return std::string(value, value_sz);
-  }
-  int n = json_unescape(value, value_sz, nullptr);
-  char *decoded = new char[n];
-  json_unescape(value, value_sz, decoded);
-  auto result = std::string(decoded, n);
-  delete[] decoded;
-  return result;
+  return "";
 }
 
 } // namespace webview

@@ -17,7 +17,7 @@ ifndef WEBVIEW_$(WEBVIEW)_FLAGS
 endif
 
 lint: check-env
-	clang-tidy webview_test.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
+	clang-tidy example.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
 
 example: check-env example.cc webview.h
 	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example
