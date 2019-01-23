@@ -74,13 +74,18 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
 #include <atomic>
 #include <functional>
+#include <future>
+#include <map>
 #include <string>
+#include <vector>
+
+#include <cstring>
 
 namespace webview {
 using dispatch_fn_t = std::function<void()>;
 using msg_cb_t = std::function<void(const char *msg)>;
 
-inline std::string urlencode(std::string s) {
+inline std::string url_encode(std::string s) {
   std::string encoded;
   for (int i = 0; i < s.length(); i++) {
     auto c = s[i];
@@ -95,7 +100,7 @@ inline std::string urlencode(std::string s) {
   return encoded;
 }
 
-inline std::string urldecode(std::string s) {
+inline std::string url_decode(std::string s) {
   std::string decoded;
   for (int i = 0; i < s.length(); i++) {
     if (s[i] == '%') {
@@ -114,9 +119,231 @@ inline std::string urldecode(std::string s) {
 
 inline std::string html_from_uri(std::string s) {
   if (s.substr(0, 15) == "data:text/html,") {
-    return urldecode(s.substr(15));
+    return url_decode(s.substr(15));
   }
   return "";
+}
+
+inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
+                        const char **value, size_t *valuesz) {
+  enum {
+    JSON_STATE_VALUE,
+    JSON_STATE_LITERAL,
+    JSON_STATE_STRING,
+    JSON_STATE_ESCAPE,
+    JSON_STATE_UTF8
+  } state = JSON_STATE_VALUE;
+  const char *k = NULL;
+  int index = 1;
+  int depth = 0;
+  int utf8_bytes = 0;
+
+  if (key == NULL) {
+    index = keysz;
+    keysz = 0;
+  }
+
+  *value = NULL;
+  *valuesz = 0;
+
+  for (; sz > 0; s++, sz--) {
+    enum {
+      JSON_ACTION_NONE,
+      JSON_ACTION_START,
+      JSON_ACTION_END,
+      JSON_ACTION_START_STRUCT,
+      JSON_ACTION_END_STRUCT
+    } action = JSON_ACTION_NONE;
+    unsigned char c = *s;
+    switch (state) {
+    case JSON_STATE_VALUE:
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' ||
+          c == ':') {
+        continue;
+      } else if (c == '"') {
+        action = JSON_ACTION_START;
+        state = JSON_STATE_STRING;
+      } else if (c == '{' || c == '[') {
+        action = JSON_ACTION_START_STRUCT;
+      } else if (c == '}' || c == ']') {
+        action = JSON_ACTION_END_STRUCT;
+      } else if (c == 't' || c == 'f' || c == 'n' || c == '-' ||
+                 (c >= '0' && c <= '9')) {
+        action = JSON_ACTION_START;
+        state = JSON_STATE_LITERAL;
+      } else {
+        return -1;
+      }
+      break;
+    case JSON_STATE_LITERAL:
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' ||
+          c == ']' || c == '}' || c == ':') {
+        state = JSON_STATE_VALUE;
+        s--;
+        sz++;
+        action = JSON_ACTION_END;
+      } else if (c < 32 || c > 126) {
+        return -1;
+      } // fallthrough
+    case JSON_STATE_STRING:
+      if (c < 32 || (c > 126 && c < 192)) {
+        return -1;
+      } else if (c == '"') {
+        action = JSON_ACTION_END;
+        state = JSON_STATE_VALUE;
+      } else if (c == '\\') {
+        state = JSON_STATE_ESCAPE;
+      } else if (c >= 192 && c < 224) {
+        utf8_bytes = 1;
+        state = JSON_STATE_UTF8;
+      } else if (c >= 224 && c < 240) {
+        utf8_bytes = 2;
+        state = JSON_STATE_UTF8;
+      } else if (c >= 240 && c < 247) {
+        utf8_bytes = 3;
+        state = JSON_STATE_UTF8;
+      } else if (c >= 128 && c < 192) {
+        return -1;
+      }
+      break;
+    case JSON_STATE_ESCAPE:
+      if (c == '"' || c == '\\' || c == '/' || c == 'b' || c == 'f' ||
+          c == 'n' || c == 'r' || c == 't' || c == 'u') {
+        state = JSON_STATE_STRING;
+      } else {
+        return -1;
+      }
+      break;
+    case JSON_STATE_UTF8:
+      if (c < 128 || c > 191) {
+        return -1;
+      }
+      utf8_bytes--;
+      if (utf8_bytes == 0) {
+        state = JSON_STATE_STRING;
+      }
+      break;
+    default:
+      return -1;
+    }
+
+    if (action == JSON_ACTION_END_STRUCT) {
+      depth--;
+    }
+
+    if (depth == 1) {
+      if (action == JSON_ACTION_START || action == JSON_ACTION_START_STRUCT) {
+        if (index == 0) {
+          *value = s;
+        } else if (keysz > 0 && index == 1) {
+          k = s;
+        } else {
+          index--;
+        }
+      } else if (action == JSON_ACTION_END ||
+                 action == JSON_ACTION_END_STRUCT) {
+        if (*value != NULL && index == 0) {
+          *valuesz = (size_t)(s + 1 - *value);
+          return 0;
+        } else if (keysz > 0 && k != NULL) {
+          if (keysz == (size_t)(s - k - 1) && memcmp(key, k + 1, keysz) == 0) {
+            index = 0;
+          } else {
+            index = 2;
+          }
+          k = NULL;
+        }
+      }
+    }
+
+    if (action == JSON_ACTION_START_STRUCT) {
+      depth++;
+    }
+  }
+  return -1;
+}
+
+inline std::string json_escape(std::string s) {
+  // TODO: implement
+  return '"' + s + '"';
+}
+
+inline int json_unescape(const char *s, size_t n, char *out) {
+  int r = 0;
+  if (*s++ != '"') {
+    return -1;
+  }
+  while (n > 2) {
+    char c = *s;
+    if (c == '\\') {
+      s++;
+      n--;
+      switch (*s) {
+      case 'b':
+        c = '\b';
+        break;
+      case 'f':
+        c = '\f';
+        break;
+      case 'n':
+        c = '\n';
+        break;
+      case 'r':
+        c = '\r';
+        break;
+      case 't':
+        c = '\t';
+        break;
+      case '\\':
+        c = '\\';
+        break;
+      case '/':
+        c = '/';
+        break;
+      case '\"':
+        c = '\"';
+        break;
+      default: // TODO: support unicode decoding
+        return -1;
+      }
+    }
+    if (out != NULL) {
+      *out++ = c;
+    }
+    s++;
+    n--;
+    r++;
+  }
+  if (*s != '"') {
+    return -1;
+  }
+  if (out != NULL) {
+    *out = '\0';
+  }
+  return r;
+}
+
+inline std::string json_parse(std::string s, std::string key, int index) {
+  const char *value;
+  size_t value_sz;
+  if (key == "") {
+    json_parse_c(s.c_str(), s.length(), nullptr, index, &value, &value_sz);
+  } else {
+    json_parse_c(s.c_str(), s.length(), key.c_str(), key.length(), &value,
+                 &value_sz);
+  }
+  if (value == nullptr) {
+    return "";
+  }
+  if (value[0] != '"') {
+    return std::string(value, value_sz);
+  }
+  int n = json_unescape(value, value_sz, nullptr);
+  char *decoded = new char[n];
+  json_unescape(value, value_sz, decoded);
+  auto result = std::string(decoded, n);
+  delete[] decoded;
+  return result;
 }
 
 } // namespace webview
@@ -231,7 +458,6 @@ public:
         manager, webkit_user_script_new(
                      js, WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
                      WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
-    eval(js);
   }
 
   void eval(const char *js) {
@@ -395,7 +621,6 @@ public:
             "initWithSource:injectionTime:forMainFrameOnly:"_sel,
             objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, js),
             WKUserScriptInjectionTimeAtDocumentStart, 1));
-    eval(js);
   }
   void eval(const char *js) {
     objc_msgSend(m_webview, "evaluateJavaScript:completionHandler:"_sel,
@@ -899,20 +1124,66 @@ public:
   void navigate(const char *url) {
     std::string html = html_from_uri(url);
     if (html != "") {
-      browser_engine::navigate(("data:text/html," + urlencode(html)).c_str());
+      browser_engine::navigate(("data:text/html," + url_encode(html)).c_str());
     } else {
       browser_engine::navigate(url);
     }
   }
 
+  using binding_t = std::function<std::string(std::string)>;
+
+  void bind(const char *name, binding_t f) {
+    auto js = "(function() { var name = '" + std::string(name) + "';" + R"(
+      window[name] = function() {
+        var me = window[name];
+        var errors = me['errors'];
+        var callbacks = me['callbacks'];
+        if (!callbacks) {
+          callbacks = {};
+          me['callbacks'] = callbacks;
+        }
+        if (!errors) {
+          errors = {};
+          me['errors'] = errors;
+        }
+        var seq = (me['lastSeq'] || 0) + 1;
+        me['lastSeq'] = seq;
+        var promise = new Promise(function(resolve, reject) {
+          callbacks[seq] = resolve;
+          errors[seq] = reject;
+        });
+        window.external.invoke(JSON.stringify({
+          name: name,
+          seq:seq,
+          args: Array.prototype.slice.call(arguments),
+        }));
+        return promise;
+      }
+    })())";
+    init(js.c_str());
+    bindings[name] = new binding_t(f);
+  }
+
 private:
   void on_message(const char *msg) {
-#ifdef _WIN32
-    OutputDebugString(msg);
-#else
-    printf("msg: %s\n", msg);
-#endif
+    auto seq = json_parse(msg, "seq", 0);
+    auto name = json_parse(msg, "name", 0);
+    auto args = json_parse(msg, "args", 0);
+    auto fn = bindings[name];
+    if (fn == nullptr) {
+      return;
+    }
+    std::async(std::launch::async, [=]() {
+      auto result = (*fn)(args);
+      dispatch([=]() {
+        eval(("var b = window['" + name + "'];b['callbacks'][" + seq + "](" +
+              result + ");b['callbacks'][" + seq +
+              "] = undefined;b['errors'][" + seq + "] = undefined;")
+                 .c_str());
+      });
+    });
   }
+  std::map<std::string, binding_t *> bindings;
 };
 } // namespace webview
 
