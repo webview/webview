@@ -3,10 +3,6 @@ WEBVIEW_cocoa_FLAGS = -DWEBVIEW_COCOA -std=c++14 -Wall -Wextra -pedantic -framew
 WEBVIEW_mshtml_FLAGS := -DWEBVIEW_MSHTML -std=c++14 -luser32 -lole32 -loleaut32 -lcomctl32 -luuid -static
 WEBVIEW_edge_FLAGS := -DWEBVIEW_EDGE
 
-ifndef WEBVIEW_$(WEBVIEW)_FLAGS
-$(error "Unknown WEBVIEW value, use WEBVIEW=gtk|cocoa|mshtml|edge")
-endif
-
 all:
 	@echo "make WEBVIEW=... test - build and run tests"
 	@echo "make WEBVIEW=... lint - run clang-tidy checkers"
@@ -15,13 +11,18 @@ all:
 fmt: webview.h
 	clang-format -i $^
 
-lint:
+check-env:
+ifndef WEBVIEW_$(WEBVIEW)_FLAGS
+	$(error "Unknown WEBVIEW value, use WEBVIEW=gtk|cocoa|mshtml|edge")
+endif
+
+lint: check-env
 	clang-tidy webview_test.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
 
-example: example.cc webview.h
+example: check-env example.cc webview.h
 	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example
 
-test:
+test: check-env
 	$(CXX) webview_test.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o webview_test
 	./webview_test
 	rm webview_test
