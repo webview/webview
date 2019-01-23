@@ -14,7 +14,7 @@ int main()
   w.init("document.onreadystatechange = () => window.external.invoke('state change ' + document.readyState)");
   w.set_title("Example");
   w.set_size(480, 320, true);
-  w.navigate("https://github.com/zserge/webview");
+  w.navigate("data:text/html,<html><body>hello</body></html>");
   w.run();
   return 0;
 }

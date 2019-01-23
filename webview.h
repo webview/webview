@@ -79,6 +79,46 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 namespace webview {
 using dispatch_fn_t = std::function<void()>;
 using msg_cb_t = std::function<void(const char *msg)>;
+
+inline std::string urlencode(std::string s) {
+  std::string encoded;
+  for (int i = 0; i < s.length(); i++) {
+    auto c = s[i];
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+      encoded = encoded + c;
+    } else {
+      char hex[4];
+      snprintf(hex, sizeof(hex), "%%%02x", c);
+      encoded = encoded + hex;
+    }
+  }
+  return encoded;
+}
+
+inline std::string urldecode(std::string s) {
+  std::string decoded;
+  for (int i = 0; i < s.length(); i++) {
+    if (s[i] == '%') {
+      int n;
+      sscanf(s.substr(i + 1, 2).c_str(), "%x", &n);
+      decoded = decoded + static_cast<char>(n);
+      i = i + 2;
+    } else if (s[i] == '+') {
+      decoded = decoded + ' ';
+    } else {
+      decoded = decoded + s[i];
+    }
+  }
+  return decoded;
+}
+
+inline std::string html_from_uri(std::string s) {
+  if (s.substr(0, 15) == "data:text/html,") {
+    return urldecode(s.substr(15));
+  }
+  return "";
+}
+
 } // namespace webview
 
 #if defined(WEBVIEW_GTK)
@@ -846,6 +886,7 @@ private:
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_MSHTML, WEBVIEW_MSHTML */
 
 namespace webview {
+
 class webview : public browser_engine {
 public:
   webview(bool debug = false, void *wnd = nullptr)
@@ -854,6 +895,15 @@ public:
             wnd) {}
 
   void *window() { return (void *)m_window; }
+
+  void navigate(const char *url) {
+    std::string html = html_from_uri(url);
+    if (html != "") {
+      browser_engine::navigate(("data:text/html," + urlencode(html)).c_str());
+    } else {
+      browser_engine::navigate(url);
+    }
+  }
 
 private:
   void on_message(const char *msg) {
