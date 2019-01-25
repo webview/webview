@@ -14,10 +14,20 @@ package webview
 #include "webview.h"
 
 #include <stdlib.h>
+#include <stdint.h>
+
+extern void _webviewDispatchGoCallback(void *);
+static inline void _webview_dispatch_cb(webview_t w, void *arg) {
+	_webviewDispatchGoCallback(arg);
+}
+static inline void CgoWebViewDispatch(webview_t w, uintptr_t arg) {
+	webview_dispatch(w, _webview_dispatch_cb, (void *)arg);
+}
 */
 import "C"
 import (
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -29,6 +39,7 @@ func init() {
 type WebView interface {
 	Run()
 	Terminate()
+	Dispatch(f func())
 	Navigate(url string)
 	SetTitle(title string)
 	Window() unsafe.Pointer
@@ -38,7 +49,6 @@ type WebView interface {
 	/*
 		SetBounds(x, y, width, height int)
 		Bounds() (x, y, width, height int)
-		Dispatch(f func())
 		Bind(name string, v interface{})
 	*/
 }
@@ -46,6 +56,12 @@ type WebView interface {
 type webview struct {
 	w C.webview_t
 }
+
+var (
+	m        sync.Mutex
+	index    uintptr
+	dispatch = map[uintptr]func(){}
+)
 
 func boolToInt(b bool) C.int {
 	if b {
@@ -100,4 +116,23 @@ func (w *webview) Eval(js string) {
 	s := C.CString(js)
 	defer C.free(unsafe.Pointer(s))
 	C.webview_eval(w.w, s)
+}
+
+func (w *webview) Dispatch(f func()) {
+	m.Lock()
+	for ; dispatch[index] != nil; index++ {
+	}
+	dispatch[index] = f
+	m.Unlock()
+	C.CgoWebViewDispatch(w.w, C.uintptr_t(index))
+}
+
+//export _webviewDispatchGoCallback
+func _webviewDispatchGoCallback(index unsafe.Pointer) {
+	var f func()
+	m.Lock()
+	f = dispatch[uintptr(index)]
+	delete(dispatch, uintptr(index))
+	m.Unlock()
+	f()
 }

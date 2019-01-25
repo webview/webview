@@ -89,7 +89,7 @@ using msg_cb_t = std::function<void(const char *msg)>;
 
 inline std::string url_encode(std::string s) {
   std::string encoded;
-  for (int i = 0; i < s.length(); i++) {
+  for (unsigned int i = 0; i < s.length(); i++) {
     auto c = s[i];
     if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
       encoded = encoded + c;
@@ -104,7 +104,7 @@ inline std::string url_encode(std::string s) {
 
 inline std::string url_decode(std::string s) {
   std::string decoded;
-  for (int i = 0; i < s.length(); i++) {
+  for (unsigned int i = 0; i < s.length(); i++) {
     if (s[i] == '%') {
       int n;
       sscanf(s.substr(i + 1, 2).c_str(), "%x", &n);
