@@ -1,3 +1,5 @@
+// +build ignore
+
 #include "webview.h"
 
 #ifdef _WIN32

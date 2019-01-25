@@ -60,6 +60,8 @@ WEBVIEW_API void webview_get_bounds(webview_t w, int *x, int *y, int *width,
                                     int *height, int *flags);
 
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
+WEBVIEW_API void webview_init(webview_t w, const char *js);
+WEBVIEW_API void webview_eval(webview_t w, const char *js);
 
 #ifdef __cplusplus
 }
@@ -1235,6 +1237,10 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
 
 WEBVIEW_API void webview_init(webview_t w, const char *js) {
   static_cast<webview::webview *>(w)->init(js);
+}
+
+WEBVIEW_API void webview_eval(webview_t w, const char *js) {
+  static_cast<webview::webview *>(w)->eval(js);
 }
 
 #endif /* WEBVIEW_HEADER */
