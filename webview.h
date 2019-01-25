@@ -35,7 +35,7 @@ extern "C" {
 typedef void *webview_t;
 
 // Create a new webview instance
-WEBVIEW_API webview_t webview_create(const char *init_js, int debug, void *wnd);
+WEBVIEW_API webview_t webview_create(int debug, void *wnd);
 
 // Destroy a webview
 WEBVIEW_API void webview_destroy(webview_t w);
