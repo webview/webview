@@ -2143,6 +2143,7 @@ WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                               get_nsstring("NSAppearanceNameVibrantLight")));
   }
   objc_msgSend(w->priv.window, sel_registerName("setOpaque:"), 0);
+  objc_msgSend(w->priv.window, sel_registerName("setAlphaValue:"), (float)a / 255.0);
   objc_msgSend(w->priv.window,
                sel_registerName("setTitlebarAppearsTransparent:"), 1);
 }
