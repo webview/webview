@@ -2088,6 +2088,15 @@ WEBVIEW_API int webview_init(struct webview *w) {
   objc_msgSend(editMenuItem, sel_registerName("setSubmenu:"), editMenu);
   objc_msgSend(menubar, sel_registerName("addItem:"), editMenuItem);
 
+  item = create_menu_item(get_nsstring("Undo"), "undo:", "z");
+  objc_msgSend(editMenu, sel_registerName("addItem:"), item);
+
+  item = create_menu_item(get_nsstring("Redo"), "redo:", "y");
+  objc_msgSend(editMenu, sel_registerName("addItem:"), item);
+
+  item = objc_msgSend((id)objc_getClass("NSMenuItem"), sel_registerName("separatorItem"));
+  objc_msgSend(editMenu, sel_registerName("addItem:"), item);
+
   item = create_menu_item(get_nsstring("Cut"), "cut:", "x");
   objc_msgSend(editMenu, sel_registerName("addItem:"), item);
 
