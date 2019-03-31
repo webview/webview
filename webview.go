@@ -1,13 +1,13 @@
 package webview
 
 /*
-#cgo linux openbsd freebsd CXXFLAGS: -DWEBVIEW_GTK
+#cgo linux openbsd freebsd CXXFLAGS: -DWEBVIEW_GTK -std=c++11
 #cgo linux openbsd freebsd pkg-config: gtk+-3.0 webkit2gtk-4.0
 
-#cgo darwin CXXFLAGS: -DWEBVIEW_COCOA
+#cgo darwin CXXFLAGS: -DWEBVIEW_COCOA -std=c++11
 #cgo darwin LDFLAGS: -framework WebKit
 
-#cgo windows CXXFLAGS: -DWEBVIEW_MSHTML
+#cgo windows CXXFLAGS: -DWEBVIEW_MSHTML -std=c++11
 #cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -lgdi32
 
 #define WEBVIEW_HEADER
