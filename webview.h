@@ -1318,14 +1318,12 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js) {
     return -1;
   }
   DISPID dispid;
-  BSTR evalStr = SysAllocString(L"eval");
+  wchar_t *evalStr = L"eval";
   if (scriptDispatch->lpVtbl->GetIDsOfNames(
           scriptDispatch, iid_unref(&IID_NULL), &evalStr, 1,
           LOCALE_SYSTEM_DEFAULT, &dispid) != S_OK) {
-    SysFreeString(evalStr);
     return -1;
   }
-  SysFreeString(evalStr);
 
   DISPPARAMS params;
   VARIANT arg;
