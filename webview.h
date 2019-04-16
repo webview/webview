@@ -810,6 +810,10 @@ public:
     VariantClear(&v);
   }
 
+  void init(const char *js) {
+    // TODO
+  }
+  
   void eval(const char *js) {
     // TODO
   }
