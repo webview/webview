@@ -159,6 +159,7 @@ WEBVIEW_API int webview_eval(struct webview *w, const char *js);
 WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
+WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify);
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -361,6 +362,14 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
     gtk_window_fullscreen(GTK_WINDOW(w->priv.window));
   } else {
     gtk_window_unfullscreen(GTK_WINDOW(w->priv.window));
+  }
+}
+
+WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
+  if (iconify) {
+    gtk_window_iconify(GTK_WINDOW(w->priv.window));
+  } else {
+    gtk_window_deiconify(GTK_WINDOW(w->priv.window));
   }
 }
 
@@ -1475,6 +1484,15 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
   }
 }
 
+WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
+  if (iconify) {
+    ShowWindowAsync(w->priv.hwnd, SW_SHOWMINIMIZED);
+  }
+  else {
+    ShowWindowAsync(w->priv.hwnd, SW_SHOWNORMAL);
+  }
+}
+
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a) {
   HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
@@ -2117,6 +2135,15 @@ WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen) {
                : 0);
   if (b != fullscreen) {
     objc_msgSend(w->priv.window, sel_registerName("toggleFullScreen:"), NULL);
+  }
+}
+
+WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
+  if (iconify) {
+    objc_msgSend(w->priv.window, sel_registerName("miniaturize:"), NULL);
+  }
+  else {
+    objc_msgSend(w->priv.window, sel_registerName("deminiaturize:"), NULL);
   }
 }
 
