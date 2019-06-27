@@ -57,6 +57,15 @@ struct webview_priv {
 #define CINTERFACE
 #include <windows.h>
 
+#if defined(_WIN32) || defined(__CYGWIN__)
+	// Name clashes between windows.h and openssl
+	#undef X509_NAME
+	#undef X509_CERT_PAIR
+	#undef X509_EXTENSIONS
+	#undef OCSP_REQUEST
+	#undef OCSP_RESPONSE
+#endif
+
 #include <commctrl.h>
 #include <exdisp.h>
 #include <mshtmhst.h>
@@ -64,6 +73,7 @@ struct webview_priv {
 #include <shobjidl.h>
 
 #include <stdio.h>
+#include <wchar.h>
 
 struct webview_priv {
   HWND hwnd;
@@ -160,6 +170,7 @@ WEBVIEW_API int webview_inject_css(struct webview *w, const char *css);
 WEBVIEW_API void webview_set_title(struct webview *w, const char *title);
 WEBVIEW_API void webview_set_fullscreen(struct webview *w, int fullscreen);
 WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify);
+WEBVIEW_API void webview_launch_external_URL(struct webview *w, const char *uri);
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a);
 WEBVIEW_API void webview_dialog(struct webview *w,
@@ -371,6 +382,11 @@ WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
   } else {
     gtk_window_deiconify(GTK_WINDOW(w->priv.window));
   }
+}
+
+WEBVIEW_API void webview_launch_external_URL(struct webview *w, const char *uri) {
+  GError *error = NULL;
+  gtk_show_uri_on_window(GTK_WINDOW(w->priv.window), uri, gtk_get_current_event_time (), &error);
 }
 
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
@@ -1493,6 +1509,10 @@ WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
   }
 }
 
+WEBVIEW_API void webview_launch_external_URL(struct webview *w, const char *uri) {
+  ShellExecute(0, 0, uri, 0, 0 , SW_SHOW );
+}
+
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
                                    uint8_t b, uint8_t a) {
   HBRUSH brush = CreateSolidBrush(RGB(r, g, b));
@@ -2145,6 +2165,16 @@ WEBVIEW_API void webview_set_iconify(struct webview *w, int iconify) {
   else {
     objc_msgSend(w->priv.window, sel_registerName("deminiaturize:"), NULL);
   }
+}
+
+WEBVIEW_API void webview_launch_external_URL(struct webview *w, const char *uri) {
+  id url = objc_msgSend((id)objc_getClass("NSURL"),
+                          sel_registerName("URLWithString:"),
+                          get_nsstring(webview_check_url(uri)));
+
+  objc_msgSend(objc_msgSend((id)objc_getClass("NSWorkspace"),
+                                    sel_registerName("sharedWorkspace")),
+                       sel_registerName("openURL:"), url);
 }
 
 WEBVIEW_API void webview_set_color(struct webview *w, uint8_t r, uint8_t g,
