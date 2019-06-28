@@ -322,7 +322,7 @@ inline int json_unescape(const char *s, size_t n, char *out) {
   if (out != NULL) {
     *out = '\0';
   }
-  return r;
+  return r + 1;
 }
 
 inline std::string json_parse(std::string s, std::string key, int index) {
