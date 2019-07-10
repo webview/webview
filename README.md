@@ -189,6 +189,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 ```c
 // main.c
 #define WEBVIEW_IMPLEMENTATION
+//don't forget to define WEBVIEW_WINAPI,WEBVIEW_GTK or WEBVIEW_COCAO
 #include "webview.h"
 
 #ifdef WIN32
@@ -208,11 +209,11 @@ Build it:
 
 ```bash
 # Linux
-$ cc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
+$ gcc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
-$ cc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
+$ gcc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
 # Windows (mingw)
-$ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
+$ gcc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
 ```
 
 ### API
