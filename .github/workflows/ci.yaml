@@ -5,17 +5,34 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - name: Print uname
-        run: uname -a
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        run: apt-get install libwebkit2gtk-4.0-dev -y
+      - name: Run tests
+        run: make WEBVIEW=gtk test
+      - name: Lint code
+        run: make WEBVIEW=gtk lint
+      - name: Build examples
+        run: make WEBVIEW=gtk example
 
   build-macos:
     runs-on: macos-latest
     steps:
-      - name: Print uname
-        run: uname -a
+      - uses: actions/checkout@v1
+      - name: Run tests
+        run: make WEBVIEW=cocoa test
+      - name: Lint code
+        run: make WEBVIEW=cocoa lint
+      - name: Build examples
+        run: make WEBVIEW=cocoa example
 
   build-windows:
     runs-on: windows-latest
     steps:
-      - name: Print uname
-        run: winver
+      - uses: actions/checkout@v1
+      - name: Run tests
+        run: make WEBVIEW=edge test
+      - name: Lint code
+        run: make WEBVIEW=edge lint
+      - name: Build examples
+        run: make WEBVIEW=edge example
