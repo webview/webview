@@ -21,7 +21,7 @@ lint: check-env
 	clang-tidy example.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
 
 example: check-env example.cc webview.h
-	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example
+	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example-cc
 
 test: check-env
 	$(CXX) webview_test.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o webview_test
