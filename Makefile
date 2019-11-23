@@ -7,6 +7,7 @@ all:
 	@echo "make WEBVIEW=... test - build and run tests"
 	@echo "make WEBVIEW=... lint - run clang-tidy checkers"
 	@echo "make WEBVIEW=... fmt	- run clang-format for all sources"
+	@echo "(WEBVIEW=gtk|cocoa|mshtml|edge)"
 
 fmt: webview.h
 	clang-format -i $^
