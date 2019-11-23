@@ -1,0 +1,21 @@
+name: CI Pipeline
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print uname
+        run: uname -a
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Print uname
+        run: uname -a
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Print uname
+        run: winver
