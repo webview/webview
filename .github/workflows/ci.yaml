@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install dependencies
-        run: apt-get install libwebkit2gtk-4.0-dev -y
+        run: sudo apt-get install libwebkit2gtk-4.0-dev -y
       - name: Run tests
         run: make WEBVIEW=gtk test
       - name: Lint code
