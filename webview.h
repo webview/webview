@@ -634,7 +634,7 @@ public:
   }
 
 protected:
-  close() { objc_msgSend(m_window, "close"_sel); }
+  void close() { objc_msgSend(m_window, "close"_sel); }
   id m_window;
   id m_webview;
   id m_manager;
