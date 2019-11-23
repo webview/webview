@@ -10,8 +10,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build examples
         run: make WEBVIEW=gtk example
-      - name: Lint code
-        run: make WEBVIEW=gtk lint
       - name: Run tests
         run: xvfb-run make WEBVIEW=gtk test
 
@@ -21,8 +19,6 @@ jobs:
       - uses: actions/checkout@v1
       - name: Build examples
         run: make WEBVIEW=cocoa example
-      - name: Lint code
-        run: make WEBVIEW=cocoa lint
       - name: Run tests
         run: make WEBVIEW=cocoa test
 
@@ -32,7 +28,5 @@ jobs:
       - uses: actions/checkout@v1
       - name: Build examples
         run: make WEBVIEW=edge example
-      - name: Lint code
-        run: make WEBVIEW=edge lint
       - name: Run tests
         run: make WEBVIEW=edge test
