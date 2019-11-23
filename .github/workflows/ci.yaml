@@ -7,13 +7,13 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev -y
+        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build examples
         run: make WEBVIEW=gtk example
       - name: Lint code
         run: make WEBVIEW=gtk lint
       - name: Run tests
-        run: make WEBVIEW=gtk test
+        run: xvfb-run make WEBVIEW=gtk test
 
   build-macos:
     runs-on: macos-latest
