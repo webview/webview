@@ -489,6 +489,7 @@ protected:
 // ====================================================================
 //
 
+#define OBJC_OLD_DISPATCH_PROTOTYPES 1
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
 
