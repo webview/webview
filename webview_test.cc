@@ -45,7 +45,7 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
   std::thread timeout_thread([&](){
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < timeout_ms / 100; i++) {
       if (!flag_running.test_and_set()) {
         return;
       }
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   if (argc == 2) {
     auto it = all_tests.find(argv[1]);
     if (it != all_tests.end()) {
-      run_with_timeout(it->second, 100);
+      run_with_timeout(it->second, 1000);
       return 0;
     }
   }
