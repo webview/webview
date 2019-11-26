@@ -26,4 +26,3 @@ example: check-env example.cc webview.h
 test: check-env
 	$(CXX) webview_test.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o webview_test
 	./webview_test
-	rm webview_test
