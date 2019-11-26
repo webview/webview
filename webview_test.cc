@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
       if (status == 0) {
         printf("  PASS\n");
       } else {
-        printf("  FAIL: \n", status);
+        printf("  FAIL: %d\n", status);
         failed = 1;
       }
     }
