@@ -1,0 +1,32 @@
+name: CI Pipeline
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
+      - name: Build examples
+        run: make WEBVIEW=gtk example
+      - name: Run tests
+        run: xvfb-run make WEBVIEW=gtk test
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build examples
+        run: make WEBVIEW=cocoa example
+      - name: Run tests
+        run: make WEBVIEW=cocoa test
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build examples
+        run: make WEBVIEW=edge example
+      - name: Run tests
+        run: make WEBVIEW=edge test

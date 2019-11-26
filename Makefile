@@ -7,6 +7,7 @@ all:
 	@echo "make WEBVIEW=... test - build and run tests"
 	@echo "make WEBVIEW=... lint - run clang-tidy checkers"
 	@echo "make WEBVIEW=... fmt	- run clang-format for all sources"
+	@echo "(WEBVIEW=gtk|cocoa|mshtml|edge)"
 
 fmt: webview.h
 	clang-format -i $^
@@ -20,7 +21,7 @@ lint: check-env
 	clang-tidy example.cc -- $(WEBVIEW_$(WEBVIEW)_FLAGS)
 
 example: check-env example.cc webview.h
-	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example
+	$(CXX) example.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o example-cc
 
 test: check-env
 	$(CXX) webview_test.cc $(WEBVIEW_$(WEBVIEW)_FLAGS) -o webview_test

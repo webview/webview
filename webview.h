@@ -532,6 +532,7 @@ protected:
 // ====================================================================
 //
 
+#define OBJC_OLD_DISPATCH_PROTOTYPES 1
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
 
@@ -622,8 +623,8 @@ public:
     objc_msgSend(m_window, "setContentView:"_sel, m_webview);
     objc_msgSend(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
-  ~browser_engine() { objc_msgSend(m_window, "close"_sel); }
-  void terminate() { objc_msgSend("NSApp"_cls, "terminate:"_sel, nullptr); }
+  ~browser_engine() { close(); }
+  void terminate() { close(); objc_msgSend("NSApp"_cls, "terminate:"_sel, nullptr); }
   void run() {
     id app = objc_msgSend("NSApplication"_cls, "sharedApplication"_sel);
     dispatch([&]() { objc_msgSend(app, "activateIgnoringOtherApps:"_sel, 1); });
@@ -676,6 +677,7 @@ public:
   }
 
 protected:
+  void close() { objc_msgSend(m_window, "close"_sel); }
   id m_window;
   id m_webview;
   id m_manager;
