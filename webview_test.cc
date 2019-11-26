@@ -11,7 +11,6 @@
 // TEST: start app loop and terminate it.
 // =================================================================
 static void test_terminate() {
-  printf("TEST: terminate app main loop\n");
   webview::webview w(false, nullptr);
   w.dispatch([&]() { w.terminate(); });
   w.run();
@@ -30,7 +29,6 @@ static void cb_terminate(webview_t w, void *arg) {
 }
 static void test_c_api() {
   webview_t w;
-  printf("TEST: C API\n");
   w = webview_create(false, NULL);
   webview_set_bounds(w, 100, 100, 480, 320, 0);
   webview_set_title(w, "Test");
@@ -69,6 +67,7 @@ int main(int argc, char *argv[]) {
   if (argc == 1) {
     int failed = 0;
     for (auto test : all_tests) {
+      printf("TEST: %s\n", test.first.c_str());
       int status = system((std::string(argv[0]) + " " + test.first).c_str());
       if (status == 0) {
         printf("  PASS\n");
