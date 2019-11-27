@@ -2,10 +2,10 @@
 
 #include "webview.h"
 
+#include <cassert>
+#include <cstring>
 #include <thread>
 #include <unordered_map>
-#include <cstring>
-#include <cassert>
 
 // =================================================================
 // TEST: start app loop and terminate it.
@@ -39,10 +39,26 @@ static void test_c_api() {
   webview_destroy(w);
 }
 
+// =================================================================
+// TEST: ensure that JS code can call native code and vice versa.
+// =================================================================
+static void test_bidir_comms() {
+  webview::browser_engine browser(
+      [&](const char *msg) {
+        assert(strcmp(msg, "5") == 0);
+        browser.terminate();
+      },
+      false, nullptr);
+  browser.init("x = 3;");
+  browser.navigate("");
+  browser.dispatch([&]() { browser.eval("window.external.invoke(x + 2)"); });
+  browser.run();
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
-  std::thread timeout_thread([&](){
+  std::thread timeout_thread([&]() {
     for (int i = 0; i < timeout_ms / 100; i++) {
       if (!flag_running.test_and_set()) {
         return;
@@ -59,8 +75,9 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 
 int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
-    {"terminate", test_terminate},
-    {"c_api", test_c_api},
+      {"terminate", test_terminate},
+      {"c_api", test_c_api},
+      {"bidir_comms", test_bidir_comms},
   };
   // Without arguments run all tests, one-by-one by forking itself.
   // With a single argument - run the requested test
