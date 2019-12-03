@@ -12,7 +12,10 @@ int main()
   webview::webview w(true, nullptr);
   w.set_title("Example");
   w.set_size(480, 320, true);
-  w.bind("noop", [](std::string s) -> std::string { printf("%s\n", s.c_str());return s; });
+  w.bind("noop", [](std::string s) -> std::string {
+    printf("%s\n", s.c_str());
+    return s;
+  });
   w.bind("add", [](std::string s) -> std::string {
     auto a = std::stoi(webview::json_parse(s, "", 0));
     auto b = std::stoi(webview::json_parse(s, "", 1));

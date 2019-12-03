@@ -113,7 +113,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *req, int status,
 #ifndef WEBVIEW_HEADER
 
 #if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) &&                        \
-    !defined(WEBVIEW_MSHTML) && !defined(WEBVIEW_EDGE)
+    !defined(WEBVIEW_MSHTML) && !defined(WEBVIEW_EDGE) && !defined(WEBVIEW_EDGEHTML)
 #error "please, specify webview backend"
 #endif
 
@@ -624,7 +624,10 @@ public:
     objc_msgSend(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
   ~browser_engine() { close(); }
-  void terminate() { close(); objc_msgSend("NSApp"_cls, "terminate:"_sel, nullptr); }
+  void terminate() {
+    close();
+    objc_msgSend("NSApp"_cls, "terminate:"_sel, nullptr);
+  }
   void run() {
     id app = objc_msgSend("NSApplication"_cls, "sharedApplication"_sel);
     dispatch([&]() { objc_msgSend(app, "activateIgnoringOtherApps:"_sel, 1); });
@@ -686,7 +689,7 @@ protected:
 
 } // namespace webview
 
-#elif defined(WEBVIEW_MSHTML) || defined(WEBVIEW_EDGE)
+#elif defined(WEBVIEW_MSHTML) || defined(WEBVIEW_EDGE) || defined(WEBVIEW_EDGEHTML)
 
 //
 // ====================================================================
@@ -1083,7 +1086,7 @@ private:
 };
 } // namespace webview
 
-#elif defined(WEBVIEW_EDGE)
+#elif defined(WEBVIEW_EDGEHTML)
 #include <objbase.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
@@ -1153,6 +1156,102 @@ private:
   WebViewControlProcess m_process;
   WebViewControl m_webview = nullptr;
   std::string init_js = "";
+};
+} // namespace webview
+#elif defined(WEBVIEW_EDGE)
+#include "webview2.h"
+namespace webview {
+
+using webview2_com_handler_cb_t = std::function<void(IWebView2WebView *)>;
+
+class webview2_com_handler
+    : public IWebView2CreateWebView2EnvironmentCompletedHandler,
+      public IWebView2CreateWebViewCompletedHandler {
+public:
+  webview2_com_handler(HWND hwnd, webview2_com_handler_cb_t cb)
+      : m_window(hwnd), m_cb(cb) {}
+  ULONG STDMETHODCALLTYPE AddRef() { return 1; }
+  ULONG STDMETHODCALLTYPE Release() { return 1; }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+    printf("query\n");
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2Environment *env) {
+    printf("invoke env\n");
+    env->CreateWebView(m_window, this);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2WebView *webview) {
+    printf("invoke wv %p\n", webview);
+    webview->AddRef();
+    m_cb(webview);
+    return S_OK;
+  }
+
+private:
+  HWND m_window;
+  webview2_com_handler_cb_t m_cb;
+};
+
+class browser_engine : public browser_window {
+public:
+  browser_engine(msg_cb_t cb, bool debug, void *window)
+      : browser_window(cb, window) {
+    CoInitializeEx(nullptr, 0);
+    std::atomic_flag flag = ATOMIC_FLAG_INIT;
+    flag.test_and_set();
+    HRESULT res = CreateWebView2EnvironmentWithDetails(
+        nullptr, nullptr, nullptr,
+        new webview2_com_handler(m_window, [&](IWebView2WebView *webview) {
+          m_webview = webview;
+          flag.clear();
+        }));
+    if (res != S_OK) {
+      return;
+    }
+    MSG msg = {};
+    while (flag.test_and_set() && GetMessage(&msg, NULL, 0, 0)) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+    }
+    init("window.external={invoke:function(s){window.chrome.webview."
+         "postMessage(s);}};");
+    RECT bounds;
+    GetClientRect(m_window, &bounds);
+    m_webview->put_Bounds(bounds);
+  }
+
+  void navigate(const char *url) {
+    auto wurl = to_lpwstr(url);
+    m_webview->Navigate(wurl);
+    delete[] wurl;
+  }
+  void init(const char *js) {
+    LPCWSTR wjs = to_lpwstr(js);
+    m_webview->AddScriptToExecuteOnDocumentCreated(wjs, nullptr);
+    delete[] wjs;
+  }
+  void eval(const char *js) {
+    LPCWSTR wjs = to_lpwstr(js);
+    m_webview->ExecuteScript(wjs, nullptr);
+    delete[] wjs;
+  }
+
+private:
+  LPWSTR to_lpwstr(const char *s) {
+    int n = MultiByteToWideChar(CP_UTF8, 0, s, -1, NULL, 0);
+    wchar_t *ws = new wchar_t[n];
+    MultiByteToWideChar(CP_UTF8, 0, s, -1, ws, n);
+    return ws;
+  }
+
+  char *from_lpwstr(LPWSTR ws) {
+    int n = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+    char *s = new char[n];
+    WideCharToMultiByte(CP_UTF8, 0, ws, -1, s, n, NULL, NULL);
+    return s;
+  }
+  IWebView2WebView *m_webview;
 };
 } // namespace webview
 #endif

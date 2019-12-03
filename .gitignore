@@ -1,7 +1,3 @@
 # Build atrifacts
-/build
-/examples/minimal-go/minimal-go
-/examples/minimal/minimal
-/examples/minimal/minimal.exe
-/examples/minimal/build
-/examples/timer-cxx/build
+/webview_test
+/webview_test.exe
