@@ -44,14 +44,11 @@ static void test_c_api() {
 // =================================================================
 static void test_bidir_comms() {
   webview::browser_engine browser(
-      [&](const char *msg) {
-        assert(strcmp(msg, "5") == 0);
-        browser.terminate();
-      },
-      false, nullptr);
+      [&](const char *msg) { assert(strcmp(msg, "5") == 0); }, false, nullptr);
   browser.init("x = 3;");
   browser.navigate("");
   browser.dispatch([&]() { browser.eval("window.external.invoke(x + 2)"); });
+  browser.dispatch([&]() { browser.terminate(); });
   browser.run();
 }
 

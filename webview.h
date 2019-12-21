@@ -113,8 +113,17 @@ WEBVIEW_API void webview_return(webview_t w, const char *req, int status,
 #ifndef WEBVIEW_HEADER
 
 #if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) &&                        \
-    !defined(WEBVIEW_MSHTML) && !defined(WEBVIEW_EDGE) && !defined(WEBVIEW_EDGEHTML)
+    !defined(WEBVIEW_MSHTML) && !defined(WEBVIEW_EDGE) &&                      \
+    !defined(WEBVIEW_EDGEHTML)
+#if defined(__linux__)
+#define WEBVIEW_GTK
+#elif defined(__APPLE__)
+#define WEBVIEW_COCOA
+#elif defined(_WIN32)
+#define WEBVIEW_EDGE
+#else
 #error "please, specify webview backend"
+#endif
 #endif
 
 #include <atomic>
@@ -689,7 +698,8 @@ protected:
 
 } // namespace webview
 
-#elif defined(WEBVIEW_MSHTML) || defined(WEBVIEW_EDGE) || defined(WEBVIEW_EDGEHTML)
+#elif defined(WEBVIEW_MSHTML) || defined(WEBVIEW_EDGE) ||                      \
+    defined(WEBVIEW_EDGEHTML)
 
 //
 // ====================================================================
@@ -1160,6 +1170,9 @@ private:
 } // namespace webview
 #elif defined(WEBVIEW_EDGE)
 #include "webview2.h"
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
+
 namespace webview {
 
 using webview2_com_handler_cb_t = std::function<void(IWebView2WebView *)>;

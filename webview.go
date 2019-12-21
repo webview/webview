@@ -7,8 +7,9 @@ package webview
 #cgo darwin CXXFLAGS: -DWEBVIEW_COCOA -std=c++11
 #cgo darwin LDFLAGS: -framework WebKit
 
-#cgo windows CXXFLAGS: -DWEBVIEW_MSHTML -std=c++11
-#cgo windows LDFLAGS: -lole32 -lcomctl32 -loleaut32 -luuid -lgdi32
+#cgo windows CXXFLAGS: -std=c++11
+#cgo windows,amd64 LDFLAGS: -L./dll/x64 -lwebview -lWebView2Loader
+#cgo windows,386 LDFLAGS: -L./dll/x86 -lwebview -lWebView2Loader
 
 #define WEBVIEW_HEADER
 #include "webview.h"
