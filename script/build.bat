@@ -64,12 +64,8 @@ cl /I "%src_dir%\script\Microsoft.Web.WebView2.0.8.355\build\native\include" ^
 	/EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe"
 
-echo Running Go tests (x86)
+echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
-set GOARCH=386
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
-go test
-echo Running Go tests (x64)
-set GOARCH=amd64
 go test
