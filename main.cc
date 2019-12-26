@@ -37,6 +37,7 @@ int main()
       </script>
     </html>
   )");
+  w.navigate("https://github.com/");
   w.run();
   return 0;
 }
