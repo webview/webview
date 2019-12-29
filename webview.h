@@ -728,7 +728,8 @@ namespace webview {
 namespace impl {
 
 // Common interface for EdgeHTML and Edge/Chromium
-struct browser {
+class browser {
+public:
   virtual ~browser() = default;
   virtual bool embed(HWND, bool, msg_cb_t) = 0;
   virtual void navigate(const char *url) = 0;
@@ -747,8 +748,7 @@ using namespace Windows::Web::UI::Interop;
 
 class edge_html : public browser {
 public:
-  ~edge_html() {}
-  bool embed(HWND wnd, bool debug, msg_cb_t cb) {
+  bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
     init_apartment(winrt::apartment_type::single_threaded);
     auto process = WebViewControlProcess();
     auto op = process.CreateWebViewControlAsync(reinterpret_cast<int64_t>(wnd),
@@ -777,21 +777,29 @@ public:
     return true;
   }
 
-  void navigate(const char *url) {
-    Uri uri(winrt::to_hstring(url));
-    m_webview.Navigate(uri);
+  void navigate(const char *url) override {
+    std::string html = html_from_uri(url);
+    if (html != "") {
+      m_webview.NavigateToString(winrt::to_hstring(html));
+    } else {
+      Uri uri(winrt::to_hstring(url));
+      m_webview.Navigate(uri);
+    }
   }
 
-  void init(const char *js) {
+  void init(const char *js) override {
     init_js = init_js + "(function(){" + js + "})();";
   }
 
-  void eval(const char *js) {
+  void eval(const char *js) override {
     m_webview.InvokeScriptAsync(
         L"eval", single_threaded_vector<hstring>({winrt::to_hstring(js)}));
   }
 
-  void resize(HWND wnd) {
+  void resize(HWND wnd) override {
+    if (m_webview == nullptr) {
+      return;
+    }
     RECT r;
     GetClientRect(wnd, &r);
     Rect bounds(r.left, r.top, r.right - r.left, r.bottom - r.top);
@@ -806,38 +814,9 @@ private:
 //
 // Edge/Chromium browser engine
 //
-using webview2_com_handler_cb_t = std::function<void(IWebView2WebView *)>;
-
-class webview2_com_handler
-    : public IWebView2CreateWebView2EnvironmentCompletedHandler,
-      public IWebView2CreateWebViewCompletedHandler {
-public:
-  webview2_com_handler(HWND hwnd, webview2_com_handler_cb_t cb)
-      : m_window(hwnd), m_cb(cb) {}
-  ULONG STDMETHODCALLTYPE AddRef() { return 1; }
-  ULONG STDMETHODCALLTYPE Release() { return 1; }
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
-    return S_OK;
-  }
-  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2Environment *env) {
-    env->CreateWebView(m_window, this);
-    return S_OK;
-  }
-  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2WebView *webview) {
-    webview->AddRef();
-    m_cb(webview);
-    return S_OK;
-  }
-
-private:
-  HWND m_window;
-  webview2_com_handler_cb_t m_cb;
-};
-
 class edge_chromium : public browser {
 public:
-  ~edge_chromium() {}
-  bool embed(HWND wnd, bool debug, msg_cb_t cb) {
+  bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
     CoInitializeEx(nullptr, 0);
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
@@ -848,6 +827,7 @@ public:
           flag.clear();
         }));
     if (res != S_OK) {
+      CoUninitialize();
       return false;
     }
     MSG msg = {};
@@ -855,30 +835,32 @@ public:
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
-    init("window.external={invoke:function(s){window.chrome.webview."
-         "postMessage(s);}};");
+    init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
     return true;
   }
 
-  void resize(HWND wnd) {
+  void resize(HWND wnd) override {
+    if (m_webview == nullptr) {
+      return;
+    }
     RECT bounds;
     GetClientRect(wnd, &bounds);
     m_webview->put_Bounds(bounds);
   }
 
-  void navigate(const char *url) {
+  void navigate(const char *url) override {
     auto wurl = to_lpwstr(url);
     m_webview->Navigate(wurl);
     delete[] wurl;
   }
 
-  void init(const char *js) {
+  void init(const char *js) override {
     LPCWSTR wjs = to_lpwstr(js);
     m_webview->AddScriptToExecuteOnDocumentCreated(wjs, nullptr);
     delete[] wjs;
   }
 
-  void eval(const char *js) {
+  void eval(const char *js) override {
     LPCWSTR wjs = to_lpwstr(js);
     m_webview->ExecuteScript(wjs, nullptr);
     delete[] wjs;
@@ -899,28 +881,53 @@ private:
     return s;
   }
 
-  IWebView2WebView *m_webview;
+  IWebView2WebView *m_webview = nullptr;
+
+  class webview2_com_handler
+      : public IWebView2CreateWebView2EnvironmentCompletedHandler,
+        public IWebView2CreateWebViewCompletedHandler {
+    using webview2_com_handler_cb_t = std::function<void(IWebView2WebView *)>;
+
+  public:
+    webview2_com_handler(HWND hwnd, webview2_com_handler_cb_t cb)
+        : m_window(hwnd), m_cb(cb) {}
+    ULONG STDMETHODCALLTYPE AddRef() { return 1; }
+    ULONG STDMETHODCALLTYPE Release() { return 1; }
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+      return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2Environment *env) {
+      env->CreateWebView(m_window, this);
+      return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2WebView *webview) {
+      webview->AddRef();
+      m_cb(webview);
+      return S_OK;
+    }
+
+  private:
+    HWND m_window;
+    webview2_com_handler_cb_t m_cb;
+  };
 };
 } // namespace impl
 
 class browser_engine {
 public:
   browser_engine(msg_cb_t cb, bool debug, void *window) : m_cb(cb) {
-    bool is_embedded = false;
     if (window == nullptr) {
       WNDCLASSEX wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
       wc.cbSize = sizeof(WNDCLASSEX);
       wc.hInstance = GetModuleHandle(nullptr);
-      wc.lpszClassName = L"webview";
+      wc.lpszClassName = "webview";
       wc.lpfnWndProc =
           (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> int {
             auto w = (browser_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
             switch (msg) {
             case WM_SIZE:
-              if (is_embedded) {
-                w->m_browser.resize(hwnd);
-              }
+              w->m_browser->resize(hwnd);
               break;
             case WM_CLOSE:
               DestroyWindow(hwnd);
@@ -934,9 +941,9 @@ public:
             return 0;
           });
       RegisterClassEx(&wc);
-      m_window = CreateWindow(L"webview", L"", WS_OVERLAPPEDWINDOW,
-                              CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                              nullptr, GetModuleHandle(nullptr), nullptr);
+      m_window = CreateWindow("webview", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                              CW_USEDEFAULT, 640, 480, nullptr, nullptr,
+                              GetModuleHandle(nullptr), nullptr);
       SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
     } else {
       m_window = *(static_cast<HWND *>(window));
@@ -946,19 +953,17 @@ public:
     UpdateWindow(m_window);
     SetFocus(m_window);
 
-   
-    if (!m_browser.embed(m_window, debug, cb)) {
-      m_browser = webview::impl::edge_html{};
-      m_browser.embed(m_window, debug, cb);
+    if (!m_browser->embed(m_window, debug, cb)) {
+      m_browser = std::make_unique<webview::impl::edge_html>();
+      m_browser->embed(m_window, debug, cb);
     }
-    is_embedded = true;
-    m_browser.resize(m_window);
+
+    m_browser->resize(m_window);
   }
 
   void run() {
     MSG msg;
     BOOL res;
-    MessageBox(0, L"Run started", L"", MB_OK);
     while ((res = GetMessage(&msg, nullptr, 0, 0)) != -1) {
       if (msg.hwnd) {
         TranslateMessage(&msg);
@@ -980,7 +985,7 @@ public:
     PostThreadMessage(m_main_thread, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
 
-  void set_title(const char *title) { SetWindowText(m_window, L""); } // FIXME
+  void set_title(const char *title) { SetWindowText(m_window, title); }
 
   void set_size(int width, int height, bool resizable) {
     RECT r;
@@ -992,18 +997,21 @@ public:
     SetWindowPos(m_window, NULL, r.left, r.top, r.right - r.left,
                  r.bottom - r.top,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    m_browser.resize(m_window);
+    m_browser->resize(m_window);
   }
 
-  void navigate(const char *url) { m_browser.navigate(url); }
-  void eval(const char *js) { m_browser.eval(js); }
-  void init(const char *js) { m_browser.init(js); }
+  void navigate(const char *url) { m_browser->navigate(url); }
+  void eval(const char *js) { m_browser->eval(js); }
+  void init(const char *js) { m_browser->init(js); }
+
+protected:
+  HWND m_window;
 
 private:
-  HWND m_window;
   DWORD m_main_thread = GetCurrentThreadId();
   msg_cb_t m_cb;
-  webview::impl::browser m_browser = webview::impl::edge_chromium{};
+  std::unique_ptr<webview::impl::browser> m_browser =
+      std::make_unique<webview::impl::edge_chromium>();
 };
 } // namespace webview
 

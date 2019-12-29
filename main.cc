@@ -27,6 +27,7 @@ int main()
       <body>hello</body>
       <script>
         window.onload = function() {
+          document.body.innerText = `hello, ${navigator.userAgent}`;
           noop('hello').then(function(res) {
             console.log('noop res', res);
           });
@@ -37,7 +38,6 @@ int main()
       </script>
     </html>
   )");
-  w.navigate("https://github.com/");
   w.run();
   return 0;
 }
