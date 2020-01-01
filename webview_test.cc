@@ -1,9 +1,11 @@
+//bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -g -o webview_test && ./webview_test ; exit
 // +build ignore
 
 #include "webview.h"
 
 #include <cassert>
 #include <cstring>
+#include <iostream>
 #include <thread>
 #include <unordered_map>
 
@@ -20,21 +22,21 @@ static void test_terminate() {
 // TEST: use C API to create a window, run app and terminate it.
 // =================================================================
 static void cb_assert_arg(webview_t w, void *arg) {
-  assert(w != NULL);
+  assert(w != nullptr);
   assert(memcmp(arg, "arg", 3) == 0);
 }
 static void cb_terminate(webview_t w, void *arg) {
-  assert(arg == NULL);
+  assert(arg == nullptr);
   webview_terminate(w);
 }
 static void test_c_api() {
   webview_t w;
-  w = webview_create(false, NULL);
-  webview_set_bounds(w, 100, 100, 480, 320, 0);
+  w = webview_create(false, nullptr);
+  webview_set_size(w, 480, 320, 0);
   webview_set_title(w, "Test");
   webview_navigate(w, "https://github.com/zserge/webview");
   webview_dispatch(w, cb_assert_arg, (void *)"arg");
-  webview_dispatch(w, cb_terminate, NULL);
+  webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
   webview_destroy(w);
 }
@@ -43,12 +45,16 @@ static void test_c_api() {
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
 static void test_bidir_comms() {
-  webview::browser_engine browser(
-      [&](const char *msg) { assert(strcmp(msg, "5") == 0); }, false, nullptr);
+  struct test_webview : webview::browser_engine {
+    test_webview() : webview::browser_engine(false, nullptr) {}
+    void on_message(const std::string msg) {
+      assert(msg == "5");
+      terminate();
+    }
+  } browser;
   browser.init("x = 3;");
   browser.navigate("");
-  browser.dispatch([&]() { browser.eval("window.external.invoke(x + 2)"); });
-  browser.dispatch([&]() { browser.terminate(); });
+  browser.dispatch([&]() { browser.eval("window.external.invoke(''+ (x + 2))"); });
   browser.run();
 }
 
@@ -62,7 +68,7 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    printf("Exiting due to a timeout.\n");
+    std::cout << "Exiting due to a timeout." << std::endl;
     exit(1);
   });
   fn();
@@ -81,12 +87,12 @@ int main(int argc, char *argv[]) {
   if (argc == 1) {
     int failed = 0;
     for (auto test : all_tests) {
-      printf("TEST: %s\n", test.first.c_str());
+      std::cout << "TEST: " << test.first << std::endl;
       int status = system((std::string(argv[0]) + " " + test.first).c_str());
       if (status == 0) {
-        printf("  PASS\n");
+        std::cout << "  PASS " << std::endl;
       } else {
-        printf("  FAIL: %d\n", status);
+        std::cout << "  FAIL: " << status << std::endl;
         failed = 1;
       }
     }
@@ -96,14 +102,14 @@ int main(int argc, char *argv[]) {
   if (argc == 2) {
     auto it = all_tests.find(argv[1]);
     if (it != all_tests.end()) {
-      run_with_timeout(it->second, 1000);
+      run_with_timeout(it->second, 5000);
       return 0;
     }
   }
-  printf("USAGE: %s [test name]\n", argv[0]);
-  printf("Tests:\n");
+  std::cout << "USAGE: " << argv[0] << " [test name]" << std::endl;
+  std::cout << "Tests: " << std::endl;
   for (auto test : all_tests) {
-    printf("  %s\n", test.first.c_str());
+    std::cout << "  " << test.first << std::endl;
   }
   return 1;
 }
