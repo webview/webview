@@ -942,7 +942,6 @@ public:
               break;
             case WM_GETMINMAXINFO: {
               auto lpmmi = (LPMINMAXINFO)lp;
-              printf("lpmmi: %p, w: %p\n", lpmmi, w);
               if (w == nullptr) {
                 return 0;
               }
@@ -1067,9 +1066,14 @@ public:
       : browser_engine(debug, wnd) {}
 
   void navigate(const std::string url) {
+    if (url == "") {
+      browser_engine::navigate("data:text/html," +
+                               url_encode("<html><body>Hello</body></html>"));
+      return;
+    }
     std::string html = html_from_uri(url);
     if (html != "") {
-      browser_engine::navigate(("data:text/html," + url_encode(html)).c_str());
+      browser_engine::navigate("data:text/html," + url_encode(html));
     } else {
       browser_engine::navigate(url);
     }

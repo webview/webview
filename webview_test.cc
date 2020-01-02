@@ -1,4 +1,6 @@
-//bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -g -o webview_test && ./webview_test ; exit
+// clang-format off
+//bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
+// clang-format on
 // +build ignore
 
 #include "webview.h"
@@ -44,17 +46,36 @@ static void test_c_api() {
 // =================================================================
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
+struct test_webview : webview::browser_engine {
+  using cb_t = std::function<void(test_webview *, int, const std::string)>;
+  test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
+  void on_message(const std::string msg) override { m_cb(this, i++, msg); }
+  int i = 0;
+  cb_t m_cb;
+};
+
 static void test_bidir_comms() {
-  struct test_webview : webview::browser_engine {
-    test_webview() : webview::browser_engine(false, nullptr) {}
-    void on_message(const std::string msg) {
-      assert(msg == "5");
-      terminate();
+  test_webview browser([](test_webview *w, int i, const std::string msg) {
+    switch (i) {
+    case 0:
+      assert(msg == "loaded");
+      w->eval("window.external.invoke('exiting ' + window.x)");
+      break;
+    case 1:
+      assert(msg == "exiting 42");
+      w->terminate();
+      break;
+    default:
+      assert(0);
     }
-  } browser;
-  browser.init("x = 3;");
-  browser.navigate("");
-  browser.dispatch([&]() { browser.eval("window.external.invoke(''+ (x + 2))"); });
+  });
+  browser.init(R"(
+    window.x = 42;
+    window.onload = () => {
+      window.external.invoke('loaded');
+    };
+  )");
+  browser.navigate("data:text/html,<html></html>");
   browser.run();
 }
 
