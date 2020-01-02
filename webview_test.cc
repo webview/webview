@@ -1,6 +1,4 @@
-// clang-format off
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
-// clang-format on
 // +build ignore
 
 #include "webview.h"
@@ -56,6 +54,7 @@ struct test_webview : webview::browser_engine {
 
 static void test_bidir_comms() {
   test_webview browser([](test_webview *w, int i, const std::string msg) {
+    std::cout << msg << std::endl;
     switch (i) {
     case 0:
       assert(msg == "loaded");
@@ -75,7 +74,7 @@ static void test_bidir_comms() {
       window.external.invoke('loaded');
     };
   )");
-  browser.navigate("data:text/html,<html></html>");
+  browser.navigate("data:text/html,%3Chtml%3Ehello%3C%2Fhtml%3E");
   browser.run();
 }
 
