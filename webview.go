@@ -221,6 +221,9 @@ type WebView interface {
 	// Exit() closes the window and cleans up the resources. Use Terminate() to
 	// forcefully break out of the main UI loop.
 	Exit()
+	// BindQuery() generates js binding code for the given interface and returns it.
+	// This can be used to dynamically generate injection code from HTML script queries
+	BindQuery(name string, v interface{}) (sync func(), js string, err error)
 	// Bind() registers a binding between a given value and a JavaScript object with the
 	// given name.  A value must be a struct or a struct pointer. All methods are
 	// available under their camel-case names, starting with a lower-case letter,
@@ -538,14 +541,14 @@ func getMethods(obj interface{}) ([]methodInfo, error) {
 	return methods, nil
 }
 
-func (w *webview) Bind(name string, v interface{}) (sync func(), err error) {
+func (w *webview) BindQuery(name string, v interface{}) (sync func(), js string, err error) {
 	b, err := newBinding(name, v)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	js, err := b.JS()
+	js, err = b.JS()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	sync = func() {
 		if js, err := b.Sync(); err != nil {
@@ -566,7 +569,16 @@ func (w *webview) Bind(name string, v interface{}) (sync func(), err error) {
 	}
 	m.Unlock()
 
+	return sync, js, nil
+}
+
+func (w *webview) Bind(name string, v interface{}) (sync func(), err error) {
+	sync, js, err := w.BindQuery(name, v)
+
+	if err != nil {
+		return nil, err
+	}
 	w.Eval(js)
 	sync()
-	return sync, nil
+	return sync, err
 }
