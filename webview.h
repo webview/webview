@@ -609,7 +609,6 @@ public:
       m_window = objc_msgSend(
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), 0, NSBackingStoreBuffered, 0);
-      set_size(480, 320, WEBVIEW_HINT_NONE);
     } else {
       m_window = (id)window;
     }
@@ -663,15 +662,29 @@ public:
                               title.c_str()));
   }
   void set_size(int width, int height, int hints) {
-    // TODO: implement MIN/MAX hints
     auto style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                  NSWindowStyleMaskMiniaturizable;
     if (hints != WEBVIEW_HINT_FIXED) {
       style = style | NSWindowStyleMaskResizable;
     }
     objc_msgSend(m_window, "setStyleMask:"_sel, style);
-    objc_msgSend(m_window, "setFrame:display:animate:"_sel,
-                 CGRectMake(0, 0, width, height), 1, 0);
+
+    struct {
+      CGFloat width;
+      CGFloat height;
+    } size;
+    if (hints == WEBVIEW_HINT_MIN) {
+      size.width = width;
+      size.height = height;
+      objc_msgSend(m_window, "setContentMinSize:"_sel, size);
+    } else if (hints == WEBVIEW_HINT_MAX) {
+      size.width = width;
+      size.height = height;
+      objc_msgSend(m_window, "setContentMaxSize:"_sel, size);
+    } else {
+      objc_msgSend(m_window, "setFrame:display:animate:"_sel,
+                   CGRectMake(0, 0, width, height), 1, 0);
+    }
   }
   void navigate(const std::string url) {
     auto nsurl = objc_msgSend(
