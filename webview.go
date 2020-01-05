@@ -569,6 +569,11 @@ func (w *webview) BindQuery(name string, v interface{}) (sync func(), js string,
 	}
 	m.Unlock()
 
+	// add a first sync to the code
+	if syncJs, err := b.Sync(); err == nil {
+		js += "\r\n" + syncJs
+	}
+
 	return sync, js, nil
 }
 
@@ -579,6 +584,7 @@ func (w *webview) Bind(name string, v interface{}) (sync func(), err error) {
 		return nil, err
 	}
 	w.Eval(js)
-	sync()
+	// don't need a first sync because it is appended already
+	// sync()
 	return sync, err
 }
