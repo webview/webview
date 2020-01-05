@@ -1,7 +1,9 @@
 package webview
 
 import (
+	"flag"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -17,9 +19,10 @@ func Example() {
 	w.Run()
 }
 
-func TestExample(t *testing.T) {
-	if !testing.Verbose() {
-		return
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if testing.Verbose() {
+		Example()
 	}
-	Example()
+	os.Exit(m.Run())
 }
