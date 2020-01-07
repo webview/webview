@@ -96,13 +96,15 @@ WEBVIEW_API void webview_eval(webview_t w, const char *js);
 // string is a JSON array of all the arguments passed to the JavaScript
 // function.
 WEBVIEW_API void webview_bind(webview_t w, const char *name,
-                              void (*fn)(const char *, void *), void *arg);
+                              void (*fn)(const char *seq, const char *req,
+                                         void *arg),
+                              void *arg);
 
 // Allows to return a value from the native binding. Original request pointer
 // must be provided to help internal RPC engine match requests with responses.
 // If status is zero - result is expected to be a valid JSON result value.
 // If status is not zero - result is an error JSON object.
-WEBVIEW_API void webview_return(webview_t w, const char *req, int status,
+WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
 #ifdef __cplusplus
@@ -128,6 +130,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *req, int status,
 #include <future>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cstring>
@@ -1092,59 +1095,69 @@ public:
     }
   }
 
-  using binding_t = std::function<std::string(std::string)>;
+  using binding_t = std::function<void(std::string, std::string, void *)>;
+  using binding_ctx_t = std::pair<binding_t *, void *>;
 
-  void bind(const std::string name, binding_t f) {
+  using sync_binding_t = std::function<std::string(std::string)>;
+  using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
+
+  void bind(const std::string name, sync_binding_t fn) {
+    bind(name,
+         [](std::string seq, std::string req, void *arg) {
+           auto pair = static_cast<sync_binding_ctx_t *>(arg);
+           pair->first->resolve(seq, 0, pair->second(req));
+         },
+         new sync_binding_ctx_t(this, fn));
+  }
+
+  void bind(const std::string name, binding_t f, void *arg) {
     auto js = "(function() { var name = '" + name + "';" + R"(
+      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
       window[name] = function() {
-        var me = window[name];
-        var errors = me['errors'];
-        var callbacks = me['callbacks'];
-        if (!callbacks) {
-          callbacks = {};
-          me['callbacks'] = callbacks;
-        }
-        if (!errors) {
-          errors = {};
-          me['errors'] = errors;
-        }
-        var seq = (me['lastSeq'] || 0) + 1;
-        me['lastSeq'] = seq;
+        var seq = RPC.nextSeq++;
         var promise = new Promise(function(resolve, reject) {
-          callbacks[seq] = resolve;
-          errors[seq] = reject;
+        console.log(seq, name);
+          RPC[seq] = {
+            resolve: resolve,
+            reject: reject,
+          };
         });
         window.external.invoke(JSON.stringify({
-          name: name,
-          seq:seq,
-          args: Array.prototype.slice.call(arguments),
+          id: seq,
+          method: name,
+          params: Array.prototype.slice.call(arguments),
         }));
         return promise;
       }
     })())";
     init(js);
-    bindings[name] = new binding_t(f);
+    bindings[name] = new binding_ctx_t(new binding_t(f), arg);
+  }
+
+  void resolve(const std::string seq, int status, const std::string result) {
+    dispatch([=]() {
+      if (status == 0) {
+        eval("window._rpc[" + seq + "].resolve(" + result + "); window._rpc[" +
+             seq + "] = undefined");
+      } else {
+        eval("window._rpc[" + seq + "].reject(" + result + "); window._rpc[" +
+             seq + "] = undefined");
+      }
+    });
   }
 
 private:
   void on_message(const std::string msg) {
-    auto seq = json_parse(msg, "seq", 0);
-    auto name = json_parse(msg, "name", 0);
-    auto args = json_parse(msg, "args", 0);
-    auto fn = bindings[name];
-    if (fn == nullptr) {
+    auto seq = json_parse(msg, "id", 0);
+    auto name = json_parse(msg, "method", 0);
+    auto args = json_parse(msg, "params", 0);
+    if (bindings.find(name) == bindings.end()) {
       return;
     }
-    // std::async(std::launch::async, [=]() {
-    auto result = (*fn)(args);
-    dispatch([=]() {
-      eval("var b = window['" + name + "'];b['callbacks'][" + seq + "](" +
-           result + ");b['callbacks'][" + seq + "] = undefined;b['errors'][" +
-           seq + "] = undefined;");
-    });
-    //});
+    auto fn = bindings[name];
+    (*fn->first)(seq, args, fn->second);
   }
-  std::map<std::string, binding_t *> bindings;
+  std::map<std::string, binding_ctx_t *> bindings;
 };
 } // namespace webview
 
@@ -1192,6 +1205,23 @@ WEBVIEW_API void webview_init(webview_t w, const char *js) {
 
 WEBVIEW_API void webview_eval(webview_t w, const char *js) {
   static_cast<webview::webview *>(w)->eval(js);
+}
+
+WEBVIEW_API void webview_bind(webview_t w, const char *name,
+                              void (*fn)(const char *seq, const char *req,
+                                         void *arg),
+                              void *arg) {
+  static_cast<webview::webview *>(w)->bind(
+      name,
+      [&](std::string seq, std::string req, void *arg) {
+        fn(seq.c_str(), req.c_str(), arg);
+      },
+      arg);
+}
+
+WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
+                                const char *result) {
+  static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
 #endif /* WEBVIEW_HEADER */
