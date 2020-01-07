@@ -1116,7 +1116,6 @@ public:
       window[name] = function() {
         var seq = RPC.nextSeq++;
         var promise = new Promise(function(resolve, reject) {
-        console.log(seq, name);
           RPC[seq] = {
             resolve: resolve,
             reject: reject,
@@ -1213,7 +1212,7 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void *arg) {
   static_cast<webview::webview *>(w)->bind(
       name,
-      [&](std::string seq, std::string req, void *arg) {
+      [=](std::string seq, std::string req, void *arg) {
         fn(seq.c_str(), req.c_str(), arg);
       },
       arg);
