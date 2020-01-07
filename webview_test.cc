@@ -78,6 +78,19 @@ static void test_bidir_comms() {
   browser.run();
 }
 
+// =================================================================
+// TEST: ensure that JSON parsing works.
+// =================================================================
+static void test_json() {
+  auto J = webview::json_parse;
+  assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
+  assert(J(R"({"foo":""})", "foo", -1) == "");
+  assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
+  assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
+  assert(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
+  assert(J(R"(["quoted\"string")", "", 0) == "quoted\"string");
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -101,6 +114,7 @@ int main(int argc, char *argv[]) {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
       {"bidir_comms", test_bidir_comms},
+      {"json", test_json},
   };
   // Without arguments run all tests, one-by-one by forking itself.
   // With a single argument - run the requested test
