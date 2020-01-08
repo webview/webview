@@ -307,7 +307,7 @@ Also, there is a more more advanced complete C++ app, [Slide](https://github.com
 ## Notes
 
 Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
-
+For Ubuntu Users run `sudo apt install webkit2gtk-4.0` to install webkit2gtk-4.0 related items.
 FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 ## License
