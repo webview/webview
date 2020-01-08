@@ -7,7 +7,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs) and [C# bindings](https://github.com/iwillspeak/webview-cs) available.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/iwillspeak/webview-cs) and [Java bindings](https://github.com/shannah/webviewjar) available.
 
 **IMPORTANT NOTE: Webview is now being rewritten from scratch, with the support of EdgeHTML and using C++14 as a primary language (code becomes much shorter/cleaner, and we still have C and Go APIs as the primary interface). Please have a look at [webview-x](https://github.com/zserge/webview/tree/webview-x) branch before opening new issues. Current version of webview is still maintained, PRs with bugfixes are welcome, but new functionality will be added to the new branch. I expect to finish the new branch before March 2019, but no hard deadlines.**
 
@@ -189,6 +189,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 ```c
 // main.c
 #define WEBVIEW_IMPLEMENTATION
+//don't forget to define WEBVIEW_WINAPI,WEBVIEW_GTK or WEBVIEW_COCAO
 #include "webview.h"
 
 #ifdef WIN32
@@ -208,9 +209,9 @@ Build it:
 
 ```bash
 # Linux
-$ cc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
+$ gcc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
-$ cc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
+$ gcc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
 # Windows (mingw)
 $ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
 # Windows (cl)
