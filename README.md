@@ -213,7 +213,9 @@ $ gcc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0
 # MacOS
 $ gcc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
 # Windows (mingw)
-$ gcc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
+$ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
+# Windows (cl)
+$ cl main.c /D WEBVIEW_WINAPI=1 /link ole32.lib comctl32.lib oleaut32.lib uuid.lib gdi32.lib advapi32.lib
 ```
 
 ### API
