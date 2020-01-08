@@ -1117,6 +1117,9 @@ static int DisplayHTMLPage(struct webview *w) {
     LPCSTR webPageName;
     isDataURL = (strncmp(webview_url, WEBVIEW_DATA_URL_PREFIX,
                          strlen(WEBVIEW_DATA_URL_PREFIX)) == 0);
+#ifdef WEBVIEW_SUPRESS_ERRORS
+	webBrowser2->lpVtbl->put_Silent(webBrowser2, true);
+#endif
     if (isDataURL) {
       webPageName = "about:blank";
     } else {
