@@ -1,21 +1,18 @@
 # webview
 
 [![Join the chat at https://gitter.im/zserge/webview](https://badges.gitter.im/zserge/webview.svg)](https://gitter.im/zserge/webview?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/zserge/webview.svg?branch=master)](https://travis-ci.org/zserge/webview)
-[![Build status](https://ci.appveyor.com/api/projects/status/ksii33qx18d94h6v?svg=true)](https://ci.appveyor.com/project/zserge/webview)
+[![Build Status](https://img.shields.io/github/workflow/status/zserge/webview/CI%20Pipeline)](https://github.com/zserge/webview)
 [![GoDoc](https://godoc.org/github.com/zserge/webview?status.svg)](https://godoc.org/github.com/zserge/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
 A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/iwillspeak/webview-cs) and [Java bindings](https://github.com/shannah/webviewjar) available.
 
-**IMPORTANT NOTE: Webview is now being rewritten from scratch, with the support of EdgeHTML and using C++14 as a primary language (code becomes much shorter/cleaner, and we still have C and Go APIs as the primary interface). Please have a look at [webview-x](https://github.com/zserge/webview/tree/webview-x) branch before opening new issues. Current version of webview is still maintained, PRs with bugfixes are welcome, but new functionality will be added to the new branch. I expect to finish the new branch before March 2020, but no hard deadlines.**
+The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms. 
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
-It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and MSHTML (IE10/11) on Windows.
-
-<p align="center"><img alt="linux" src="examples/todo-go/screenshots/screenshots.png"></p>
+It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and Edge on Windows 10.
 
 ## Webview for Go developers
 
@@ -37,13 +34,17 @@ package main
 import "github.com/zserge/webview"
 
 func main() {
-	// Open wikipedia in a 800x600 resizable window
-	webview.Open("Minimal webview example",
-		"https://en.m.wikipedia.org/wiki/Main_Page", 800, 600, true)
+	debug := true
+	w := webview.New(debug)
+	defer w.Destroy()
+	w.SetTitle("Minimal webview example")
+	w.SetSize(800, 600, webview.HintNone)
+	w.Navigate("https://en.m.wikipedia.org/wiki/Main_Page")
+	w.Run()
 }
 ```
 
-It is not recommended to use `go run` (although it works perfectly fine on Linux). Use `go build` instead:
+To build the app use the following commands:
 
 ```bash
 # Linux
@@ -60,103 +61,9 @@ $ open example.app # Or click on the app in Finder
 $ go build -ldflags="-H windowsgui" -o webview-example.exe
 ```
 
-### API
+For more details see [godoc](https://godoc.org/github.com/zserge/webview).
 
-See [godoc](https://godoc.org/github.com/zserge/webview).
-
-### How to serve or inject the initial HTML/CSS/JavaScript into the webview?
-
-First of all, you probably want to embed your assets (HTML/CSS/JavaScript) into the binary to have a standalone executable. Consider using [go-bindata](https://github.com/go-bindata/go-bindata) or any other similar tools.
-
-Now there are two major approaches to deploy the content:
-
-* Serve HTML/CSS/JS with an embedded HTTP server
-* Injecting HTML/CSS/JS via the JavaScript binding API
-
-To serve the content it is recommended to use ephemeral ports:
-
-```go
-ln, err := net.Listen("tcp", "127.0.0.1:0")
-if err != nil {
-	log.Fatal(err)
-}
-defer ln.Close()
-go func() {
- 	// Set up your http server here
-	log.Fatal(http.Serve(ln, nil))
-}()
-webview.Open("Hello", "http://"+ln.Addr().String(), 400, 300, false)
-```
-
-Injecting the content via JS bindings is a bit more complicated, but feels more solid and does not expose any additional open TCP ports.
-
-Leave `webview.Settings.URL` empty to start with bare minimal HTML5. It will open a webview with `<div id="app"></div>` in it. Alternatively, use a data URI to inject custom HTML code (don't forget to URL-encode it):
-
-```go
-const myHTML = `<!doctype html><html>....</html>`
-w := webview.New(webview.Settings{
-	URL: `data:text/html,` + url.PathEscape(myHTML),
-})
-```
-
-Keep your initial HTML short (a few kilobytes maximum).
-
-Now you can inject more JavaScript once the webview becomes ready using `webview.Eval()`. You can also inject CSS styles using JavaScript:
-
-```go
-w.Dispatch(func() {
-	// Inject CSS
-	w.Eval(fmt.Sprintf(`(function(css){
-		var style = document.createElement('style');
-		var head = document.head || document.getElementsByTagName('head')[0];
-		style.setAttribute('type', 'text/css');
-		if (style.styleSheet) {
-			style.styleSheet.cssText = css;
-		} else {
-			style.appendChild(document.createTextNode(css));
-		}
-		head.appendChild(style);
-	})("%s")`, template.JSEscapeString(myStylesCSS)))
-	// Inject JS
-	w.Eval(myJSFramework)
-	w.Eval(myAppJS)
-})
-```
-
-This works fairly well across the platforms, see `counter-go` example for more details about how make a webview app with no web server. It also demonstrates how to use ReactJS, VueJS or Picodom with webview.
-
-### How to communicate between native Go and web UI?
-
-You already have seen how to use `w.Eval()` to run JavaScript inside the webview. There is also a way to call Go code from JavaScript.
-
-On the low level there is a special callback, `webview.Settings.ExternalInvokeCallback` that receives a string argument. This string can be passed from JavaScript using `window.external.invoke(someString)`.
-
-This might seem very inconvenient, and that is why there is a dedicated `webview.Bind()` API call. It binds an existing Go object (struct or struct pointer) and creates/injects JS API for it. Now you can call JS methods and they will result in calling native Go methods. Even more, if you modify the Go object - it can be automatically serialized to JSON and passed to the web UI to keep things in sync.
-
-Please, see `counter-go` example for more details about how to bind Go controllers to the web UI.
-
-## Debugging and development tips
-
-If terminal output is unavailable (e.g. if you launch app bundle on MacOS or
-GUI app on Windows) you may use `webview.Debug()` and `webview.Debugf()` to
-print logs. On MacOS such logs will be printed via NSLog and can be seen in the
-`Console` app. On Windows they use `OutputDebugString` and can be seen using
-`DebugView` app. On Linux logging is done to stderr and can be seen in the
-terminal or redirected to a file.
-
-To debug the web part of your app you may use `webview.Settings.Debug` flag. It
-enables the Web Inspector in WebKit and works on Linux and MacOS (use popup menu
-to open the web inspector). On Windows there is no easy to way to enable
-debugging, but you may include Firebug in your HTML code:
-
-```html
-<script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>
-```
-
-Even though Firebug browser extension development has been stopped, Firebug
-Lite is still available and just works.
-
-## Distributing webview apps
+### Distributing webview apps
 
 On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit2, so if you distribute your app in DEB or RPM format include those dependencies. An application icon can be specified by providing a `.desktop` file.
 
@@ -174,33 +81,42 @@ example.app
 
 Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](https://iconverticons.com/online/).
 
-On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources.
-
-You may find some example build scripts for all three platforms [here](https://github.com/naivesound/glitch/tree/master/dist).
+On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources. Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with your app executable.
 
 Also, if you want to cross-compile your webview app - use [xgo](https://github.com/karalabe/xgo).
 
-## Webview for C/C++ developers
+### Migrating from v0.1.1 to v0.10.0
 
-### Getting started
+1. `webview.Open()` has been removed. Use other webview APIs to create a window, open a link and run main UI loop.
+2. `webview.Debug()` and `webview.Debugf()` have been removed. Use your favorite logging library to debug webview apps.
+3. `webview.Settings` struct has been removed. Title, URL and size are controlled via other API setters and can be updated at any time, not only when webview is created.
+4. `Webview.Loop()` has been removed. Use `Run()` instead.
+5. `WebView.Run()`, `WebView.Terminate()`, `WebView.SetTitle()`, `WebView.Dispatch()` stayed the same.
+6. `WebView.Exit()` has been renamed to `WebView.Destroy()`
+6. `WebView.SetColor()` and `WebView.SetFullScreen()` have been removed. Use `Window()` to get native window handle and probably write some Cgo code to adjust native window to your taste.
+7. `webview.Dialog` has been removed. But it is likely to be brought back as a standalone module.
+8. `WebView.Eval()` remained the same.
+9. `WebView.InjectCSS()` has been removed. Use eval to inject style tag with CSS inside.
+10. `WebView.Bind()` kept the name, but changed the semantics. Only functions can be bound. Not the structs, like in Lorca.
+
+## Webview for C/C++ developers
 
 Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
 
 ```c
 // main.c
-#define WEBVIEW_IMPLEMENTATION
-//don't forget to define WEBVIEW_WINAPI,WEBVIEW_GTK or WEBVIEW_COCAO
 #include "webview.h"
-
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
                    int nCmdShow) {
 #else
 int main() {
 #endif
-  /* Open wikipedia in a 800x600 resizable window */
-  webview("Minimal webview example",
-	  "https://en.m.wikipedia.org/wiki/Main_Page", 800, 600, 1);
+  webview::webview w(true, nullptr);
+  w.set_title("Minimal example");
+  w.set_size(480, 320, WEBVIEW_HINT_NONE);
+	w.navigate("https://en.m.wikipedia.org/wiki/Main_Page");
+	w.run();
   return 0;
 }
 ```
@@ -209,102 +125,37 @@ Build it:
 
 ```bash
 # Linux
-$ gcc main.c -DWEBVIEW_GTK=1 `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
+$ c++ main.cc `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
-$ gcc main.c -DWEBVIEW_COCOA=1 -framework WebKit -o webview-example
-# Windows (mingw)
-$ cc main.c -DWEBVIEW_WINAPI=1 -lole32 -lcomctl32 -loleaut32 -luuid -mwindows -o webview-example.exe
-# Windows (cl)
-$ cl main.c /D WEBVIEW_WINAPI=1 /link ole32.lib comctl32.lib oleaut32.lib uuid.lib gdi32.lib advapi32.lib
+$ c++ main.cc -framework WebKit -o webview-example
+# Windows (x64)
+$ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
 
-### API
+On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
 
-For the most simple use cases there is only one function:
+Full C/C++ API is described at the top of the `webview.h` file.
 
-```c
-int webview(const char *title, const char *url, int width, int height, int resizable);
-```
+### Migrating from v0.1.1 to v0.10.0
 
-The following URL schemes are supported:
-
-* `http://` and `https://`, no surprises here.
-* `file:///` can be useful if you want to unpack HTML/CSS assets to some
-  temporary directory and point a webview to open index.html from there.
-* `data:text/html,<html>...</html>` allows to pass short HTML data inline
-  without using a web server or polluting the file system. Further
-  modifications of the webview contents can be done via JavaScript bindings.
-
-If have chosen a regular http URL scheme, you can use Mongoose or any other web server/framework you like.
-
-If you want to have more control over the app lifecycle you can use the following functions:
-
-```c
-  struct webview webview = {
-      .title = title,
-      .url = url,
-      .width = w,
-      .height = h,
-      .debug = debug,
-      .resizable = resizable,
-  };
-  /* Create webview window using the provided options */
-  webview_init(&webview);
-  /* Main app loop, can be either blocking or non-blocking */
-  while (webview_loop(&webview, blocking) == 0);
-  /* Destroy webview window, often exits the app */
-  webview_exit(&webview);
-
-  /* To change window title later: */
-  webview_set_title(&webview, "New title");
-
-  /* To terminate the webview main loop: */
-  webview_terminate(&webview);
-
-  /* To print logs to stderr, MacOS Console or DebugView: */
-  webview_debug("exited: %d\n", 1);
-```
-
-To evaluate arbitrary JavaScript code use the following C function:
-
-```c
-webview_eval(&webview, "alert('hello, world');");
-```
-
-There is also a special callback (`webview.external_invoke_cb`) that can be invoked from JavaScript:
-
-```javascript
-// C
-void my_cb(struct webview *w, const char *arg) {
-	...
-}
-
-// JS
-window.external.invoke('some arg');
-// Exactly one string argument must be provided, to pass more complex objects
-// serialize them to JSON and parse it in C. To pass binary data consider using
-// base64.
-window.external.invoke(JSON.stringify({fn: 'sum', x: 5, y: 3}));
-```
-
-Webview library is meant to be used from a single UI thread only. So if you
-want to call `webview_eval` or `webview_terminate` from some background thread
-- you have to use `webview_dispatch` to post some arbitrary function with some
-context to be executed inside the main UI thread:
-
-```c
-// This function will be executed on the UI thread
-void render(struct webview *w, void *arg) {
-  webview_eval(w, ......);
-}
-
-// Dispatch render() function from another thread:
-webview_dispatch(w, render, some_arg);
-```
-
-You may find some C/C++ examples in this repo that demonstrate the API above.
-
-Also, there is a more more advanced complete C++ app, [Slide](https://github.com/zserge/slide), that uses webview as a GUI. You may have a look how webview apps can be built, packaged and how automatic CI/CD can be set up.
+1. Use opaque `webview_t` type instead of `struct webview`. Size, title and URL are controlled via API setter functions. Invoke callback has been replaced with `webview_bind()` and `webview_return()` to make native function bindings inter-operate with JS.
+2. If you have been using simplified `webview()` API to only open a single URL
+   in a webview window - this function has been removed. You now have to create
+   a new webview instance, configure and run it explicitly.
+3. `webview_init()` is replaced by `webview_create()` which creates a new webview instance.
+4. `webview_exit()` has been replaced with more meaningful `webview_destroy()`.
+5. Main UI loop with `webview_loop()` inside has been replaced with `webview_run()` runs infinitely until the webview window is closed.
+6. `webview_terminate()` remains the same.
+7. `webview_dispatch()` remains the same.
+8. `webview_set_title()` remains the same.
+9. `webview_set_color()` has been removed. Use `webview_get_window` and native
+   window APIs to control colors, trancparency and other native window
+   properties. At some point these APIs might be brought back.
+10. `webview_set_fullscreen()` has been removed, see above.
+11. `webview_dialog()` has been removed. But I'd like to see it added back as a separate independent module or library.
+12. `webview_eval()` remains the same.
+13. `webview_inject_css()` has been removed. Use `webview_eval()` to create style tag manually.
+14. `webview_debug()` has been removed. Use whatever fits best to your programming language and environment to debug your GUI apps.
 
 ## Notes
 
@@ -316,3 +167,4 @@ FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 Code is distributed under MIT license, feel free to use it in your proprietary
 projects as well.
+

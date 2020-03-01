@@ -1,0 +1,26 @@
+name: CI Pipeline
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
+      - name: Build and run tests
+        run: xvfb-run ./script/build.sh
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build and run tests
+        run: ./script/build.sh
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build and run tests
+        run: ./script/build.bat
