@@ -229,7 +229,6 @@ func _webviewDispatchGoCallback(index unsafe.Pointer) {
 func _webviewBindingGoCallback(w C.webview_t, id *C.char, req *C.char, index uintptr) {
 	m.Lock()
 	f := bindings[uintptr(index)]
-	delete(bindings, uintptr(index))
 	m.Unlock()
 	jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
 	status, result := 0, ""
