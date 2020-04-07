@@ -263,12 +263,20 @@ func (w *webview) Bind(name string, f interface{}) error {
 		if err := json.Unmarshal([]byte(req), &raw); err != nil {
 			return nil, err
 		}
-		if len(raw) != v.Type().NumIn() {
+
+		isVariadic := v.Type().IsVariadic()
+		numIn := v.Type().NumIn()
+		if (isVariadic && len(raw) < numIn-1) || (!isVariadic && len(raw) != numIn) {
 			return nil, errors.New("function arguments mismatch")
 		}
 		args := []reflect.Value{}
 		for i := range raw {
-			arg := reflect.New(v.Type().In(i))
+			var arg reflect.Value
+			if isVariadic && i >= numIn-1 {
+				arg = reflect.New(v.Type().In(numIn - 1).Elem())
+			} else {
+				arg = reflect.New(v.Type().In(i))
+			}
 			if err := json.Unmarshal(raw[i], arg.Interface()); err != nil {
 				return nil, err
 			}
