@@ -585,9 +585,8 @@ public:
                  NSApplicationActivationPolicyRegular);
 
     // Delegate
-    auto cls = objc_allocateClassPair((Class) "NSObject"_cls, "AppDelegate", 0);
-    class_addProtocol(cls, objc_getProtocol("NSApplicationDelegate"));
-    class_addProtocol(cls, objc_getProtocol("WKScriptMessageHandler"));
+    auto cls = objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
+    class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
