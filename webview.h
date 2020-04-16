@@ -567,6 +567,24 @@ using browser_engine = gtk_webkit_engine;
 
 #define WKUserScriptInjectionTimeAtDocumentStart 0
 
+typedef struct NSPoint
+{
+  CGFloat x;
+  CGFloat y;
+} NSPoint;
+
+typedef struct NSSize
+{
+  CGFloat width;
+  CGFloat height;
+} NSSize;
+
+typedef struct NSRect
+{
+  NSPoint origin;
+  NSSize size;
+} NSRect;
+
 namespace webview {
 
 // Helpers to avoid too much typing
@@ -684,8 +702,9 @@ public:
       size.height = height;
       objc_msgSend(m_window, "setContentMaxSize:"_sel, size);
     } else {
+      NSRect rect = ((NSRect(*)(id, SEL))objc_msgSend_stret)(m_window, "frame"_sel);
       objc_msgSend(m_window, "setFrame:display:animate:"_sel,
-                   CGRectMake(0, 0, width, height), 1, 0);
+                   CGRectMake(rect.origin.x, rect.origin.y, width, height), 1, 0);
     }
   }
   void navigate(const std::string url) {
