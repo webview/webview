@@ -81,7 +81,8 @@ example.app
 
 Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](https://iconverticons.com/online/).
 
-On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources. Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with your app executable.
+On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources. To show a icon in the application title bar, just place a file named *icon.ico* next to the executable file.
+Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with your app executable.
 
 Also, if you want to cross-compile your webview app - use [xgo](https://github.com/karalabe/xgo).
 
