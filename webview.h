@@ -982,7 +982,7 @@ public:
       m_window = *(static_cast<HWND *>(window));
     }
 
-    ShowWindow(m_window, SW_SHOW);
+    ShowWindow(m_window, SW_HIDE);
     UpdateWindow(m_window);
     SetFocus(m_window);
 
@@ -998,6 +998,8 @@ public:
   }
 
   void run() {
+    ShowWindow(m_window, SW_SHOW);
+    
     MSG msg;
     BOOL res;
     while ((res = GetMessage(&msg, nullptr, 0, 0)) != -1) {
