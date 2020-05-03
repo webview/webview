@@ -937,11 +937,20 @@ class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
     if (window == nullptr) {
+      HINSTANCE hInstance = GetModuleHandle(nullptr);
+      HICON icon = (HICON) LoadImage(
+        hInstance, IDI_APPLICATION, IMAGE_ICON,
+        GetSystemMetrics(SM_CXSMICON), 
+        GetSystemMetrics(SM_CYSMICON), 
+        LR_DEFAULTCOLOR);
+
       WNDCLASSEX wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
       wc.cbSize = sizeof(WNDCLASSEX);
-      wc.hInstance = GetModuleHandle(nullptr);
+      wc.hInstance = hInstance;
       wc.lpszClassName = "webview";
+      wc.hIcon = icon;
+      wc.hIconSm = icon;
       wc.lpfnWndProc =
           (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> int {
             auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
@@ -1061,8 +1070,8 @@ private:
   virtual void on_message(const std::string msg) = 0;
 
   HWND m_window;
-  POINT m_minsz;
-  POINT m_maxsz;
+  POINT m_minsz = POINT { 0, 0 };
+  POINT m_maxsz = POINT { 0, 0 };
   DWORD m_main_thread = GetCurrentThreadId();
   std::unique_ptr<webview::browser> m_browser =
       std::make_unique<webview::edge_chromium>();
