@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Microsoft</dc:creator>
+  <dc:description>The Microsoft Edge WebView2 control enables you to host web content in your Windows app.</dc:description>
+  <dc:identifier>Microsoft.Web.WebView2</dc:identifier>
+  <version>0.9.488</version>
+  <keywords>Microsoft Web WebView Native native package Edge C++ Win32 Webview2</keywords>
+  <lastModifiedBy>NuGet, Version=5.5.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 10.0.14393.0;.NET Framework 4.7.2</lastModifiedBy>
+</coreProperties>
