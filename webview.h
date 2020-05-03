@@ -737,8 +737,12 @@ using browser_engine = cocoa_wkwebview_engine;
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <stdlib.h>
+#include <Shlwapi.h>
+#include <codecvt>
 
 #pragma comment(lib, "user32.lib")
+#pragma comment(lib, "Shlwapi.lib")
 
 // EdgeHTML headers and libs
 #include <objbase.h>
@@ -848,8 +852,17 @@ public:
     CoInitializeEx(nullptr, 0);
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
+
+    char currentExePath[MAX_PATH];
+    GetModuleFileNameA(NULL, currentExePath, MAX_PATH);
+    char* currentExeName = PathFindFileNameA(currentExePath);
+
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wideCharConverter;
+    std::wstring userDataFolder = wideCharConverter.from_bytes(std::getenv("APPDATA"));
+    std::wstring currentExeNameW = wideCharConverter.from_bytes(currentExeName);
+
     HRESULT res = CreateWebView2EnvironmentWithDetails(
-        nullptr, nullptr, nullptr,
+        nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,
         new webview2_com_handler(wnd, [&](IWebView2WebView *webview) {
           m_webview = webview;
           flag.clear();
