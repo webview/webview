@@ -594,6 +594,7 @@ public:
                       auto w =
                           (cocoa_wkwebview_engine *)objc_getAssociatedObject(
                               self, "webview");
+                      assert(w);
                       w->on_message((const char *)objc_msgSend(
                           objc_msgSend(msg, "body"_sel), "UTF8String"_sel));
                     }),
