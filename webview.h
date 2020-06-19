@@ -737,6 +737,7 @@ using browser_engine = cocoa_wkwebview_engine;
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <codecvt>
 
 #pragma comment(lib, "user32.lib")
 
@@ -848,10 +849,13 @@ public:
     CoInitializeEx(nullptr, 0);
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
-    HRESULT res = CreateWebView2EnvironmentWithDetails(
+    
+    HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
         nullptr, nullptr, nullptr,
-        new webview2_com_handler(wnd, [&](IWebView2WebView *webview) {
-          m_webview = webview;
+        new webview2_com_handler(wnd, cb, [&](ICoreWebView2Controller *controller) {
+          m_controller = controller;
+          m_controller->get_CoreWebView2(&m_webview);
+          m_webview->AddRef();
           flag.clear();
         }));
     if (res != S_OK) {
@@ -868,12 +872,12 @@ public:
   }
 
   void resize(HWND wnd) override {
-    if (m_webview == nullptr) {
+    if (m_controller == nullptr) {
       return;
     }
     RECT bounds;
     GetClientRect(wnd, &bounds);
-    m_webview->put_Bounds(bounds);
+    m_controller->put_Bounds(bounds);
   }
 
   void navigate(const std::string url) override {
@@ -902,33 +906,53 @@ private:
     return ws;
   }
 
-  IWebView2WebView *m_webview = nullptr;
+  ICoreWebView2 *m_webview = nullptr;
+  ICoreWebView2Controller *m_controller = nullptr;
 
   class webview2_com_handler
-      : public IWebView2CreateWebView2EnvironmentCompletedHandler,
-        public IWebView2CreateWebViewCompletedHandler {
-    using webview2_com_handler_cb_t = std::function<void(IWebView2WebView *)>;
+      : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
+        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,        
+        public ICoreWebView2WebMessageReceivedEventHandler {
+    using webview2_com_handler_cb_t = std::function<void(ICoreWebView2Controller *)>;
 
   public:
-    webview2_com_handler(HWND hwnd, webview2_com_handler_cb_t cb)
-        : m_window(hwnd), m_cb(cb) {}
+    webview2_com_handler(HWND hwnd, msg_cb_t msgCb, webview2_com_handler_cb_t cb)
+        : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
     ULONG STDMETHODCALLTYPE AddRef() { return 1; }
     ULONG STDMETHODCALLTYPE Release() { return 1; }
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
       return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2Environment *env) {
-      env->CreateWebView(m_window, this);
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
+      env->CreateCoreWebView2Controller(m_window, this);
       return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, IWebView2WebView *webview) {
-      webview->AddRef();
-      m_cb(webview);
+    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Controller *controller) {
+      controller->AddRef();
+
+      ICoreWebView2 *webview;
+      EventRegistrationToken token;
+      controller->get_CoreWebView2(&webview);
+      webview->add_WebMessageReceived(this, &token);
+
+      m_cb(controller);
+      return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) {
+      LPWSTR message;
+      args->TryGetWebMessageAsString(&message);
+
+      std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wideCharConverter;
+      m_msgCb(wideCharConverter.to_bytes(message));
+      sender->PostWebMessageAsString(message);
+      
+      CoTaskMemFree(message);
       return S_OK;
     }
 
   private:
     HWND m_window;
+    msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
   };
 };
