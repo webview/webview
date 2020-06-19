@@ -127,7 +127,7 @@ Build it:
 # Linux
 $ c++ main.cc `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
-$ c++ main.cc -framework WebKit -o webview-example
+$ c++ main.cc -std=c++11 -framework WebKit -o webview-example
 # Windows (x64)
 $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
