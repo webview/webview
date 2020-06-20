@@ -731,16 +731,17 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <stdlib.h>
 #include <Shlwapi.h>
 #include <codecvt>
+#include <stdlib.h>
+#include <windows.h>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "Shlwapi.lib")
 
 // EdgeHTML headers and libs
 #include <objbase.h>
+#include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
 #pragma comment(lib, "windowsapp")
