@@ -672,18 +672,12 @@ public:
     }
     objc_msgSend(m_window, "setStyleMask:"_sel, style);
 
-    struct {
-      CGFloat width;
-      CGFloat height;
-    } size;
     if (hints == WEBVIEW_HINT_MIN) {
-      size.width = width;
-      size.height = height;
-      objc_msgSend(m_window, "setContentMinSize:"_sel, size);
+      objc_msgSend(m_window, "setContentMinSize:"_sel,
+                   CGSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
-      size.width = width;
-      size.height = height;
-      objc_msgSend(m_window, "setContentMaxSize:"_sel, size);
+      objc_msgSend(m_window, "setContentMaxSize:"_sel,
+                   CGSizeMake(width, height));
     } else {
       objc_msgSend(m_window, "setFrame:display:animate:"_sel,
                    CGRectMake(0, 0, width, height), 1, 0);
