@@ -1,5 +1,5 @@
 name: CI Pipeline
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build-linux:

@@ -36,7 +36,7 @@ cl /D "WEBVIEW_API=__declspec(dllexport)" ^
 	/I "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x86\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\webview.cc" /link /DLL "/OUT:%build_dir%\webview.dll"
+	"%src_dir%\webview.cc" /link /DLL "/OUT:%build_dir%\webview.dll" || exit \b
 copy "%build_dir%\webview.dll" "%src_dir%\dll\x86"
 copy "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x86\WebView2Loader.dll" "%src_dir%\dll\x86"
 
@@ -47,7 +47,7 @@ cl /D "WEBVIEW_API=__declspec(dllexport)" ^
 	/I "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\webview.cc" /link /DLL "/OUT:%build_dir%\webview.dll"
+	"%src_dir%\webview.cc" /link /DLL "/OUT:%build_dir%\webview.dll" || exit \b
 copy "%build_dir%\webview.dll" "%src_dir%\dll\x64"
 copy "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x64\WebView2Loader.dll" "%build_dir%"
 copy "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x64\WebView2Loader.dll" "%src_dir%\dll\x64"
@@ -56,16 +56,16 @@ echo Building webview.exe (x64)
 cl /I "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe"
+	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
 
 echo Building webview_test.exe (x64)
 cl /I "%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.0.9.488\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe"
+	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
-go test
+go test || exit \b
