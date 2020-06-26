@@ -469,9 +469,10 @@ public:
     gtk_container_add(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
     gtk_widget_grab_focus(GTK_WIDGET(m_webview));
 
+    WebKitSettings *settings =
+        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
+    webkit_settings_set_javascript_can_access_clipboard(settings, true);
     if (debug) {
-      WebKitSettings *settings =
-          webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
       webkit_settings_set_enable_write_console_messages_to_stdout(settings,
                                                                   true);
       webkit_settings_set_enable_developer_extras(settings, true);
@@ -626,6 +627,14 @@ public:
                    objc_msgSend("NSNumber"_cls, "numberWithBool:"_sel, 1),
                    "developerExtrasEnabled"_str);
     }
+    objc_msgSend(objc_msgSend(config, "preferences"_sel),
+                 "setValue:forKey:"_sel,
+                 objc_msgSend("NSNumber"_cls, "numberWithBool:"_sel, 1),
+                 "javaScriptCanAccessClipboard"_str);
+    objc_msgSend(objc_msgSend(config, "preferences"_sel),
+                 "setValue:forKey:"_sel,
+                 objc_msgSend("NSNumber"_cls, "numberWithBool:"_sel, 1),
+                 "DOMPasteAllowed"_str);
     objc_msgSend(m_webview, "initWithFrame:configuration:"_sel,
                  CGRectMake(0, 0, 0, 0), config);
     objc_msgSend(m_manager, "addScriptMessageHandler:name:"_sel, delegate,
