@@ -741,6 +741,7 @@ using browser_engine = cocoa_wkwebview_engine;
 
 // EdgeHTML headers and libs
 #include <objbase.h>
+#include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
 #pragma comment(lib, "windowsapp")
@@ -937,7 +938,7 @@ private:
       controller->AddRef();
 
       ICoreWebView2 *webview;
-      EventRegistrationToken token;
+      ::EventRegistrationToken token;
       controller->get_CoreWebView2(&webview);
       webview->add_WebMessageReceived(this, &token);
 

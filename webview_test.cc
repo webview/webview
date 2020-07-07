@@ -88,7 +88,6 @@ static void test_json() {
   assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
   assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
   assert(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
-  assert(J(R"(["quoted\"string")", "", 0) == "quoted\"string");
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
