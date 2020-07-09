@@ -24,3 +24,15 @@ jobs:
       - uses: actions/checkout@v1
       - name: Build and run tests
         run: ./script/build.bat
+
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run clang-format
+        uses: DoozyX/clang-format-lint-action@v0.6
+        with:
+          source: '.'
+          extensions: 'h,cc'
+          clangFormatVersion: 9
+          style: file
