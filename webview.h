@@ -933,7 +933,8 @@ private:
         public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,        
         public ICoreWebView2WebMessageReceivedEventHandler,
         public ICoreWebView2PermissionRequestedEventHandler {
-    using webview2_com_handler_cb_t = std::function<void(ICoreWebView2Controller *)>;
+    using webview2_com_handler_cb_t =
+        std::function<void(ICoreWebView2Controller *)>;
 
   public:
     webview2_com_handler(HWND hwnd, msg_cb_t msgCb,
