@@ -975,7 +975,8 @@ private:
       CoTaskMemFree(message);
       return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) {
+    HRESULT STDMETHODCALLTYPE Invoke(
+        ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) {
       COREWEBVIEW2_PERMISSION_KIND kind;
       args->get_PermissionKind(&kind);
       if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
