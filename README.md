@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/iwillspeak/webview-cs) and [Java bindings](https://github.com/shannah/webviewjar) available.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/webview/webview_csharp) and [Java bindings](https://github.com/shannah/webviewjar) available.
 
 The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms. 
 
@@ -103,6 +103,7 @@ Also, if you want to cross-compile your webview app - use [xgo](https://github.c
 
 Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
 
+### C++:
 ```c
 // main.c
 #include "webview.h"
@@ -120,7 +121,6 @@ int main() {
   return 0;
 }
 ```
-
 Build it:
 
 ```bash
@@ -130,6 +130,35 @@ $ c++ main.cc `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-ex
 $ c++ main.cc -std=c++11 -framework WebKit -o webview-example
 # Windows (x64)
 $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
+```
+
+### C:
+```c
+// webview.c
+#include "webview.h"
+#ifdef WIN32
+int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
+                   int nCmdShow) {
+#else
+int main() {
+#endif
+	webview_t w = webview_create(0, NULL);
+	webview_set_title(w, "Webview Example");
+	webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
+	webview_navigate(w, "https://en.m.wikipedia.org/wiki/Main_Page");
+	webview_run(w);
+	return 0;
+}
+```
+Build it:
+
+```bash
+# Linux
+$ g++ main.c `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
+# MacOS
+$ g++ main.c -std=c++11 -framework WebKit -o webview-example
+# Windows (x64)
+$ g++ main.c -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
 
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
@@ -160,7 +189,7 @@ Full C/C++ API is described at the top of the `webview.h` file.
 ## Notes
 
 Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
-For Ubuntu Users run `sudo apt install webkit2gtk-4.0` to install webkit2gtk-4.0 related items.
+For Ubuntu Users run `sudo apt install webkit2gtk-4.0`(Try with webkit2gtk-4.0-dev if webkit2gtk-4.0 is not found) to install webkit2gtk-4.0 related items.
 FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 ## License
