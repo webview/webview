@@ -116,8 +116,9 @@ int main() {
   webview::webview w(true, nullptr);
   w.set_title("Minimal example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
-	w.navigate("https://en.m.wikipedia.org/wiki/Main_Page");
-	w.run();
+  w.navigate("https://en.m.wikipedia.org/wiki/Main_Page");
+  w.run();
+  w.destroy();
   return 0;
 }
 ```
@@ -147,6 +148,7 @@ int main() {
 	webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
 	webview_navigate(w, "https://en.m.wikipedia.org/wiki/Main_Page");
 	webview_run(w);
+	webview_destroy(w);
 	return 0;
 }
 ```
