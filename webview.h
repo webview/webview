@@ -930,7 +930,7 @@ private:
 
   class webview2_com_handler
       : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
-        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,        
+        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
         public ICoreWebView2WebMessageReceivedEventHandler,
         public ICoreWebView2PermissionRequestedEventHandler {
     using webview2_com_handler_cb_t =
@@ -976,8 +976,8 @@ private:
       return S_OK;
     }
     HRESULT STDMETHODCALLTYPE
-    Invoke(ICoreWebView2* sender,
-           ICoreWebView2PermissionRequestedEventArgs* args) {
+    Invoke(ICoreWebView2 *sender,
+           ICoreWebView2PermissionRequestedEventArgs *args) {
       COREWEBVIEW2_PERMISSION_KIND kind;
       args->get_PermissionKind(&kind);
       if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
