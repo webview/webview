@@ -113,8 +113,11 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 
 #ifndef WEBVIEW_HEADER
 
-#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
-#if defined(__linux__)
+#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) &&                        \
+    !defined(WEBVIEW_EDGE) && !defined(WEBVIEW_ANDROID)
+#if defined(__ANDROID__)
+#define WEBVIEW_ANDROID
+#elif defined(__linux__)
 #define WEBVIEW_GTK
 #elif defined(__APPLE__)
 #define WEBVIEW_COCOA
@@ -1138,7 +1141,454 @@ private:
 using browser_engine = win32_edge_engine;
 } // namespace webview
 
-#endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE */
+#elif defined(WEBVIEW_ANDROID)
+//
+// ====================================================================
+//
+// This implementation uses Android backend. It requires to be placed
+// inside an Android project preconfigured to be compatible.
+//
+// ====================================================================
+//
+
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include <android/log.h>
+#include <jni.h>
+
+#include <fstream>
+
+#include <unistd.h>
+
+#define LOGE(...)                                                              \
+  ((void)__android_log_print(ANDROID_LOG_ERROR, "webview-android-jni",         \
+                             __VA_ARGS__))
+#define LOGI(...)                                                              \
+  ((void)__android_log_print(ANDROID_LOG_INFO, "webview-android-jni",          \
+                             __VA_ARGS__))
+
+#include <android/native_activity.h>
+
+/* For debug builds, always enable the debug traces in this library */
+#ifndef NDEBUG
+#define LOGV(...)                                                              \
+  ((void)__android_log_print(ANDROID_LOG_VERBOSE, "webview-android-jni",       \
+                             __VA_ARGS__))
+#else
+#define LOGV(...) ((void)0)
+#endif
+
+#include <thread>
+
+extern int android_main(void *app);
+
+namespace webview {
+
+// Use correct ClassLoader when FindClass context changed (eg. on threads launched by hand)
+jclass retrieveClass(JNIEnv *jni, ANativeActivity *activity,
+                     const char *className) {
+  jclass activityClass = jni->FindClass("android/app/NativeActivity");
+  jobject loader = jni->CallObjectMethod(
+      activity->clazz, jni->GetMethodID(activityClass, "getClassLoader",
+                                        "()Ljava/lang/ClassLoader;"));
+  jclass classLoader = jni->FindClass("java/lang/ClassLoader");
+  jstring strClassName = jni->NewStringUTF(className);
+  jclass classRetrieved = (jclass)jni->CallObjectMethod(
+      loader,
+      jni->GetMethodID(classLoader, "loadClass",
+                       "(Ljava/lang/String;)Ljava/lang/Class;"),
+      strClassName);
+  jni->DeleteLocalRef(strClassName);
+  return classRetrieved;
+}
+
+std::string jstring2string(JNIEnv *env, jstring jstr) {
+  if (!jstr)
+    return "";
+
+  const jclass classString = env->GetObjectClass(jstr);
+  const jbyteArray jbytes = (jbyteArray)env->CallObjectMethod(
+      jstr, env->GetMethodID(classString, "getBytes", "(Ljava/lang/String;)[B"),
+      env->NewStringUTF("UTF-8"));
+
+  size_t length = static_cast<size_t>(env->GetArrayLength(jbytes));
+  jbyte *pbytes = env->GetByteArrayElements(jbytes, nullptr);
+
+  std::string res = std::string(reinterpret_cast<char *>(pbytes), length);
+  env->ReleaseByteArrayElements(jbytes, pbytes, JNI_ABORT);
+
+  env->DeleteLocalRef(jbytes);
+  env->DeleteLocalRef(classString);
+
+  return res;
+}
+
+struct android_app {
+  ANativeActivity *aNativeActivity;
+  void *savedState;
+  size_t savedStateSize;
+  ALooper *looper;
+  // below are things used by webview.h
+  int msgread;
+  int msgwrite;
+  void *tasks;
+  void *tasks_mutex;
+  void *cond;
+  jobject webview;
+  int running;
+};
+
+static ALooper *mainThreadLooper;
+static int android_app_callback(int fd, int events, void *data);
+
+android_app *create_android_app(ANativeActivity *activity, void *savedState,
+                                size_t savedStateSize) {
+  android_app *android_app = new struct android_app();
+  android_app->aNativeActivity = activity;
+
+  if (savedState != nullptr) {
+    android_app->savedState = malloc(savedStateSize);
+    android_app->savedStateSize = savedStateSize;
+    memcpy(android_app->savedState, savedState, savedStateSize);
+  }
+
+  mainThreadLooper = ALooper_forThread(); // get looper for this thread
+  ALooper_acquire(mainThreadLooper);      // add reference to keep object alive
+  // listen for pipe read end, if there is something to read
+  // - notify via provided callback on main thread
+  int msgpipe[2];
+  if (pipe(msgpipe)) {
+    LOGE("could not create pipe: %s", strerror(errno));
+    return nullptr;
+  }
+  android_app->msgread = msgpipe[0];
+  android_app->msgwrite = msgpipe[1];
+
+  android_app->tasks = new std::deque<std::packaged_task<void()>>;
+  android_app->tasks_mutex = new std::mutex();
+
+  ALooper_addFd(mainThreadLooper, android_app->msgread, 0, ALOOPER_EVENT_INPUT,
+                android_app_callback, android_app);
+  LOGI("fd is registered");
+
+  auto cond = new std::condition_variable();
+  android_app->cond = cond;
+
+  std::thread appThread([android_app]() {
+    ALooper *looper = ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
+    android_app->looper = looper;
+
+    auto tasks_mutex = static_cast<std::mutex *>(android_app->tasks_mutex);
+    std::unique_lock<std::mutex> lock(*tasks_mutex);
+    android_app->running = 1;
+    lock.unlock();
+    static_cast<std::condition_variable *>(android_app->cond)->notify_all();
+
+    android_main(android_app);
+  });
+  appThread.detach();
+
+  auto tasks_mutex = static_cast<std::mutex *>(android_app->tasks_mutex);
+  std::unique_lock<std::mutex> lock(*tasks_mutex);
+  cond->wait(lock, [android_app]() { return !android_app->running; });
+
+  return android_app;
+}
+
+static int android_app_callback(int fd, int events, void *data) {
+  LOGI("app callback was called");
+  char msg;
+  read(fd, &msg, 1);
+
+  auto app = static_cast<android_app *>(data);
+  auto tasks_mutex = static_cast<std::mutex *>(app->tasks_mutex);
+  auto tasks =
+      static_cast<std::deque<std::packaged_task<void()>> *>(app->tasks);
+  std::unique_lock<std::mutex> lock(*tasks_mutex);
+
+  lock.unlock();
+  while (!tasks->empty()) {
+    auto task(std::move(tasks->front()));
+    tasks->pop_front();
+    task();
+  }
+  lock.lock();
+
+  return 1; // continue listening
+}
+
+class android_engine {
+public:
+  android_engine(bool debug, void *data) {
+    m_android_app = static_cast<android_app *>(data);
+    m_tasks_mutex = static_cast<std::mutex *>(m_android_app->tasks_mutex);
+    m_tasks = static_cast<std::deque<std::packaged_task<void()>> *>(
+        m_android_app->tasks);
+
+    auto app = m_android_app;
+
+    runOnUiThread([this, app]() {
+      LOGI("create was called");
+      auto aNativeActivity =
+          static_cast<ANativeActivity *>(app->aNativeActivity);
+      aNativeActivity->vm->AttachCurrentThread(&aNativeActivity->env, nullptr);
+
+      JNIEnv *env = aNativeActivity->env;
+      jobject activity =
+          aNativeActivity->clazz; // it is a jobject, even if it says "clazz"
+
+      jclass classNativeActivity = env->GetObjectClass(activity);
+      jclass classActivity = env->GetSuperclass(classNativeActivity);
+      jclass classWebview = env->FindClass("android/webkit/WebView");
+
+      // Create WebView instance and add it to Activity contentView
+      jobject webview =
+          env->NewObject(classWebview,
+                         env->GetMethodID(classWebview, "<init>",
+                                          "(Landroid/content/Context;)V"),
+                         activity);
+      env->CallNonvirtualVoidMethod(activity, classActivity,
+                                    env->GetMethodID(classActivity,
+                                                     "setContentView",
+                                                     "(Landroid/view/View;)V"),
+                                    webview);
+
+      // Enable JavaScript
+      jobject webSettings = env->CallNonvirtualObjectMethod(
+          webview, classWebview,
+          env->GetMethodID(classWebview, "getSettings",
+                           "()Landroid/webkit/WebSettings;"));
+      jclass classWebSettings = env->GetObjectClass(webSettings);
+      env->CallNonvirtualVoidMethod(
+          webSettings, classWebSettings,
+          env->GetMethodID(classWebSettings, "setJavaScriptEnabled", "(Z)V"),
+          JNI_TRUE);
+
+      // Inject external.invoke function
+      jclass classExternalInvoker = retrieveClass(
+          env, aNativeActivity, "ar/net/rainbyte/webview/ExternalInvoker");
+      jobject invoker = env->NewObject(
+          classExternalInvoker,
+          env->GetMethodID(classExternalInvoker, "<init>", "(J)V"),
+          &m_invoke_callback);
+      env->CallNonvirtualVoidMethod(
+          webview, classWebview,
+          env->GetMethodID(classWebview, "addJavascriptInterface",
+                           "(Ljava/lang/Object;Ljava/lang/String;)V"),
+          invoker, env->NewStringUTF("external"));
+
+      // save as global ref to avoid gc cleanups
+      app->webview = env->NewGlobalRef(webview);
+    });
+  }
+  virtual ~android_engine() { destroy(); }
+  void *window() { return m_android_app; }
+  void run() {
+    while (true) {
+      int ident;
+      int events;
+      void *data;
+      while ((ident = ALooper_pollAll(-1, nullptr, &events, &data)) >= 0) {
+      }
+    }
+  }
+  void destroy() {
+    auto app = m_android_app;
+    runOnUiThread([app]() {
+      JNIEnv *env = app->aNativeActivity->env;
+      jobject activity =
+          app->aNativeActivity
+              ->clazz; // it is a jobject, even if it says "clazz"
+      env->DeleteGlobalRef(activity);
+      env->DeleteGlobalRef(app->webview);
+    });
+  }
+  void terminate() {
+    // TODO unimplemented method
+  }
+  void dispatch(std::function<void()> f) { runOnUiThread(f); }
+  void set_title(const std::string title) {
+    // TODO unimplemented method
+  }
+  void set_size(int width, int height, int hints) {
+    // TODO unimplemented method
+  }
+
+  virtual void navigate(const std::string url) {
+    auto app = m_android_app;
+    runOnUiThread([app, url, this]() {
+      LOGI("navigate was called");
+      if (app->webview == nullptr)
+        return;
+
+      JNIEnv *env = app->aNativeActivity->env;
+      jobject activity =
+          app->aNativeActivity
+              ->clazz; // it is a jobject, even if it says "clazz"
+
+      jclass classActivity = env->FindClass("android/app/Activity");
+      jclass classWebview = env->FindClass("android/webkit/WebView");
+
+      if (url.rfind("http", 0) == 0) {
+        // Open remote resource (FIXME: validation of Android permissions is missing)
+        env->CallNonvirtualVoidMethod(
+            app->webview, classWebview,
+            env->GetMethodID(classWebview, "loadUrl", "(Ljava/lang/String;)V"),
+            env->NewStringUTF(url.c_str()));
+
+        // FIXME: js could be executed after onload if injection is done this way :(
+        for (auto script : m_scripts) {
+          eval(script);
+        }
+      } else {
+        std::string htmlStr;
+        if (url.rfind("data:text/text,", 0) == 0 ||
+            url.rfind("data:text/html,", 0) == 0) {
+          htmlStr.append(url.substr(15));
+        } else {
+          // Open web asset from app data folder (it should be relative to "file:///android_asset/")
+          jobject assetManagerObj = env->CallObjectMethod(
+              activity,
+              env->GetMethodID(classActivity, "getAssets",
+                               "()Landroid/content/res/AssetManager;"));
+          AAssetManager *assetManager =
+              AAssetManager_fromJava(env, assetManagerObj);
+          AAsset *file =
+              AAssetManager_open(assetManager, url.c_str(), AASSET_MODE_BUFFER);
+          size_t fileLength = AAsset_getLength(file);
+          std::vector<char> fileContent;
+          fileContent.resize(fileLength + 1);
+          AAsset_read(file, &fileContent[0], fileLength);
+          fileContent[fileLength] = '\0';
+          htmlStr.append(fileContent.data());
+        }
+
+        /* FIXME: this is a HACK to inject JS init scripts, avoiding HTML parsing
+         *  Android SDK doesn't have a way to execute JS before window.onload, it provides a callback
+         *  called "onPageFinished" but onload is executed first, so as workaround <script> tags with
+         *  the JS code as-is are just appended outside <html>, assuming Android can handle that  */
+        for (auto script : m_scripts) {
+          htmlStr.append("<script>" + script + "</script>\n");
+        }
+
+        LOGI("navigate.htmlStr=%s", htmlStr.c_str());
+
+        env->CallVoidMethod(
+            app->webview,
+            env->GetMethodID(
+                classWebview, "loadData",
+                "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"),
+            env->NewStringUTF(htmlStr.c_str()), env->NewStringUTF("text/html"),
+            env->NewStringUTF("UTF-8"));
+      }
+    });
+  }
+  void init(const std::string js) { m_scripts.push_back(js); }
+  void eval(const std::string js) {
+    auto app = m_android_app;
+    runOnUiThread([app, js]() {
+      LOGI("eval.js=%s", js.c_str());
+      if (app->webview == nullptr)
+        return;
+
+      JNIEnv *env = app->aNativeActivity->env;
+      jclass classWebview = env->FindClass("android/webkit/WebView");
+      env->CallNonvirtualVoidMethod(
+          app->webview, classWebview,
+          env->GetMethodID(
+              classWebview, "evaluateJavascript",
+              "(Ljava/lang/String;Landroid/webkit/ValueCallback;)V"),
+          env->NewStringUTF(js.c_str()), nullptr);
+    });
+  }
+
+private:
+  virtual void on_message(const std::string msg) = 0;
+
+  std::function<void(JNIEnv *env, jobject thiz, jobjectArray args)>
+      m_invoke_callback = [this](JNIEnv *env, jobject thiz, jobjectArray args) {
+        jstring jstr =
+            reinterpret_cast<jstring>(env->GetObjectArrayElement(args, 0));
+        std::string msg = jstring2string(env, jstr);
+        LOGI("invoke lambda callback, msg = %s", msg.c_str());
+        on_message(msg);
+      };
+
+  android_app *m_android_app;
+  std::mutex *m_tasks_mutex;
+  std::deque<std::packaged_task<void()>> *m_tasks;
+
+  std::vector<std::string> m_scripts;
+
+  void runOnUiThread(std::function<void()> f) {
+    std::packaged_task<void()> task(f);
+
+    {
+      std::lock_guard<std::mutex> lock(*m_tasks_mutex);
+      m_tasks->push_back(std::move(task));
+    }
+
+    char cmd = 1;
+    if (write(m_android_app->msgwrite, &cmd, sizeof(cmd)) != sizeof(cmd)) {
+      LOGE("Failure writing android_app cmd: %s\n", strerror(errno));
+    }
+  }
+};
+
+using browser_engine = android_engine;
+
+} // namespace webview
+
+JNIEXPORT
+void ANativeActivity_onCreate(ANativeActivity *aNativeActivity,
+                              void *savedState, size_t savedStateSize) {
+  LOGV("Creating: %p\n", aNativeActivity);
+
+  aNativeActivity->vm->AttachCurrentThread(&aNativeActivity->env, nullptr);
+
+  JNIEnv *env = aNativeActivity->env;
+  jobject activity =
+      aNativeActivity->clazz; // it is a jobject, even if it says "clazz"
+
+  jclass classNativeActivity = env->GetObjectClass(activity);
+  jclass classActivity = env->GetSuperclass(classNativeActivity);
+
+  // Take full control of native window surface and input queue
+  jobject windowObj = env->CallNonvirtualObjectMethod(
+      activity, classActivity,
+      env->GetMethodID(classActivity, "getWindow", "()Landroid/view/Window;"));
+  jclass classWindow = env->GetObjectClass(windowObj);
+  env->CallNonvirtualVoidMethod(
+      windowObj, classWindow,
+      env->GetMethodID(classWindow, "takeSurface",
+                       "(Landroid/view/SurfaceHolder$Callback2;)V"),
+      nullptr);
+  env->CallNonvirtualVoidMethod(
+      windowObj, classWindow,
+      env->GetMethodID(classWindow, "takeInputQueue",
+                       "(Landroid/view/InputQueue$Callback;)V"),
+      nullptr);
+
+  // Call superclass (ie. Activity) onCreate to populate Java-based contentView tree
+  env->CallNonvirtualVoidMethod(
+      activity, classActivity,
+      env->GetMethodID(classActivity, "onCreate", "(Landroid/os/Bundle;)V"),
+      nullptr);
+
+  aNativeActivity->instance =
+      webview::create_android_app(aNativeActivity, savedState, savedStateSize);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_ar_net_rainbyte_webview_NativeFunction_runFunction(JNIEnv *env,
+                                                        jobject thiz,
+                                                        jlong fun_ptr,
+                                                        jobjectArray args) {
+  (*reinterpret_cast<std::function<void(JNIEnv *, jobject, jobjectArray)> *>(
+      fun_ptr))(env, thiz, args);
+}
+
+#endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE, WEBVIEW_ANDROID */
 
 namespace webview {
 
