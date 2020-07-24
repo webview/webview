@@ -105,7 +105,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 
 ### C++:
 ```c
-// main.c
+// main.cc
 #include "webview.h"
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
@@ -135,7 +135,7 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 
 ### C:
 ```c
-// webview.c
+// main .c
 #include "webview.h"
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
