@@ -107,6 +107,9 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
+// TODO doc
+WEBVIEW_API void window_set_fullscreen(void *window, int fullscreen);
+
 #ifdef __cplusplus
 }
 #endif
@@ -1138,6 +1141,58 @@ private:
 using browser_engine = win32_edge_engine;
 } // namespace webview
 
+namespace window {
+class windows_window {
+public:
+  windows_window(void *wnd) {
+    m_window = *(static_cast<HWND *>(wnd));
+  }
+
+  void set_fullscreen(bool fullscreen) {
+    // TODO set fullscreen
+    saved_style = GetWindowLong(m_window, GWL_STYLE);
+    saved_ex_style = GetWindowLong(m_window, GWL_EXSTYLE);
+    GetWindowRect(m_window, &saved_rect);
+    if (fullscreen) {
+        MONITORINFO monitor_info;
+        SetWindowLong(m_window, GWL_STYLE,
+                    saved_style & ~(WS_CAPTION | WS_THICKFRAME));
+        SetWindowLong(m_window, GWL_EXSTYLE,
+                    saved_ex_style &
+                        ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
+                            WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+        monitor_info.cbSize = sizeof(monitor_info);
+        GetMonitorInfo(MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST),
+                    &monitor_info);
+        RECT r;
+        r.left = monitor_info.rcMonitor.left;
+        r.top = monitor_info.rcMonitor.top;
+        r.right = monitor_info.rcMonitor.right;
+        r.bottom = monitor_info.rcMonitor.bottom;
+        SetWindowPos(m_window, NULL, r.left, r.top, r.right - r.left,
+                    r.bottom - r.top,
+                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    } else {
+        SetWindowLong(m_window, GWL_STYLE, saved_style);
+        SetWindowLong(m_window, GWL_EXSTYLE, saved_ex_style);
+        SetWindowPos(m_window, NULL, saved_rect.left,
+                    saved_rect.top,
+                    saved_rect.right - saved_rect.left,
+                    saved_rect.bottom - saved_rect.top,
+                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+  }
+private:
+  HWND m_window;
+  bool is_fullscreen = false;
+  DWORD saved_style = 0;
+  DWORD saved_ex_style = 0;
+  RECT saved_rect;
+};
+
+using native_window = windows_window;
+} // namespace window
+
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE */
 
 namespace webview {
@@ -1227,6 +1282,14 @@ private:
 };
 } // namespace webview
 
+namespace window {
+class window: public native_window {
+public: 
+  window(void *wnd)
+    : native_window(wnd) {}
+};
+} // namespace window
+
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   return new webview::webview(debug, wnd);
 }
@@ -1288,6 +1351,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result) {
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
+}
+
+WEBVIEW_API void window_set_fullscreen(void *wnd, int fullscreen) {
+  static_cast<window::window *>(wnd)->set_fullscreen(fullscreen);
 }
 
 #endif /* WEBVIEW_HEADER */

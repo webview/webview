@@ -37,6 +37,8 @@ static void test_c_api() {
   webview_navigate(w, "https://github.com/zserge/webview");
   webview_dispatch(w, cb_assert_arg, (void *)"arg");
   webview_dispatch(w, cb_terminate, nullptr);
+  auto wnd = webview_get_window(w);
+  window_set_fullscreen(wnd, true);
   webview_run(w);
   webview_destroy(w);
 }
