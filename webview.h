@@ -33,6 +33,7 @@ extern "C" {
 #endif
 
 typedef void *webview_t;
+typedef void *window_t;
 
 // Creates a new webview instance. If debug is non-zero - developer tools will
 // be enabled (if the platform supports them). Window parameter can be a
@@ -483,7 +484,7 @@ public:
 
     gtk_widget_show_all(m_window);
   }
-  void *window() { return (void *)m_window; }
+  window_t window() { return &m_window; }
   void run() { gtk_main(); }
   void terminate() { gtk_main_quit(); }
   void dispatch(std::function<void()> f) {
@@ -543,6 +544,27 @@ private:
 using browser_engine = gtk_webkit_engine;
 
 } // namespace webview
+
+namespace window {
+class linux_window {
+public:
+  linux_window(void *wnd) {
+    m_window = static_cast<GtkWidget*>(wnd);
+  }
+
+  void set_fullscreen(bool fullscreen) {
+    if (fullscreen) {
+      gtk_window_fullscreen(GTK_WINDOW(m_window));
+    } else {
+      gtk_window_unfullscreen(GTK_WINDOW(m_window));
+    }
+  }
+private:
+  GtkWidget *m_window;
+};
+
+using native_window = linux_window;
+} // namespace window
 
 #elif defined(WEBVIEW_COCOA)
 
@@ -1149,7 +1171,6 @@ public:
   }
 
   void set_fullscreen(bool fullscreen) {
-    // TODO set fullscreen
     saved_style = GetWindowLong(m_window, GWL_STYLE);
     saved_ex_style = GetWindowLong(m_window, GWL_EXSTYLE);
     GetWindowRect(m_window, &saved_rect);
