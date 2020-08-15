@@ -132,7 +132,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <sstream>
 #include <cstring>
 
 namespace webview {
@@ -153,14 +153,20 @@ inline std::string url_encode(const std::string s) {
   return encoded;
 }
 
-inline std::string url_decode(const std::string s) {
+inline std::string url_decode(const std::string s){
   std::string decoded;
-  for (unsigned int i = 0; i < s.length(); i++) {
-    if (s[i] == '%') {
-      int n;
-      n = std::stoul(s.substr(i + 1, 2), nullptr, 16);
-      decoded = decoded + static_cast<char>(n);
-      i = i + 2;
+  for (unsigned int i = 0; i < s.length(); i++){
+    if (s[i] == '%'){
+      std::istringstream iss(s);
+		  long number;
+      if (!(iss >> number).fail()){
+          unsigned long n;
+          n = std::stoul(s.substr(i + 1, 2), nullptr, 16);
+          decoded = decoded + static_cast<char>(n);
+          i = i + 2;
+      } else {
+        decoded = decoded + s[i];
+      }
     } else if (s[i] == '+') {
       decoded = decoded + ' ';
     } else {
