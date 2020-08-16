@@ -548,9 +548,7 @@ using browser_engine = gtk_webkit_engine;
 namespace window {
 class linux_window {
 public:
-  linux_window(void *wnd) {
-    m_window = static_cast<GtkWidget*>(wnd);
-  }
+  linux_window(void *wnd) { m_window = static_cast<GtkWidget *>(wnd); }
 
   void set_fullscreen(bool fullscreen) {
     if (fullscreen) {
@@ -559,6 +557,7 @@ public:
       gtk_window_unfullscreen(GTK_WINDOW(m_window));
     }
   }
+
 private:
   GtkWidget *m_window;
 };
@@ -588,6 +587,7 @@ using native_window = linux_window;
 #define NSWindowStyleMaskMiniaturizable 4
 #define NSWindowStyleMaskTitled 1
 #define NSWindowStyleMaskClosable 2
+#define NSWindowStyleMaskFullScreen (1 << 14)
 
 #define NSApplicationActivationPolicyRegular 0
 
@@ -676,7 +676,7 @@ public:
     objc_msgSend(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
   ~cocoa_wkwebview_engine() { close(); }
-  void *window() { return (void *)m_window; }
+  window_t window() { return &m_window; }
   void terminate() {
     close();
     objc_msgSend("NSApp"_cls, "terminate:"_sel, nullptr);
@@ -753,6 +753,31 @@ private:
 using browser_engine = cocoa_wkwebview_engine;
 
 } // namespace webview
+
+namespace window {
+class mac_window {
+public:
+  mac_window(void *wnd) { m_window = (id)wnd; }
+
+  void set_fullscreen(bool fullscreen) {
+    auto windowStyleMask =
+        (unsigned long)objc_msgSend(m_window, sel_registerName("styleMask"));
+
+    auto b = ((windowStyleMask & NSWindowStyleMaskFullScreen) ==
+              NSWindowStyleMaskFullScreen)
+                 ? true
+                 : false;
+    if (b != fullscreen) {
+      objc_msgSend(m_window, sel_registerName("toggleFullScreen:"), NULL);
+    }
+  }
+
+private:
+  id m_window;
+};
+
+using native_window = mac_window;
+} // namespace window
 
 #elif defined(WEBVIEW_EDGE)
 
@@ -1107,7 +1132,7 @@ public:
       }
     }
   }
-  void *window() { return (void *)m_window; }
+  window_t window() { return &m_window; }
   void terminate() { PostQuitMessage(0); }
   void dispatch(dispatch_fn_t f) {
     PostThreadMessage(m_main_thread, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
@@ -1166,43 +1191,40 @@ using browser_engine = win32_edge_engine;
 namespace window {
 class windows_window {
 public:
-  windows_window(void *wnd) {
-    m_window = *(static_cast<HWND *>(wnd));
-  }
+  windows_window(void *wnd) { m_window = *(static_cast<HWND *>(wnd)); }
 
   void set_fullscreen(bool fullscreen) {
     saved_style = GetWindowLong(m_window, GWL_STYLE);
     saved_ex_style = GetWindowLong(m_window, GWL_EXSTYLE);
     GetWindowRect(m_window, &saved_rect);
     if (fullscreen) {
-        MONITORINFO monitor_info;
-        SetWindowLong(m_window, GWL_STYLE,
+      MONITORINFO monitor_info;
+      SetWindowLong(m_window, GWL_STYLE,
                     saved_style & ~(WS_CAPTION | WS_THICKFRAME));
-        SetWindowLong(m_window, GWL_EXSTYLE,
-                    saved_ex_style &
-                        ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
-                            WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
-        monitor_info.cbSize = sizeof(monitor_info);
-        GetMonitorInfo(MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST),
-                    &monitor_info);
-        RECT r;
-        r.left = monitor_info.rcMonitor.left;
-        r.top = monitor_info.rcMonitor.top;
-        r.right = monitor_info.rcMonitor.right;
-        r.bottom = monitor_info.rcMonitor.bottom;
-        SetWindowPos(m_window, NULL, r.left, r.top, r.right - r.left,
-                    r.bottom - r.top,
-                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+      SetWindowLong(m_window, GWL_EXSTYLE,
+                    saved_ex_style & ~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE |
+                                       WS_EX_CLIENTEDGE | WS_EX_STATICEDGE));
+      monitor_info.cbSize = sizeof(monitor_info);
+      GetMonitorInfo(MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST),
+                     &monitor_info);
+      RECT r;
+      r.left = monitor_info.rcMonitor.left;
+      r.top = monitor_info.rcMonitor.top;
+      r.right = monitor_info.rcMonitor.right;
+      r.bottom = monitor_info.rcMonitor.bottom;
+      SetWindowPos(m_window, NULL, r.left, r.top, r.right - r.left,
+                   r.bottom - r.top,
+                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
     } else {
-        SetWindowLong(m_window, GWL_STYLE, saved_style);
-        SetWindowLong(m_window, GWL_EXSTYLE, saved_ex_style);
-        SetWindowPos(m_window, NULL, saved_rect.left,
-                    saved_rect.top,
-                    saved_rect.right - saved_rect.left,
-                    saved_rect.bottom - saved_rect.top,
-                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+      SetWindowLong(m_window, GWL_STYLE, saved_style);
+      SetWindowLong(m_window, GWL_EXSTYLE, saved_ex_style);
+      SetWindowPos(m_window, NULL, saved_rect.left, saved_rect.top,
+                   saved_rect.right - saved_rect.left,
+                   saved_rect.bottom - saved_rect.top,
+                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
     }
   }
+
 private:
   HWND m_window;
   bool is_fullscreen = false;
@@ -1244,13 +1266,12 @@ public:
   using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
   void bind(const std::string name, sync_binding_t fn) {
-    bind(
-        name,
-        [](std::string seq, std::string req, void *arg) {
-          auto pair = static_cast<sync_binding_ctx_t *>(arg);
-          pair->first->resolve(seq, 0, pair->second(req));
-        },
-        new sync_binding_ctx_t(this, fn));
+    bind(name,
+         [](std::string seq, std::string req, void *arg) {
+           auto pair = static_cast<sync_binding_ctx_t *>(arg);
+           pair->first->resolve(seq, 0, pair->second(req));
+         },
+         new sync_binding_ctx_t(this, fn));
   }
 
   void bind(const std::string name, binding_t f, void *arg) {
@@ -1304,10 +1325,9 @@ private:
 } // namespace webview
 
 namespace window {
-class window: public native_window {
-public: 
-  window(void *wnd)
-    : native_window(wnd) {}
+class window : public native_window {
+public:
+  window(void *wnd) : native_window(wnd) {}
 };
 } // namespace window
 
@@ -1374,7 +1394,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
-WEBVIEW_API void window_set_fullscreen(void *wnd, int fullscreen) {
+WEBVIEW_API void window_set_fullscreen(webview_t wnd, int fullscreen) {
   static_cast<window::window *>(wnd)->set_fullscreen(fullscreen);
 }
 
