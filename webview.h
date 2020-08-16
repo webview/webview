@@ -1266,12 +1266,13 @@ public:
   using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
   void bind(const std::string name, sync_binding_t fn) {
-    bind(name,
-         [](std::string seq, std::string req, void *arg) {
-           auto pair = static_cast<sync_binding_ctx_t *>(arg);
-           pair->first->resolve(seq, 0, pair->second(req));
-         },
-         new sync_binding_ctx_t(this, fn));
+    bind(
+        name,
+        [](std::string seq, std::string req, void *arg) {
+          auto pair = static_cast<sync_binding_ctx_t *>(arg);
+          pair->first->resolve(seq, 0, pair->second(req));
+        },
+        new sync_binding_ctx_t(this, fn));
   }
 
   void bind(const std::string name, binding_t f, void *arg) {
