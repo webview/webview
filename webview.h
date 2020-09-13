@@ -692,6 +692,7 @@ public:
       objc_msgSend(m_window, "setFrame:display:animate:"_sel,
                    CGRectMake(0, 0, width, height), 1, 0);
     }
+    objc_msgSend(m_window, "center"_sel);
   }
   void navigate(const std::string url) {
     auto nsurl = objc_msgSend(
