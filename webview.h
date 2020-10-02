@@ -707,6 +707,9 @@ public:
                    CGRectMake(0, 0, width, height), 1, 0);
     }
   }
+  void set_zoom_level(const float percentage) {
+    objc_msgSend(m_webview, "setZoomLevel:"_sel, percentage);
+  }
   void navigate(const std::string url) {
     auto nsurl = objc_msgSend(
         "NSURL"_cls, "URLWithString:"_sel,
@@ -714,6 +717,12 @@ public:
     objc_msgSend(
         m_webview, "loadRequest:"_sel,
         objc_msgSend("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
+  }
+  void set_html(const std::string html) {
+    objc_msgSend(
+        m_webview, "loadHTMLString:"_sel,
+        objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, html.c_str())),
+        nullptr);
   }
   void init(const std::string js) {
     objc_msgSend(
@@ -832,7 +841,7 @@ public:
   }
 
   void set_zoom_level(const float percentage) override {
-    m_webview.SetZoomLevel(percentage);
+    // Ignored on EdgeHTML
   }
 
   void navigate(const std::string url) override {
@@ -1154,7 +1163,9 @@ public:
     }
   }
 
-  void set_zoom_level(const float percentage) { m_browser->set_zoom_level(percentage); }
+  void set_zoom_level(const float percentage) {
+    m_browser->set_zoom_level(percentage);
+  }
   void navigate(const std::string url) { m_browser->navigate(url); }
   void set_html(const std::string html) { m_browser->set_html(html); }
   void eval(const std::string js) { m_browser->eval(js); }
@@ -1184,7 +1195,7 @@ public:
       : browser_engine(debug, wnd) {}
 
   void set_zoom_level(const float percentage) {
-      browser_engine::set_zoom_level(percentage / 100);
+    browser_engine::set_zoom_level(percentage / 100);
   }
 
   void navigate(const std::string url) {
@@ -1201,9 +1212,7 @@ public:
     }
   }
 
-  void set_html(const std::string html) {
-    browser_engine::set_html(html);
-  }
+  void set_html(const std::string html) { browser_engine::set_html(html); }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
   using binding_ctx_t = std::pair<binding_t *, void *>;
@@ -1306,7 +1315,7 @@ WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
 }
 
 WEBVIEW_API void webview_set_zoom_level(webview_t w, const float percentage) {
-    static_cast<webview::webview *>(w)->set_zoom_level(percentage);
+  static_cast<webview::webview *>(w)->set_zoom_level(percentage);
 }
 
 WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
@@ -1314,7 +1323,7 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
 }
 
 WEBVIEW_API void webview_set_html(webview_t w, const char *html) {
-    static_cast<webview::webview *>(w)->set_html(html);
+  static_cast<webview::webview *>(w)->set_html(html);
 }
 
 WEBVIEW_API void webview_init(webview_t w, const char *js) {
