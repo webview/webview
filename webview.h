@@ -721,7 +721,7 @@ public:
   void set_html(const std::string html) {
     objc_msgSend(
         m_webview, "loadHTMLString:"_sel,
-        objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, html.c_str())),
+        objc_msgSend("NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()),
         nullptr);
   }
   void init(const std::string js) {
@@ -933,7 +933,7 @@ public:
   }
 
   void set_zoom_level(const float percentage) override {
-    m_webview->SetZoomLevel(percentage);
+    // Ignored on Edge/Chromium
   }
 
   void navigate(const std::string url) override {
