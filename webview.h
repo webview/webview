@@ -708,7 +708,7 @@ public:
     }
   }
   void set_zoom_level(const float percentage) {
-    objc_msgSend(m_webview, "setZoomLevel:"_sel, percentage);
+    // Ignored on Cocoa
   }
   void navigate(const std::string url) {
     auto nsurl = objc_msgSend(
