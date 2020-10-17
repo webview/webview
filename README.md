@@ -180,7 +180,7 @@ Full C/C++ API is described at the top of the `webview.h` file.
 7. `webview_dispatch()` remains the same.
 8. `webview_set_title()` remains the same.
 9. `webview_set_color()` has been removed. Use `webview_get_window` and native
-   window APIs to control colors, trancparency and other native window
+   window APIs to control colors, transparency and other native window
    properties. At some point these APIs might be brought back.
 10. `webview_set_fullscreen()` has been removed, see above.
 11. `webview_dialog()` has been removed. But I'd like to see it added back as a separate independent module or library.
