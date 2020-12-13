@@ -127,6 +127,8 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	Proxy(proxyUri string, ignoreHosts []string)
 }
 
 type webview struct {
@@ -320,4 +322,19 @@ func (w *webview) Bind(name string, f interface{}) error {
 	defer C.free(unsafe.Pointer(cname))
 	C.CgoWebViewBind(w.w, cname, C.uintptr_t(index))
 	return nil
+}
+
+func (w *webview) Proxy(proxyUri string, ignoreHosts []string) {
+	cProxyUri := C.CString(proxyUri)
+	defer C.free(unsafe.Pointer(cProxyUri))
+
+	if len(ignoreHosts) > 0 {
+		cIgnoreHosts := make([]*C.char, len(ignoreHosts))
+		for i, v := range ignoreHosts {
+			cIgnoreHosts[i] = C.CString(v)
+		}
+		C.webview_proxy_new(w.w, cProxyUri, (**C.char)(unsafe.Pointer(&cIgnoreHosts[0])))
+	} else {
+		C.webview_proxy_new(w.w, cProxyUri, nil)
+	}
 }
