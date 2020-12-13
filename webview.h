@@ -107,7 +107,8 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
-WEBVIEW_API void webview_proxy_new(webview_t w, const char *default_proxy_uri, const char* const * ignoreHosts);
+WEBVIEW_API void webview_proxy_new(webview_t w, const char *default_proxy_uri,
+                                   const char *const *ignoreHosts);
 
 #ifdef __cplusplus
 }
@@ -498,8 +499,12 @@ public:
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
   }
 
-  void network_proxy_settings_new(const std::string default_proxy_uri, const char * const * ignoreHosts) {
-     webkit_web_context_set_network_proxy_settings(webkit_web_context_get_default(), WEBKIT_NETWORK_PROXY_MODE_CUSTOM, webkit_network_proxy_settings_new(default_proxy_uri.c_str(), ignoreHosts));
+  void network_proxy_settings_new(const std::string default_proxy_uri,
+                                  const char *const *ignoreHosts) {
+    webkit_web_context_set_network_proxy_settings(
+        webkit_web_context_get_default(), WEBKIT_NETWORK_PROXY_MODE_CUSTOM,
+        webkit_network_proxy_settings_new(default_proxy_uri.c_str(),
+                                          ignoreHosts));
   }
 
   void set_size(int width, int height, int hints) {
@@ -699,7 +704,8 @@ public:
                    CGRectMake(0, 0, width, height), 1, 0);
     }
   }
-  void network_proxy_settings_new(const std::string default_proxy_uri, const char * const * ignoreHosts) {
+  void network_proxy_settings_new(const std::string default_proxy_uri,
+                                  const char *const *ignoreHosts) {
     printf("[macOS]TODO: network_proxy_settings_new\n");
   }
   void navigate(const std::string url) {
@@ -1129,7 +1135,8 @@ public:
     }
   }
 
-  void network_proxy_settings_new(const std::string default_proxy_uri, const char * const * ignoreHosts) {
+  void network_proxy_settings_new(const std::string default_proxy_uri,
+                                  const char *const *ignoreHosts) {
     printf("[windows]TODO: network_proxy_settings_new\n");
   }
   void navigate(const std::string url) { m_browser->navigate(url); }
@@ -1302,8 +1309,10 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
-WEBVIEW_API void webview_proxy_new(webview_t w, const char *default_proxy_uri, const char* const * ignoreHosts) {
-  static_cast<webview::webview *>(w)->network_proxy_settings_new(default_proxy_uri, ignoreHosts);
+WEBVIEW_API void webview_proxy_new(webview_t w, const char *default_proxy_uri,
+                                   const char *const *ignoreHosts) {
+  static_cast<webview::webview *>(w)->network_proxy_settings_new(
+      default_proxy_uri, ignoreHosts);
 }
 
 #endif /* WEBVIEW_HEADER */
