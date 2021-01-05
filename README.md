@@ -118,7 +118,6 @@ int main() {
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
   w.navigate("https://en.m.wikipedia.org/wiki/Main_Page");
   w.run();
-  w.destroy();
   return 0;
 }
 ```
