@@ -631,6 +631,10 @@ public:
     objc_msgSend(objc_msgSend(config, "preferences"_sel),
                  "setValue:forKey:"_sel,
                  objc_msgSend("NSNumber"_cls, "numberWithBool:"_sel, 1),
+                 "fullScreenEnabled"_str);
+    objc_msgSend(objc_msgSend(config, "preferences"_sel),
+                 "setValue:forKey:"_sel,
+                 objc_msgSend("NSNumber"_cls, "numberWithBool:"_sel, 1),
                  "javaScriptCanAccessClipboard"_str);
     objc_msgSend(objc_msgSend(config, "preferences"_sel),
                  "setValue:forKey:"_sel,
