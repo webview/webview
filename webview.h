@@ -641,6 +641,15 @@ public:
     }
 
     // Equivalent Obj-C:
+    // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
+    ((id(*)(id, SEL, id, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
+        "setValue:forKey:"_sel,
+        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 1),
+        "fullScreenEnabled"_str);
+
+    // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
     ((id(*)(id, SEL, id, id))objc_msgSend)(
         ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
@@ -664,6 +673,7 @@ public:
     ((void (*)(id, SEL, id, id))objc_msgSend)(
         m_manager, "addScriptMessageHandler:name:"_sel, delegate,
         "external"_str);
+
     init(R"script(
                       window.external = {
                         invoke: function(s) {

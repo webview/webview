@@ -23,7 +23,7 @@ If you are interested in writing Webview apps in C/C++, [skip to the next sectio
 Install Webview library with `go get`:
 
 ```
-$ go get github.com/zserge/webview
+$ go get github.com/webview/webview
 ```
 
 Import the package and start using it:
@@ -31,7 +31,7 @@ Import the package and start using it:
 ```go
 package main
 
-import "github.com/zserge/webview"
+import "github.com/webview/webview"
 
 func main() {
 	debug := true
@@ -105,7 +105,7 @@ Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/web
 
 ### C++:
 ```c
-// main.c
+// main.cc
 #include "webview.h"
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
@@ -118,7 +118,6 @@ int main() {
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
   w.navigate("https://en.m.wikipedia.org/wiki/Main_Page");
   w.run();
-  w.destroy();
   return 0;
 }
 ```
@@ -135,7 +134,7 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 
 ### C:
 ```c
-// webview.c
+// main .c
 #include "webview.h"
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
@@ -180,7 +179,7 @@ Full C/C++ API is described at the top of the `webview.h` file.
 7. `webview_dispatch()` remains the same.
 8. `webview_set_title()` remains the same.
 9. `webview_set_color()` has been removed. Use `webview_get_window` and native
-   window APIs to control colors, trancparency and other native window
+   window APIs to control colors, transparency and other native window
    properties. At some point these APIs might be brought back.
 10. `webview_set_fullscreen()` has been removed, see above.
 11. `webview_dialog()` has been removed. But I'd like to see it added back as a separate independent module or library.
