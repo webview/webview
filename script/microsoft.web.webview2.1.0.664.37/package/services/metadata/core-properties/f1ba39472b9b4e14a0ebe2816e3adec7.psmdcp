@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Microsoft</dc:creator>
+  <dc:description>The WebView2 control enables you to embed web technologies (HTML, CSS, and JavaScript) in your native applications powered by Microsoft Edge (Chromium).
+This package is necessary for Win 32 C/C++ applications. To learn more about package versions checkout https://aka.ms/wv2-packageversion. To learn best practices checkout: https://aka.ms/wv2-bestpractices.</dc:description>
+  <dc:identifier>Microsoft.Web.WebView2</dc:identifier>
+  <version>1.0.664.37</version>
+  <keywords>Microsoft Web WebView Native native package Edge C++ Win32 Webview2</keywords>
+  <lastModifiedBy>NuGet, Version=5.7.0.7, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 10.0.17763.0;.NET Framework 4.7.2</lastModifiedBy>
+</coreProperties>

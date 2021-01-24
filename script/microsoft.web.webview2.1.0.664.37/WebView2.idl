@@ -1,0 +1,2755 @@
+// Copyright (C) Microsoft Corporation. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// # API Review
+// All APIs need API review. List API review documents here with the URI to the
+// doc and the change ID of the IDL when the document was created.
+// API documents:
+//  * 916246ec [WebView2 API Specification](https://aka.ms/WebView2APISpecification)
+//
+// # Style
+// Follow the [Win32 API Design Guidelines](https://aka.ms/Win32APIDesignGuidelines)
+// while editing this file. For any style rules unspecified follow the Anaheim
+// style. Specifically, follow Anaheim indenting and line limit style rules in
+// this file.
+//
+// # Documentation
+// Please ensure that any new API includes complete documentation in its
+// JavaDoc comments in this file and sample usage in the Sample App.
+// Comments intended for public API documentation should start with 3 slashes.
+// The first sentence is the brief the brief description of the API and
+// shouldn't include the name of the API. Use markdown to style your public API
+// documentation.
+//
+// # WebView and JavaScript capitalization
+//    camel case  | webViewExample  | javaScriptExample
+//    Pascal case | WebViewExample  | JavaScriptExample
+//    Upper case  | WEBVIEW_EXAMPLE | JAVASCRIPT_EXAMPLE
+//
+// That said, in API names use the term 'script' rather than 'JavaScript'.
+// Script is shorter and there is only one supported scripting language on the
+// web so the specificity of JavaScript is unnecessary.
+//
+// # URI (not URL)
+// We use Uri in parameter names and type names
+// throughout. URIs identify resources while URLs (a subset of URIs) also
+// locates resources. This difference is not generally well understood. Because
+// all URLs are URIs we can ignore the conversation of trying to explain the
+// difference between the two and still be technically accurate by always using
+// the term URI. Additionally, whether a URI is locatable depends on the context
+// since end developers can at runtime specify custom URI scheme resolvers.
+//
+// # Event pattern
+// Events have a method to add and to remove event handlers:
+// ```
+// HRESULT add_{EventName}(
+//     ICoreWebView2{EventName}EventHandler* eventHandler,
+//     EventRegistrationToken* token);
+//
+// HRESULT remove_{EventName}(EventRegistrationToken token);
+// ```
+// Add takes an event handler delegate interface with a single Invoke method.
+// ```
+// ICoreWebView2{EventName}EventHandler::Invoke(
+//     {SenderType}* sender,
+//     ICoreWebView2{EventHandler}EventArgs* args);
+// ```
+// The Invoke method has two parameters. The first is the sender, the object
+// which is firing the event. The second is the EventArgs type. It doesn't take
+// the event arg parameters directly so we can version interfaces correctly.
+// If the event has no properties on its event args type, then the Invoke method
+// should take IUnknown* as its event args parameter so it is possible to add
+// event args interfaces in the future without requiring a new event. For events
+// with no sender (a static event), the Invoke method has only the event args
+// parameter.
+//
+// # Deferrable event pattern
+// Generally, events should be deferrable when their event args have settable
+// properties. In order for the caller to use asynchronous methods to produce
+// the value for those settable properties we must allow the caller to defer
+// the WebView reading those properties until asynchronously later. A deferrable
+// event should have the following method on its event args interface:
+//   `HRESULT GetDeferral([out, retval] ICoreWebView2Deferral** deferral);`
+// If called, the event is deferred and calling Complete on the
+// ICoreWebView2Deferral ends the deferral.
+//
+// # Asynchronous method pattern
+// Async methods take a final parameter that is the completed handler:
+//   `{MethodName}(..., ICoreWebView2{MethodName}CompletedHandler* handler)`
+// The handler has a single Invoke method:
+//   `ICoreWebView2{MethodName}CompletedHandler::Invoke(
+//       HRESULT errorCode, {AsyncReturnType});`
+//
+// # Property pattern
+// For properties with getters in IDL you have
+//   `[propget] HRESULT {PropertyName}([out, retval] {PropertyType}*)`
+// And for properties which also have setters in IDL you have
+//   `[propput] HRESULT {PropertyName}([in] {PropertyType});`
+//
+// # Versioning
+// The loader DLL may be older or newer than the client DLL. We have to deal
+// with compatibility across several dimensions:
+//  * There's the DLL export contract between the loader DLL and the client
+//    DLL as well as the interfaces defined in this IDL that are built into both
+//    the app code and the client DLL.
+//  * There are two kinds of versioned changes we need to be able to make:
+//    compatible changes and breaking changes. In both cases we need to make the
+//    change in a safe manner. For compatible that means everything continues to
+//    work unchanged despite the loader and client being different versions. For
+//    breaking changes this means the host app is unable to create a
+//    WebView using the different version browser and receives an associated
+//    error message (doesn't crash).
+//  * We also need to consider when the loader and host app is using a newer
+//    version than the browser and when the loader and host app is using an
+//    older version than the browser.
+//
+// ## Scenario 1: Older SDK in host app, Newer browser, Compatible change
+// In order to be compatible the newer client DLL must still support the older
+// client DLL exports. Similarly for the interfaces - they must all be exactly
+// the same with no modified IIDs, no reordered methods, no modified method
+// parameters and so on. The client DLL may have more DLL exports and more interfaces
+// but no changes to the older shipped DLL export or interfaces.
+// App code doesn't need to do anything special in this case.
+//
+// ## Scenario 2: Older SDK in host app, Newer browser, Breaking change
+// For breaking changes in the DLL export, the client DLL must change the DLL
+// export name. The old loader will attempt to use the old client DLL export.
+// When the loader finds the export missing it will fail.
+// For breaking changes in the interface, we must change the IID of the modified
+// interface. Additionally the loader DLL must validate that the returned object
+// supports the IID it expects and fail otherwise.
+// The app code must ensure that WebView objects succeed in their QueryInterface
+// calls. Basically the app code must have error handling for objects failing
+// QueryInterface and for the initial creation failing in order to handle
+// breaking changes gracefully.
+//
+// ## Scenario 3: Newer SDK in host app, Older browser, Compatible change
+// In order to be compatible, the newer loader DLL must fallback to calling the
+// older client DLL exports if the client DLL doesn't have the most recent DLL
+// exports.
+// For interface versioning the loader DLL shouldn't be impacted.
+// The app code must not assume an object supports all newer versioned
+// interfaces. Ideally it checks the success of QueryInterface for newer
+// interfaces and if not supported turns off associated app features or
+// otherwise fails gracefully.
+//
+// ## Scenario 4: Newer SDK in host app, Older browser, Breaking change
+// For breaking changes in the DLL export, a new export name will be used after
+// a breaking change and the loader DLL will just not check for pre-breaking
+// change exports from the client DLL. If the client DLL doesn't have the
+// correct exports, then the loader returns failure to the caller.
+// For breaking changes in the interface, the IIDs of broken interfaces will
+// have been modified. The loader will validate that the
+// object returned supports the correct base interface IID and return failure to
+// the caller otherwise.
+// The app code must allow for QueryInterface calls to fail if the object
+// doesn't support the newer IIDs.
+//
+// ## Actions
+//  * DLL export compatible changes: Create a new DLL export with a new name.
+//    Ideally implement the existing DLL export as a call into the new DLL
+//    export to reduce upkeep burden.
+//  * DLL export breaking changes: Give the modified DLL export a new name and
+//    remove all older DLL exports.
+//  * Interface compatible changes: Don't modify shipped interfaces. Add a new
+//    interface with an incremented version number suffix
+//    (ICoreWebView2_3) or feature group name suffix
+//    (ICoreWebView2WithNavigationHistory).
+//  * Interface breaking changes: After modifying a shipped interface, give it
+//    a new IID.
+//  * Loader: When finding the client DLL export it must check its known range
+//    of compatible exports in order from newest to oldest and use the newest
+//    one found. It must not attempt to use an older export from before a
+//    breaking change. Before returning objects to the caller, the loader must
+//    validate that the object actually implements the expected interface.
+//  * App code: Check for error from the DLL export methods as they can fail if
+//    the loader is used with an old browser from before a breaking change or
+//    with a newer browser that is after a breaking change.
+//    Check for errors when calling QueryInterface on a WebView object. The
+//    QueryInterface call may fail with E_NOINTERFACE if the object is from an
+//    older browser version that doesn't support the newer interface or if
+//    using a newer browser version that had a breaking change on that
+//    interface.
+import "objidl.idl";
+import "oaidl.idl";
+import "EventToken.idl";
+
+[uuid(26d34152-879f-4065-bea2-3daa2cfadfb8), version(1.0)]
+library WebView2 {
+
+// Interface forward declarations
+interface ICoreWebView2AcceleratorKeyPressedEventArgs;
+interface ICoreWebView2AcceleratorKeyPressedEventHandler;
+interface ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler;
+interface ICoreWebView2CallDevToolsProtocolMethodCompletedHandler;
+interface ICoreWebView2CapturePreviewCompletedHandler;
+interface ICoreWebView2;
+interface ICoreWebView2Controller;
+interface ICoreWebView2ContentLoadingEventArgs;
+interface ICoreWebView2ContentLoadingEventHandler;
+interface ICoreWebView2DocumentTitleChangedEventHandler;
+interface ICoreWebView2ContainsFullScreenElementChangedEventHandler;
+interface ICoreWebView2CreateCoreWebView2ControllerCompletedHandler;
+interface ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
+interface ICoreWebView2Deferral;
+interface ICoreWebView2DevToolsProtocolEventReceivedEventArgs;
+interface ICoreWebView2DevToolsProtocolEventReceivedEventHandler;
+interface ICoreWebView2DevToolsProtocolEventReceiver;
+interface ICoreWebView2Environment;
+interface ICoreWebView2EnvironmentOptions;
+interface ICoreWebView2ExecuteScriptCompletedHandler;
+interface ICoreWebView2FocusChangedEventHandler;
+interface ICoreWebView2HistoryChangedEventHandler;
+interface ICoreWebView2HttpHeadersCollectionIterator;
+interface ICoreWebView2HttpRequestHeaders;
+interface ICoreWebView2HttpResponseHeaders;
+interface ICoreWebView2MoveFocusRequestedEventArgs;
+interface ICoreWebView2MoveFocusRequestedEventHandler;
+interface ICoreWebView2NavigationCompletedEventArgs;
+interface ICoreWebView2NavigationCompletedEventHandler;
+interface ICoreWebView2NavigationStartingEventArgs;
+interface ICoreWebView2NavigationStartingEventHandler;
+interface ICoreWebView2NewBrowserVersionAvailableEventHandler;
+interface ICoreWebView2NewWindowRequestedEventArgs;
+interface ICoreWebView2NewWindowRequestedEventHandler;
+interface ICoreWebView2PermissionRequestedEventArgs;
+interface ICoreWebView2PermissionRequestedEventHandler;
+interface ICoreWebView2ProcessFailedEventArgs;
+interface ICoreWebView2ProcessFailedEventHandler;
+interface ICoreWebView2ScriptDialogOpeningEventArgs;
+interface ICoreWebView2ScriptDialogOpeningEventHandler;
+interface ICoreWebView2Settings;
+interface ICoreWebView2SourceChangedEventArgs;
+interface ICoreWebView2SourceChangedEventHandler;
+interface ICoreWebView2WebMessageReceivedEventArgs;
+interface ICoreWebView2WebMessageReceivedEventHandler;
+interface ICoreWebView2WebResourceRequest;
+interface ICoreWebView2WebResourceRequestedEventArgs;
+interface ICoreWebView2WebResourceRequestedEventHandler;
+interface ICoreWebView2WebResourceResponse;
+interface ICoreWebView2WindowCloseRequestedEventHandler;
+interface ICoreWebView2WindowFeatures;
+interface ICoreWebView2ZoomFactorChangedEventHandler;
+
+// Enums and structs
+/// Image format used by the ICoreWebView2::CapturePreview method.
+[v1_enum]
+typedef enum COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT {
+  /// PNG image format.
+  COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG,
+  /// JPEG image format.
+  COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_JPEG,
+} COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT;
+
+/// Kind of JavaScript dialog used in the
+/// ICoreWebView2ScriptDialogOpeningEventHandler interface.
+[v1_enum]
+typedef enum COREWEBVIEW2_SCRIPT_DIALOG_KIND {
+  /// A dialog invoked via the window.alert JavaScript function.
+  COREWEBVIEW2_SCRIPT_DIALOG_KIND_ALERT,
+  /// A dialog invoked via the window.confirm JavaScript function.
+  COREWEBVIEW2_SCRIPT_DIALOG_KIND_CONFIRM,
+  /// A dialog invoked via the window.prompt JavaScript function.
+  COREWEBVIEW2_SCRIPT_DIALOG_KIND_PROMPT,
+  /// A dialog invoked via the beforeunload JavaScript event.
+  COREWEBVIEW2_SCRIPT_DIALOG_KIND_BEFOREUNLOAD,
+} COREWEBVIEW2_SCRIPT_DIALOG_KIND;
+
+/// Kind of process failure used in the ICoreWebView2ProcessFailedEventHandler
+/// interface.
+[v1_enum]
+typedef enum COREWEBVIEW2_PROCESS_FAILED_KIND {
+  /// Indicates the browser process terminated unexpectedly.
+  /// The WebView automatically goes into the Closed state.
+  /// The app has to recreate a new WebView to recover from this failure.
+  COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED,
+
+  /// Indicates the render process terminated unexpectedly.
+  /// A new render process will be created automatically and navigated to an
+  /// error page.
+  /// The app can use Reload to try to recover from this failure.
+  COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED,
+
+  /// Indicates the render process becomes unresponsive.
+  // Note that this does not seem to work right now.
+  // Does not fire for simple long running script case, the only related test
+  // SitePerProcessBrowserTest::NoCommitTimeoutForInvisibleWebContents is
+  // disabled.
+  COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE,
+} COREWEBVIEW2_PROCESS_FAILED_KIND;
+
+/// The type of a permission request.
+[v1_enum]
+typedef enum COREWEBVIEW2_PERMISSION_KIND {
+  /// Unknown permission.
+  COREWEBVIEW2_PERMISSION_KIND_UNKNOWN_PERMISSION,
+
+  /// Permission to capture audio.
+  COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+
+  /// Permission to capture video.
+  COREWEBVIEW2_PERMISSION_KIND_CAMERA,
+
+  /// Permission to access geolocation.
+  COREWEBVIEW2_PERMISSION_KIND_GEOLOCATION,
+
+  /// Permission to send web notifications.
+  /// This permission request is currently auto rejected and
+  /// no event is fired for it.
+  COREWEBVIEW2_PERMISSION_KIND_NOTIFICATIONS,
+
+  /// Permission to access generic sensor.
+  /// Generic Sensor covering ambient-light-sensor, accelerometer, gyroscope
+  /// and magnetometer.
+  COREWEBVIEW2_PERMISSION_KIND_OTHER_SENSORS,
+
+  /// Permission to read system clipboard without a user gesture.
+  COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ,
+} COREWEBVIEW2_PERMISSION_KIND;
+
+/// Response to a permission request.
+[v1_enum]
+typedef enum COREWEBVIEW2_PERMISSION_STATE {
+  /// Use default browser behavior, which normally prompt users for decision.
+  COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
+
+  /// Grant the permission request.
+  COREWEBVIEW2_PERMISSION_STATE_ALLOW,
+
+  /// Deny the permission request.
+  COREWEBVIEW2_PERMISSION_STATE_DENY,
+} COREWEBVIEW2_PERMISSION_STATE;
+
+/// Error status values for web navigations.
+[v1_enum]
+typedef enum COREWEBVIEW2_WEB_ERROR_STATUS {
+  /// An unknown error occurred.
+  COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN,
+
+  /// The SSL certificate common name does not match the web address.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_COMMON_NAME_IS_INCORRECT,
+
+  /// The SSL certificate has expired.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_EXPIRED,
+
+  /// The SSL client certificate contains errors.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CLIENT_CERTIFICATE_CONTAINS_ERRORS,
+
+  /// The SSL certificate has been revoked.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_REVOKED,
+
+  /// The SSL certificate is invalid -- this could mean the certificate did not
+  /// match the public key pins for the host name, the certificate is signed by
+  /// an untrusted authority or using a weak sign algorithm, the certificate
+  /// claimed DNS names violate name constraints, the certificate contains a
+  /// weak key, the certificate's validity period is too long, lack of
+  /// revocation information or revocation mechanism, non-unique host name, lack
+  /// of certificate transparency information, or the certificate is chained to
+  /// a [legacy Symantec
+  /// root](https://security.googleblog.com/2018/03/distrust-of-symantec-pki-immediate.html).
+  COREWEBVIEW2_WEB_ERROR_STATUS_CERTIFICATE_IS_INVALID,
+
+  /// The host is unreachable.
+  COREWEBVIEW2_WEB_ERROR_STATUS_SERVER_UNREACHABLE,
+
+  /// The connection has timed out.
+  COREWEBVIEW2_WEB_ERROR_STATUS_TIMEOUT,
+
+  /// The server returned an invalid or unrecognized response.
+  COREWEBVIEW2_WEB_ERROR_STATUS_ERROR_HTTP_INVALID_SERVER_RESPONSE,
+
+  /// The connection was aborted.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CONNECTION_ABORTED,
+
+  /// The connection was reset.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CONNECTION_RESET,
+
+  /// The Internet connection has been lost.
+  COREWEBVIEW2_WEB_ERROR_STATUS_DISCONNECTED,
+
+  /// Cannot connect to destination.
+  COREWEBVIEW2_WEB_ERROR_STATUS_CANNOT_CONNECT,
+
+  /// Could not resolve provided host name.
+  COREWEBVIEW2_WEB_ERROR_STATUS_HOST_NAME_NOT_RESOLVED,
+
+  /// The operation was canceled.
+  COREWEBVIEW2_WEB_ERROR_STATUS_OPERATION_CANCELED,
+
+  /// The request redirect failed.
+  COREWEBVIEW2_WEB_ERROR_STATUS_REDIRECT_FAILED,
+
+  /// An unexpected error occurred.
+  COREWEBVIEW2_WEB_ERROR_STATUS_UNEXPECTED_ERROR,
+} COREWEBVIEW2_WEB_ERROR_STATUS;
+
+/// Enum for web resource request contexts.
+[v1_enum]
+typedef enum COREWEBVIEW2_WEB_RESOURCE_CONTEXT {
+  /// All resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL,
+  /// Document resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_DOCUMENT,
+  /// CSS resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_STYLESHEET,
+  /// Image resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_IMAGE,
+  /// Other media resources such as videos
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MEDIA,
+  /// Font resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_FONT,
+  /// Script resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_SCRIPT,
+  /// XML HTTP requests
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_XML_HTTP_REQUEST,
+  /// Fetch API communication
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_FETCH,
+  /// TextTrack resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_TEXT_TRACK,
+  /// EventSource API communication
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_EVENT_SOURCE,
+  /// WebSocket API communication
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_WEBSOCKET,
+  /// Web App Manifests
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_MANIFEST,
+  /// Signed HTTP Exchanges
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_SIGNED_EXCHANGE,
+  /// Ping requests
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_PING,
+  /// CSP Violation Reports
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_CSP_VIOLATION_REPORT,
+  /// Other resources
+  COREWEBVIEW2_WEB_RESOURCE_CONTEXT_OTHER
+} COREWEBVIEW2_WEB_RESOURCE_CONTEXT;
+
+/// Reason for moving focus.
+[v1_enum]
+typedef enum COREWEBVIEW2_MOVE_FOCUS_REASON {
+  /// Code setting focus into WebView.
+  COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC,
+
+  /// Moving focus due to Tab traversal forward.
+  COREWEBVIEW2_MOVE_FOCUS_REASON_NEXT,
+
+  /// Moving focus due to Tab traversal backward.
+  COREWEBVIEW2_MOVE_FOCUS_REASON_PREVIOUS,
+} COREWEBVIEW2_MOVE_FOCUS_REASON;
+
+/// The type of key event that triggered an AcceleratorKeyPressed event.
+[v1_enum]
+typedef enum COREWEBVIEW2_KEY_EVENT_KIND {
+  /// Correspond to window message WM_KEYDOWN.
+  COREWEBVIEW2_KEY_EVENT_KIND_KEY_DOWN,
+
+  /// Correspond to window message WM_KEYUP.
+  COREWEBVIEW2_KEY_EVENT_KIND_KEY_UP,
+
+  /// Correspond to window message WM_SYSKEYDOWN.
+  COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_DOWN,
+
+  /// Correspond to window message WM_SYSKEYUP.
+  COREWEBVIEW2_KEY_EVENT_KIND_SYSTEM_KEY_UP,
+} COREWEBVIEW2_KEY_EVENT_KIND;
+
+/// A structure representing the information packed into the LPARAM given
+/// to a Win32 key event.  See the documentation for WM_KEYDOWN for details
+/// at https://docs.microsoft.com/windows/win32/inputdev/wm-keydown
+typedef struct COREWEBVIEW2_PHYSICAL_KEY_STATUS {
+  /// The repeat count for the current message.
+  UINT32 RepeatCount;
+  /// The scan code.
+  UINT32 ScanCode;
+  /// Indicates whether the key is an extended key.
+  BOOL IsExtendedKey;
+  /// The context code.
+  BOOL IsMenuKeyDown;
+  /// The previous key state.
+  BOOL WasKeyDown;
+  /// The transition state.
+  BOOL IsKeyReleased;
+} COREWEBVIEW2_PHYSICAL_KEY_STATUS;
+// End of enums and structs
+
+/// WebView2 enables you to host web content using the
+/// latest Edge web browser technology.
+///
+/// ## Navigation events
+/// The normal sequence of navigation events is NavigationStarting,
+/// SourceChanged, ContentLoading and then NavigationCompleted.
+/// The following events describe the state of WebView during each navigation:
+/// NavigationStarting: WebView is starting to navigate and the navigation will
+/// result in a network request. The host can disallow the request at this time.
+/// SourceChanged: The source of WebView is changed to a new URL. This may also
+/// be due to a navigation that doesn't cause a network request such as a fragment
+/// navigation.
+/// HistoryChanged: WebView's history has been updated as a result of
+/// the navigation.
+/// ContentLoading: WebView has started loading new content.
+/// NavigationCompleted: WebView has completed loading content on the new page.
+/// Developers can track navigations to each new document by the navigation ID.
+/// WebView's navigation ID changes every time there is a successful navigation
+/// to a new document.
+///
+///
+/// \dot
+/// digraph NavigationEvents {
+///    node [fontname=Roboto, shape=rectangle]
+///    edge [fontname=Roboto]
+///
+///    NewDocument -> NavigationStarting;
+///    NavigationStarting -> SourceChanged -> ContentLoading [label="New Document"];
+///    ContentLoading -> HistoryChanged;
+///    SameDocument -> SourceChanged;
+///    SourceChanged -> HistoryChanged [label="Same Document"];
+///    HistoryChanged -> NavigationCompleted;
+///    NavigationStarting -> NavigationStarting [label="Redirect"];
+///    NavigationStarting -> NavigationCompleted [label="Failure"];
+/// }
+/// \enddot
+///
+/// Note that this is for navigation events with the same NavigationId event
+/// arg. Navigations events with different NavigationId event args may overlap.
+/// For instance, if you start a navigation wait for its NavigationStarting
+/// event and then start another navigation you'll see the NavigationStarting
+/// for the first navigate followed by the NavigationStarting of the second
+/// navigate, followed by the NavigationCompleted for the first navigation and
+/// then all the rest of the appropriate navigation events for the second
+/// navigation.
+/// In error cases there may or may not be a ContentLoading event depending
+/// on whether the navigation is continued to an error page.
+/// In case of an HTTP redirect, there will be multiple NavigationStarting
+/// events in a row, with ones following the first will have their IsRedirect
+/// flag set, however navigation ID remains the same. Same document navigations
+/// do not result in NavigationStarting event and also do not increment the
+/// navigation ID.
+///
+/// To monitor or cancel navigations inside subframes in the WebView, use
+/// FrameNavigationStarting.
+///
+/// ## Process model
+/// WebView2 uses the same process model as the Edge web
+/// browser. There is one Edge browser process per specified user data directory
+/// in a user session that will serve any WebView2 calling
+/// process that specifies that user data directory. This means one Edge browser
+/// process may be serving multiple calling processes and one calling
+/// process may be using multiple Edge browser processes.
+///
+/// \dot
+/// digraph ProcessModelNClientsNServers {
+///     node [fontname=Roboto, shape=rectangle];
+///     edge [fontname=Roboto];
+///
+///     Host1 [label="Calling\nprocess 1"];
+///     Host2 [label="Calling\nprocess 2"];
+///     Browser1 [label="Edge processes\ngroup 1"];
+///     Browser2 [label="Edge processes\ngroup 2"];
+///
+///     Host1 -> Browser1;
+///     Host1 -> Browser2;
+///     Host2 -> Browser2;
+/// }
+/// \enddot
+///
+/// Associated with each browser process there will be some number of
+/// render processes.
+/// These are created as
+/// necessary to service potentially multiple frames in different WebViews. The
+/// number of render processes varies based on the site isolation browser
+/// feature and the number of distinct disconnected origins rendered in
+/// associated WebViews.
+///
+/// \dot
+/// digraph ProcessModelClientServer {
+///     node [fontname=Roboto, shape=rectangle];
+///     edge [fontname=Roboto];
+///     graph [fontname=Roboto];
+///
+///     Host [label="Calling process"];
+///     subgraph cluster_0 {
+///         labeljust = "l";
+///         label = "Edge processes group";
+///         Browser [label="Edge browser\nprocess"];
+///         Render1 [label="Edge render\nprocess 1"];
+///         Render2 [label="Edge render\nprocess 2"];
+///         RenderN [label="Edge render\nprocess N"];
+///         GPU [label="Edge GPU\nprocess"];
+///     }
+///
+///     Host -> Browser;
+///     Browser -> Render1;
+///     Browser -> Render2;
+///     Browser -> RenderN;
+///     Browser -> GPU;
+/// }
+/// \enddot
+///
+/// You can react to crashes and hangs in these browser and render processes
+/// using the ProcessFailure event.
+///
+/// You can safely shutdown associated browser and render processes using the
+/// Close method.
+///
+/// ## Threading model
+/// The WebView2 must be created on a UI thread. Specifically a
+/// thread with a message pump. All callbacks will occur on that thread and
+/// calls into the WebView must be done on that thread. It is not safe to use
+/// the WebView from another thread.
+///
+/// Callbacks including event handlers and completion handlers execute serially.
+/// That is, if you have an event handler running and begin a message loop no
+/// other event handlers or completion callbacks will begin executing
+/// reentrantly.
+///
+/// ## Security
+/// Always check the Source property of the WebView before using ExecuteScript,
+/// PostWebMessageAsJson, PostWebMessageAsString, or any other method to send
+/// information into the WebView. The WebView may have navigated to another page
+/// via the end user interacting with the page or script in the page causing
+/// navigation. Similarly, be very careful with
+/// AddScriptToExecuteOnDocumentCreated. All future navigations will run this
+/// script and if it provides access to information intended only for a certain
+/// origin, any HTML document may have access.
+///
+/// When examining the result of an ExecuteScript method call, a
+/// WebMessageReceived event, always check the Source of the sender, or any
+/// other mechanism of receiving information from an HTML document in a WebView
+/// validate the URI of the HTML document is what you expect.
+///
+/// When constructing a message to send into a WebView, prefer using
+/// PostWebMessageAsJson and construct the JSON string parameter using a JSON
+/// library. This will prevent accidentally encoding information into a JSON string
+/// or script, and ensure no attacker controlled input can
+/// modify the rest of the JSON message or run arbitrary script.
+///
+/// ## String types
+/// String out parameters are LPWSTR null terminated strings. The callee
+/// allocates the string using CoTaskMemAlloc. Ownership is transferred to the
+/// caller and it is up to the caller to free the memory using CoTaskMemFree.
+///
+/// String in parameters are LPCWSTR null terminated strings. The caller ensures
+/// the string is valid for the duration of the synchronous function call.
+/// If the callee needs to retain that value to some point after the function
+/// call completes, the callee must allocate its own copy of the string value.
+///
+/// ## URI and JSON parsing
+/// Various methods provide or accept URIs and JSON as strings. Please use your
+/// own preferred library for parsing and generating these strings.
+///
+/// If WinRT is available for your app you can use `Windows.Data.Json.JsonObject`
+/// and `IJsonObjectStatics` to parse or produce JSON strings or `Windows.Foundation.Uri`
+/// and `IUriRuntimeClassFactory` to parse and produce URIs. Both of these work
+/// in Win32 apps.
+///
+/// If you use IUri and CreateUri to parse URIs you may want to use the
+/// following URI creation flags to have CreateUri behavior more closely match
+/// the URI parsing in the WebView:
+/// `Uri_CREATE_ALLOW_IMPLICIT_FILE_SCHEME | Uri_CREATE_NO_DECODE_EXTRA_INFO`
+///
+/// ## Debugging
+/// Open DevTools with the normal shortcuts: `F12` or `Ctrl+Shift+I`.
+/// You can use the `--auto-open-devtools-for-tabs` command argument switch to
+/// have the DevTools window open immediately when first creating a WebView. See
+/// CreateCoreWebView2Controller documentation for how to provide additional command
+/// line arguments to the browser process.
+/// Check out the LoaderOverride registry key in the CreateCoreWebView2Controller
+/// documentation.
+///
+/// ## Versioning
+/// After you've used a particular version of the SDK to build your app, your
+/// app may end up running with an older or newer version of installed browser
+/// binaries. Until version 1.0.0.0 of WebView2 there may be breaking changes
+/// during updates that will prevent your SDK from working with different
+/// versions of installed browser binaries. After version 1.0.0.0 different
+/// versions of the SDK can work with different versions of the installed
+/// browser by following these best practices:
+///
+/// To account for breaking changes to the API be sure to check for failure when
+/// calling the DLL export CreateCoreWebView2Environment and when
+/// calling QueryInterface on any CoreWebView2 object. A return value of
+/// E_NOINTERFACE can indicate the SDK is not compatible with the Edge
+/// browser binaries.
+///
+/// Checking for failure from QueryInterface will also account for cases where
+/// the SDK is newer than the version of the Edge browser and your app attempts
+/// to use an interface of which the Edge browser is unaware.
+///
+/// When an interface is unavailable, you can consider disabling the associated
+/// feature if possible, or otherwise informing the end user they need to update
+/// their browser.
+[uuid(76eceacb-0462-4d94-ac83-423a6793775e), object, pointer_default(unique)]
+interface ICoreWebView2 : IUnknown {
+  /// The ICoreWebView2Settings object contains various modifiable settings for
+  /// the running WebView.
+  [propget] HRESULT Settings([out, retval] ICoreWebView2Settings** settings);
+
+  /// The URI of the current top level document. This value potentially
+  /// changes as a part of the SourceChanged event firing for some cases
+  /// such as navigating to a different site or fragment navigations. It will
+  /// remain the same for other types of navigations such as page reloads or
+  /// history.pushState with the same URL as the current page.
+  ///
+  /// \snippet ControlComponent.cpp SourceChanged
+  [propget] HRESULT Source([out, retval] LPWSTR* uri);
+
+  /// Cause a navigation of the top level document to the specified URI. See
+  /// the navigation events for more information. Note that this starts a
+  /// navigation and the corresponding NavigationStarting event will fire
+  /// sometime after this Navigate call completes.
+  ///
+  /// \snippet ControlComponent.cpp Navigate
+  HRESULT Navigate([in] LPCWSTR uri);
+
+  /// Initiates a navigation to htmlContent as source HTML of a new
+  /// document. The htmlContent parameter may not be larger than 2 MB
+  /// in total size. The origin of the new page will be about:blank.
+  ///
+  /// \snippet SettingsComponent.cpp NavigateToString
+  HRESULT NavigateToString([in] LPCWSTR htmlContent);
+
+  /// Add an event handler for the NavigationStarting event.
+  /// NavigationStarting fires when the WebView main frame is
+  /// requesting permission to navigate to a different URI. This will fire for
+  /// redirects as well.
+  ///
+  /// Corresponding navigations can be blocked until the event handler returns.
+  ///
+  /// \snippet SettingsComponent.cpp NavigationStarting
+  HRESULT add_NavigationStarting(
+      [in] ICoreWebView2NavigationStartingEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_NavigationStarting.
+  HRESULT remove_NavigationStarting(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the ContentLoading event.
+  /// ContentLoading fires before any content is loaded, including scripts added
+  /// with AddScriptToExecuteOnDocumentCreated.
+  /// ContentLoading will not fire if a same page navigation occurs
+  /// (such as through fragment navigations or history.pushState navigations).
+  /// This follows the NavigationStarting and SourceChanged events and
+  /// precedes the HistoryChanged and NavigationCompleted events.
+  HRESULT add_ContentLoading(
+      [in] ICoreWebView2ContentLoadingEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_ContentLoading.
+  HRESULT remove_ContentLoading(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the SourceChanged event.
+  /// SourceChanged fires when the Source property changes.
+  /// SourceChanged fires for navigating to a different site or fragment
+  /// navigations.
+  /// It will not fire for other types of navigations such as page reloads or
+  /// history.pushState with the same URL as the current page.
+  /// SourceChanged fires before ContentLoading for navigation to a new document.
+  ///
+  /// \snippet ControlComponent.cpp SourceChanged
+  HRESULT add_SourceChanged(
+      [in] ICoreWebView2SourceChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_SourceChanged.
+  HRESULT remove_SourceChanged(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the HistoryChanged event.
+  /// HistoryChanged listens to the change of navigation history for the top
+  /// level document. Use HistoryChanged to check if CanGoBack/CanGoForward
+  /// value has changed. HistoryChanged also fires for using GoBack/GoForward.
+  /// HistoryChanged fires after SourceChanged and ContentLoading.
+  ///
+  /// \snippet ControlComponent.cpp HistoryChanged
+  HRESULT add_HistoryChanged(
+      [in] ICoreWebView2HistoryChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_HistoryChanged.
+  HRESULT remove_HistoryChanged(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the NavigationCompleted event.
+  /// NavigationCompleted fires when the WebView has completely loaded
+  /// (body.onload has fired) or loading stopped with error.
+  ///
+  /// \snippet ControlComponent.cpp NavigationCompleted
+  HRESULT add_NavigationCompleted(
+      [in] ICoreWebView2NavigationCompletedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_NavigationCompleted.
+  HRESULT remove_NavigationCompleted(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the FrameNavigationStarting event.
+  /// FrameNavigationStarting fires when a child frame in the WebView
+  /// requests permission to navigate to a different URI. This will fire for
+  /// redirects as well.
+  ///
+  /// Corresponding navigations can be blocked until the event handler returns.
+  ///
+  /// \snippet SettingsComponent.cpp FrameNavigationStarting
+  HRESULT add_FrameNavigationStarting(
+      [in] ICoreWebView2NavigationStartingEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_FrameNavigationStarting.
+  HRESULT remove_FrameNavigationStarting(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the FrameNavigationCompleted event.
+  /// FrameNavigationCompleted fires when a child frame has completely
+  /// loaded (body.onload has fired) or loading stopped with error.
+  ///
+  /// \snippet ControlComponent.cpp FrameNavigationCompleted
+  HRESULT add_FrameNavigationCompleted(
+      [in] ICoreWebView2NavigationCompletedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_FrameNavigationCompleted.
+  HRESULT remove_FrameNavigationCompleted(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the ScriptDialogOpening event.
+  /// ScriptDialogOpening fires when a JavaScript dialog (alert, confirm,
+  /// prompt, or beforeunload) will show for the webview. This event only fires
+  /// if the ICoreWebView2Settings::AreDefaultScriptDialogsEnabled property is
+  /// set to false. The ScriptDialogOpening event can be used to suppress
+  /// dialogs or replace default dialogs with custom dialogs.
+  ///
+  /// If a deferral is not taken on the event args, the subsequent scripts can be
+  /// blocked until the event handler returns. If a deferral is taken, then the
+  /// scripts are blocked until the deferral is completed.
+  ///
+  /// \snippet SettingsComponent.cpp ScriptDialogOpening
+  HRESULT add_ScriptDialogOpening(
+      [in] ICoreWebView2ScriptDialogOpeningEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_ScriptDialogOpening.
+  HRESULT remove_ScriptDialogOpening(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the PermissionRequested event.
+  /// PermissionRequested fires when content in a WebView requests permission to
+  /// access some privileged resources.
+  ///
+  /// If a deferral is not taken on the event args, the subsequent scripts can
+  /// be blocked until the event handler returns. If a deferral is taken, then
+  /// the scripts are blocked until the deferral is completed.
+  ///
+  /// \snippet SettingsComponent.cpp PermissionRequested
+  HRESULT add_PermissionRequested(
+      [in] ICoreWebView2PermissionRequestedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_PermissionRequested.
+  HRESULT remove_PermissionRequested(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the ProcessFailed event.
+  /// ProcessFailed fires when a WebView process is terminated unexpectedly or
+  /// becomes unresponsive.
+  ///
+  /// \snippet ProcessComponent.cpp ProcessFailed
+  HRESULT add_ProcessFailed(
+      [in] ICoreWebView2ProcessFailedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_ProcessFailed.
+  HRESULT remove_ProcessFailed(
+      [in] EventRegistrationToken token);
+
+  /// Add the provided JavaScript to a list of scripts that should be executed
+  /// after the global object has been created, but before the HTML document has
+  /// been parsed and before any other script included by the HTML document is
+  /// executed. This method injects a script that runs on all top-level document
+  /// and child frame page navigations.
+  /// This method runs asynchronously, and you must wait for the completion
+  /// handler to finish before the injected script is ready to run. When this
+  /// method completes, the handler's `Invoke` method is called with the `id` of
+  /// the injected script. `id` is a string. To remove the injected script, use
+  /// `RemoveScriptToExecuteOnDocumentCreated`.
+  ///
+  /// Note that if an HTML document has sandboxing of some kind via
+  /// [sandbox](https://developer.mozilla.org/docs/Web/HTML/Element/iframe#attr-sandbox)
+  /// properties or the [Content-Security-Policy HTTP
+  /// header](https://developer.mozilla.org/docs/Web/HTTP/Headers/Content-Security-Policy)
+  /// this will affect the script run here. So, for example, if the
+  /// 'allow-modals' keyword is not set then calls to the `alert` function will
+  /// be ignored.
+  ///
+  /// \snippet ScriptComponent.cpp AddScriptToExecuteOnDocumentCreated
+  HRESULT AddScriptToExecuteOnDocumentCreated(
+      [in] LPCWSTR javaScript,
+      [in] ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler* handler);
+
+  /// Remove the corresponding JavaScript added using `AddScriptToExecuteOnDocumentCreated`
+  /// with the specified script id.
+  HRESULT RemoveScriptToExecuteOnDocumentCreated([in] LPCWSTR id);
+
+  /// Execute JavaScript code from the javascript parameter in the
+  /// current top level document rendered in the WebView. This will execute
+  /// asynchronously and when complete, if a handler is provided in the
+  /// ExecuteScriptCompletedHandler parameter, its Invoke method will be
+  /// called with the result of evaluating the provided JavaScript. The result
+  /// value is a JSON encoded string.
+  /// If the result is undefined, contains a reference cycle, or otherwise
+  /// cannot be encoded into JSON, the JSON null value will be returned as the
+  /// string 'null'. Note that a function that has no explicit return value
+  /// returns undefined.
+  /// If the executed script throws an unhandled exception, then the result is
+  /// also 'null'.
+  /// This method is applied asynchronously. If the method is called after
+  /// NavigationStarting event during a navigation, the script will be executed
+  /// in the new document when loading it, around the time ContentLoading is
+  /// fired. ExecuteScript will work even if
+  /// ICoreWebView2Settings::IsScriptEnabled is set to FALSE.
+  ///
+  /// \snippet ScriptComponent.cpp ExecuteScript
+  HRESULT ExecuteScript(
+      [in] LPCWSTR javaScript,
+      [in] ICoreWebView2ExecuteScriptCompletedHandler* handler);
+
+  /// Capture an image of what WebView is displaying. Specify the
+  /// format of the image with the imageFormat parameter.
+  /// The resulting image binary data is written to the provided imageStream
+  /// parameter. When CapturePreview finishes writing to the stream, the Invoke
+  /// method on the provided handler parameter is called.
+  ///
+  /// \snippet FileComponent.cpp CapturePreview
+  HRESULT CapturePreview(
+      [in] COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT imageFormat,
+      [in] IStream* imageStream,
+      [in] ICoreWebView2CapturePreviewCompletedHandler* handler);
+
+  /// Reload the current page. This is similar to navigating to the URI of
+  /// current top level document including all navigation events firing and
+  /// respecting any entries in the HTTP cache. But, the back/forward history
+  /// will not be modified.
+  HRESULT Reload();
+
+  /// Post the specified webMessage to the top level document in this WebView.
+  /// The top level document's window.chrome.webview's message event fires.
+  /// JavaScript in that document may subscribe and unsubscribe to the event
+  /// via the following:
+  ///
+  /// ```
+  ///    window.chrome.webview.addEventListener('message', handler)
+  ///    window.chrome.webview.removeEventListener('message', handler)
+  /// ```
+  ///
+  /// The event args is an instance of `MessageEvent`.
+  /// The ICoreWebView2Settings::IsWebMessageEnabled setting must be true or
+  /// this method will fail with E_INVALIDARG.
+  /// The event arg's data property is the webMessage string parameter parsed
+  /// as a JSON string into a JavaScript object.
+  /// The event arg's source property is a reference to the
+  /// `window.chrome.webview` object.
+  /// See add_WebMessageReceived for information on sending messages from the
+  /// HTML document in the WebView to the host.
+  /// This message is sent asynchronously. If a navigation occurs before the
+  /// message is posted to the page, then the message will not be sent.
+  ///
+  /// \snippet ScenarioWebMessage.cpp WebMessageReceived
+  HRESULT PostWebMessageAsJson([in] LPCWSTR webMessageAsJson);
+
+  /// This is a helper for posting a message that is a simple string
+  /// rather than a JSON string representation of a JavaScript object. This
+  /// behaves in exactly the same manner as PostWebMessageAsJson but the
+  /// `window.chrome.webview` message event arg's data property will be a string
+  /// with the same value as webMessageAsString. Use this instead of
+  /// PostWebMessageAsJson if you want to communicate via simple strings rather
+  /// than JSON objects.
+  HRESULT PostWebMessageAsString([in] LPCWSTR webMessageAsString);
+
+  /// Add an event handler for the WebMessageReceived event.
+  /// WebMessageReceived fires when the
+  /// ICoreWebView2Settings::IsWebMessageEnabled setting is set and the top
+  /// level document of the WebView calls `window.chrome.webview.postMessage`.
+  /// The postMessage function is `void postMessage(object)` where
+  /// object is any object supported by JSON conversion.
+  ///
+  /// \snippet ScenarioWebMessage.html chromeWebView
+  ///
+  /// When postMessage is called, the handler's Invoke method will be called
+  /// with the postMessage's object parameter converted to a JSON string.
+  ///
+  /// \snippet ScenarioWebMessage.cpp WebMessageReceived
+  HRESULT add_WebMessageReceived(
+      [in] ICoreWebView2WebMessageReceivedEventHandler* handler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_WebMessageReceived.
+  HRESULT remove_WebMessageReceived(
+      [in] EventRegistrationToken token);
+
+  /// Call an asynchronous DevToolsProtocol method. See the
+  /// [DevTools Protocol Viewer](https://aka.ms/DevToolsProtocolDocs)
+  /// for a list and description of available methods.
+  /// The methodName parameter is the full name of the method in the format
+  /// `{domain}.{method}`.
+  /// The parametersAsJson parameter is a JSON formatted string containing
+  /// the parameters for the corresponding method.
+  /// The handler's Invoke method will be called when the method asynchronously
+  /// completes. Invoke will be called with the method's return object as a
+  /// JSON string.
+  ///
+  /// \snippet ScriptComponent.cpp CallDevToolsProtocolMethod
+  HRESULT CallDevToolsProtocolMethod(
+      [in] LPCWSTR methodName,
+      [in] LPCWSTR parametersAsJson,
+      [in] ICoreWebView2CallDevToolsProtocolMethodCompletedHandler* handler);
+
+  /// The process id of the browser process that hosts the WebView.
+  [propget] HRESULT BrowserProcessId([out, retval] UINT32* value);
+
+  /// Returns true if the WebView can navigate to a previous page in the
+  /// navigation history.
+  /// The HistoryChanged event will fire if CanGoBack changes value.
+  [propget] HRESULT CanGoBack([out, retval] BOOL* canGoBack);
+  /// Returns true if the WebView can navigate to a next page in the navigation
+  /// history.
+  /// The HistoryChanged event will fire if CanGoForward changes value.
+  [propget] HRESULT CanGoForward([out, retval] BOOL* canGoForward);
+  /// Navigates the WebView to the previous page in the navigation history.
+  HRESULT GoBack();
+  /// Navigates the WebView to the next page in the navigation history.
+  HRESULT GoForward();
+
+  /// Get a DevTools Protocol event receiver that allows you to subscribe to
+  /// a DevTools Protocol event.
+  /// The eventName parameter is the full name of the event in the format
+  /// `{domain}.{event}`.
+  /// See the [DevTools Protocol Viewer](https://aka.ms/DevToolsProtocolDocs)
+  /// for a list of DevTools Protocol events description, and event args.
+  ///
+  /// \snippet ScriptComponent.cpp DevToolsProtocolEventReceived
+  HRESULT GetDevToolsProtocolEventReceiver(
+      [in] LPCWSTR eventName,
+      [out, retval] ICoreWebView2DevToolsProtocolEventReceiver** receiver);
+
+  /// Stop all navigations and pending resource fetches. Does not stop
+  /// scripts.
+  HRESULT Stop();
+
+  /// Add an event handler for the NewWindowRequested event.
+  /// NewWindowRequested fires when content inside the WebView requests to open
+  /// a new window, such as through window.open. The app can pass a target
+  /// WebView that will be considered the opened window.
+  ///
+  /// Scripts resulted in the new window requested can be blocked until the
+  /// event handler returns if a deferral is not taken on the event args. If a
+  /// deferral is taken, then scripts are blocked until the deferral is
+  /// completed.
+  ///
+  /// \snippet AppWindow.cpp NewWindowRequested
+  HRESULT add_NewWindowRequested(
+      [in] ICoreWebView2NewWindowRequestedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_NewWindowRequested.
+  HRESULT remove_NewWindowRequested(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the DocumentTitleChanged event.
+  /// DocumentTitleChanged fires when the DocumentTitle property of the WebView
+  /// changes and may fire before or after the NavigationCompleted event.
+  ///
+  /// \snippet FileComponent.cpp DocumentTitleChanged
+  HRESULT add_DocumentTitleChanged(
+      [in] ICoreWebView2DocumentTitleChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_DocumentTitleChanged.
+  HRESULT remove_DocumentTitleChanged(
+      [in] EventRegistrationToken token);
+
+  /// The title for the current top level document.
+  /// If the document has no explicit title or is otherwise empty,
+  /// a default that may or may not match the URI of the document will be used.
+  [propget] HRESULT DocumentTitle([out, retval] LPWSTR* title);
+
+  /// Add the provided host object to script running in the WebView with the
+  /// specified name.
+  /// Host objects are exposed as host object proxies via
+  /// `window.chrome.webview.hostObjects.<name>`.
+  /// Host object proxies are promises and will resolve to an object
+  /// representing the host object.
+  /// The promise is rejected if the app has not added an object with the name.
+  /// When JavaScript code access a property or method of the object, a promise
+  /// is return, which will resolve to the value returned from the host for the
+  /// property or method, or rejected in case of error such as there is no such
+  /// property or method on the object or parameters are invalid.
+  /// For example, when the application code does the following:
+  ///
+  /// ```
+  ///    VARIANT object;
+  ///    object.vt = VT_DISPATCH;
+  ///    object.pdispVal = appObject;
+  ///    webview->AddHostObjectToScript(L"host_object", &host);
+  /// ```
+  ///
+  /// JavaScript code in the WebView will be able to access appObject as
+  /// following and then access attributes and methods of appObject:
+  ///
+  /// ```
+  ///    let app_object = await window.chrome.webview.hostObjects.host_object;
+  ///    let attr1 = await app_object.attr1;
+  ///    let result = await app_object.method1(parameters);
+  /// ```
+  ///
+  /// Note that while simple types, IDispatch and array are supported, generic
+  /// IUnknown, VT_DECIMAL, or VT_RECORD variant is not supported.
+  /// Remote JavaScript objects like callback functions are represented as
+  /// an VT_DISPATCH VARIANT with the object implementing IDispatch. The
+  /// JavaScript callback method may be invoked using DISPID_VALUE for the
+  /// DISPID.
+  /// Nested arrays are supported up to a depth of 3.
+  /// Arrays of by reference types are not supported.
+  /// VT_EMPTY and VT_NULL are mapped into JavaScript as null. In JavaScript
+  /// null and undefined are mapped to VT_EMPTY.
+  ///
+  /// Additionally, all host objects are exposed as
+  /// `window.chrome.webview.hostObjects.sync.<name>`. Here the host
+  /// objects are exposed as synchronous host object proxies. These are not
+  /// promises and calls to functions or property access synchronously block
+  /// running script waiting to communicate cross process for the host code to
+  /// run. Accordingly this can result in reliability issues and it is
+  /// recommended that you use the promise based asynchronous
+  /// `window.chrome.webview.hostObjects.<name>` API described above.
+  ///
+  /// Synchronous host object proxies and asynchronous host object proxies
+  /// can both proxy the same host object. Remote changes made by one proxy
+  /// will be reflected in any other proxy of that same host object whether
+  /// the other proxies and synchronous or asynchronous.
+  ///
+  /// While JavaScript is blocked on a synchronous call to native code, that
+  /// native code is unable to call back to JavaScript. Attempts to do so will
+  /// fail with HRESULT_FROM_WIN32(ERROR_POSSIBLE_DEADLOCK).
+  ///
+  /// Host object proxies are JavaScript Proxy objects that intercept all
+  /// property get, property set, and method invocations. Properties or methods
+  /// that are a part of the Function or Object prototype are run locally.
+  /// Additionally any property or method in the array
+  /// `chrome.webview.hostObjects.options.forceLocalProperties` will also be
+  /// run locally. This defaults to including optional methods that have
+  /// meaning in JavaScript like `toJSON` and `Symbol.toPrimitive`. You can add
+  /// more to this array as required.
+  ///
+  /// There's a method `chrome.webview.hostObjects.cleanupSome` that will best
+  /// effort garbage collect host object proxies.
+  ///
+  /// Host object proxies additionally have the following methods which run
+  /// locally:
+  ///  * applyHostFunction, getHostProperty, setHostProperty: Perform a
+  ///    method invocation, property get, or property set on the host object.
+  ///    You can use these to explicitly force a method or property to run
+  ///    remotely if there is a conflicting local method or property. For
+  ///    instance, `proxy.toString()` will run the local toString method on the
+  ///    proxy object. But ``proxy.applyHostFunction('toString')`` runs
+  ///    `toString` on the host proxied object instead.
+  ///  * getLocalProperty, setLocalProperty: Perform property get, or property
+  ///    set locally. You can use these methods to force getting or setting a
+  ///    property on the host object proxy itself rather than on the host
+  ///    object it represents. For instance, `proxy.unknownProperty` will get the
+  ///    property named `unknownProperty` from the host proxied object. But
+  ///    ``proxy.getLocalProperty('unknownProperty')`` will get the value of the property
+  ///    `unknownProperty` on the proxy object itself.
+  ///  * sync: Asynchronous host object proxies expose a sync method which
+  ///    returns a promise for a synchronous host object proxy for the same
+  ///    host object. For example,
+  ///    `chrome.webview.hostObjects.sample.methodCall()` returns an
+  ///    asynchronous host object proxy. You can use the `sync` method to
+  ///    obtain a synchronous host object proxy instead:
+  ///    `const syncProxy = await chrome.webview.hostObjects.sample.methodCall().sync()`
+  ///  * async: Synchronous host object proxies expose an async method which
+  ///    blocks and returns an asynchronous host object proxy for the same
+  ///    host object. For example, `chrome.webview.hostObjects.sync.sample.methodCall()` returns a
+  ///    synchronous host object proxy. Calling the `async` method on this blocks
+  ///    and then returns an asynchronous host object proxy for the same host object:
+  ///    `const asyncProxy = chrome.webview.hostObjects.sync.sample.methodCall().async()`
+  ///  * then: Asynchronous host object proxies have a then method. This
+  ///    allows them to be awaitable. `then` will return a promise that resolves
+  ///    with a representation of the host object. If the proxy represents a
+  ///    JavaScript literal then a copy of that is returned locally. If
+  ///    the proxy represents a function then a non-awaitable proxy is returned.
+  ///    If the proxy represents a JavaScript object with a mix of literal
+  ///    properties and function properties, then the a copy of the object is
+  ///    returned with some properties as host object proxies.
+  ///
+  /// All other property and method invocations (other than the above Remote
+  /// object proxy methods, forceLocalProperties list, and properties on
+  /// Function and Object prototypes) are run remotely. Asynchronous host
+  /// object proxies return a promise representing asynchronous completion of
+  /// remotely invoking the method, or getting the property.
+  /// The promise resolves after the remote operations complete and
+  /// the promises resolve to the resulting value of the operation.
+  /// Synchronous host object proxies work similarly but block JavaScript
+  /// execution and wait for the remote operation to complete.
+  ///
+  /// Setting a property on an asynchronous host object proxy works slightly
+  /// differently. The set returns immediately and the return value is the value
+  /// that will be set. This is a requirement of the JavaScript Proxy object.
+  /// If you need to asynchronously wait for the property set to complete, use
+  /// the setHostProperty method which returns a promise as described above.
+  /// Synchronous object property set property synchronously blocks until the
+  /// property is set.
+  ///
+  /// For example, suppose you have a COM object with the following interface
+  ///
+  /// \snippet HostObjectSample.idl AddHostObjectInterface
+  ///
+  /// We can add an instance of this interface into our JavaScript with
+  /// `AddHostObjectToScript`. In this case we name it `sample`:
+  ///
+  /// \snippet ScenarioAddHostObject.cpp AddHostObjectToScript
+  ///
+  /// Then in the HTML document we can use this COM object via `chrome.webview.hostObjects.sample`:
+  ///
+  /// \snippet ScenarioAddHostObject.html HostObjectUsage
+  /// Exposing host objects to script has security risk. Please follow
+  /// [best practices](https://docs.microsoft.com/microsoft-edge/webview2/concepts/security).
+  HRESULT AddHostObjectToScript([in] LPCWSTR name, [in] VARIANT* object);
+
+  /// Remove the host object specified by the name so that it is no longer
+  /// accessible from JavaScript code in the WebView.
+  /// While new access attempts will be denied, if the object is already
+  /// obtained by JavaScript code in the WebView, the JavaScript code will
+  /// continue to have access to that object.
+  /// Calling this method for a name that is already removed or never added will
+  /// fail.
+  HRESULT RemoveHostObjectFromScript([in] LPCWSTR name);
+
+  /// Opens the DevTools window for the current document in the WebView.
+  /// Does nothing if called when the DevTools window is already open.
+  HRESULT OpenDevToolsWindow();
+
+  /// Add an event handler for the ContainsFullScreenElementChanged event.
+  /// ContainsFullScreenElementChanged fires when the ContainsFullScreenElement
+  /// property changes. This means that an HTML element inside the WebView is
+  /// entering fullscreen to the size of the WebView or leaving fullscreen. This
+  /// event is useful when, for example, a video element requests to go
+  /// fullscreen. The listener of ContainsFullScreenElementChanged can then
+  /// resize the WebView in response.
+  ///
+  /// \snippet AppWindow.cpp ContainsFullScreenElementChanged
+  HRESULT add_ContainsFullScreenElementChanged(
+      [in] ICoreWebView2ContainsFullScreenElementChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with
+  /// add_ContainsFullScreenElementChanged.
+  HRESULT remove_ContainsFullScreenElementChanged(
+      [in] EventRegistrationToken token);
+
+  /// Indicates if the WebView contains a fullscreen HTML element.
+  [propget] HRESULT ContainsFullScreenElement(
+      [out, retval] BOOL* containsFullScreenElement);
+
+  /// Add an event handler for the WebResourceRequested event.
+  /// WebResourceRequested fires when the WebView is performing a URL request to
+  /// a matching URL and resource context filter that was added with
+  /// AddWebResourceRequestedFilter. At least one filter must be added for the
+  /// event to fire.
+  ///
+  /// The web resource requested can be blocked until the event handler returns
+  /// if a deferral is not taken on the event args. If a deferral is taken, then
+  /// the web resource requested is blocked until the deferral is completed.
+  ///
+  /// \snippet SettingsComponent.cpp WebResourceRequested
+  HRESULT add_WebResourceRequested(
+    [in] ICoreWebView2WebResourceRequestedEventHandler* eventHandler,
+    [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_WebResourceRequested.
+  HRESULT remove_WebResourceRequested(
+      [in] EventRegistrationToken token);
+
+  /// Adds a URI and resource context filter to the WebResourceRequested event.
+  /// The URI parameter can be a wildcard string ('*': zero or more, '?':
+  /// exactly one). nullptr is equivalent to L"".
+  /// See COREWEBVIEW2_WEB_RESOURCE_CONTEXT enum for description of resource
+  /// context filters.
+  HRESULT AddWebResourceRequestedFilter(
+    [in] LPCWSTR const uri,
+    [in] COREWEBVIEW2_WEB_RESOURCE_CONTEXT const resourceContext);
+  /// Removes a matching WebResource filter that was previously added for the
+  /// WebResourceRequested event. If the same filter was added multiple times,
+  /// then it will need to be removed as many times as it was added for the
+  /// removal to be effective. Returns E_INVALIDARG for a filter that was never
+  /// added.
+  HRESULT RemoveWebResourceRequestedFilter(
+    [in] LPCWSTR const uri,
+    [in] COREWEBVIEW2_WEB_RESOURCE_CONTEXT const resourceContext);
+
+  /// Add an event handler for the WindowCloseRequested event.
+  /// WindowCloseRequested fires when content inside the WebView requested to
+  /// close the window, such as after window.close is called. The app should
+  /// close the WebView and related app window if that makes sense to the app.
+  ///
+  /// \snippet AppWindow.cpp WindowCloseRequested
+  HRESULT add_WindowCloseRequested(
+      [in] ICoreWebView2WindowCloseRequestedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_WindowCloseRequested.
+  HRESULT remove_WindowCloseRequested(
+      [in] EventRegistrationToken token);
+}
+
+/// This interface is the owner of the CoreWebView2 object, and provides support
+/// for resizing, showing and hiding, focusing, and other functionality related
+/// to windowing and composition. The CoreWebView2Controller owns the CoreWebView2,
+/// and if all references to the CoreWebView2Controller go away, the WebView will
+/// be closed.
+[uuid(4d00c0d1-9434-4eb6-8078-8697a560334f), object, pointer_default(unique)]
+interface ICoreWebView2Controller : IUnknown {
+  /// The IsVisible property determines whether to show or hide the WebView.
+  /// If IsVisible is set to false, the WebView will be transparent and will
+  /// not be rendered.  However, this will not affect the window containing
+  /// the WebView (the HWND parameter that was passed to CreateCoreWebView2Controller).
+  /// If you want that window to disappear too, call ShowWindow on it directly
+  /// in addition to modifying the IsVisible property.
+  /// WebView as a child window won't get window messages when the top window
+  /// is minimized or restored. For performance reason, developer should set
+  /// IsVisible property of the WebView to false when the app window is
+  /// minimized and back to true when app window is restored. App window can do
+  /// this by handling SC_MINIMIZE and SC_RESTORE command upon receiving
+  /// WM_SYSCOMMAND message.
+  ///
+  /// \snippet ViewComponent.cpp ToggleIsVisible
+  [propget] HRESULT IsVisible([out, retval] BOOL* isVisible);
+  /// Set the IsVisible property.
+  ///
+  /// \snippet ViewComponent.cpp ToggleIsVisibleOnMinimize
+  [propput] HRESULT IsVisible([in] BOOL isVisible);
+
+  /// The WebView bounds.
+  /// Bounds are relative to the parent HWND. The app has two ways it can
+  /// position a WebView:
+  /// 1. Create a child HWND that is the WebView parent HWND. Position this
+  ///    window where the WebView should be. In this case, use (0, 0) for the
+  ///    WebView's Bound's top left corner (the offset).
+  /// 2. Use the app's top most window as the WebView parent HWND. Set the
+  ///    WebView's Bound's top left corner so that the WebView is positioned
+  ///    correctly in the app.
+  /// The Bound's values are in the host's coordinate space.
+  [propget] HRESULT Bounds([out, retval] RECT* bounds);
+  /// Set the Bounds property.
+  ///
+  /// \snippet ViewComponent.cpp ResizeWebView
+  [propput] HRESULT Bounds([in] RECT bounds);
+
+  /// The zoom factor for the WebView.
+  /// Note that changing zoom factor could cause `window.innerWidth/innerHeight`
+  /// and page layout to change.
+  /// A zoom factor that is applied by the host by calling ZoomFactor
+  /// becomes the new default zoom for the WebView. This zoom factor applies
+  /// across navigations and is the zoom factor WebView is returned to when the
+  /// user presses ctrl+0. When the zoom factor is changed by the user
+  /// (resulting in the app receiving ZoomFactorChanged), that zoom applies
+  /// only for the current page. Any user applied zoom is only for the current
+  /// page and is reset on a navigation.
+  /// Specifying a zoomFactor less than or equal to 0 is not allowed.
+  /// WebView also has an internal supported zoom factor range. When a specified
+  /// zoom factor is out of that range, it will be normalized to be within the
+  /// range, and a ZoomFactorChanged event will be fired for the real
+  /// applied zoom factor. When this range normalization happens, the
+  /// ZoomFactor property will report the zoom factor specified during the
+  /// previous modification of the ZoomFactor property until the
+  /// ZoomFactorChanged event is received after WebView applies the normalized
+  /// zoom factor.
+  [propget] HRESULT ZoomFactor([out, retval] double* zoomFactor);
+  /// Set the ZoomFactor property.
+  [propput] HRESULT ZoomFactor([in] double zoomFactor);
+
+  /// Add an event handler for the ZoomFactorChanged event.
+  /// ZoomFactorChanged fires when the ZoomFactor property of the WebView changes.
+  /// The event could fire because the caller modified the ZoomFactor property,
+  /// or due to the user manually modifying the zoom. When it is modified by the
+  /// caller via the ZoomFactor property, the internal zoom factor is updated
+  /// immediately and there will be no ZoomFactorChanged event.
+  /// WebView associates the last used zoom factor for each site. Therefore, it
+  /// is possible for the zoom factor to change when navigating to a different
+  /// page. When the zoom factor changes due to this, the ZoomFactorChanged
+  /// event fires right after the ContentLoading event.
+  ///
+  /// \snippet ViewComponent.cpp ZoomFactorChanged
+  HRESULT add_ZoomFactorChanged(
+      [in] ICoreWebView2ZoomFactorChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_ZoomFactorChanged.
+  HRESULT remove_ZoomFactorChanged(
+      [in] EventRegistrationToken token);
+
+  /// Update Bounds and ZoomFactor properties at the same time. This operation
+  /// is atomic from the host's perspective. After returning from this function,
+  /// the Bounds and ZoomFactor properties will have both been updated if the
+  /// function is successful, or neither will be updated if the function fails.
+  /// If Bounds and ZoomFactor are both updated by the same scale (i.e. Bounds
+  /// and ZoomFactor are both doubled), then the page will not see a change in
+  /// window.innerWidth/innerHeight and the WebView will render the content at
+  /// the new size and zoom without intermediate renderings.
+  /// This function can also be used to update just one of ZoomFactor or Bounds
+  /// by passing in the new value for one and the current value for the other.
+  ///
+  /// \snippet ViewComponent.cpp SetBoundsAndZoomFactor
+  HRESULT SetBoundsAndZoomFactor([in] RECT bounds, [in] double zoomFactor);
+
+  /// Move focus into WebView. WebView will get focus and focus will be set to
+  /// correspondent element in the page hosted in the WebView.
+  /// For Programmatic reason, focus is set to previously focused element or
+  /// the default element if there is no previously focused element.
+  /// For Next reason, focus is set to the first element.
+  /// For Previous reason, focus is set to the last element.
+  /// WebView can also got focus through user interaction like clicking into
+  /// WebView or Tab into it.
+  /// For tabbing, the app can call MoveFocus with Next or Previous to align
+  /// with tab and shift+tab respectively when it decides the WebView is the
+  /// next tabbable element. Or, the app can call IsDialogMessage as part of
+  /// its message loop to allow the platform to auto handle tabbing. The
+  /// platform will rotate through all windows with WS_TABSTOP. When the
+  /// WebView gets focus from IsDialogMessage, it will internally put the focus
+  /// on the first or last element for tab and shift+tab respectively.
+  ///
+  /// \snippet App.cpp MoveFocus0
+  ///
+  /// \snippet ControlComponent.cpp MoveFocus1
+  ///
+  /// \snippet ControlComponent.cpp MoveFocus2
+  HRESULT MoveFocus([in] COREWEBVIEW2_MOVE_FOCUS_REASON reason);
+
+  /// Add an event handler for the MoveFocusRequested event.
+  /// MoveFocusRequested fires when user tries to tab out of the WebView.
+  /// The WebView's focus has not changed when this event is fired.
+  ///
+  /// \snippet ControlComponent.cpp MoveFocusRequested
+  HRESULT add_MoveFocusRequested(
+      [in] ICoreWebView2MoveFocusRequestedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_MoveFocusRequested.
+  HRESULT remove_MoveFocusRequested(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the GotFocus event.
+  /// GotFocus fires when WebView got focus.
+  HRESULT add_GotFocus(
+      [in] ICoreWebView2FocusChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_GotFocus.
+  HRESULT remove_GotFocus(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the LostFocus event.
+  /// LostFocus fires when WebView lost focus.
+  /// In the case where MoveFocusRequested event is fired, the focus is still
+  /// on WebView when MoveFocusRequested event fires. LostFocus only fires
+  /// afterwards when app's code or default action of MoveFocusRequested event
+  /// set focus away from WebView.
+  HRESULT add_LostFocus(
+      [in] ICoreWebView2FocusChangedEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_LostFocus.
+  HRESULT remove_LostFocus(
+      [in] EventRegistrationToken token);
+
+  /// Add an event handler for the AcceleratorKeyPressed event.
+  /// AcceleratorKeyPressed fires when an accelerator key or key combo is
+  /// pressed or released while the WebView is focused. A key is considered an
+  /// accelerator if either:
+  ///   1. Ctrl or Alt is currently being held, or
+  ///   2. the pressed key does not map to a character.
+  /// A few specific keys are never considered accelerators, such as Shift.
+  /// The Escape key is always considered an accelerator.
+  ///
+  /// Autorepeated key events caused by holding the key down will also fire this
+  /// event.  You can filter these out by checking the event args'
+  /// KeyEventLParam or PhysicalKeyStatus.
+  ///
+  /// In windowed mode, this event handler is called synchronously. Until you
+  /// call Handled() on the event args or the event handler returns, the browser
+  /// process will be blocked and outgoing cross-process COM calls will fail
+  /// with RPC_E_CANTCALLOUT_ININPUTSYNCCALL. All CoreWebView2 API methods will
+  /// work, however.
+  ///
+  /// In windowless mode, the event handler is called asynchronously.  Further
+  /// input will not reach the browser until the event handler returns or
+  /// Handled() is called, but the browser process itself will not be blocked,
+  /// and outgoing COM calls will work normally.
+  ///
+  /// It is recommended to call Handled(TRUE) as early as you can know that you want
+  /// to handle the accelerator key.
+  ///
+  /// \snippet ControlComponent.cpp AcceleratorKeyPressed
+  HRESULT add_AcceleratorKeyPressed(
+    [in] ICoreWebView2AcceleratorKeyPressedEventHandler* eventHandler,
+    [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with add_AcceleratorKeyPressed.
+  HRESULT remove_AcceleratorKeyPressed(
+    [in] EventRegistrationToken token);
+
+  /// The parent window provided by the app that this WebView is using to
+  /// render content. This API initially returns the window passed into
+  /// CreateCoreWebView2Controller.
+  [propget] HRESULT ParentWindow([out, retval] HWND* parentWindow);
+
+  /// Set the parent window for the WebView. This will cause the WebView to
+  /// reparent its window to the newly provided window.
+  [propput] HRESULT ParentWindow([in] HWND parentWindow);
+
+  /// This is a notification separate from Bounds that tells WebView its
+  /// parent (or any ancestor) HWND moved. This is needed for accessibility and
+  /// certain dialogs in WebView to work correctly.
+  /// \snippet ViewComponent.cpp NotifyParentWindowPositionChanged
+  HRESULT NotifyParentWindowPositionChanged();
+
+  /// Closes the WebView and cleans up the underlying browser instance.
+  /// Cleaning up the browser instance will release the resources powering the WebView.
+  /// The browser instance will be shut down if there are no other WebViews using it.
+  ///
+  /// After calling Close, all method calls will fail and event handlers
+  /// will stop firing. Specifically, the WebView will release its references
+  /// to its event handlers when Close is called.
+  ///
+  /// Close is implicitly called when the CoreWebView2Controller loses its final
+  /// reference and is destructed. But it is best practice to explicitly call
+  /// Close to avoid any accidental cycle of references between the WebView
+  /// and the app code. Specifically, if you capture a reference to the WebView
+  /// in an event handler you will create a reference cycle between the WebView
+  /// and the event handler. Calling Close will break this cycle by releasing
+  /// all event handlers. But to avoid this situation it is best practice both
+  /// to explicitly call Close on the WebView and to not capture a reference to
+  /// the WebView to ensure the WebView can be cleaned up correctly.
+  ///
+  /// \snippet AppWindow.cpp Close
+  HRESULT Close();
+
+  /// Gets the CoreWebView2 associated with this CoreWebView2Controller.
+  [propget] HRESULT CoreWebView2([out, retval] ICoreWebView2** coreWebView2);
+}
+
+/// This interface is used to complete deferrals on event args that
+/// support getting deferrals via their GetDeferral method.
+[uuid(c10e7f7b-b585-46f0-a623-8befbf3e4ee0), object, pointer_default(unique)]
+interface ICoreWebView2Deferral : IUnknown {
+  /// Completes the associated deferred event. Complete should only be
+  /// called once for each deferral taken.
+  HRESULT Complete();
+}
+
+/// Defines properties that enable, disable, or modify WebView
+/// features. Setting changes made after NavigationStarting event will not
+/// apply until the next top level navigation.
+[uuid(e562e4f0-d7fa-43ac-8d71-c05150499f00), object, pointer_default(unique)]
+interface ICoreWebView2Settings : IUnknown {
+  /// Controls if JavaScript execution is enabled in all future
+  /// navigations in the WebView.  This only affects scripts in the document;
+  /// scripts injected with ExecuteScript will run even if script is disabled.
+  /// It is true by default.
+  ///
+  /// \snippet SettingsComponent.cpp IsScriptEnabled
+  [propget] HRESULT IsScriptEnabled(
+      [out, retval] BOOL* isScriptEnabled);
+  /// Set the IsScriptEnabled property.
+  [propput] HRESULT IsScriptEnabled([in] BOOL isScriptEnabled);
+
+  /// The IsWebMessageEnabled property is used when loading a new
+  /// HTML document. If set to true, communication from the host to the
+  /// WebView's top level HTML document is allowed via PostWebMessageAsJson,
+  /// PostWebMessageAsString, and window.chrome.webview's message event
+  /// (see PostWebMessageAsJson documentation for details).
+  /// Communication from the WebView's top level HTML document to the host is
+  /// allowed via window.chrome.webview's postMessage function and
+  /// add_WebMessageReceived method (see add_WebMessageReceived documentation
+  /// for details).
+  /// If set to false, then communication is disallowed.
+  /// PostWebMessageAsJson and PostWebMessageAsString will
+  /// fail with E_ACCESSDENIED and window.chrome.webview.postMessage will fail
+  /// by throwing an instance of an Error object.
+  /// It is true by default.
+  ///
+  /// \snippet ScenarioWebMessage.cpp IsWebMessageEnabled
+  [propget] HRESULT IsWebMessageEnabled(
+      [out, retval] BOOL* isWebMessageEnabled);
+  /// Set the IsWebMessageEnabled property.
+  [propput] HRESULT IsWebMessageEnabled([in] BOOL isWebMessageEnabled);
+
+  /// AreDefaultScriptDialogsEnabled is used when loading a new HTML document.
+  /// If set to false, then WebView won't render the default JavaScript dialog
+  /// box (Specifically those shown by the JavaScript alert, confirm, prompt
+  /// functions and beforeunload event). Instead, if an event handler is set via
+  /// add_ScriptDialogOpening, WebView will send an event that will contain all
+  /// of the information for the dialog and allow the host app to show its own
+  /// custom UI. It is true by default.
+  [propget] HRESULT AreDefaultScriptDialogsEnabled(
+      [out, retval] BOOL* areDefaultScriptDialogsEnabled);
+  /// Set the AreDefaultScriptDialogsEnabled property.
+  [propput] HRESULT AreDefaultScriptDialogsEnabled(
+      [in] BOOL areDefaultScriptDialogsEnabled);
+
+  /// IsStatusBarEnabled controls whether the status bar will be displayed. The
+  /// status bar is usually displayed in the lower left of the WebView and shows
+  /// things such as the URI of a link when the user hovers over it and other
+  /// information. It is true by default.
+  [propget] HRESULT IsStatusBarEnabled([out, retval] BOOL* isStatusBarEnabled);
+  /// Set the IsStatusBarEnabled property.
+  [propput] HRESULT IsStatusBarEnabled([in] BOOL isStatusBarEnabled);
+
+  /// AreDevToolsEnabled controls whether the user is able to use the context
+  /// menu or keyboard shortcuts to open the DevTools window.
+  /// It is true by default.
+  [propget] HRESULT AreDevToolsEnabled([out, retval] BOOL* areDevToolsEnabled);
+  /// Set the AreDevToolsEnabled property.
+  [propput] HRESULT AreDevToolsEnabled([in] BOOL areDevToolsEnabled);
+
+  /// The AreDefaultContextMenusEnabled property is used to prevent
+  /// default context menus from being shown to user in WebView.
+  /// It is true by default.
+  ///
+  /// \snippet SettingsComponent.cpp DisableContextMenu
+  [propget] HRESULT AreDefaultContextMenusEnabled([out, retval] BOOL* enabled);
+  /// Set the AreDefaultContextMenusEnabled property.
+  [propput] HRESULT AreDefaultContextMenusEnabled([in] BOOL enabled);
+
+  /// The AreHostObjectsAllowed property is used to control whether
+  /// host objects are accessible from the page in WebView.
+  /// It is true by default.
+  ///
+  /// \snippet SettingsComponent.cpp HostObjectsAccess
+  [propget] HRESULT AreHostObjectsAllowed([out, retval] BOOL* allowed);
+  /// Set the AreHostObjectsAllowed property.
+  [propput] HRESULT AreHostObjectsAllowed([in] BOOL allowed);
+
+  /// The IsZoomControlEnabled property is used to prevent the user from
+  /// impacting the zoom of the WebView. It is true by default.
+  /// When disabled, user will not be able to zoom using ctrl+/- or
+  /// ctrl+mouse wheel, but the zoom can be set via ZoomFactor API.
+  ///
+  /// \snippet SettingsComponent.cpp DisableZoomControl
+  [propget] HRESULT IsZoomControlEnabled([out, retval] BOOL* enabled);
+  /// Set the IsZoomControlEnabled property.
+  [propput] HRESULT IsZoomControlEnabled([in] BOOL enabled);
+
+  /// The IsBuiltInErrorPageEnabled property is used to disable built in error
+  /// page for navigation failure and render process failure. It is true by
+  /// default.
+  /// When disabled, blank page will be shown when related error happens.
+  ///
+  /// \snippet SettingsComponent.cpp BuiltInErrorPageEnabled
+  [propget] HRESULT IsBuiltInErrorPageEnabled([out, retval] BOOL* enabled);
+  /// Set the IsBuiltInErrorPageEnabled property.
+  [propput] HRESULT IsBuiltInErrorPageEnabled([in] BOOL enabled);
+}
+
+/// Event args for the ProcessFailed event.
+[uuid(8155a9a4-1474-4a86-8cae-151b0fa6b8ca), object, pointer_default(unique)]
+interface ICoreWebView2ProcessFailedEventArgs : IUnknown {
+  /// The kind of process failure that has occurred.
+  [propget] HRESULT ProcessFailedKind(
+      [out, retval] COREWEBVIEW2_PROCESS_FAILED_KIND* processFailedKind);
+}
+
+/// The caller implements this interface to receive ProcessFailed events.
+[uuid(79e0aea4-990b-42d9-aa1d-0fcc2e5bc7f1), object, pointer_default(unique)]
+interface ICoreWebView2ProcessFailedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2ProcessFailedEventArgs* args);
+}
+
+/// The caller implements this interface to receive ZoomFactorChanged
+/// events. Use the ICoreWebView2Controller.ZoomFactor property to get the
+/// modified zoom factor.
+[uuid(b52d71d6-c4df-4543-a90c-64a3e60f38cb), object, pointer_default(unique)]
+interface ICoreWebView2ZoomFactorChangedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event. There are no event args and the args
+  /// parameter will be null.
+  HRESULT Invoke([in] ICoreWebView2Controller* sender, [in] IUnknown* args);
+}
+
+/// Iterator for a collection of HTTP headers. See ICoreWebView2HttpRequestHeaders
+/// and ICoreWebView2HttpResponseHeaders.
+///
+/// \snippet ScenarioWebViewEventMonitor.cpp HttpRequestHeaderIterator
+[uuid(0702fc30-f43b-47bb-ab52-a42cb552ad9f), object, pointer_default(unique)]
+interface ICoreWebView2HttpHeadersCollectionIterator : IUnknown {
+  /// Get the name and value of the current HTTP header of the iterator. This
+  /// method will fail if the last call to MoveNext set hasNext to FALSE.
+  HRESULT GetCurrentHeader([out] LPWSTR* name, [out] LPWSTR* value);
+
+  /// True when the iterator hasn't run out of headers. If the collection over
+  /// which the iterator is iterating is empty or if the iterator has gone past
+  /// the end of the collection then this is false.
+  [propget] HRESULT HasCurrentHeader([out, retval] BOOL* hasCurrent);
+
+  /// Move the iterator to the next HTTP header in the collection. The hasNext
+  /// parameter will be set to FALSE if there are no more HTTP headers. After
+  /// this occurs the GetCurrentHeader method will fail if called.
+  HRESULT MoveNext([out, retval] BOOL* hasNext);
+}
+
+/// HTTP request headers. Used to inspect the HTTP request on
+/// WebResourceRequested event and NavigationStarting event.
+/// Note, you can modify the HTTP request headers from a WebResourceRequested event,
+/// but not from a NavigationStarting event.
+[uuid(e86cac0e-5523-465c-b536-8fb9fc8c8c60), object, pointer_default(unique)]
+interface ICoreWebView2HttpRequestHeaders : IUnknown {
+  /// Gets the header value matching the name.
+  HRESULT GetHeader([in] LPCWSTR name, [out, retval] LPWSTR* value);
+  /// Gets the header value matching the name via an iterator.
+  HRESULT GetHeaders([in] LPCWSTR name, [out, retval] ICoreWebView2HttpHeadersCollectionIterator** iterator);
+  /// Checks whether the headers contain an entry matching the header name.
+  HRESULT Contains([in] LPCWSTR name, [out, retval] BOOL* contains);
+  /// Adds or updates header that matches the name.
+  HRESULT SetHeader([in] LPCWSTR name, [in] LPCWSTR value);
+  /// Removes header that matches the name.
+  HRESULT RemoveHeader([in] LPCWSTR name);
+  /// Gets an iterator over the collection of request headers.
+  HRESULT GetIterator(
+      [out, retval] ICoreWebView2HttpHeadersCollectionIterator** iterator);
+}
+
+/// HTTP response headers. Used to construct a WebResourceResponse for the
+/// WebResourceRequested event.
+[uuid(03c5ff5a-9b45-4a88-881c-89a9f328619c), object, pointer_default(unique)]
+interface ICoreWebView2HttpResponseHeaders : IUnknown {
+  /// Appends header line with name and value.
+  HRESULT AppendHeader([in] LPCWSTR name, [in] LPCWSTR value);
+  /// Checks whether the headers contain entries matching the header name.
+  HRESULT Contains([in] LPCWSTR name, [out, retval] BOOL* contains);
+  /// Gets the first header value in the collection matching the name.
+  HRESULT GetHeader([in] LPCWSTR name, [out, retval] LPWSTR* value);
+  /// Gets the header values matching the name.
+  HRESULT GetHeaders([in] LPCWSTR name, [out, retval] ICoreWebView2HttpHeadersCollectionIterator** iterator);
+  /// Gets an iterator over the collection of entire response headers.
+  HRESULT GetIterator(
+  [out, retval] ICoreWebView2HttpHeadersCollectionIterator** iterator);
+}
+
+/// An HTTP request used with the WebResourceRequested event.
+[uuid(97055cd4-512c-4264-8b5f-e3f446cea6a5), object, pointer_default(unique)]
+interface ICoreWebView2WebResourceRequest : IUnknown {
+  /// The request URI.
+  [propget] HRESULT Uri([out, retval] LPWSTR* uri);
+  /// Set the Uri property.
+  [propput] HRESULT Uri([in] LPCWSTR uri);
+
+  /// The HTTP request method.
+  [propget] HRESULT Method([out, retval] LPWSTR* method);
+  /// Set the Method property.
+  [propput] HRESULT Method([in] LPCWSTR method);
+
+  /// The HTTP request message body as stream. POST data would be here.
+  /// If a stream is set, which will override the message body, the stream must
+  /// have all the content data available by the time this
+  /// response's WebResourceRequested event deferral is completed. Stream
+  /// should be agile or be created from a background STA to prevent performance
+  /// impact to the UI thread. Null means no content data. IStream semantics
+  /// apply (return S_OK to Read calls until all data is exhausted).
+  [propget] HRESULT Content([out, retval] IStream** content);
+  /// Set the Content property.
+  [propput] HRESULT Content([in] IStream* content);
+
+  /// The mutable HTTP request headers
+  [propget] HRESULT Headers([out, retval] ICoreWebView2HttpRequestHeaders** headers);
+}
+
+/// An HTTP response used with the WebResourceRequested event.
+[uuid(aafcc94f-fa27-48fd-97df-830ef75aaec9), object, pointer_default(unique)]
+interface ICoreWebView2WebResourceResponse : IUnknown {
+  /// HTTP response content as stream. Stream must have all the
+  /// content data available by the time this response's WebResourceRequested
+  /// event deferral is completed. Stream should be agile or be created from
+  /// a background thread to prevent performance impact to the UI thread.
+  /// Null means no content data. IStream semantics
+  /// apply (return S_OK to Read calls until all data is exhausted).
+  [propget] HRESULT Content([out, retval] IStream** content);
+  /// Set the Content property.
+  [propput] HRESULT Content([in] IStream* content);
+
+  /// Overridden HTTP response headers.
+  [propget] HRESULT Headers([out, retval] ICoreWebView2HttpResponseHeaders** headers);
+
+  /// The HTTP response status code.
+  [propget] HRESULT StatusCode([out, retval] int* statusCode);
+  /// Set the StatusCode property.
+  [propput] HRESULT StatusCode([in] int statusCode);
+
+  /// The HTTP response reason phrase.
+  [propget] HRESULT ReasonPhrase([out, retval] LPWSTR* reasonPhrase);
+  /// Set the ReasonPhrase property.
+  [propput] HRESULT ReasonPhrase([in] LPCWSTR reasonPhrase);
+}
+
+/// Event args for the NavigationStarting event.
+[uuid(5b495469-e119-438a-9b18-7604f25f2e49), object, pointer_default(unique)]
+interface ICoreWebView2NavigationStartingEventArgs : IUnknown {
+  /// The uri of the requested navigation.
+  [propget] HRESULT Uri([out, retval] LPWSTR* uri);
+
+  /// True when the navigation was initiated through a user gesture as opposed
+  /// to programmatic navigation.
+  [propget] HRESULT IsUserInitiated([out, retval] BOOL* isUserInitiated);
+
+  /// True when the navigation is redirected.
+  [propget] HRESULT IsRedirected([out, retval] BOOL* isRedirected);
+
+  /// The HTTP request headers for the navigation.
+  /// Note, you cannot modify the HTTP request headers in a NavigationStarting event.
+  [propget] HRESULT RequestHeaders([out, retval] ICoreWebView2HttpRequestHeaders** requestHeaders);
+
+  /// The host may set this flag to cancel the navigation.
+  /// If set, it will be as if the navigation never happened and the current
+  /// page's content will be intact. For performance reasons, GET HTTP requests
+  /// may happen, while the host is responding. This means cookies can be set
+  /// and used part of a request for the navigation.
+  /// Cancellation for navigation to about:blank or frame navigation to srcdoc
+  /// is not supported. Such attempts will be ignored.
+  [propget] HRESULT Cancel([out, retval] BOOL* cancel);
+  /// Set the Cancel property.
+  [propput] HRESULT Cancel([in] BOOL cancel);
+
+  /// The ID of the navigation.
+  [propget] HRESULT NavigationId([out, retval] UINT64* navigationId);
+}
+
+/// The caller implements this interface to receive the NavigationStarting
+/// event.
+[uuid(9adbe429-f36d-432b-9ddc-f8881fbd76e3), object, pointer_default(unique)]
+interface ICoreWebView2NavigationStartingEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2NavigationStartingEventArgs* args);
+}
+
+/// Event args for the ContentLoading event.
+[uuid(0c8a1275-9b6b-4901-87ad-70df25bafa6e), object, pointer_default(unique)]
+interface ICoreWebView2ContentLoadingEventArgs : IUnknown {
+  /// True if the loaded content is an error page.
+  [propget] HRESULT IsErrorPage([out, retval] BOOL* isErrorPage);
+
+  /// The ID of the navigation.
+  [propget] HRESULT NavigationId([out, retval] UINT64* navigationId);
+}
+
+/// The caller implements this interface to receive the ContentLoading event.
+[uuid(364471e7-f2be-4910-bdba-d72077d51c4b), object, pointer_default(unique)]
+interface ICoreWebView2ContentLoadingEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] ICoreWebView2ContentLoadingEventArgs* args);
+}
+
+/// Event args for the SourceChanged event.
+[uuid(31e0e545-1dba-4266-8914-f63848a1f7d7), object, pointer_default(unique)]
+interface ICoreWebView2SourceChangedEventArgs : IUnknown {
+  /// True if the page being navigated to is a new document.
+  [propget] HRESULT IsNewDocument([out, retval] BOOL* isNewDocument);
+}
+
+/// The caller implements this interface to receive the SourceChanged event.
+[uuid(3c067f9f-5388-4772-8b48-79f7ef1ab37c), object, pointer_default(unique)]
+interface ICoreWebView2SourceChangedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] ICoreWebView2SourceChangedEventArgs* args);
+}
+
+/// The caller implements this interface to receive the HistoryChanged event.
+[uuid(c79a420c-efd9-4058-9295-3e8b4bcab645), object, pointer_default(unique)]
+interface ICoreWebView2HistoryChangedEventHandler : IUnknown {
+  /// There are no event args and the args parameter will be null.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] IUnknown* args);
+}
+
+/// Event args for the ScriptDialogOpening event.
+[uuid(7390bb70-abe0-4843-9529-f143b31b03d6), object, pointer_default(unique)]
+interface ICoreWebView2ScriptDialogOpeningEventArgs : IUnknown {
+  /// The URI of the page that requested the dialog box.
+  [propget] HRESULT Uri([out, retval] LPWSTR* uri);
+
+  /// The kind of JavaScript dialog box. Accept, confirm, prompt, or
+  /// beforeunload.
+  [propget] HRESULT Kind([out, retval] COREWEBVIEW2_SCRIPT_DIALOG_KIND* kind);
+
+  /// The message of the dialog box. From JavaScript this is the first parameter
+  /// passed to alert, confirm, and prompt and is empty for beforeunload.
+  [propget] HRESULT Message([out, retval] LPWSTR* message);
+
+  /// The host may call this to respond with OK to confirm, prompt, and
+  /// beforeunload dialogs or not call this method to indicate cancel. From
+  /// JavaScript, this means that the confirm and beforeunload function returns
+  /// true if Accept is called. And for the prompt function it returns the value
+  /// of ResultText if Accept is called and returns false otherwise.
+  HRESULT Accept();
+
+  /// The second parameter passed to the JavaScript prompt dialog. This is the
+  /// default value to use for the result of the prompt JavaScript function.
+  [propget] HRESULT DefaultText([out, retval] LPWSTR* defaultText);
+
+  /// The return value from the JavaScript prompt function if Accept is called.
+  /// This is ignored for dialog kinds other than prompt. If Accept is not
+  /// called this value is ignored and false is returned from prompt.
+  [propget] HRESULT ResultText([out, retval] LPWSTR* resultText);
+  /// Set the ResultText property.
+  [propput] HRESULT ResultText([in] LPCWSTR resultText);
+
+  /// GetDeferral can be called to return an ICoreWebView2Deferral object.
+  /// You can use this to complete the event at a later time.
+  HRESULT GetDeferral([out, retval] ICoreWebView2Deferral** deferral);
+}
+
+/// The caller implements this interface to receive the ScriptDialogOpening
+/// event.
+[uuid(ef381bf9-afa8-4e37-91c4-8ac48524bdfb), object, pointer_default(unique)]
+interface ICoreWebView2ScriptDialogOpeningEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2ScriptDialogOpeningEventArgs* args);
+}
+
+/// Event args for the NavigationCompleted event.
+[uuid(30d68b7d-20d9-4752-a9ca-ec8448fbb5c1), object, pointer_default(unique)]
+interface ICoreWebView2NavigationCompletedEventArgs : IUnknown {
+  /// True when the navigation is successful. This
+  /// is false for a navigation that ended up in an error page (failures due to
+  /// no network, DNS lookup failure, HTTP server responds with 4xx), but could
+  /// also be false for additional scenarios such as window.stop() called on
+  /// navigated page.
+  [propget] HRESULT IsSuccess([out, retval] BOOL* isSuccess);
+
+  /// The error code if the navigation failed.
+  [propget] HRESULT WebErrorStatus([out, retval] COREWEBVIEW2_WEB_ERROR_STATUS*
+      webErrorStatus);
+
+  /// The ID of the navigation.
+  [propget] HRESULT NavigationId([out, retval] UINT64* navigationId);
+}
+
+/// The caller implements this interface to receive the NavigationCompleted
+/// event.
+[uuid(d33a35bf-1c49-4f98-93ab-006e0533fe1c), object, pointer_default(unique)]
+interface ICoreWebView2NavigationCompletedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2NavigationCompletedEventArgs* args);
+}
+
+/// Event args for the PermissionRequested event.
+[uuid(973ae2ef-ff18-4894-8fb2-3c758f046810), object, pointer_default(unique)]
+interface ICoreWebView2PermissionRequestedEventArgs : IUnknown {
+  /// The origin of the web content that requests the permission.
+  [propget] HRESULT Uri([out, retval] LPWSTR* uri);
+
+  /// The type of the permission that is requested.
+  [propget] HRESULT PermissionKind([out, retval] COREWEBVIEW2_PERMISSION_KIND* permissionKind);
+
+  /// True when the permission request was initiated through a user gesture.
+  /// Note that being initiated through a user gesture doesn't mean that user
+  /// intended to access the associated resource.
+  [propget] HRESULT IsUserInitiated([out, retval] BOOL* isUserInitiated);
+
+  /// The status of a permission request, i.e. whether the request is granted.
+  /// Default value is COREWEBVIEW2_PERMISSION_STATE_DEFAULT.
+  [propget] HRESULT State([out, retval] COREWEBVIEW2_PERMISSION_STATE* state);
+  /// Set the State property.
+  [propput] HRESULT State([in] COREWEBVIEW2_PERMISSION_STATE state);
+
+  /// GetDeferral can be called to return an ICoreWebView2Deferral object.
+  /// Developer can use the deferral object to make the permission decision
+  /// at a later time.
+  HRESULT GetDeferral([out, retval] ICoreWebView2Deferral** deferral);
+}
+
+/// The caller implements this interface to receive the PermissionRequested
+/// event.
+[uuid(15e1c6a3-c72a-4df3-91d7-d097fbec6bfd), object, pointer_default(unique)]
+interface ICoreWebView2PermissionRequestedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2PermissionRequestedEventArgs* args);
+}
+
+/// The caller implements this interface to receive the result of the
+/// AddScriptToExecuteOnDocumentCreated method.
+[uuid(b99369f3-9b11-47b5-bc6f-8e7895fcea17), object, pointer_default(unique)]
+interface ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status and result
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke([in] HRESULT errorCode, [in] LPCWSTR id);
+}
+
+/// The caller implements this interface to receive the result of the
+/// ExecuteScript method.
+[uuid(49511172-cc67-4bca-9923-137112f4c4cc), object, pointer_default(unique)]
+interface ICoreWebView2ExecuteScriptCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status and result
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke([in] HRESULT errorCode, [in] LPCWSTR resultObjectAsJson);
+}
+
+/// Event args for the WebResourceRequested event.
+[uuid(453e667f-12c7-49d4-be6d-ddbe7956f57a), object, pointer_default(unique)]
+interface ICoreWebView2WebResourceRequestedEventArgs : IUnknown
+{
+  /// The Web resource request. The request object may be missing some headers
+  /// that are added by network stack later on.
+  [propget] HRESULT Request([out, retval] ICoreWebView2WebResourceRequest** request);
+
+  /// A placeholder for the web resource response object. If this object is set, the
+  /// web resource request will be completed with this response.
+  [propget] HRESULT Response([out, retval] ICoreWebView2WebResourceResponse** response);
+  /// Set the Response property. An empty Web resource response object can be
+  /// created with CreateWebResourceResponse and then modified to construct the response.
+  [propput] HRESULT Response([in] ICoreWebView2WebResourceResponse* response);
+
+  /// Obtain an ICoreWebView2Deferral object and put the event into a deferred state.
+  /// You can use the ICoreWebView2Deferral object to complete the request at a
+  /// later time.
+  HRESULT GetDeferral([out, retval] ICoreWebView2Deferral** deferral);
+
+  /// The web resource request context.
+  [propget] HRESULT ResourceContext([out, retval] COREWEBVIEW2_WEB_RESOURCE_CONTEXT* context);
+}
+
+/// Fires when a URL request (through network, file etc.) is made in the webview
+/// for a Web resource matching resource context filter and URL specified in
+/// AddWebResourceRequestedFilter.
+/// The host can view and modify the request or provide a response in a similar
+/// pattern to HTTP, in which case the request immediately completed.
+/// This may not contain any request headers that are added by the network
+/// stack, such as Authorization headers.
+[uuid(ab00b74c-15f1-4646-80e8-e76341d25d71), object, pointer_default(unique)]
+interface ICoreWebView2WebResourceRequestedEventHandler : IUnknown
+{
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2WebResourceRequestedEventArgs* args);
+}
+
+/// The caller implements this method to receive the result of the
+/// CapturePreview method. The result is written to the stream provided in
+/// the CapturePreview method call.
+[uuid(697e05e9-3d8f-45fa-96f4-8ffe1ededaf5), object, pointer_default(unique)]
+interface ICoreWebView2CapturePreviewCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke([in] HRESULT errorCode);
+}
+
+/// The caller implements this method to receive the GotFocus and LostFocus
+/// events. There are no event args for this event.
+[uuid(05ea24bd-6452-4926-9014-4b82b498135d), object, pointer_default(unique)]
+interface ICoreWebView2FocusChangedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event. There are no event args and the args
+  /// parameter will be null.
+  HRESULT Invoke(
+      [in] ICoreWebView2Controller* sender,
+      [in] IUnknown* args);
+}
+
+/// Event args for the MoveFocusRequested event.
+[uuid(2d6aa13b-3839-4a15-92fc-d88b3c0d9c9d), object, pointer_default(unique)]
+interface ICoreWebView2MoveFocusRequestedEventArgs : IUnknown {
+  /// The reason for WebView to fire the MoveFocus Requested event.
+  [propget] HRESULT Reason([out, retval] COREWEBVIEW2_MOVE_FOCUS_REASON* reason);
+
+  /// Indicate whether the event has been handled by the app.
+  /// If the app has moved the focus to its desired location, it should set
+  /// Handled property to TRUE.
+  /// When Handled property is false after the event handler returns, default
+  /// action will be taken. The default action is to try to find the next tab
+  /// stop child window in the app and try to move focus to that window. If
+  /// there is no other such window to move focus to, focus will be cycled
+  /// within the WebView's web content.
+  [propget] HRESULT Handled([out, retval] BOOL* value);
+  /// Set the Handled property.
+  [propput] HRESULT Handled([in] BOOL value);
+}
+
+/// The caller implements this method to receive the MoveFocusRequested event.
+[uuid(69035451-6dc7-4cb8-9bce-b2bd70ad289f), object, pointer_default(unique)]
+interface ICoreWebView2MoveFocusRequestedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2Controller* sender,
+      [in] ICoreWebView2MoveFocusRequestedEventArgs* args);
+}
+
+/// Event args for the WebMessageReceived event.
+[uuid(0f99a40c-e962-4207-9e92-e3d542eff849), object, pointer_default(unique)]
+interface ICoreWebView2WebMessageReceivedEventArgs : IUnknown {
+  /// The URI of the document that sent this web message.
+  [propget] HRESULT Source([out, retval] LPWSTR* source);
+
+  /// The message posted from the WebView content to the host converted to a
+  /// JSON string. Use this to communicate via JavaScript objects.
+  ///
+  /// For example the following postMessage calls result in the
+  /// following WebMessageAsJson values:
+  ///
+  /// ```
+  ///    postMessage({'a': 'b'})      L"{\"a\": \"b\"}"
+  ///    postMessage(1.2)             L"1.2"
+  ///    postMessage('example')       L"\"example\""
+  /// ```
+  [propget] HRESULT WebMessageAsJson([out, retval] LPWSTR* webMessageAsJson);
+
+  /// If the message posted from the WebView content to the host is a
+  /// string type, this method will return the value of that string. If the
+  /// message posted is some other kind of JavaScript type this method will fail
+  /// with E_INVALIDARG. Use this to communicate via simple strings.
+  ///
+  /// For example the following postMessage calls result in the
+  /// following WebMessageAsString values:
+  ///
+  /// ```
+  ///    postMessage({'a': 'b'})      E_INVALIDARG
+  ///    postMessage(1.2)             E_INVALIDARG
+  ///    postMessage('example')       L"example"
+  /// ```
+  HRESULT TryGetWebMessageAsString([out, retval] LPWSTR* webMessageAsString);
+}
+
+/// The caller implements this interface to receive the WebMessageReceived
+/// event.
+[uuid(57213f19-00e6-49fa-8e07-898ea01ecbd2), object, pointer_default(unique)]
+interface ICoreWebView2WebMessageReceivedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2WebMessageReceivedEventArgs* args);
+}
+
+/// Event args for the DevToolsProtocolEventReceived event.
+[uuid(653c2959-bb3a-4377-8632-b58ada4e66c4), object, pointer_default(unique)]
+interface ICoreWebView2DevToolsProtocolEventReceivedEventArgs : IUnknown {
+  /// The parameter object of the corresponding DevToolsProtocol event
+  /// represented as a JSON string.
+  [propget] HRESULT ParameterObjectAsJson([out, retval] LPWSTR*
+                                    parameterObjectAsJson);
+}
+
+/// The caller implements this interface to receive
+/// DevToolsProtocolEventReceived events from the WebView.
+[uuid(e2fda4be-5456-406c-a261-3d452138362c), object, pointer_default(unique)]
+interface ICoreWebView2DevToolsProtocolEventReceivedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2DevToolsProtocolEventReceivedEventArgs* args);
+}
+
+/// The caller implements this interface to receive CallDevToolsProtocolMethod
+/// completion results.
+[uuid(5c4889f0-5ef6-4c5a-952c-d8f1b92d0574), object, pointer_default(unique)]
+interface ICoreWebView2CallDevToolsProtocolMethodCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status and result
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke([in] HRESULT errorCode, [in] LPCWSTR returnObjectAsJson);
+}
+
+/// The caller implements this interface to receive the CoreWebView2Controller created
+/// via CreateCoreWebView2Controller.
+[uuid(6c4819f3-c9b7-4260-8127-c9f5bde7f68c), object, pointer_default(unique)]
+interface ICoreWebView2CreateCoreWebView2ControllerCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status and result
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke(HRESULT errorCode, ICoreWebView2Controller* createdController);
+}
+
+/// Event args for the NewWindowRequested event. The event is fired when content
+/// inside webview requested to a open a new window (through window.open() and so on.)
+[uuid(34acb11c-fc37-4418-9132-f9c21d1eafb9), object, pointer_default(unique)]
+interface ICoreWebView2NewWindowRequestedEventArgs : IUnknown
+{
+  /// The target uri of the NewWindowRequest.
+  [propget] HRESULT Uri([out, retval] LPWSTR* uri);
+
+  /// Sets a WebView as a result of the NewWindowRequest. The target
+  /// WebView should not be navigated. If the NewWindow is set, its top level
+  /// window will return as the opened WindowProxy.
+  [propput] HRESULT NewWindow([in] ICoreWebView2* newWindow);
+  /// Gets the new window.
+  [propget] HRESULT NewWindow([out, retval] ICoreWebView2** newWindow);
+
+  /// Sets whether the NewWindowRequestedEvent is handled by host. If this is false
+  /// and no NewWindow is set, the WebView will open a popup
+  /// window and it will be returned as opened WindowProxy.
+  /// If set to true and no NewWindow is set for a window.open call, the opened
+  /// WindowProxy will be for an dummy window object and no window will load.
+  /// Default is false.
+  [propput] HRESULT Handled([in] BOOL handled);
+  /// Gets whether the NewWindowRequestedEvent is handled by host.
+  [propget] HRESULT Handled([out, retval] BOOL* handled);
+
+  /// IsUserInitiated is true when the new window request was initiated through
+  /// a user gesture such as clicking an anchor tag with target. The Edge
+  /// popup blocker is disabled for WebView so the app can use this flag to
+  /// block non-user initiated popups.
+  [propget] HRESULT IsUserInitiated([out, retval] BOOL* isUserInitiated);
+
+  /// Obtain an ICoreWebView2Deferral object and put the event into a deferred state.
+  /// You can use the ICoreWebView2Deferral object to complete the window open
+  /// request at a later time.
+  /// While this event is deferred the opener window will be returned a WindowProxy
+  /// to an unnavigated window, which will navigate when the deferral is complete.
+  HRESULT GetDeferral([out, retval] ICoreWebView2Deferral** deferral);
+
+  /// Window features specified by the window.open call.
+  /// These features can be considered for positioning and sizing of
+  /// new webview windows.
+  [propget] HRESULT WindowFeatures([out, retval] ICoreWebView2WindowFeatures** value);
+}
+
+/// Window features for a WebView popup window. These fields match the
+/// 'windowFeatures' passed to window.open as specified in
+/// https://developer.mozilla.org/en-US/docs/Web/API/Window/open#Window_features
+/// There is no requirement for you to respect these values. If your app doesn't
+/// have corresponding UI features, for example no toolbar, or if all webviews
+/// are opened in tabs and so cannot have distinct size or positions, then your
+/// app cannot respect these values. You may want to respect values but perhaps
+/// only some can apply to your app's UI. Accordingly, it is fine to respect
+/// all, some, or none of these properties as appropriate based on your app.
+/// For all numeric properties, if the value when passed to window.open is
+/// outside the range of an unsigned 32bit int, the value will be mod of the max
+/// of unsigned 32bit integer. If the value cannot be parsed as an integer it
+/// will be considered 0. If the value is a floating point value, it will be
+/// rounded down to an integer.
+[uuid(5eaf559f-b46e-4397-8860-e422f287ff1e), object, pointer_default(unique)]
+interface ICoreWebView2WindowFeatures : IUnknown
+{
+  /// True if the Left and Top properties were specified. False if at least one
+  /// was not specified.
+  [propget] HRESULT HasPosition([out, retval] BOOL* value);
+  /// True if the Width and Height properties were specified. False if at least
+  /// one was not specified.
+  [propget] HRESULT HasSize([out, retval] BOOL* value);
+  /// The left position of the window. This will fail if HasPosition is false.
+  [propget] HRESULT Left([out, retval] UINT32* value);
+  /// The top position of the window. This will fail if HasPosition is false.
+  [propget] HRESULT Top([out, retval] UINT32* value);
+  /// The height of the window. This will fail if HasSize is false.
+  [propget] HRESULT Height([out, retval] UINT32* value);
+  /// The width of the window. This will fail if HasSize is false.
+  [propget] HRESULT Width([out, retval] UINT32* value);
+  /// Whether or not to display the menu bar.
+  [propget] HRESULT ShouldDisplayMenuBar([out, retval] BOOL* value);
+  /// Whether or not to display a status bar.
+  [propget] HRESULT ShouldDisplayStatus([out, retval] BOOL* value);
+  /// Whether or not to display a toolbar.
+  [propget] HRESULT ShouldDisplayToolbar([out, retval] BOOL* value);
+  /// Whether or not to display scroll bars.
+  [propget] HRESULT ShouldDisplayScrollBars([out, retval] BOOL* value);
+}
+
+/// The caller implements this interface to receive NewWindowRequested
+/// events.
+[uuid(d4c185fe-c81c-4989-97af-2d3fa7ab5651), object, pointer_default(unique)]
+interface ICoreWebView2NewWindowRequestedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2* sender,
+      [in] ICoreWebView2NewWindowRequestedEventArgs* args);
+}
+
+/// The caller implements this interface to receive DocumentTitleChanged
+/// events. Use the DocumentTitle property to get the modified
+/// title.
+[uuid(f5f2b923-953e-4042-9f95-f3a118e1afd4), object, pointer_default(unique)]
+interface ICoreWebView2DocumentTitleChangedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event. There are no event args and the args
+  /// parameter will be null.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] IUnknown* args);
+}
+
+/// Event args for the AcceleratorKeyPressed event.
+[uuid(9f760f8a-fb79-42be-9990-7b56900fa9c7), object, pointer_default(unique)]
+interface ICoreWebView2AcceleratorKeyPressedEventArgs : IUnknown {
+  /// The key event type that caused the event to be fired.
+  [propget] HRESULT KeyEventKind([out, retval] COREWEBVIEW2_KEY_EVENT_KIND* keyEventKind);
+  /// The Win32 virtual key code of the key that was pressed or released.
+  /// This will be one of the Win32 virtual key constants such as VK_RETURN or
+  /// an (uppercase) ASCII value such as 'A'. You can check whether Ctrl or Alt
+  /// are pressed by calling GetKeyState(VK_CONTROL) or GetKeyState(VK_MENU).
+  [propget] HRESULT VirtualKey([out, retval] UINT* virtualKey);
+  /// The LPARAM value that accompanied the window message. See the
+  /// documentation for the WM_KEYDOWN and WM_KEYUP messages.
+  [propget] HRESULT KeyEventLParam([out, retval] INT* lParam);
+  /// A structure representing the information passed in the LPARAM of the
+  /// window message.
+  [propget] HRESULT PhysicalKeyStatus(
+      [out, retval] COREWEBVIEW2_PHYSICAL_KEY_STATUS* physicalKeyStatus);
+  /// During AcceleratorKeyPressedEvent handler invocation the WebView is blocked
+  /// waiting for the decision of if the accelerator will be handled by the host
+  /// or not. If the Handled property is set to TRUE then this will
+  /// prevent the WebView from performing the default action for this
+  /// accelerator key. Otherwise the WebView will perform the default action for
+  /// the accelerator key.
+  [propget] HRESULT Handled([out, retval] BOOL* handled);
+  /// Sets the Handled property.
+  [propput] HRESULT Handled([in] BOOL handled);
+}
+
+/// The caller implements this interface to receive the AcceleratorKeyPressed
+/// event.
+[uuid(b29c7e28-fa79-41a8-8e44-65811c76dcb2), object, pointer_default(unique)]
+interface ICoreWebView2AcceleratorKeyPressedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke(
+      [in] ICoreWebView2Controller* sender,
+      [in] ICoreWebView2AcceleratorKeyPressedEventArgs* args);
+}
+
+/// The caller implements this interface to receive NewBrowserVersionAvailable events.
+[uuid(f9a2976e-d34e-44fc-adee-81b6b57ca914), object, pointer_default(unique)]
+interface ICoreWebView2NewBrowserVersionAvailableEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event.
+  HRESULT Invoke([in] ICoreWebView2Environment* webviewEnvironment,
+                 [in] IUnknown* args);
+}
+
+/// The caller implements this method to receive the
+/// ContainsFullScreenElementChanged events. There are no event args for this
+/// event.
+[uuid(e45d98b1-afef-45be-8baf-6c7728867f73), object, pointer_default(unique)]
+interface ICoreWebView2ContainsFullScreenElementChangedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event. There are no event args and the args
+  /// parameter will be null.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] IUnknown* args);
+}
+
+/// The caller implements this interface to receive NewWindowRequested
+/// events.
+[uuid(5c19e9e0-092f-486b-affa-ca8231913039), object, pointer_default(unique)]
+interface ICoreWebView2WindowCloseRequestedEventHandler : IUnknown {
+  /// Called to provide the implementer with the event args for the
+  /// corresponding event. There are no event args and the args
+  /// parameter will be null.
+  HRESULT Invoke([in] ICoreWebView2* sender, [in] IUnknown* args);
+}
+
+/// This represents the WebView2 Environment. WebViews created from an
+/// environment run on the browser process specified with environment parameters
+/// and objects created from an environment should be used in the same environment.
+/// Using it in different environments are not guaranteed to be compatible and may fail.
+[uuid(b96d755e-0319-4e92-a296-23436f46a1fc), object, pointer_default(unique)]
+interface ICoreWebView2Environment : IUnknown {
+  /// Asynchronously create a new WebView.
+  ///
+  /// parentWindow is the HWND in which the WebView should be displayed and
+  /// from which receive input. The WebView will add a child window to the
+  /// provided window during WebView creation. Z-order and other things impacted
+  /// by sibling window order will be affected accordingly.
+  ///
+  /// It is recommended that the application set Application User Model ID for
+  /// the process or the application window. If none is set, during WebView
+  /// creation a generated Application User Model ID is set to root window of
+  /// parentWindow.
+  /// \snippet AppWindow.cpp CreateCoreWebView2Controller
+  ///
+  /// It is recommended that the application handles restart manager messages
+  /// so that it can be restarted gracefully in the case when the app is using
+  /// Edge for WebView from a certain installation and that installation is being
+  /// uninstalled. For example, if a user installs Edge from Dev channel and
+  /// opts to use Edge from that channel for testing the app, and then uninstalls
+  /// Edge from that channel without closing the app, the app will be restarted
+  /// to allow uninstallation of the dev channel to succeed.
+  /// \snippet AppWindow.cpp RestartManager
+  ///
+  /// When the application retries CreateCoreWebView2Controller upon failure, it is
+  /// recommended that the application restarts from creating a new WebView2
+  /// Environment. If an Edge update happens, the version associated with a WebView2
+  /// Environment could have been removed and causing the object to no longer work.
+  /// Creating a new WebView2 Environment will work as it uses the latest version.
+  ///
+  /// WebView creation will fail if there is already a running instance using the same
+  /// user data folder, and the Environment objects have different EnvironmentOptions.
+  /// For example, if there is already a WebView created with one language, trying to
+  /// create a WebView with a different language using the same user data folder will
+  /// fail.
+  HRESULT CreateCoreWebView2Controller(
+    HWND parentWindow,
+    ICoreWebView2CreateCoreWebView2ControllerCompletedHandler* handler);
+
+  /// Create a new web resource response object. The headers is the
+  /// raw response header string delimited by newline. It's also possible to
+  /// create this object with null headers string and then use the
+  /// ICoreWebView2HttpResponseHeaders to construct the headers line by line.
+  /// For information on other parameters see ICoreWebView2WebResourceResponse.
+  ///
+  /// \snippet SettingsComponent.cpp WebResourceRequested
+  HRESULT CreateWebResourceResponse(
+    [in] IStream* content,
+    [in] int statusCode,
+    [in] LPCWSTR reasonPhrase,
+    [in] LPCWSTR headers,
+    [out, retval] ICoreWebView2WebResourceResponse** response);
+
+  /// The browser version info of the current ICoreWebView2Environment,
+  /// including channel name if it is not the stable channel.
+  /// This matches the format of the
+  /// GetAvailableCoreWebView2BrowserVersionString API.
+  /// Channel names are 'beta', 'dev', and 'canary'.
+  ///
+  /// \snippet AppWindow.cpp GetBrowserVersionString
+  [propget] HRESULT BrowserVersionString([out, retval] LPWSTR* versionInfo);
+
+  /// Add an event handler for the NewBrowserVersionAvailable event.
+  /// NewBrowserVersionAvailable fires when a newer version of the
+  /// Edge browser is installed and available for use via WebView2.
+  /// To use the newer version of the browser you must create a new
+  /// environment and WebView.
+  /// This event will only be fired for new version from the same Edge channel
+  /// that the code is running from. When not running with installed Edge,
+  /// no event will be fired.
+  ///
+  /// Because a user data folder can only be used by one browser process at
+  /// a time, if you want to use the same user data folder in the WebViews
+  /// using the new version of the browser,
+  /// you must close the environment and WebViews that are using the older
+  /// version of the browser first. Or simply prompt the user to restart the
+  /// app.
+  ///
+  /// \snippet AppWindow.cpp NewBrowserVersionAvailable
+  ///
+  HRESULT add_NewBrowserVersionAvailable(
+      [in] ICoreWebView2NewBrowserVersionAvailableEventHandler* eventHandler,
+      [out] EventRegistrationToken* token);
+
+  /// Remove an event handler previously added with add_NewBrowserVersionAvailable.
+  HRESULT remove_NewBrowserVersionAvailable(
+      [in] EventRegistrationToken token);
+}
+
+/// Options used to create WebView2 Environment.
+///
+/// \snippet AppWindow.cpp CreateCoreWebView2EnvironmentWithOptions
+///
+[uuid(2fde08a8-1e9a-4766-8c05-95a9ceb9d1c5), object, pointer_default(unique)]
+interface ICoreWebView2EnvironmentOptions : IUnknown {
+  /// AdditionalBrowserArguments can be specified to change the behavior of the
+  /// WebView. These will be passed to the browser process as part of
+  /// the command line. See
+  /// [Run Chromium with Flags](https://aka.ms/RunChromiumWithFlags)
+  /// for more information about command line switches to browser
+  /// process. If the app is launched with a command line switch
+  /// `--edge-webview-switches=xxx` the value of that switch (xxx in
+  /// the above example) will also be appended to the browser
+  /// process command line. Certain switches like `--user-data-dir` are
+  /// internal and important to WebView. Those switches will be
+  /// ignored even if specified. If the same switches are specified
+  /// multiple times, the last one wins. There is no attempt to
+  /// merge the different values of the same switch, except for disabled
+  /// and enabled features.  The features specified by `--enable-features`
+  /// and `--disable-features` will be merged with simple logic: the features
+  /// will be the union of the specified features and built-in features, and if
+  /// a feature is disabled, it will be removed from the enabled features list.
+  /// App process's command line `--edge-webview-switches` value are processed
+  /// after the additionalBrowserArguments parameter is processed. Certain
+  /// features are disabled internally and can't be enabled.
+  /// If parsing failed for the specified switches, they will be
+  /// ignored. Default is to run browser process with no extra flags.
+  [propget] HRESULT AdditionalBrowserArguments([out, retval] LPWSTR* value);
+  /// Set the AdditionalBrowserArguments property.
+  [propput] HRESULT AdditionalBrowserArguments([in] LPCWSTR value);
+
+  /// The default language that WebView will run with. It applies to browser UIs
+  /// like context menu and dialogs. It also applies to the accept-languages
+  /// HTTP header that WebView sends to web sites.
+  /// It is in the format of `language[-country]` where `language` is the 2 letter
+  /// code from ISO 639 and `country` is the 2 letter code from ISO 3166.
+  [propget] HRESULT Language([out, retval] LPWSTR* value);
+  /// Set the Language property.
+  [propput] HRESULT Language([in] LPCWSTR value);
+
+  /// The version of the Edge WebView2 Runtime binaries required to be
+  /// compatible with the calling application. This defaults to the Edge
+  /// WebView2 Runtime version
+  /// that corresponds with the version of the SDK the application is using.
+  /// The format of this value is the same as the format of the
+  /// BrowserVersionString property and other BrowserVersion values.
+  /// Only the version part of the BrowserVersion value is respected. The
+  /// channel suffix, if it exists, is ignored.
+  /// The version of the Edge WebView2 Runtime binaries actually used may be
+  /// different from the specified TargetCompatibleBrowserVersion. They are only
+  /// guaranteed to be compatible. You can check the actual version on the
+  /// BrowserVersionString property on the ICoreWebView2Environment.
+  [propget] HRESULT TargetCompatibleBrowserVersion([out, retval] LPWSTR* value);
+  /// Set the TargetCompatibleBrowserVersion property.
+  [propput] HRESULT TargetCompatibleBrowserVersion([in] LPCWSTR value);
+
+  /// The AllowSingleSignOnUsingOSPrimaryAccount property is used to enable
+  /// single sign on with Azure Active Directory (AAD) resources inside WebView
+  /// using the logged in Windows account and single sign on with web sites using
+  /// Microsoft account associated with the login in Windows account.
+  /// Default is disabled.
+  /// Universal Windows Platform apps must also declare enterpriseCloudSSO
+  /// [restricted capability](https://docs.microsoft.com/windows/uwp/packaging/app-capability-declarations#restricted-capabilities)
+  /// for the single sign on to work.
+  [propget] HRESULT AllowSingleSignOnUsingOSPrimaryAccount([out, retval] BOOL* allow);
+  /// Set the AllowSingleSignOnUsingOSPrimaryAccount property.
+  [propput] HRESULT AllowSingleSignOnUsingOSPrimaryAccount([in] BOOL allow);
+}
+
+/// The caller implements this interface to receive the WebView2Environment created
+/// via CreateCoreWebView2Environment.
+[uuid(4e8a3389-c9d8-4bd2-b6b5-124fee6cc14d), object, pointer_default(unique)]
+interface ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler : IUnknown {
+  /// Called to provide the implementer with the completion status and result
+  /// of the corresponding asynchronous method call.
+  HRESULT Invoke(HRESULT errorCode, ICoreWebView2Environment* createdEnvironment);
+}
+
+/// A Receiver is created for a particular DevTools Protocol event and allows
+/// you to subscribe and unsubscribe from that event.
+/// Obtained from the WebView object via GetDevToolsProtocolEventReceiver.
+[uuid(b32ca51a-8371-45e9-9317-af021d080367), object, pointer_default(unique)]
+interface ICoreWebView2DevToolsProtocolEventReceiver : IUnknown {
+  /// Subscribe to a DevToolsProtocol event.
+  /// The handler's Invoke method will be called whenever the corresponding
+  /// DevToolsProtocol event fires. Invoke will be called with
+  /// an event args object containing the DevTools Protocol event's parameter
+  /// object as a JSON string.
+  ///
+  /// \snippet ScriptComponent.cpp DevToolsProtocolEventReceived
+  HRESULT add_DevToolsProtocolEventReceived(
+      [in] ICoreWebView2DevToolsProtocolEventReceivedEventHandler* handler,
+      [out] EventRegistrationToken* token);
+  /// Remove an event handler previously added with
+  /// add_DevToolsProtocolEventReceived.
+  HRESULT remove_DevToolsProtocolEventReceived(
+      [in] EventRegistrationToken token);
+
+}
+
+/// DLL export to create a WebView2 environment with a custom version of Edge,
+/// user data directory and/or additional options.
+///
+/// The WebView2 environment and all other WebView2 objects are single threaded
+/// and have dependencies on Windows components that require COM to be
+/// initialized for a single-threaded apartment. The application is expected to
+/// call CoInitializeEx before calling CreateCoreWebView2EnvironmentWithOptions.
+///
+/// ```
+/// CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+/// ```
+///
+/// If CoInitializeEx was not called or has been previously called with
+/// COINIT_MULTITHREADED, CreateCoreWebView2EnvironmentWithOptions will fail
+/// with one of the following errors.
+///
+/// ```
+/// CO_E_NOTINITIALIZED (if CoInitializeEx was not called)
+/// RPC_E_CHANGED_MODE  (if CoInitializeEx was previously called with
+///                      COINIT_MULTITHREADED)
+/// ```
+///
+/// Use `browserExecutableFolder` to specify whether WebView2 controls use a
+/// fixed or installed version of the WebView2 Runtime that exists on a client
+/// machine. To use a fixed version of the WebView2 Runtime, pass the relative
+/// path of the folder that contains the fixed version of the WebView2 Runtime
+/// to `browserExecutableFolder`. To create WebView2 controls that use the
+/// installed version of the WebView2 Runtime that exists on client machines,
+/// pass a null or empty string to `browserExecutableFolder`. In this scenario,
+/// the API tries to find a compatible version of the WebView2 Runtime that is
+/// installed on the client machine (first at the machine level, and then per
+/// user) using the selected channel preference. The path of fixed version of
+/// the WebView2 Runtime should not contain `\Edge\Application\`. When such a
+/// path is used, the API will fail with ERROR_NOT_SUPPORTED.
+///
+/// The default channel search order is the WebView2 Runtime, Beta, Dev, and
+/// Canary.
+/// When there is an override WEBVIEW2_RELEASE_CHANNEL_PREFERENCE environment
+/// variable or applicable releaseChannelPreference registry value
+/// with the value of 1, the channel search order is reversed.
+///
+/// userDataFolder can be
+/// specified to change the default user data folder location for
+/// WebView2. The path can be an absolute file path or a relative file path
+/// that is interpreted as relative to the current process's executable.
+/// Otherwise, for UWP apps, the default user data folder will be
+/// the app data folder for the package; for non-UWP apps,
+/// the default user data folder `{Executable File Name}.WebView2`
+/// will be created in the same directory next to the app executable.
+/// WebView2 creation can fail if the executable is running in a directory
+/// that the process doesn't have permission to create a new folder in.
+/// The app is responsible to clean up its user data folder
+/// when it is done.
+///
+/// Note that as a browser process might be shared among WebViews,
+/// WebView creation will fail with HRESULT_FROM_WIN32(ERROR_INVALID_STATE) if
+/// the specified options does not match the options of the WebViews that are
+/// currently running in the shared browser process.
+///
+/// environmentCreatedHandler is the handler result to the async operation
+/// which will contain the WebView2Environment that got created.
+///
+/// The browserExecutableFolder, userDataFolder and additionalBrowserArguments
+/// of the environmentOptions may be overridden by
+/// values either specified in environment variables or in the registry.
+///
+/// When creating a WebView2Environment the following environment variables
+/// are checked:
+///
+/// ```
+/// WEBVIEW2_BROWSER_EXECUTABLE_FOLDER
+/// WEBVIEW2_USER_DATA_FOLDER
+/// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+/// WEBVIEW2_RELEASE_CHANNEL_PREFERENCE
+/// ```
+///
+/// If an override environment variable is found then we use the
+/// browserExecutableFolder and userDataFolder values as replacements for the
+/// corresponding values in CreateCoreWebView2EnvironmentWithOptions parameters.
+/// If additionalBrowserArguments specified in environment variable or in the
+/// registry, it will be appended to the correspinding values in
+/// CreateCoreWebView2EnvironmentWithOptions parameters.
+///
+/// While not strictly overrides, there exists additional environment variables
+/// that can be set:
+///
+/// ```
+/// WEBVIEW2_WAIT_FOR_SCRIPT_DEBUGGER
+/// ```
+///
+/// When found with a non-empty value, this indicates that the WebView is being
+/// launched under a script debugger. In this case, the WebView will issue a
+/// `Page.waitForDebugger` CDP command that will cause script execution inside the
+/// WebView to pause on launch, until a debugger issues a corresponding
+/// `Runtime.runIfWaitingForDebugger` CDP command to resume execution.
+/// Note: There is no registry key equivalent of this environment variable.
+///
+/// ```
+/// WEBVIEW2_PIPE_FOR_SCRIPT_DEBUGGER
+/// ```
+///
+/// When found with a non-empty value, this indicates that the WebView is being
+/// launched under a script debugger that also supports host applications that
+/// use multiple WebViews. The value is used as the identifier for a named pipe
+/// that will be opened and written to when a new WebView is created by the host
+/// application. The payload will match that of the remote-debugging-port JSON
+/// target and can be used by the external debugger to attach to a specific
+/// WebView instance.
+/// The format of the pipe created by the debugger should be:
+/// `\\.\pipe\WebView2\Debugger\{app_name}\{pipe_name}`
+/// where:
+///
+/// - `{app_name}` is the host application exe filename, e.g. WebView2Example.exe
+/// - `{pipe_name}` is the value set for WEBVIEW2_PIPE_FOR_SCRIPT_DEBUGGER.
+///
+/// To enable debugging of the targets identified by the JSON you will also need
+/// to set the WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS environment variable to
+/// send `--remote-debugging-port={port_num}`
+/// where:
+///
+/// - `{port_num}` is the port on which the CDP server will bind.
+///
+/// Be aware that setting both the WEBVIEW2_PIPE_FOR_SCRIPT_DEBUGGER and
+/// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS environment variables will cause the
+/// WebViews hosted in your application and their contents to be exposed to
+/// 3rd party applications such as debuggers.
+///
+/// Note: There is no registry key equivalent of this environment variable.
+///
+/// If none of those environment variables exist, then the registry is examined next.
+/// The following registry values are checked:
+///
+/// ```
+/// [{Root}]\Software\Policies\Microsoft\Edge\WebView2\BrowserExecutableFolder
+/// "{AppId}"=""
+///
+/// [{Root}]\Software\Policies\Microsoft\Edge\WebView2\ReleaseChannelPreference
+/// "{AppId}"=""
+///
+/// [{Root}]\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments
+/// "{AppId}"=""
+///
+/// [{Root}]\Software\Policies\Microsoft\Edge\WebView2\UserDataFolder
+/// "{AppId}"=""
+/// ```
+///
+/// browserExecutableFolder and releaseChannelPreference can be configured using
+/// group policy under Administrative Templates > Microsoft Edge WebView2.
+/// The old registry location will be deprecated soon:
+///
+/// ```
+/// [{Root}\Software\Policies\Microsoft\EmbeddedBrowserWebView\LoaderOverride\{AppId}]
+/// "ReleaseChannelPreference"=dword:00000000
+/// "BrowserExecutableFolder"=""
+/// "UserDataFolder"=""
+/// "AdditionalBrowserArguments"=""
+/// ```
+///
+/// In the unlikely scenario where some instances of WebView are open during
+/// a browser update we could end up blocking the deletion of old Edge browsers.
+/// To avoid running out of disk space a new WebView creation will fail
+/// with the next error if it detects that there are many old versions present.
+///
+/// ```
+/// ERROR_DISK_FULL
+/// ```
+///
+/// The default maximum number of Edge versions allowed is 20.
+///
+/// The maximum number of old Edge versions allowed can be overwritten with the value
+/// of the following environment variable.
+///
+/// ```
+/// WEBVIEW2_MAX_INSTANCES
+/// ```
+///
+/// If the Webview depends on an installed Edge and it is uninstalled
+/// any subsequent creation will fail with the next error
+///
+/// ```
+/// ERROR_PRODUCT_UNINSTALLED
+/// ```
+///
+/// First we check with Root as HKLM and then HKCU.
+/// AppId is first set to the Application User Model ID of the caller's process,
+/// then if there's no corresponding registry key the AppId is set to the
+/// executable name of the caller's process, or if that isn't a registry key
+/// then '*'. If an override registry key is found, then we use the
+/// browserExecutableFolder and userDataFolder registry values as replacements
+/// and append additionalBrowserArguments registry values for the corresponding
+/// values in CreateCoreWebView2EnvironmentWithOptions parameters.
+cpp_quote("STDAPI CreateCoreWebView2EnvironmentWithOptions(PCWSTR browserExecutableFolder, PCWSTR userDataFolder, ICoreWebView2EnvironmentOptions* environmentOptions, ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler);")
+
+/// Creates an evergreen WebView2 Environment using the installed Edge version.
+/// This is equivalent to calling CreateCoreWebView2EnvironmentWithOptions with
+/// nullptr for browserExecutableFolder, userDataFolder,
+/// additionalBrowserArguments. See CreateCoreWebView2EnvironmentWithOptions for
+/// more details.
+cpp_quote("STDAPI CreateCoreWebView2Environment(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler);")
+
+/// Get the browser version info including channel name if it is not the stable channel
+/// or the Embedded Edge.
+/// Channel names are beta, dev, and canary.
+/// If an override exists for the browserExecutableFolder or the channel preference,
+/// the override will be used.
+/// If there isn't an override, then the parameter passed to
+/// GetAvailableCoreWebView2BrowserVersionString is used.
+cpp_quote("STDAPI GetAvailableCoreWebView2BrowserVersionString(PCWSTR browserExecutableFolder, LPWSTR* versionInfo);")
+
+/// This method is for anyone want to compare version correctly to determine
+/// which version is newer, older or same. It can be used to determine whether
+/// to use webview2 or certain feature base on version.
+/// Sets the value of result to -1, 0 or 1 if version1 is less than, equal or
+/// greater than version2 respectively.
+/// Returns E_INVALIDARG if it fails to parse any of the version strings or any
+/// input parameter is null.
+/// Input can directly use the versionInfo obtained from
+/// GetAvailableCoreWebView2BrowserVersionString, channel info will be ignored.
+cpp_quote("STDAPI CompareBrowserVersions(PCWSTR version1, PCWSTR version2, int* result);")
+
+}
