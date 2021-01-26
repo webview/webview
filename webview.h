@@ -1100,6 +1100,7 @@ public:
       m_window = *(static_cast<HWND *>(window));
     }
 
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
     SetFocus(m_window);
