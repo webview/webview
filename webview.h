@@ -792,9 +792,9 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include <shellscalingapi.h>
 #include <Shlwapi.h>
 #include <codecvt>
+#include <shellscalingapi.h>
 #include <stdlib.h>
 #include <windows.h>
 
