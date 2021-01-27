@@ -792,12 +792,14 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
+#include <shellscalingapi.h>
 #include <Shlwapi.h>
 #include <codecvt>
 #include <stdlib.h>
 #include <windows.h>
 
 #pragma comment(lib, "user32.lib")
+#pragma comment(lib, "Shcore.lib")
 #pragma comment(lib, "Shlwapi.lib")
 
 // EdgeHTML headers and libs
@@ -1100,7 +1102,7 @@ public:
       m_window = *(static_cast<HWND *>(window));
     }
 
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+    SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
     SetFocus(m_window);
