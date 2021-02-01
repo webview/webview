@@ -736,6 +736,7 @@ public:
           m_window, "setFrame:display:animate:"_sel,
           CGRectMake(0, 0, width, height), 1, 0);
     }
+    ((void (*)(id, SEL))objc_msgSend)(m_window, "center"_sel);
   }
   void navigate(const std::string url) {
     auto nsurl = ((id(*)(id, SEL, id))objc_msgSend)(
