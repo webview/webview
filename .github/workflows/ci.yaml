@@ -15,8 +15,17 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Build and run tests
+      - name: Build and run tests (x86_64)
         run: ./script/build.sh
+        env:
+          MACOS_TARGET_ARCH: x86_64
+        
+      - name: Build (arm64)
+        run: ./script/build.sh
+        env:
+          MACOS_TARGET_ARCH: arm64
+          # We can't run the tests yet as GitHub doesn't have arm64 runners
+          SKIP_TESTS: true
 
   build-windows:
     runs-on: windows-latest
