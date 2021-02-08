@@ -12,7 +12,7 @@ jobs:
         run: xvfb-run ./script/build.sh
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-11.0
     steps:
       - uses: actions/checkout@v1
       - name: Build and run tests (x86_64)
