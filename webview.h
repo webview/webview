@@ -942,8 +942,8 @@ public:
         delete webview2ComHandler;
         return false;
       }
-      res =
-          createEnvironment(userDataFolder, currentExeNameW, webview2ComHandler);
+      res = createEnvironment(userDataFolder, currentExeNameW,
+                              webview2ComHandler);
     }
 
     if (res != S_OK) {
