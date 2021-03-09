@@ -907,7 +907,9 @@ private:
 class edge_chromium : public browser {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
-    CoInitializeEx(nullptr, 0);
+
+    auto initiResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -920,15 +922,30 @@ public:
         wideCharConverter.from_bytes(std::getenv("APPDATA"));
     std::wstring currentExeNameW = wideCharConverter.from_bytes(currentExeName);
 
+    auto webview2ComHandler = new webview2_com_handler(wnd, cb,
+        [&](ICoreWebView2Controller* controller) {
+            m_controller = controller;
+            m_controller->get_CoreWebView2(&m_webview);
+            m_webview->AddRef();
+            flag.clear();
+        });
+
     HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
         nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,
-        new webview2_com_handler(wnd, cb,
-                                 [&](ICoreWebView2Controller *controller) {
-                                   m_controller = controller;
-                                   m_controller->get_CoreWebView2(&m_webview);
-                                   m_webview->AddRef();
-                                   flag.clear();
-                                 }));
+        webview2ComHandler);
+
+    //"HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
+    if (webview2ComHandler->lastEnvironmentCompleteResult == 0x80010106)
+    {
+        CoUninitialize();
+        auto initiResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+        res = CreateCoreWebView2EnvironmentWithOptions(
+            nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,
+            webview2ComHandler);
+    }
+
+
     if (res != S_OK) {
       CoUninitialize();
       return false;
@@ -992,6 +1009,9 @@ private:
     webview2_com_handler(HWND hwnd, msg_cb_t msgCb,
                          webview2_com_handler_cb_t cb)
         : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
+
+    HRESULT lastEnvironmentCompleteResult;
+
     ULONG STDMETHODCALLTYPE AddRef() { return 1; }
     ULONG STDMETHODCALLTYPE Release() { return 1; }
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
@@ -999,8 +1019,16 @@ private:
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
-      env->CreateCoreWebView2Controller(m_window, this);
-      return S_OK;
+
+        lastEnvironmentCompleteResult = res;
+
+        if (res == S_OK)
+        {
+            env->CreateCoreWebView2Controller(m_window, this);
+            return S_OK;
+        }
+      
+      return S_FALSE;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Controller *controller) {
@@ -1043,6 +1071,13 @@ private:
     msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
   };
+
+  HRESULT createEnviroment(const std::wstring& userDataFolder, const std::wstring& currentExeNameW, webview2_com_handler* webview2ComHandler)
+  {
+      return CreateCoreWebView2EnvironmentWithOptions(
+          nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,
+          webview2ComHandler);
+  }
 };
 
 class win32_edge_engine {
