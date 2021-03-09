@@ -933,7 +933,7 @@ public:
         });
 
     HRESULT res =
-        createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
+        createEnvironment(userDataFolder, currentExeNameW, webview2ComHandler);
 
     // "HRESULT - 0x80010106 - Cannot change thread mode after it is set."
     if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106) {
@@ -943,7 +943,7 @@ public:
         return false;
       }
       res =
-          createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
+          createEnvironment(userDataFolder, currentExeNameW, webview2ComHandler);
     }
 
     if (res != S_OK) {
@@ -1076,7 +1076,7 @@ private:
     HRESULT lastEnvironmentCompleteResult;
   };
 
-  HRESULT createEnviroment(const std::wstring &userDataFolder,
+  HRESULT createEnvironment(const std::wstring &userDataFolder,
                            const std::wstring &currentExeNameW,
                            webview2_com_handler *webview2ComHandler) const {
     return CreateCoreWebView2EnvironmentWithOptions(
