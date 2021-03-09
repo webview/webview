@@ -922,8 +922,8 @@ public:
         wideCharConverter.from_bytes(std::getenv("APPDATA"));
     std::wstring currentExeNameW = wideCharConverter.from_bytes(currentExeName);
 
-    auto webview2ComHandler = new webview2_com_handler(wnd, cb,
-        [&](ICoreWebView2Controller* controller) {
+    auto webview2ComHandler = new webview2_com_handler(
+        wnd, cb, [&](ICoreWebView2Controller* controller) {
             m_controller = controller;
             m_controller->get_CoreWebView2(&m_webview);
             m_webview->AddRef();
@@ -933,12 +933,10 @@ public:
     HRESULT res = createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
 
     //"HRESULT - 0x80010106 - Cannot change thread mode after it is set. "
-    if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106)
-    {
+    if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106) {
         CoUninitialize();
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-
-        res = createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
+        res = createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);     
     }
 
 
@@ -1006,9 +1004,8 @@ private:
                          webview2_com_handler_cb_t cb)
         : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
 
-    HRESULT getLastEnvironmentCompleteResult() const
-    {
-        return lastEnvironmentCompleteResult;
+    HRESULT getLastEnvironmentCompleteResult() const {
+       return lastEnvironmentCompleteResult;
     }
 
     ULONG STDMETHODCALLTYPE AddRef() { return 1; }
@@ -1072,8 +1069,7 @@ private:
     HRESULT lastEnvironmentCompleteResult;
   };
 
-  HRESULT createEnviroment(const std::wstring& userDataFolder, const std::wstring& currentExeNameW, webview2_com_handler* webview2ComHandler)
-  {
+  HRESULT createEnviroment(const std::wstring& userDataFolder, const std::wstring& currentExeNameW, webview2_com_handler* webview2ComHandler) {
       return CreateCoreWebView2EnvironmentWithOptions(nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,  webview2ComHandler);
   }
 };
