@@ -937,7 +937,7 @@ public:
                                    webview2ComHandler);
 
     // "HRESULT - 0x80010106 - Cannot change thread mode after it is set."
-    if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106) {xs
+    if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106) {
         CoUninitialize();
         if(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED) != S_OK) {
           delete webview2ComHandler;
