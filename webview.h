@@ -907,7 +907,7 @@ private:
 class edge_chromium : public browser {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
-    if(CoInitializeEx(nullptr, COINIT_MULTITHREADED) != S_OK) {
+    if (CoInitializeEx(nullptr, COINIT_MULTITHREADED) != S_OK) {
       return false;
     }
 
@@ -925,27 +925,25 @@ public:
 
     // TODO: Maybe we need to implement memory cleanup?
     auto webview2ComHandler = new webview2_com_handler(
-        wnd, cb, [&](ICoreWebView2Controller* controller) {
-            m_controller = controller;
-            m_controller->get_CoreWebView2(&m_webview);
-            m_webview->AddRef();
-            flag.clear();
+        wnd, cb, [&](ICoreWebView2Controller *controller) {
+          m_controller = controller;
+          m_controller->get_CoreWebView2(&m_webview);
+          m_webview->AddRef();
+          flag.clear();
         });
 
-    HRESULT res = createEnviroment(userDataFolder, 
-                                   currentExeNameW, 
-                                   webview2ComHandler);
+    HRESULT res =
+        createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
 
     // "HRESULT - 0x80010106 - Cannot change thread mode after it is set."
     if (webview2ComHandler->getLastEnvironmentCompleteResult() == 0x80010106) {
-        CoUninitialize();
-        if(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED) != S_OK) {
-          delete webview2ComHandler;
-          return false;
-        }
-        res = createEnviroment(userDataFolder, 
-                               currentExeNameW, 
-                               webview2ComHandler);     
+      CoUninitialize();
+      if (CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED) != S_OK) {
+        delete webview2ComHandler;
+        return false;
+      }
+      res =
+          createEnviroment(userDataFolder, currentExeNameW, webview2ComHandler);
     }
 
     if (res != S_OK) {
@@ -1015,7 +1013,7 @@ private:
         : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
 
     HRESULT getLastEnvironmentCompleteResult() const {
-       return lastEnvironmentCompleteResult;
+      return lastEnvironmentCompleteResult;
     }
 
     ULONG STDMETHODCALLTYPE AddRef() { return 1; }
@@ -1026,14 +1024,13 @@ private:
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
 
-        lastEnvironmentCompleteResult = res;
+      lastEnvironmentCompleteResult = res;
 
-        if (res == S_OK)
-        {
-            env->CreateCoreWebView2Controller(m_window, this);
-            return S_OK;
-        }
-      
+      if (res == S_OK) {
+        env->CreateCoreWebView2Controller(m_window, this);
+        return S_OK;
+      }
+
       return S_FALSE;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
