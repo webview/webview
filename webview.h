@@ -191,15 +191,11 @@ inline std::string url_decode(const char *s)
     return decoded;
 }
 
-
-inline std::string html_from_uri(const char *s)
-{
-    const char *const prefix = "data:text/html,";
-    const size_t prefix_length = strlen(prefix);
-    if (!strncmp(s, prefix, prefix_length)) {
-      return url_decode(s + prefix_length);
-    }
-    return "";
+inline std::string html_from_uri(const std::string s) {
+  if (s.substr(0, 15) == "data:text/html,") {
+    return url_decode(s.substr(15));
+  }
+  return "";
 }
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
