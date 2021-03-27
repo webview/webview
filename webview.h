@@ -174,9 +174,9 @@ inline std::string url_encode(const std::string s) {
   return encoded;
 }
 
-inline std::string url_decode(const std::string s)
-{
+inline std::string url_decode(const std::string st) {
     std::string decoded;
+    const char *s = st.c_str();
     size_t length = strlen(s);
     for (unsigned int i = 0; i < length; i++) {
         if (s[i] == '%') {
