@@ -174,7 +174,7 @@ inline std::string url_encode(const std::string s) {
   return encoded;
 }
 
-inline std::string url_decode(const char *s)
+inline std::string url_decode(const std::string s)
 {
     std::string decoded;
     size_t length = strlen(s);
