@@ -175,20 +175,20 @@ inline std::string url_encode(const std::string s) {
 }
 
 inline std::string url_decode(const std::string st) {
-    std::string decoded;
-    const char *s = st.c_str();
-    size_t length = strlen(s);
-    for (unsigned int i = 0; i < length; i++) {
-        if (s[i] == '%') {
-            decoded.push_back(hex2char(s + i + 1));
-            i = i + 2;
-        } else if (s[i] == '+') {
-            decoded.push_back(' ');
-        } else {
-            decoded.push_back(s[i]);
-        }
+  std::string decoded;
+  const char *s = st.c_str();
+  size_t length = strlen(s);
+  for (unsigned int i = 0; i < length; i++) {
+    if (s[i] == '%') {
+      decoded.push_back(hex2char(s + i + 1));
+      i = i + 2;
+    } else if (s[i] == '+') {
+      decoded.push_back(' ');
+    } else {
+      decoded.push_back(s[i]);
     }
-    return decoded;
+  }
+  return decoded;
 }
 
 inline std::string html_from_uri(const std::string s) {
