@@ -155,7 +155,7 @@ static inline unsigned char hex2nibble(unsigned char c) {
 // Convert ASCII hex string (two characters) to byte.
 //
 // E.g., "0B" => 0x0B, "af" => 0xAF.
-static inline char hex2char(const char* p) {
+static inline char hex2char(const char *p) {
   return hex2nibble(p[0]) * 16 + hex2nibble(p[1]);
 }
 
