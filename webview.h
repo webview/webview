@@ -138,6 +138,27 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 namespace webview {
 using dispatch_fn_t = std::function<void()>;
 
+// Convert ASCII hex digit to a nibble (four bits, 0 - 15).
+//
+// Use unsigned to avoid signed overflow UB.
+static inline unsigned char hex2nibble(unsigned char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  } else if (c >= 'a' && c <= 'f') {
+    return 10 + (c - 'a');
+  } else if (c >= 'A' && c <= 'F') {
+    return 10 + (c - 'A');
+  }
+  return 0;
+}
+
+// Convert ASCII hex string (two characters) to byte.
+//
+// E.g., "0B" => 0x0B, "af" => 0xAF.
+static inline char hex2char(const char *p) {
+  return hex2nibble(p[0]) * 16 + hex2nibble(p[1]);
+}
+
 inline std::string url_encode(const std::string s) {
   std::string encoded;
   for (unsigned int i = 0; i < s.length(); i++) {
@@ -153,18 +174,18 @@ inline std::string url_encode(const std::string s) {
   return encoded;
 }
 
-inline std::string url_decode(const std::string s) {
+inline std::string url_decode(const std::string st) {
   std::string decoded;
-  for (unsigned int i = 0; i < s.length(); i++) {
+  const char *s = st.c_str();
+  size_t length = strlen(s);
+  for (unsigned int i = 0; i < length; i++) {
     if (s[i] == '%') {
-      int n;
-      n = std::stoul(s.substr(i + 1, 2), nullptr, 16);
-      decoded = decoded + static_cast<char>(n);
+      decoded.push_back(hex2char(s + i + 1));
       i = i + 2;
     } else if (s[i] == '+') {
-      decoded = decoded + ' ';
+      decoded.push_back(' ');
     } else {
-      decoded = decoded + s[i];
+      decoded.push_back(s[i]);
     }
   }
   return decoded;
