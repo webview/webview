@@ -446,7 +446,9 @@ class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)) {
-    gtk_init_check(0, NULL);
+    if (gtk_init_check(0, NULL) == FALSE) {
+      return;
+    }
     m_window = static_cast<GtkWidget *>(window);
     if (m_window == nullptr) {
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1071,6 +1073,9 @@ public:
   win32_edge_engine(bool debug, void *window) {
     if (window == nullptr) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
+      if (hInstance == nullptr) {
+        return;
+      }
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
           GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
@@ -1117,6 +1122,9 @@ public:
       m_window = CreateWindow("webview", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                               CW_USEDEFAULT, 640, 480, nullptr, nullptr,
                               GetModuleHandle(nullptr), nullptr);
+      if (m_window == nullptr) {
+        return;
+      }
       SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
     } else {
       m_window = *(static_cast<HWND *>(window));
@@ -1302,7 +1310,11 @@ private:
 } // namespace webview
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
-  return new webview::webview(debug, wnd);
+  auto w = new webview::webview(debug, wnd);
+  if (w->window() == NULL) {
+    return NULL;
+  }
+  return w;
 }
 
 WEBVIEW_API void webview_destroy(webview_t w) {
