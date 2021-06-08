@@ -44,6 +44,33 @@ func main() {
 }
 ```
 
+example to scrape data from javascript back to golang:
+
+```
+w := webview.New(false)
+defer w.Destroy()
+w.SetTitle("scape example")
+w.SetSize(800, 600, webview.HintNone)
+w.Navigate("https://twitter.com/bitclout")
+w.Bind("sendBackBodyInnerHTML", callback)
+
+w.Dispatch(func() {
+  go func() {
+    time.Sleep(time.Second * 4)
+    w.Eval("sendBackBodyInnerHTML(document.body.innerHTML);")
+  }()
+})
+w.Run()
+
+func callback(data string) {
+  tokens := strings.Split(data, "followers")
+  tokens = strings.Split(tokens[1], ">")
+  tokens = strings.Split(tokens[3], "<")
+  fmt.Println("followers:", tokens[0])
+  os.Exit(0)
+}
+```
+
 To build the app use the following commands:
 
 ```bash
