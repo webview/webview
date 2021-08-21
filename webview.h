@@ -706,6 +706,7 @@ public:
                                           m_webview);
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
+    ((void (*)(id, SEL, int))objc_msgSend)(m_window, "setHasShadow:"_sel, 1);
   }
   ~cocoa_wkwebview_engine() { close(); }
   void *window() { return (void *)m_window; }
