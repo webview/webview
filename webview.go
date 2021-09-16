@@ -354,7 +354,3 @@ func (w *webview) SetPosition(x int, y int) {
 func (w *webview) Center() {
 	C.webview_center(w.w)
 }
-
-func (w *webview) SetSize(width int, height int, hint Hint) {
-	C.webview_set_size(w.w, C.int(width), C.int(height), C.int(hint))
-}
