@@ -64,6 +64,7 @@ These build steps were taken primarily from Harikvpy's comment on an issue.
     `<path to webview repo>`\build;`<path to webview repo>`\script\microsoft.web.webview2.1.0.664.37\build\native\$(PlatformShortName)
 
 11. Under Linker -> Input add these Additional Dependencies:
+    
     webview.lib;WebView2Loader.dll.lib
 
 12. Build to get the output folder and make sure everything compiles
