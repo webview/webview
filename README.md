@@ -131,7 +131,7 @@ $ c++ main.cc -std=c++11 -framework WebKit -o webview-example
 # Windows (x64)
 $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
-
+[Visual Studio 2019 C++ instructions](vs2019_build_instructions.md)
 ### C:
 ```c
 // main .c
