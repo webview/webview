@@ -71,6 +71,10 @@ const (
 
 	// Width and height are maximum bounds
 	HintMax = C.WEBVIEW_HINT_MAX
+
+	// No context menu on right click
+	HintNoCtx = C.WEBVIEW_HINT_NO_CTX
+
 )
 
 type WebView interface {
@@ -127,6 +131,16 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// Topmost forces a window to float above all other windows
+	Topmost(make_topmost bool)
+
+	// SetPosition updates the position of the native window
+	SetPosition(x int, y int)
+
+	// Center centers the window relative to the primary monitor
+	Center()
+
 }
 
 type webview struct {
@@ -320,4 +334,27 @@ func (w *webview) Bind(name string, f interface{}) error {
 	defer C.free(unsafe.Pointer(cname))
 	C.CgoWebViewBind(w.w, cname, C.uintptr_t(index))
 	return nil
+}
+
+func (w *webview) Topmost(make_topmost bool) {
+	var setting C.int
+	if make_topmost {
+		setting = 1
+	} else {
+		setting = 0
+	}
+
+	C.webview_topmost(w.w, setting)
+}
+
+func (w *webview) SetPosition(x int, y int) {
+	C.webview_set_position(w.w, C.int(x), C.int(y))
+}
+
+func (w *webview) Center() {
+	C.webview_center(w.w)
+}
+
+func (w *webview) SetSize(width int, height int, hint Hint) {
+	C.webview_set_size(w.w, C.int(width), C.int(height), C.int(hint))
 }
