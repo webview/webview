@@ -133,7 +133,7 @@ type WebView interface {
 	Bind(name string, f interface{}) error
 
 	// Topmost forces a window to float above all other windows
-	Topmost(make_topmost bool)
+	Topmost(makeTopmost bool)
 
 	// SetPosition updates the position of the native window
 	SetPosition(x int, y int)
@@ -336,9 +336,9 @@ func (w *webview) Bind(name string, f interface{}) error {
 	return nil
 }
 
-func (w *webview) Topmost(make_topmost bool) {
+func (w *webview) Topmost(makeTopmost bool) {
 	var setting C.int
-	if make_topmost {
+	if makeTopmost {
 		setting = 1
 	} else {
 		setting = 0
