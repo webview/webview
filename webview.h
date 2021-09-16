@@ -1314,7 +1314,7 @@ public:
     int width = r.right - r.left;
     int height = r.bottom - r.top;
 
-    MoveWindow(m_window, x, y, width, height, false)
+    MoveWindow(m_window, x, y, width, height, false);
   }
 
   void center() {
@@ -1332,7 +1332,8 @@ public:
     int screen_width = GetSystemMetrics(SM_CXSCREEN);
     int screen_height = GetSystemMetrics(SM_CYSCREEN);
 
-    MoveWindow(m_window, screen_width/2 - window_width/2, screen_height/2 - window_height/2)
+    MoveWindow(m_window, screen_width / 2 - window_width / 2,
+               screen_height / 2 - window_height / 2, window_width, window_height, false);
   }
 
 private:
@@ -1342,8 +1343,7 @@ private:
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
-  std::unique_ptr<webview::browser> m_browser =
-      std::make_unique<webview::edge_chromium>();A
+  std::unique_ptr<webview::browser> m_browser = std::make_unique<webview::edge_chromium>();
   bool m_is_topmost = false;
   unsigned int m_window_flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED;
 
