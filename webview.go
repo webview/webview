@@ -142,10 +142,6 @@ type WebView interface {
 	// Center centers the window relative to the primary monitor
 	Center()
 
-	// EscapeJs is a helper function that escapes characters in html/js code that would otherwise be removed by url_decode, causing errors
-	// if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass its output to Navigate
-	EscapeJs(js string) string
-
 }
 
 type webview struct {
@@ -180,6 +176,13 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 	w := &webview{}
 	w.w = C.webview_create(boolToInt(debug), window)
 	return w
+}
+
+// EscapeJs is a helper function that escapes characters in html/js code that would otherwise be removed by url_decode, causing errors
+// if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass its output to Navigate
+func EscapeJs(js string) string {
+	escapePlus := strings.Replace(js, "+", "%2b", -1)
+	return strings.Replace(escapePlus, " % ", "%25", -1)
 }
 
 func (w *webview) Destroy() {
@@ -360,9 +363,3 @@ func (w *webview) Center() {
 	C.webview_center(w.w)
 }
 
-func (w *webview) EscapeJs(js string) string {
-	escape_plus := strings.Replace(js, "+", "%2b", -1)
-	escape_percent := strings.Replace(escape_plus, "%", "%25", -1)
-
-	return escape_percent
-}
