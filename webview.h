@@ -117,6 +117,13 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y);
 // Centers the window relative to the primary monitor
 WEBVIEW_API void webview_center(webview_t w);
 
+// C helper function to get the size of the buffer required to hold the escaped html/javascript 
+WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
+
+// C helper function that escapes characters in html/js code that would otherwise be removed during the decoding of the url, causing errors
+// if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass the modified output string to webview_navigate
+WEBVIEW_API void webview_escape_js(const char* js, char* output);
+
 #ifdef __cplusplus
 }
 #endif
@@ -206,6 +213,21 @@ inline std::string html_from_uri(const std::string s) {
     return url_decode(s.substr(15));
   }
   return "";
+}
+
+inline std::string escape_js(const std::string& js) {
+    std::string output;
+    output.reserve(js.size()*2);
+    for(const auto& c: js) {
+        if(c == '+')
+            output.append("%2b");
+        else if (c == '%')
+            output.append("%25");
+        else
+            output.push_back(c);
+    }
+
+    return output;
 }
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
@@ -606,6 +628,8 @@ using browser_engine = gtk_webkit_engine;
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
+#include <Foundation/Foundation.h>
+#include <iostream>
 
 #define NSBackingStoreBuffered 2
 
@@ -1513,6 +1537,24 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y) {
 
 WEBVIEW_API void webview_center(webview_t w) {
   static_cast<webview::webview *>(w)->center();
+}
+
+WEBVIEW_API unsigned int webview_escaped_js_size(const char* js) {
+  size_t length = strlen(js);
+  size_t count = 0;
+  for(int i = 0; i < length; i++) {
+    if(js[i] == '+' || js[i] == '%')
+      count += 3;
+    else
+      count++;
+  }
+
+  return count + 1;
+}
+
+WEBVIEW_API void webview_escape_js(const char* js, char* output) {
+  std::string escaped = webview::escape_js(js);
+  strcpy(output, escaped.c_str());
 }
 
 // helper function to disable right click context menu
