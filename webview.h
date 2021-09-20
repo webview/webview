@@ -776,6 +776,11 @@ public:
     // this bit is required to make sure our callback is called
     ((void(*)(id, SEL, id))objc_msgSend)(m_webview, "setNavigationDelegate:"_sel, m_webview);
 
+    // Equivalent Obj-C:
+    // [ webView setValue:@NO forKey:@"drawsBackground"];
+    ((void(*)(id, SEL, id, id))objc_msgSend)(m_webview, "setValue:forKey:"_sel,((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 0) , "drawsBackground"_str);
+    
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setContentView:"_sel,
                                           m_webview);
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
