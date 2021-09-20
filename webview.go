@@ -181,8 +181,19 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 // EscapeJs is a helper function that escapes characters in html/js code that would otherwise be removed by url_decode, causing errors
 // if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass its output to Navigate
 func EscapeJs(js string) string {
-	escapePlus := strings.Replace(js, "+", "%2b", -1)
-	return strings.Replace(escapePlus, " % ", "%25", -1)
+	length := len(js)
+	var output strings.Builder
+    	for i := 0; i < length; i ++ {
+      		if js[i] == '+' {
+        		output.WriteString("%2b")
+      		} else if js[i] == '%'{
+        		output.WriteString("%25") 
+      		} else {
+        		output.WriteByte(js[i])
+      		}
+    }
+
+    return output.String()
 }
 
 func (w *webview) Destroy() {
