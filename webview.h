@@ -122,7 +122,7 @@ WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
 
 // C helper function that escapes characters in html/js code that would otherwise be removed during the decoding of the url, causing errors
 // if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass the modified output string to webview_navigate
-WEBVIEW_API void webview_escape_js(const char* js, char* output);
+WEBVIEW_API char* webview_escape_js(const char* js, char* output);
 
 #ifdef __cplusplus
 }
@@ -1552,9 +1552,11 @@ WEBVIEW_API unsigned int webview_escaped_js_size(const char* js) {
   return count + 1;
 }
 
-WEBVIEW_API void webview_escape_js(const char* js, char* output) {
+WEBVIEW_API char* webview_escape_js(const char* js, char* output) {
   std::string escaped = webview::escape_js(js);
   strcpy(output, escaped.c_str());
+
+  return output;
 }
 
 // helper function to disable right click context menu
