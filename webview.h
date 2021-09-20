@@ -628,8 +628,6 @@ using browser_engine = gtk_webkit_engine;
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
-#include <Foundation/Foundation.h>
-#include <iostream>
 
 #define NSBackingStoreBuffered 2
 
