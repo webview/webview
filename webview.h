@@ -71,7 +71,6 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 #define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
 #define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
 #define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
-#define WEBVIEW_HINT_NO_CTX 4 // No context menu on right click
 // Updates native window size. See WEBVIEW_HINT constants.
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
@@ -117,12 +116,16 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y);
 // Centers the window relative to the primary monitor
 WEBVIEW_API void webview_center(webview_t w);
 
+// Removes the default right click context menu in the webview
+WEBVIEW_API void webview_no_ctx_menu(webview_ wt);
+
 // C helper function to get the size of the buffer required to hold the escaped html/javascript 
 WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
 
 // C helper function that escapes characters in html/js code that would otherwise be removed during the decoding of the url, causing errors
 // if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass the modified output string to webview_navigate
 WEBVIEW_API char* webview_escape_js(const char* js, char* output);
+
 
 #ifdef __cplusplus
 }
@@ -457,9 +460,6 @@ inline std::string json_parse(const std::string s, const std::string key,
 
 } // namespace webview
 
-// internal helper function to disable right click context menu
-void _handle_context_menu(webview_t, int);
-
 #if defined(WEBVIEW_GTK)
 //
 // ====================================================================
@@ -568,7 +568,6 @@ public:
       gtk_window_set_geometry_hints(GTK_WINDOW(m_window), nullptr, &g, h);
     }
 
-    _handle_context_menu(this, hints);
   }
 
   void navigate(const std::string url) {
@@ -838,7 +837,6 @@ public:
           CGRectMake(0, 0, width, height), 1, 0);
     }
 
-    _handle_context_menu(this, hints);
   }
 
   void navigate(const std::string url) {
@@ -1296,7 +1294,6 @@ public:
       m_browser->resize(m_window);
     }
 
-    _handle_context_menu(this, hints);
   }
 
 
@@ -1452,6 +1449,9 @@ public:
       }
     });
   }
+  void no_ctx_menu() {
+    this->init("window.addEventListener('contextmenu', (event) => event.preventDefault())");
+  }
 
 private:
   void on_message(const std::string msg) {
@@ -1541,6 +1541,9 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y) {
 WEBVIEW_API void webview_center(webview_t w) {
   static_cast<webview::webview *>(w)->center();
 }
+WEBVIEW_API void webview_no_ctx_menu(webview_ wt) {
+  static_cast<webview::webview *>(w)->init();
+}
 
 WEBVIEW_API unsigned int webview_escaped_js_size(const char* js) {
   size_t length = strlen(js);
@@ -1560,12 +1563,6 @@ WEBVIEW_API char* webview_escape_js(const char* js, char* output) {
   strcpy(output, escaped.c_str());
 
   return output;
-}
-
-// helper function to disable right click context menu
-void _handle_context_menu(webview_t w, int hints) {
-  if((hints & WEBVIEW_HINT_NO_CTX) == WEBVIEW_HINT_NO_CTX)
-    static_cast<webview::webview *>(w)->init("window.addEventListener('contextmenu', (event) => event.preventDefault())");
 }
 
 #endif /* WEBVIEW_HEADER */

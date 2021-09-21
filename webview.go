@@ -73,9 +73,6 @@ const (
 	// Width and height are maximum bounds
 	HintMax = C.WEBVIEW_HINT_MAX
 
-	// No context menu on right click
-	HintNoCtx = C.WEBVIEW_HINT_NO_CTX
-
 )
 
 type WebView interface {
@@ -141,6 +138,9 @@ type WebView interface {
 
 	// Center centers the window relative to the primary monitor
 	Center()
+
+	// NoCtxMenu, removes the default right click context menu in the webview
+	NoCtxMenu()
 
 }
 
@@ -372,5 +372,8 @@ func (w *webview) SetPosition(x int, y int) {
 
 func (w *webview) Center() {
 	C.webview_center(w.w)
+}
+func (w *webview) NoCtxMenu() {
+	C.webview_no_ctx_menu(w.w);
 }
 
