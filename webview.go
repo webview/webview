@@ -49,6 +49,7 @@ import (
 	"runtime"
 	"sync"
 	"unsafe"
+	"strings"
 )
 
 func init() {
@@ -71,6 +72,7 @@ const (
 
 	// Width and height are maximum bounds
 	HintMax = C.WEBVIEW_HINT_MAX
+
 )
 
 type WebView interface {
@@ -127,6 +129,19 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// Topmost forces a window to float above all other windows
+	Topmost(makeTopmost bool)
+
+	// SetPosition updates the position of the native window
+	SetPosition(x int, y int)
+
+	// Center centers the window relative to the primary monitor
+	Center()
+
+	// NoCtx, removes the default right click context menu in the webview
+	NoCtx()
+
 }
 
 type webview struct {
@@ -161,6 +176,24 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 	w := &webview{}
 	w.w = C.webview_create(boolToInt(debug), window)
 	return w
+}
+
+// EscapeJs is a helper function that escapes characters in html/js code that would otherwise be removed by url_decode, causing errors
+// if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass its output to Navigate
+func EscapeJs(js string) string {
+	length := len(js)
+	var output strings.Builder
+    	for i := 0; i < length; i ++ {
+      		if js[i] == '+' {
+        		output.WriteString("%2b")
+      		} else if js[i] == '%'{
+        		output.WriteString("%25") 
+      		} else {
+        		output.WriteByte(js[i])
+      		}
+    }
+
+    return output.String()
 }
 
 func (w *webview) Destroy() {
@@ -321,3 +354,26 @@ func (w *webview) Bind(name string, f interface{}) error {
 	C.CgoWebViewBind(w.w, cname, C.uintptr_t(index))
 	return nil
 }
+
+func (w *webview) Topmost(makeTopmost bool) {
+	var setting C.int
+	if makeTopmost {
+		setting = 1
+	} else {
+		setting = 0
+	}
+
+	C.webview_topmost(w.w, setting)
+}
+
+func (w *webview) SetPosition(x int, y int) {
+	C.webview_set_position(w.w, C.int(x), C.int(y))
+}
+
+func (w *webview) Center() {
+	C.webview_center(w.w)
+}
+func (w *webview) NoCtx() {
+	C.webview_no_ctx(w.w);
+}
+

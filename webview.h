@@ -107,6 +107,26 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
+// Forces a window to float above all other windows
+WEBVIEW_API void webview_topmost(webview_t w, int make_topmost);
+
+// Updates the position of the native window
+WEBVIEW_API void webview_set_position(webview_t w, int x, int y);
+
+// Centers the window relative to the primary monitor
+WEBVIEW_API void webview_center(webview_t w);
+
+// Removes the default right click context menu in the webview
+WEBVIEW_API void webview_no_ctx(webview_t wt);
+
+// C helper function to get the size of the buffer required to hold the escaped html/javascript 
+WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
+
+// C helper function that escapes characters in html/js code that would otherwise be removed during the decoding of the url, causing errors
+// if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass the modified output string to webview_navigate
+WEBVIEW_API char* webview_escape_js(const char* js, char* output);
+
+
 #ifdef __cplusplus
 }
 #endif
@@ -196,6 +216,21 @@ inline std::string html_from_uri(const std::string s) {
     return url_decode(s.substr(15));
   }
   return "";
+}
+
+inline std::string escape_js(const std::string& js) {
+    std::string output;
+    output.reserve(js.size()*2);
+    for(const auto& c: js) {
+        if(c == '+')
+            output.append("%2b");
+        else if (c == '%')
+            output.append("%25");
+        else
+            output.push_back(c);
+    }
+
+    return output;
 }
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
@@ -532,6 +567,7 @@ public:
       // This defines either MIN_SIZE, or MAX_SIZE, but not both:
       gtk_window_set_geometry_hints(GTK_WINDOW(m_window), nullptr, &g, h);
     }
+
   }
 
   void navigate(const std::string url) {
@@ -550,6 +586,21 @@ public:
   void eval(const std::string js) {
     webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(), NULL,
                                    NULL, NULL);
+  }
+
+  void topmost(bool make_topmost = true) {
+    //TODO
+    return;
+  }
+
+  void set_position(int x, int y) {
+    // TODO
+    return;
+  }
+
+  void center() {
+    // TODO
+    return;
   }
 
 private:
@@ -598,6 +649,15 @@ id operator"" _str(const char *s, std::size_t) {
       "NSString"_cls, "stringWithUTF8String:"_sel, s);
 }
 
+// needed to allow the callback below to have access to the window
+id globalWindow;
+
+// this performs an action once the WKWebView content  is loaded
+// here we set the alpha of the window back to 1 to make it visible
+void finished_navigation(id,SEL) {
+    ((void (*)(id, SEL, double))objc_msgSend)(globalWindow, "setAlphaValue:"_sel, 1.0);
+ }
+
 class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window) {
@@ -629,9 +689,9 @@ public:
     auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
     objc_setAssociatedObject(delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
+
     ((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setDelegate:"),
                                           delegate);
-
     // Main window
     if (window == nullptr) {
       m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
@@ -702,10 +762,29 @@ public:
                         },
                       };
                      )script");
+
+
+    // fix white flash on startup
+    // Make the window invisible before any content is loaded	
+    ((void(*)(id, SEL, double))objc_msgSend)(m_window, "setAlphaValue:"_sel, 0.0);
+    // set globalWindow to a reference of m_window
+    globalWindow = m_window;
+    // add a finished_navigation method that peforms some action once the web content is loaded
+    // Ths function is defined before the cocoa_wkwebview_engine class and it makes the window visible
+    class_addMethod(objc_getClass("WKWebView"), "webView:didFinishNavigation:"_sel,(IMP) finished_navigation, "v@:@");
+    // this bit is required to make sure our callback is called
+    ((void(*)(id, SEL, id))objc_msgSend)(m_webview, "setNavigationDelegate:"_sel, m_webview);
+
+    // Equivalent Obj-C:
+    // [ webView setValue:@NO forKey:@"drawsBackground"];
+    ((void(*)(id, SEL, id, id))objc_msgSend)(m_webview, "setValue:forKey:"_sel,((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 0) , "drawsBackground"_str);
+    
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setContentView:"_sel,
                                           m_webview);
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
+
   }
   ~cocoa_wkwebview_engine() { close(); }
   void *window() { return (void *)m_window; }
@@ -757,8 +836,9 @@ public:
           m_window, "setFrame:display:animate:"_sel,
           CGRectMake(0, 0, width, height), 1, 0);
     }
-    ((void (*)(id, SEL))objc_msgSend)(m_window, "center"_sel);
+
   }
+
   void navigate(const std::string url) {
     auto nsurl = ((id(*)(id, SEL, id))objc_msgSend)(
         "NSURL"_cls, "URLWithString:"_sel,
@@ -790,6 +870,21 @@ public:
         nullptr);
   }
 
+  void topmost(bool make_topmost = true) {
+      auto level = make_topmost ? 3 : 0;
+      ((void(*)(id, SEL,int))objc_msgSend)(m_window, "setLevel:"_sel, level);
+  }
+
+  void set_position(int x, int y) {
+    ((void(*)(id, SEL, CGPoint))objc_msgSend)(m_window, "setFrameTopLeftPoint:"_sel, CGPointMake(x,y));
+    return;
+  }
+
+  void center() {
+    // places window slightly above center vertically
+    ((void(*)(id, SEL))objc_msgSend)(m_window, "center"_sel);
+  }
+
 private:
   virtual void on_message(const std::string msg) = 0;
   void close() { ((void (*)(id, SEL))objc_msgSend)(m_window, "close"_sel); }
@@ -818,6 +913,7 @@ using browser_engine = cocoa_wkwebview_engine;
 #include <codecvt>
 #include <stdlib.h>
 #include <windows.h>
+#include <winuser.h>
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "Shlwapi.lib")
@@ -1187,16 +1283,82 @@ public:
       r.right = width;
       r.bottom = height;
       AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
+
+      // if topmost, unset SWP_NOZORDER
+      if(m_is_topmost)
+        m_window_flags = m_window_flags & ~SWP_NOZORDER;
+
       SetWindowPos(
           m_window, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top,
-          SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+          m_window_flags);
       m_browser->resize(m_window);
     }
+
   }
+
 
   void navigate(const std::string url) { m_browser->navigate(url); }
   void eval(const std::string js) { m_browser->eval(js); }
   void init(const std::string js) { m_browser->init(js); }
+
+  void topmost(bool make_topmost = true) {
+    m_is_topmost = make_topmost;
+
+    RECT r;
+    if(GetWindowRect(m_window, &r) == 0)
+    {
+      r.left = 0;
+      r.top = 0;
+      r.right = 0;
+      r.bottom = 0;
+    }
+
+    if(make_topmost)
+      m_window_flags = m_window_flags & ~SWP_NOZORDER;
+    else 
+      m_window_flags |= SWP_NOZORDER;
+
+    SetWindowPos(
+      m_window, 
+      make_topmost ? HWND_TOPMOST : HWND_TOP,
+      r.left, r.top, r.right - r.left, r.bottom - r.top,
+      m_window_flags);
+  }
+
+  void set_position(int x, int y) {
+    RECT r;
+    if(GetWindowRect(m_window, &r) == 0)
+    {
+      r.left = 0;
+      r.top = 0;
+      r.right = 0;
+      r.bottom = 0;
+    }
+
+    int width = r.right - r.left;
+    int height = r.bottom - r.top;
+
+    MoveWindow(m_window, x, y, width, height, false);
+  }
+
+  void center() {
+    RECT r;
+    if(GetWindowRect(m_window, &r) == 0)
+    {
+      r.left = 0;
+      r.top = 0;
+      r.right = 0;
+      r.bottom = 0;
+    }
+
+    int window_width = r.right - r.left;
+    int window_height = r.bottom - r.top;
+    int screen_width = GetSystemMetrics(SM_CXSCREEN);
+    int screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+    MoveWindow(m_window, screen_width / 2 - window_width / 2,
+               screen_height / 2 - window_height / 2, window_width, window_height, false);
+  }
 
 private:
   virtual void on_message(const std::string msg) = 0;
@@ -1205,8 +1367,10 @@ private:
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
-  std::unique_ptr<webview::browser> m_browser =
-      std::make_unique<webview::edge_chromium>();
+  std::unique_ptr<webview::browser> m_browser = std::make_unique<webview::edge_chromium>();
+  bool m_is_topmost = false;
+  unsigned int m_window_flags = SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED;
+
 };
 
 using browser_engine = win32_edge_engine;
@@ -1285,6 +1449,9 @@ public:
       }
     });
   }
+  void no_ctx() {
+    init("window.addEventListener('contextmenu', (event) => event.preventDefault())");
+  }
 
 private:
   void on_message(const std::string msg) {
@@ -1330,8 +1497,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
   static_cast<webview::webview *>(w)->set_title(title);
 }
 
-WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints) {
+WEBVIEW_API void webview_set_size(webview_t w, int width, int height, int hints) {
   static_cast<webview::webview *>(w)->set_size(width, height, hints);
 }
 
@@ -1362,6 +1528,41 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result) {
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
+}
+
+WEBVIEW_API void webview_topmost(webview_t w, int make_topmost) {
+  static_cast<webview::webview *>(w)->topmost(make_topmost);
+}
+
+WEBVIEW_API void webview_set_position(webview_t w, int x, int y) {
+  static_cast<webview::webview *>(w)->set_position(x,y);
+}
+
+WEBVIEW_API void webview_center(webview_t w) {
+  static_cast<webview::webview *>(w)->center();
+}
+WEBVIEW_API void webview_no_ctx(webview_t w) {
+  static_cast<webview::webview *>(w)->no_ctx();
+}
+
+WEBVIEW_API unsigned int webview_escaped_js_size(const char* js) {
+  size_t length = strlen(js);
+  size_t count = 0;
+  for(int i = 0; i < length; i++) {
+    if(js[i] == '+' || js[i] == '%')
+      count += 3;
+    else
+      count++;
+  }
+
+  return count + 1;
+}
+
+WEBVIEW_API char* webview_escape_js(const char* js, char* output) {
+  std::string escaped = webview::escape_js(js);
+  strcpy(output, escaped.c_str());
+
+  return output;
 }
 
 #endif /* WEBVIEW_HEADER */
