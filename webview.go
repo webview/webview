@@ -139,8 +139,8 @@ type WebView interface {
 	// Center centers the window relative to the primary monitor
 	Center()
 
-	// NoCtxMenu, removes the default right click context menu in the webview
-	NoCtxMenu()
+	// NoCtx, removes the default right click context menu in the webview
+	NoCtx()
 
 }
 
@@ -373,7 +373,7 @@ func (w *webview) SetPosition(x int, y int) {
 func (w *webview) Center() {
 	C.webview_center(w.w)
 }
-func (w *webview) NoCtxMenu() {
-	C.webview_no_ctx_menu(w.w);
+func (w *webview) NoCtx() {
+	C.webview_no_ctx(w.w);
 }
 
