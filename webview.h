@@ -117,7 +117,7 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y);
 WEBVIEW_API void webview_center(webview_t w);
 
 // Removes the default right click context menu in the webview
-WEBVIEW_API void webview_no_ctx_menu(webview_ wt);
+WEBVIEW_API void webview_no_ctx_menu(webview_t wt);
 
 // C helper function to get the size of the buffer required to hold the escaped html/javascript 
 WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
@@ -1450,7 +1450,7 @@ public:
     });
   }
   void no_ctx_menu() {
-    this->init("window.addEventListener('contextmenu', (event) => event.preventDefault())");
+    init("window.addEventListener('contextmenu', (event) => event.preventDefault())");
   }
 
 private:
@@ -1541,8 +1541,8 @@ WEBVIEW_API void webview_set_position(webview_t w, int x, int y) {
 WEBVIEW_API void webview_center(webview_t w) {
   static_cast<webview::webview *>(w)->center();
 }
-WEBVIEW_API void webview_no_ctx_menu(webview_ wt) {
-  static_cast<webview::webview *>(w)->init();
+WEBVIEW_API void webview_no_ctx_menu(webview_t w) {
+  static_cast<webview::webview *>(w)->no_ctx_menu();
 }
 
 WEBVIEW_API unsigned int webview_escaped_js_size(const char* js) {
