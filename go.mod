@@ -1,5 +1,4 @@
-module github.com/webview/webview
+module github.com/phillvancejr/webview
+
 
 go 1.13
-
-replace github.com/webview/webview => github.com/phillvancejr/webview
