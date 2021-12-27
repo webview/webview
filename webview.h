@@ -463,7 +463,8 @@ inline std::string json_parse(const std::string s, const std::string key,
 #if defined(WEBVIEW_GTK)
 //
 // ====================================================================
-//
+uff.String()                                                                                   |  8     ctx.fillRect(0,0,width,height)
+  7//
 // This implementation uses webkit2gtk backend. It requires gtk+3.0 and
 // webkit2gtk-4.0 libraries. Proper compiler flags can be retrieved via:
 //
@@ -817,6 +818,10 @@ public:
             "NSString"_cls, "stringWithUTF8String:"_sel, title.c_str()));
   }
   void set_size(int width, int height, int hints) {
+    // setting the size of a window on mac doesn't take into consideration the title bar,s o if the style mask is titled then it needs to be added to the height
+    // TODO allow the user to customize style mask, maybe I want a window without native title bars so I can design my own
+    const auto mac_title_bar = 22;
+    height += mac_title_bar;
     auto style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                  NSWindowStyleMaskMiniaturizable;
     if (hints != WEBVIEW_HINT_FIXED) {
