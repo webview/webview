@@ -26,7 +26,7 @@ Install Webview library with `go get`:
 $ go get github.com/phillvancejr/webview
 ```
 
-Import the package and start using it:
+Import the package and start using it ([goWikipedia](example/go/goWikipedia)):
 
 ```go
 package main
