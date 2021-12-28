@@ -35,8 +35,8 @@ func main() {
             ctx.fillRect(x,y,w,h)
         }
 
-        // notify main thread that dom is loaded
-        domLoaded()
+        // notify main thread that everything is ready and loaded
+        ready()
         // call the backend redSquare function which in tern calls JS
         redSquare()
     </script>
@@ -46,17 +46,17 @@ func main() {
         w.Eval("ctx.fillStyle='red';ctx.fillRect(200,300,30,30)")
     })
 
-    // channel for domLoaded notification
-    domLoaded := make(chan bool)
-    // this function allows JS to notify us when the dom is loaded
-    w.Bind("domLoaded", func(){
-        domLoaded <- true 
+    // channel for ready notification
+    ready := make(chan bool)
+    // this function allows JS to notify us when everything is ready and loaded
+    w.Bind("ready", func(){
+        ready <- true 
     })
 
     // run in goroutine to avoid blocking 
     go func() {
-        // wait for dom to load
-        <-domLoaded
+        // wait for the ready signal
+        <-ready
         // w.Dispatch means do something on the main thread
         // you need this when calling JS from goroutines
         w.Dispatch(func(){
