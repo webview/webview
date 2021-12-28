@@ -126,6 +126,108 @@ WEBVIEW_API unsigned int webview_escaped_js_size(const char* js);
 // if your url is as data:text/html, with a script tag containing the characters + or %, use this function and pass the modified output string to webview_navigate
 WEBVIEW_API char* webview_escape_js(const char* js, char* output);
 
+// Javascript Keycodes
+enum key {
+  BACKSPACE = 8,
+  TAB = 9,
+  ENTER = 13,
+  SHIFT = 16,
+  CTRL = 17,
+  ALT = 18,
+  PAUSE = 19,
+  CAPSLOCK = 20,
+  ESCAPE = 27,
+  SPACE = 32,
+  PAGEUP = 33,
+  PAGEDOWN = 34,
+  END = 35,
+  HOME = 36,
+  LEFT = 37,
+  UP = 38,
+  RIGHT = 39,
+  DOWN = 40,
+  PRINTSCREEN = 44,
+  INSERT = 45,
+  DELETE = 46,
+  N0 = 48,
+  N1 = 49,
+  N2 = 50,
+  N3 = 51,
+  N4 = 52,
+  N5 = 53,
+  N6 = 54,
+  N7 = 55,
+  N8 = 56,
+  N9 = 57,
+  A = 65,
+  B = 66,
+  C = 67,
+  D = 68,
+  E = 69,
+  F = 70,
+  G = 71,
+  H = 72,
+  I = 73,
+  J = 74,
+  K = 75,
+  L = 76,
+  M = 77,
+  N = 78,
+  O = 79,
+  P = 80,
+  Q = 81,
+  R = 82,
+  S = 83,
+  T = 84,
+  U = 85,
+  V = 86,
+  W = 87,
+  X = 88,
+  Y = 89,
+  Z = 90,
+  WINDOWKEYLEFT = 91,
+  WINDOWKEYRIGHT = 92,
+  SELECT = 93,
+  NP0 = 96,
+  NP1 = 97,
+  NP2 = 98,
+  NP3 = 99,
+  NP4 = 100,
+  NP5 = 101,
+  NP6 = 102,
+  NP7 = 103,
+  NP8 = 104,
+  NP9 = 105,
+  MULTIPLY = 106,
+  ADD = 107,
+  SUBTRACT = 109,
+  PERIOD = 110,
+  DIVIDE = 111,
+  F1 = 112,
+  F2 = 113,
+  F3 = 114,
+  F4 = 115,
+  F5 = 116,
+  F6 = 117,
+  F7 = 118,
+  F8 = 119,
+  F9 = 120,
+  F10 = 121,
+  F11 = 122,
+  F12 = 123,
+  NUMLOCK = 144,
+  SCROLLLOCK = 145,
+  SEMICOLON = 186,
+  EQUAL = 187,
+  COMMA = 188,
+  DASH = 189,
+  PERIOD = 190,
+  SLASHFORWARD = 191,
+  BRACKETOPEN = 219,
+  SLASHBACK = 220,
+  BRACKETCLOSE = 221,
+  QUOTE = 222,
+};
 
 #ifdef __cplusplus
 }
@@ -590,17 +692,17 @@ public:
   }
 
   void topmost(bool make_topmost = true) {
-    //TODO
+    gtk_window_set_keep_above(GTK_WINDOW(m_window), make_topmost);
     return;
   }
 
   void set_position(int x, int y) {
-    // TODO
+    gtk_window_move(GTK_WINDOW(m_window), x, y);
     return;
   }
 
   void center() {
-    // TODO
+    gtk_window_set_position (GTK_WINDOW(m_window), GTK_WIN_POS_CENTER_ALWAYS);
     return;
   }
 
@@ -1264,6 +1366,7 @@ public:
   }
 
   void set_title(const std::string title) {
+    // TODO
     SetWindowText(m_window, title.c_str());
   }
 
