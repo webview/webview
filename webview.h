@@ -201,7 +201,7 @@ enum key {
   MULTIPLY = 106,
   ADD = 107,
   SUBTRACT = 109,
-  PERIOD = 110,
+  DECIMAL = 110,
   DIVIDE = 111,
   F1 = 112,
   F2 = 113,
