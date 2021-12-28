@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webview Snake Example</title>
+    <style>
+        body {
+            margin: 0px;
+            overflow: hidden;
+        }
+
+        div {
+            position: absolute;
+            margin: 0px;
+            padding: 10px;
+            left: 150px;
+            top:150px;
+            text-align: center;
+            color: rgb(200,200,200);
+            font-family: Arial, Helvetica, sans-serif;
+            background: rgb(100,100,100);
+            visibility: hidden;
+        }
+
+        div button {
+            border: none;
+            font-size: 30px;
+            width: 70px;
+            margin: 5px;
+        }
+
+        #yes {
+            color: white;
+            background-color: rgb(50,50,50);
+
+        }
+
+        #no {
+            color: rgb(50,50,50);
+            background-color: rgb(200,200,200);
+
+        }
+
+    </style>
+</head>
+<body>
+   <canvas id='snake'></canvas> 
+   <div id='play-again'>
+    <h1>Play Again?</h1>
+    <button id="yes" onclick=set_play_again(true)>Yes</button>
+    <button id="no" onclick=set_play_again(false)>No</button>
+   </div>
+   <script>
+    var webview, width, height;
+
+    width = width || 500
+    height = height || 500
+
+    const size = 25
+    let val = 1 + size;
+    const clear_color = '#222'
+    const snake_color = 'white'
+    const food_color = 'purple'
+    const shrink_food_color = 'green'
+    const invincible_food_color = 'yellow'
+    let shrink_bonus
+    // time in seconds
+    let shrink_mode_time = 1.25
+    let invincibilty_time = 5
+    //const score_display = document.getElementById('score-display')
+    const canvas = document.getElementById('snake')
+    canvas.width = width
+    canvas.height = height
+
+    
+    const draw = canvas.getContext('2d')
+    const play_again_dialog = document.getElementById('play-again')
+
+    let keep_playing = null
+    const set_play_again = play => keep_playing = play
+
+    const check_interval = .25
+    const sleep = interval =>{ return new Promise(r=>setTimeout(r,interval*1000))}
+
+    const play_again = async () => {
+        if(keep_playing != null)
+            return new Promise(r=>r(keep_playing))
+        
+        await sleep(check_interval)
+
+        return play_again()
+    }
+
+    const clear_background = () => {
+        draw.fillStyle = clear_color
+        draw.fillRect(0, 0, width, height)
+    }
+
+    const draw_score = score => {
+        draw.fillStyle = '#333'
+        draw.font = "100px Helvetica"
+        let score_string = String(score).padStart(3, '0')
+        draw.fillText(score_string,width/3,height/2)
+    }
+
+    const draw_block = (color, x, y) => {
+        draw.fillStyle = color
+        draw.fillRect(x, y, size, size)
+    }
+
+    const exit = () => {
+        console.log('done playing!')
+        // in webview call c++ function to close window
+        typeof _exit != 'undefined' ? _exit():0;
+    }
+
+    let direction = {
+        none: 0,
+        left: 1,
+        up: 2,
+        right: 3,
+        down: 4
+    }
+
+    Object.freeze(direction)
+
+    let current_direction = direction.none
+    let last_direction = direction.none
+
+    const backtracking = () => {
+        if(current_direction == direction.left && last_direction == direction.right || current_direction == direction.right && last_direction == direction.left || current_direction == direction.up && last_direction == direction.down || last_direction == direction.down && current_direction == direction.up)
+        return true;
+
+        return false
+    }
+
+    window.onkeydown = e => {
+        webview? e.preventDefault():0
+
+        switch(e.keyCode) {
+            // left
+            case 37:
+                last_direction = current_direction
+                current_direction = direction.left
+            break
+            // up
+            case 38:
+                last_direction = current_direction
+                current_direction = direction.up
+            break
+            // right
+            case 39:
+                last_direction = current_direction
+                current_direction = direction.right
+            break
+            // down
+            case 40:
+                last_direction = current_direction
+                current_direction = direction.down
+            break
+            // space 
+            case 32:
+                keep_playing = true
+            break
+            // escape
+            case 27:
+                keep_playing = false
+            break
+
+        }
+
+    }
+
+
+    const Segment = class {
+        constructor(x, y) {
+            this.x = x
+            this.y = y
+            this.last_x = x
+            this.last_y = y
+        }
+    }
+
+    const Snake = class {
+        constructor(x,y) {
+            this.color = snake_color
+            this.x = x
+            this.y = y
+            this.segments = [new Segment(x, y)]
+            this.dead = false
+            this.is_invincible = false
+            this.shrink_mode = false
+        }
+
+        move() {
+
+            let head = this.segments[0]
+            let temp_x = head.x
+            let temp_y = head.y
+            if(this.segments.length > 1 && backtracking())
+                current_direction = last_direction
+
+            this.segments.forEach((segment, index)=>{
+                if(index==0) {
+                    if(current_direction==direction.left)
+                        temp_x = segment.x - size
+                    else if(current_direction==direction.up)
+                        temp_y = segment.y - size
+                    else if(current_direction==direction.right)
+                        temp_x = segment.x + size
+                    else if(current_direction==direction.down)
+                        temp_y = segment.y + size                    
+                    
+                    // if inside walls horizontally
+                    if(temp_x >= 0 && temp_x <= width - size) {
+                        segment.last_x = segment.x 
+                        segment.x = temp_x
+                        
+                    } else {
+                        this.dead = true
+                    }
+
+                    // if inside walls vertically
+                    if(temp_y >= 0 && temp_y <= height - size) {
+                        segment.last_y = segment.y
+                        segment.y = temp_y
+                    } else {
+                        this.dead = true
+                    }
+                    this.x = segment.x
+                    this.y = segment.y
+
+                    // if hit self
+                    if(!this.is_invincible && this.segments.length > 1)  
+                        this.segments.forEach((other,i)=>{
+                            if(i>0 && other.x == this.x && other.y == this.y) {
+                                this.dead = true
+                                return
+                            }
+                        })
+
+                } else {
+                    // get previous segment
+                    let last_segment = this.segments[index - 1]
+                    // current position becomes its last
+                    segment.last_x = segment.x
+                    segment.last_y = segment.y
+
+                    // current position becomes the previous segment's last
+                    segment.x = last_segment.last_x
+                    segment.y = last_segment.last_y
+                    
+                }
+
+
+            })
+
+
+        }
+
+        invincible() {
+            this.is_invincible = true
+            // warning time just before invul wears off
+            const warn_time = 0.5 * 1000
+            let invul_flash = setInterval(()=> {
+                if(this.color != invincible_food_color)
+                    this.color = invincible_food_color
+                else
+                    this.color = snake_color
+
+            }, 0.25*1000)
+
+
+            setTimeout(()=> {
+                clearInterval(invul_flash)
+                this.color = 'red'
+                this.is_invincible = false
+
+                setTimeout(()=>this.color=snake_color, warn_time)
+
+            }, (invincibilty_time*1000)-warn_time)
+        }
+
+        grow() {
+            let last_segment = this.segments[this.segments.length-1]
+            let segment = new Segment(last_segment.last_x, last_segment.last_y)
+            this.segments.push(segment)
+        }
+
+        shrink(count=1) {
+            let handle
+            if(this.segments.length > 1) {
+                let tail_length = this.segments.length - 1
+                // if count is greater than tail_length then only remove tail length
+                count = count > tail_length ? tail_length : count
+
+                this.shrink_mode = true
+                this.color = shrink_food_color
+                const length = this.segments.length
+                for(var i = length; i > length-count;i--){
+                    this.segments.pop()
+                }
+                handle = setTimeout(()=>{
+                    this.color = snake_color
+                    this.shrink_mode = false
+                    shrink_bonus = 0
+                },shrink_mode_time*1000)
+
+                return handle    
+            }
+
+            return null
+
+        }
+
+        draw() {
+            this.segments.forEach(s=> {
+                draw_block(this.color, s.x, s.y)
+                //draw_block('red', s.last_x, s.last_y)
+            })
+            //this.segments.forEach(s => draw_block(this.color, s.x, s.y))
+        }
+
+    }
+    const food_types = {
+        normal: 0,
+        shrink: 1,
+        invincible: 2
+    }
+
+    const food_type_keys = Object.keys(food_types)
+
+    const Food = class {
+
+        constructor() {
+            let max = width-size
+            let min = size
+
+            let pos = Math.random() * (max - min + 1) + min
+            this.x = pos - (pos % size)
+
+            max = height - size
+
+            pos = Math.random() * (max - min + 1) + min
+            this.y = pos - (pos % size)
+            let random_choice = Math.random() * 10
+            let normal_chance = 8
+            let shrink_chance = 8.5
+
+            if(random_choice <= normal_chance) 
+                this.type = food_types.normal
+            else if(random_choice > normal_chance && random_choice < shrink_chance)
+                this.type = food_types.invincible
+            else
+                this.type = food_types.shrink
+
+
+            this.color = [ food_color, shrink_food_color, invincible_food_color ][this.type]
+
+        }
+
+
+        draw() {
+            draw_block(this.color, this.x, this.y)
+        }
+    }
+
+
+    const x_blocks = Math.floor(width/size)
+    const y_blocks = Math.floor(height/size)
+    const mid_x = Math.floor(x_blocks/2) * size
+    const mid_y = Math.floor(y_blocks/2) * size
+    const food_count = 10
+    const second = 1000
+    // let for dev
+    // movements per second
+    let moves = 8
+
+    let snake
+    let food
+
+    let last_time
+    let current_time
+
+    let score
+    let shrink_handle
+    const shrink_multiplier = 1
+
+    const setup = (game_loop) => {
+        snake = new Snake(mid_x,mid_y)
+        food = [...Array(food_count).keys()]
+            .map(n=>new Food())
+        snake.dead = false 
+        last_time = 0
+
+        score = 0
+        shrink_handle = null
+        shrink_bonus = 0
+        current_direction = direction.none
+        last_direction = direction.none
+        keep_playing = null
+        clear_background()
+        snake.draw()
+        food.forEach(f=>f.draw())
+
+        game_loop()
+    }
+
+    let loop_id 
+    const loop = async () => {
+        // after dev move outside function
+        const speed = second/moves
+        loop_id = requestAnimationFrame(loop)
+
+        current_time = Date.now()
+
+        if(current_time - last_time > speed) {
+            last_time = current_time
+            // update
+
+            snake.move()
+
+            // check for food collision
+            food.forEach((f, i)=>{
+                if(snake.x == f.x && snake.y == f.y) {
+                    switch(f.type) {
+                        case food_types.normal:
+                            score += 1
+                            snake.grow()
+                            // shrink if in shrink state
+                            if(snake.shrink_mode) {
+                                shrink_bonus += shrink_multiplier
+                                // if a shrink mode handle exists, clear it
+                                // this prevents an old shrink mode from expiring and instead cancels it
+                                if(shrink_handle !== null)
+                                    clearTimeout(shrink_handle)
+                                shrink_handle = snake.shrink(shrink_bonus)
+
+                            }
+                        break
+
+                        case food_types.shrink:
+                            if(shrink_handle !== null)
+                                clearTimeout(shrink_handle)
+                            shrink_handle = snake.shrink()
+                        break
+
+                        case food_types.invincible:
+                            //snake.invincible()
+                            snake.invincible() 
+                        break
+                    }
+                    food[i] = new Food()
+
+                }
+
+            })
+
+            if(snake.dead) {
+                // stop the loop
+                cancelAnimationFrame(loop_id)
+                keep_playing = null
+                play_again_dialog.style.visibility = 'visible'
+                const replay = await play_again()
+
+                if(replay) {
+                    play_again_dialog.style.visibility = 'hidden'
+                    setup(loop)
+                }
+                else
+                    exit()
+                // insert some restart div dialog button
+                //clear_background()
+                /*
+                return
+                keep_playing = prompt('YOU DIED!\nkeep playing? y/n')
+                if (keep_playing != 'n' && keep_playing != null)
+                    setup(loop)
+                else
+                    return
+                */
+            }
+            // update
+ 
+            // draw
+            clear_background()
+
+            draw_score(score)
+
+            snake.draw()            
+            food.forEach(f=>f.draw())
+            // draw
+        }
+
+
+    }
+
+
+    setup(loop)
+
+   </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+Add proper dialogs for ending screen on Desktop version
+Add comments
+Maybe figure out how to center text
+Maybe bind Esc key to close game
+
+Save high score to file and add score screen with initial and date
+make better ui design and add custom sprites

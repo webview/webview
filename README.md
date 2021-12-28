@@ -39,19 +39,52 @@ func main() {
 	w.SetSize(800, 600, webview.HintNone)
 	w.Center()	// Center the window
 	w.NoCtx()	// remove the right click context menu
-	w.SetTitle("Minimal webview example")
-	w.Navigate("https://en.m.wikipedia.org/wiki/Main_Page")
+	w.SetTitle("Minimal Go webview example")
+    w.Navigate("https://en.wikipedia.org/wiki/Go_(programming_language)")
 	w.Run()
+}
+
+```
+![screen-img](example/go/goWikipedia/goWikipedia.png)
+
+You can also store the html directly in a string, this is the [helloWebview](example/go/helloWebview) go example:
+```go
+package main
+
+import "github.com/phillvancejr/webview"
+
+func main() {
+    w := webview.New()
+    defer w.Destroy()
+
+    w.SetSize(300, 100, webview.HintFixed)
+    w.Center()
+    w.NoCtx()
+    w.Topmost(true)
+    w.SetTitle("Hello Go Webview!")
+    w.Navigate(`data:text/html,<h1>Hello Webview!</h1>`)
+    w.Run()
 }
 ```
 
-To build the app use the following commands:
+![screen-img](example/go/helloWebview/helloWebview.png)
+
+You can even make games with Webview! [Pong](example/go/pong) is a classic:
+![screen-gif](example/go/pong/pong.gif)
+
+So is [Snake](example/cpp/snakeJS) (JS frontend C++ backend)  
+![screen-gif](example/cpp/snakeJS/cpp_snake.gif)
+
+I personally also use Webview to build automation tools at my job as a Graphic Designer. This tool [Vomela-Sidewall-Searcher](https://github.com/phillvancejr/Vomela-Sidewall-Searcher) was built with Webview:
+![screen-img](https://raw.githubusercontent.com/phillvancejr/Vomela-Sidewall-Searcher/master/demo.gif)
+
+To build the go apps use the following commands:
 
 ```bash
-# Linux
+# Linux & MacOS
 $ go build -o webview-example && ./webview-example
 
-# MacOS uses app bundles for GUI apps
+# on MacOS you can create a simple .app bundle if you'd like
 $ mkdir -p example.app/Contents/MacOS
 $ go build -o example.app/Contents/MacOS/example
 $ open example.app # Or click on the app in Finder
