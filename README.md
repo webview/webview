@@ -74,7 +74,7 @@ You can even make games with Webview! [Pong](example/go/pong) is a classic:
 So is [Snake](example/cpp/snakeJS) (JS frontend C++ backend)  
 ![screen-gif](example/cpp/snakeJS/cpp_snake.gif)
 
-I personally also use Webview to build automation tools at my job as a Graphic Designer. This tool [Vomela-Sidewall-Searcher](https://github.com/phillvancejr/Vomela-Sidewall-Searcher) was built with Webview:
+I personally also use Webview to build automation tools at my job as a Graphic Designer. This tool [Vomela-Sidewall-Searcher](https://github.com/phillvancejr/Vomela-Sidewall-Searcher) was built with Webview:  
 ![screen-img](https://raw.githubusercontent.com/phillvancejr/Vomela-Sidewall-Searcher/master/demo.gif)
 
 To build the go apps use the following commands:
