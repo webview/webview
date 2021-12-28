@@ -37,8 +37,15 @@ func main() {
 
         // notify main thread that dom is loaded
         domLoaded()
+        // call the backend redSquare function which in tern calls JS
+        redSquare()
     </script>
     `, width, height)
+    
+    w.Bind("redSquare", func() {
+        w.Eval("ctx.fillStyle='red';ctx.fillRect(200,300,30,30)")
+    })
+
     // channel for domLoaded notification
     domLoaded := make(chan bool)
     // this function allows JS to notify us when the dom is loaded
