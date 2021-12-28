@@ -37,7 +37,6 @@ func main() {
 
         // notify main thread that dom is loaded
         domLoaded()
-        testing()
     </script>
     `, width, height)
     // channel for domLoaded notification
