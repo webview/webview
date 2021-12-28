@@ -42,6 +42,8 @@ func main() {
     </script>
     `, width, height)
     
+    // JS calls this backend end function which in tern calls JS directly
+    // note here that I don't need w.Dispatch because calls from the JS to the backend are always on the main thread
     w.Bind("redSquare", func() {
         w.Eval("ctx.fillStyle='red';ctx.fillRect(200,300,30,30)")
     })
