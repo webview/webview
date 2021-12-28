@@ -693,17 +693,14 @@ public:
 
   void topmost(bool make_topmost = true) {
     gtk_window_set_keep_above(GTK_WINDOW(m_window), make_topmost);
-    return;
   }
 
   void set_position(int x, int y) {
     gtk_window_move(GTK_WINDOW(m_window), x, y);
-    return;
   }
 
   void center() {
     gtk_window_set_position (GTK_WINDOW(m_window), GTK_WIN_POS_CENTER_ALWAYS);
-    return;
   }
 
 private:
