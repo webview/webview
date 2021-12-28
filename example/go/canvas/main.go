@@ -11,10 +11,12 @@ const (
 )
 
 func main() {
-    w := webview.New(false)
+    w := webview.New()
     defer w.Destroy()
     w.SetSize(width,height, webview.HintNone)
     w.SetTitle("Go Canvas")
+    w.Center()
+    w.NoCtx()
 
     content := fmt.Sprintf(`
     <body style="margin:0px;overflow:hidden;">
