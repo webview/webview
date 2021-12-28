@@ -5,7 +5,7 @@ A simple Snake game hosted with Webview. The game is written with JavaScript and
 ![screen-gif](cpp_snake.gif)
 
 ## Building 
-Unixers can use the provided makefile to build just use
+Unixers can use the provided makefile to build, just use
 ```
 make
 ```
