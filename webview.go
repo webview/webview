@@ -47,9 +47,9 @@ import (
 	"errors"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"unsafe"
-	"strings"
 )
 
 func init() {
@@ -72,7 +72,6 @@ const (
 
 	// Width and height are maximum bounds
 	HintMax = C.WEBVIEW_HINT_MAX
-
 )
 
 type WebView interface {
@@ -141,7 +140,6 @@ type WebView interface {
 
 	// NoCtx, removes the default right click context menu in the webview
 	NoCtx()
-
 }
 
 type webview struct {
@@ -164,7 +162,13 @@ func boolToInt(b bool) C.int {
 
 // New calls NewWindow to create a new window and a new webview instance. If debug
 // is non-zero - developer tools will be enabled (if the platform supports them).
-func New(debug bool) WebView { return NewWindow(debug, nil) }
+func New(debug ...bool) WebView {
+	d := false
+	if len(debug) > 0 {
+		d = debug[0]
+	}
+	return NewWindow(d, nil)
+}
 
 // NewWindow creates a new webview instance. If debug is non-zero - developer
 // tools will be enabled (if the platform supports them). Window parameter can be
@@ -183,17 +187,17 @@ func NewWindow(debug bool, window unsafe.Pointer) WebView {
 func EscapeJs(js string) string {
 	length := len(js)
 	var output strings.Builder
-    	for i := 0; i < length; i ++ {
-      		if js[i] == '+' {
-        		output.WriteString("%2b")
-      		} else if js[i] == '%'{
-        		output.WriteString("%25") 
-      		} else {
-        		output.WriteByte(js[i])
-      		}
-    }
+	for i := 0; i < length; i++ {
+		if js[i] == '+' {
+			output.WriteString("%2b")
+		} else if js[i] == '%' {
+			output.WriteString("%25")
+		} else {
+			output.WriteByte(js[i])
+		}
+	}
 
-    return output.String()
+	return output.String()
 }
 
 func (w *webview) Destroy() {
@@ -374,6 +378,5 @@ func (w *webview) Center() {
 	C.webview_center(w.w)
 }
 func (w *webview) NoCtx() {
-	C.webview_no_ctx(w.w);
+	C.webview_no_ctx(w.w)
 }
-
