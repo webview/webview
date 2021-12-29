@@ -615,6 +615,10 @@ public:
         ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel),
         "loadNibNamed:"_sel, "MainMenu"_str, app, nil);
 
+    ((BOOL (*)(id, SEL, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel),
+        "loadNibNamed:"_sel, "MainMenu"_str);
+
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
 
     // Delegate
