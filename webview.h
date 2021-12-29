@@ -655,8 +655,12 @@ public:
 
     auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
 
-    ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
-    ((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, menu);
+    if(menu!=NULL) {
+        ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
+        ((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, menu);
+    }else {
+      printf("Menu is null");
+    }
     
     // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
