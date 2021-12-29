@@ -609,7 +609,7 @@ public:
     
     id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
-    ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:options"_sel, "MainMenu"_str, app, nil);
+    ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
     //objc_msgSend(bundle, "loadNibNamed:"_sel, "MainMenu"_str);
 
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
@@ -621,6 +621,10 @@ public:
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     class_addMethod(cls, "applicationShouldTerminate:"_sel,
+                    (IMP)(+[](id, SEL, id) -> int { 
+                      printf("applicationShouldTerminate");
+                      return 1; }), "c@:@");
+    class_addMethod(cls, "applicationWillTerminate:"_sel,
                     (IMP)(+[](id, SEL, id) -> int { 
                       printf("applicationShouldTerminate");
                       return 1; }), "c@:@");
