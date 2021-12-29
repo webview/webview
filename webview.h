@@ -573,7 +573,7 @@ using browser_engine = gtk_webkit_engine;
 //
 // ====================================================================
 //
-
+#include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
 
@@ -607,17 +607,10 @@ public:
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
     
-    //NSArray *tl;
-    // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
-    //                                         "mainBundle"_sel);
+    id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
-    // ((BOOL (*)(id, SEL, id, id, id))objc_msgSend)(
-    //     ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel),
-    //     "loadNibNamed:"_sel, "MainMenu"_str, app, nil);
-
-    ((BOOL (*)(id, SEL, id))objc_msgSend)(
-        ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel),
-        "loadNibNamed:"_sel, "MainMenu"_str);
+    ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:options"_sel, "MainMenu"_str, app, nil);
+    //objc_msgSend(bundle, "loadNibNamed:"_sel, "MainMenu"_str);
 
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
 
