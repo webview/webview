@@ -653,7 +653,9 @@ public:
 
     id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
 
-    auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
+    auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
+
+    auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
 
     if(menu!=NULL) {
         ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
