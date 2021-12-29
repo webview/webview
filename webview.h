@@ -607,6 +607,13 @@ public:
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
 
+    id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
+                                            "mainBundle"_sel);
+
+    ((void (*)(id, SEL, id))objc_msgSend)(
+        bundle, "loadNibNamed:"_sel, "MainMenu"_str);
+    //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
+
     // Delegate
     auto cls =
         objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
