@@ -606,12 +606,14 @@ public:
                                             "sharedApplication"_sel);
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
+    
     //NSArray *tl;
-    id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
-                                            "mainBundle"_sel);
+    // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
+    //                                         "mainBundle"_sel);
 
     ((BOOL (*)(id, SEL, id, id, id))objc_msgSend)(
-        bundle, "loadNibNamed:nibName"_sel, "MainMenu"_str, app, nil);
+        ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel),
+        "loadNibNamed:"_sel, "MainMenu"_str, app, nil);
 
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
 
