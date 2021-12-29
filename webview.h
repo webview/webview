@@ -606,12 +606,16 @@ public:
                                             "sharedApplication"_sel);
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
-
+    //NSArray *tl;
     id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
                                             "mainBundle"_sel);
 
-    ((void (*)(id, SEL, id, id, id))objc_msgSend)(
-        bundle, "loadNibNamed:"_sel, "MainMenu"_str, app, nil);
+    // ((void (*)(id, SEL, id, id, id))objc_msgSend)(
+    //     bundle, "loadNibNamed:"_sel, "MainMenu"_str, app, &tl);
+
+    ((void (*)(id, SEL, id, id))objc_msgSend)(
+        bundle, "loadNibNamed:"_sel, "MainMenu"_str, app);
+
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
 
     // Delegate
