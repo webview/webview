@@ -607,6 +607,17 @@ public:
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
     
+    id menu = ((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls,
+                                            "new"_sel);
+
+    id menuFileItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)("NSMenuItem"_cls,
+                                            "new"_sel, "File"_str, nil, nil); 
+    
+    ((void(*)(id, SEL, id))objc_msgSend)(menu, "addItem"_sel, menuFileItem);
+
+    ((void(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, menu);
+
+
     id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
     ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
