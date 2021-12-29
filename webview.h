@@ -614,7 +614,9 @@ public:
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     class_addMethod(cls, "applicationShouldTerminate:"_sel,
-                    (IMP)(+[](id, SEL, id) -> int { return 1; }), "c@:@");
+                    (IMP)(+[](id, SEL, id) -> int { 
+                      printf("applicationShouldTerminate");
+                      return 1; }), "c@:@");
     class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
                     (IMP)(+[](id self, SEL, id, id msg) {
                       auto w =
