@@ -607,24 +607,6 @@ public:
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
     
-    id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
-
-    ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
-
-    ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
-    
-    //((void(*)(id, SEL, id))objc_msgSend)(menu, "addItem"_sel, menuFileItem);
-
-    //((void(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, menu);
-
-
-    id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
-
-    ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
-    //objc_msgSend(bundle, "loadNibNamed:"_sel, "MainMenu"_str);
-
-    //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
-
     // Delegate
     auto cls =
         objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
@@ -668,6 +650,16 @@ public:
     } else {
       m_window = (id)window;
     }
+
+    id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
+
+    auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
+
+    ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
+    
+    // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
+
+    // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
 
     // Webview
     auto config =
