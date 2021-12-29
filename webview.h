@@ -610,7 +610,7 @@ public:
     id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls,
                                             "mainBundle"_sel);
 
-    ((void (*)(id, SEL, id, id))objc_msgSend)(
+    ((void (*)(id, SEL, id, id, id))objc_msgSend)(
         bundle, "loadNibNamed:"_sel, "MainMenu"_str, app, nil);
     //[[NSBundle mainBundle] loadNibNamed:@"MainMenu" owner:application topLevelObjects:&tl];
 
