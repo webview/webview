@@ -629,7 +629,6 @@ public:
                         }
 
                         if(appMenu!=nil ) {
-                            ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
                             //((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
 
                             //auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
@@ -641,6 +640,10 @@ public:
                             ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
 
                             ((id(*)(id, SEL, id))objc_msgSend)(appleItem,"setSubmenu:"_sel, appleMenu);
+
+                            ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
+
+                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, appMenu);
                         }else {
                           printf("Menu is null");
                         }
