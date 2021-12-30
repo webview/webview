@@ -650,9 +650,15 @@ public:
                         // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
                         printf("applicationWillFinishLaunching\n");
                         ((void (*)(id, SEL, long))objc_msgSend)( "NSApp"_cls, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
+
                         return 1; 
                       }), "c@:@");
-
+    
+    class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+                    (IMP)(+[](id, SEL, id) -> int { 
+                      printf("applicationDidFinishLaunching\n");
+                      ((id(*)(id, SEL, BOOL))objc_msgSend)("NSApp"_cls,"activateIgnoringOtherApps:"_sel, TRUE);
+                      return 1; }), "c@:@");
     class_addMethod(cls, "applicationShouldTerminate:"_sel,
                     (IMP)(+[](id, SEL, id) -> int { 
                       printf("applicationShouldTerminate\n");
