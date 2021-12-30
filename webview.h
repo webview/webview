@@ -615,19 +615,23 @@ public:
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     
     class_addMethod(cls, "applicationWillFinishLaunching:"_sel,
-                    (IMP)(+[](id, SEL, id) -> int { 
-                      
+                    (IMP)(+[](id, SEL, id) -> int {                      
                         id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
+                        
+                        id appMenu = ((id(*)(id, SEL))objc_msgSend)(app, "mainMenu"_sel);
 
-                        id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
+                        if(appMenu==nil)
+                        {
+                          appMenu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
+                        }
 
                         auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
 
-                        auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
+                        auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
 
-                        if(menu!=NULL) {
-                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
-                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, menu);
+                        if(appMenu!=NULL) {
+                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, appMenu);
+                            //((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, appMenu);
                         }else {
                           printf("Menu is null");
                         }
