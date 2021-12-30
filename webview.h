@@ -633,7 +633,7 @@ public:
 
                         if(appMenu!=NULL) {
                             ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
-                            //((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, appMenu);
+                            ((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
                         }else {
                           printf("Menu is null");
                         }
