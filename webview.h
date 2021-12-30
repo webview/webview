@@ -616,7 +616,7 @@ public:
     
     class_addMethod(cls, "applicationWillFinishLaunching:"_sel,
                     (IMP)(+[](id, SEL, id) -> int {                      
-                        //id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
+                        id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
                         
                         //id appMenu = ((id(*)(id, SEL))objc_msgSend)(app, "mainMenu"_sel);
                         id appMenu = ((id(*)(id, SEL))objc_msgSend)("NSApp"_cls, "mainMenu"_sel);
@@ -645,9 +645,10 @@ public:
                           printf("Menu is null");
                         }
                         
-                        // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
+                        id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
-                        // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
+                        ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
+
                         printf("applicationWillFinishLaunching\n");
                         ((void (*)(id, SEL, long))objc_msgSend)( "NSApp"_cls, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
 
