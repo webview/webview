@@ -626,13 +626,19 @@ public:
                           appMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
                           //((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu"_sel, appMenu);
 
-                          auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
-
-                          auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
-
-                          if(appMenu!=nil && quitMenu != nil) {
+                          if(appMenu!=nil ) {
                               ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
                               ((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
+
+                              auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
+
+                              auto appleItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, ""_str, nil, ""_str);
+
+                              auto appleMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
+
+                              ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
+
+                              ((id(*)(id, SEL, id))objc_msgSend)(appleMenu,"setSubmenu:"_sel, appleMenu);
                           }else {
                             printf("Menu is null");
                           }
