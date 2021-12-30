@@ -631,7 +631,7 @@ public:
                         if(appMenu!=nil ) {
                             //((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
 
-                            auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"terminate:"_sel);
+                            auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"terminate"_sel);
 
                             auto appleItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, ""_str, nil, ""_str);
 
