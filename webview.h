@@ -638,7 +638,7 @@ public:
 
                               ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
 
-                              ((id(*)(id, SEL, id))objc_msgSend)(appleMenu,"setSubmenu:"_sel, appleMenu);
+                              ((id(*)(id, SEL, id))objc_msgSend)(appleItem,"setSubmenu:"_sel, appleMenu);
                           }else {
                             printf("Menu is null");
                           }
