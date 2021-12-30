@@ -616,39 +616,40 @@ public:
     
     class_addMethod(cls, "applicationWillFinishLaunching:"_sel,
                     (IMP)(+[](id, SEL, id) -> int {                      
-                        id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
+                        //id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
                         
-                        id appMenu = ((id(*)(id, SEL))objc_msgSend)(app, "mainMenu"_sel);
+                        //id appMenu = ((id(*)(id, SEL))objc_msgSend)(app, "mainMenu"_sel);
+                        id appMenu = ((id(*)(id, SEL))objc_msgSend)("NSApp"_cls, "mainMenu"_sel);
 
                         if(appMenu==nil || appMenu==NULL)
                         {
                           printf("appMenu is nil\n");
                           appMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
                           //((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu"_sel, appMenu);
+                        }
 
-                          if(appMenu!=nil ) {
-                              ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
-                              ((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
+                        if(appMenu!=nil ) {
+                            ((id(*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "setMainMenu:"_sel, appMenu);
+                            //((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
 
-                              auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
+                            //auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
 
-                              auto appleItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, ""_str, nil, ""_str);
+                            auto appleItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, ""_str, nil, ""_str);
 
-                              auto appleMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
+                            auto appleMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
 
-                              ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
+                            ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, nil, "q"_str);
 
-                              ((id(*)(id, SEL, id))objc_msgSend)(appleItem,"setSubmenu:"_sel, appleMenu);
-                          }else {
-                            printf("Menu is null");
-                          }
+                            ((id(*)(id, SEL, id))objc_msgSend)(appleItem,"setSubmenu:"_sel, appleMenu);
+                        }else {
+                          printf("Menu is null");
                         }
                         
                         // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
 
                         // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
                         printf("applicationWillFinishLaunching\n");
-                        ((void (*)(id, SEL, long))objc_msgSend)( app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
+                        ((void (*)(id, SEL, long))objc_msgSend)( "NSApp"_cls, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
                         return 1; 
                       }), "c@:@");
 
