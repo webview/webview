@@ -631,13 +631,13 @@ public:
                         if(appMenu!=nil ) {
                             //((id(*)(id, SEL, id))objc_msgSend)(app, "mainMenu"_sel, appMenu);
 
-                            auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"terminate"_sel);
+                            //auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"terminate"_sel);
 
                             auto appleItem = ((id(*)(id, SEL, id, id, id))objc_msgSend)(appMenu,"addItemWithTitle:action:keyEquivalent:"_sel, ""_str, nil, ""_str);
 
                             auto appleMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
 
-                            ((id(*)(id, SEL, id, id, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
+                            ((id(*)(id, SEL, id, SEL, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, "terminate:"_sel, "q"_str);
 
                             ((id(*)(id, SEL, id))objc_msgSend)(appleItem,"setSubmenu:"_sel, appleMenu);
 
