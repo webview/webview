@@ -604,8 +604,8 @@ public:
     // Application
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                             "sharedApplication"_sel);
-    ((void (*)(id, SEL, long))objc_msgSend)(
-        app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
+    // ((void (*)(id, SEL, long))objc_msgSend)(
+    //     app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
     
     // Delegate
     auto cls =
@@ -613,6 +613,33 @@ public:
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
+    
+    class_addMethod(cls, "applicationWillFinishLaunching:"_sel,
+                    (IMP)(+[](id, SEL, id) -> int { 
+                      
+                        id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls, "sharedApplication"_sel);
+
+                        id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
+
+                        auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
+
+                        auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
+
+                        if(menu!=NULL) {
+                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
+                            ((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, menu);
+                        }else {
+                          printf("Menu is null");
+                        }
+                        
+                        // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
+
+                        // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
+                        printf("applicationWillFinishLaunching\n");
+                        ((void (*)(id, SEL, long))objc_msgSend)( app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
+                        return 1; 
+                      }), "c@:@");
+
     class_addMethod(cls, "applicationShouldTerminate:"_sel,
                     (IMP)(+[](id, SEL, id) -> int { 
                       printf("applicationShouldTerminate\n");
@@ -650,23 +677,6 @@ public:
     } else {
       m_window = (id)window;
     }
-
-    id menu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
-
-    auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
-
-    auto quitMenu = ((id(*)(id, SEL, id, id, id))objc_msgSend)(menu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, quitHandle, "q"_str);
-
-    if(menu!=NULL) {
-        ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu:"_sel, menu);
-        ((id(*)(id, SEL, id))objc_msgSend)(app, "setServicesMenu:"_sel, menu);
-    }else {
-      printf("Menu is null");
-    }
-    
-    // id bundle = ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
-
-    // ((void(*)(id, SEL, id, id, id))objc_msgSend)(bundle, "loadNibNamed:owner:topLevelObjects:"_sel, "MainMenu"_str, app, nil);
 
     // Webview
     auto config =
