@@ -623,7 +623,8 @@ public:
                         if(appMenu==nil || appMenu==NULL)
                         {
                           printf("appMenu is nil\n");
-                          appMenu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
+                          appMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle"_sel, ""_str);
+                          ((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu"_sel, appMenu);
                         }
 
                         auto quitHandle = ((id(*)(id, SEL))objc_msgSend)(app,"hide:"_sel);
