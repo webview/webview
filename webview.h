@@ -620,8 +620,9 @@ public:
                         
                         id appMenu = ((id(*)(id, SEL))objc_msgSend)(app, "mainMenu"_sel);
 
-                        if(appMenu==nil)
+                        if(appMenu==nil || appMenu==NULL)
                         {
+                          printf("appMenu is nil\n");
                           appMenu = ((id(*)(id, SEL))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "init"_sel);
                         }
 
