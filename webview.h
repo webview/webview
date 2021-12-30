@@ -623,7 +623,7 @@ public:
 
                         if(appMenu==nil || appMenu==NULL)
                         {
-                          printf("appMenu is nil\n");
+                          //printf("appMenu is nil\n");
                           appMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
                           //((id(*)(id, SEL, id))objc_msgSend)(app, "setMainMenu"_sel, appMenu);
                         }
@@ -637,7 +637,7 @@ public:
 
                             auto appleMenu = ((id(*)(id, SEL, id))objc_msgSend)(((id(*)(id, SEL))objc_msgSend)("NSMenu"_cls, "alloc"_sel), "initWithTitle:"_sel, ""_str);
 
-                            ((id(*)(id, SEL, id, SEL, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "About"_str, nil, "q"_str);
+                            ((id(*)(id, SEL, id, SEL, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "About"_str, nil, ""_str);
 
                             ((id(*)(id, SEL, id, SEL, id))objc_msgSend)(appleMenu,"addItemWithTitle:action:keyEquivalent:"_sel, "Quit"_str, "terminate:"_sel, "q"_str);
                             
