@@ -588,6 +588,31 @@ using browser_engine = gtk_webkit_engine;
 
 #define WKUserScriptInjectionTimeAtDocumentStart 0
 
+
+#define NSAlertStyleWarning 0
+#define NSAlertStyleCritical 2
+#define NSWindowStyleMaskResizable 8
+#define NSWindowStyleMaskMiniaturizable 4
+#define NSWindowStyleMaskTitled 1
+#define NSWindowStyleMaskClosable 2
+#define NSWindowStyleMaskFullScreen (1 << 14)
+#define NSViewWidthSizable 2
+#define NSViewHeightSizable 16
+#define NSBackingStoreBuffered 2
+#define NSEventMaskAny ULONG_MAX
+#define NSEventModifierFlagCommand (1 << 20)
+#define NSEventModifierFlagOption (1 << 19)
+#define NSAlertStyleInformational 1
+#define NSAlertFirstButtonReturn 1000
+#define WKNavigationActionPolicyDownload 2
+#define NSModalResponseOK 1
+#define WKNavigationActionPolicyDownload 2
+#define WKNavigationResponsePolicyAllow 1
+#define WKUserScriptInjectionTimeAtDocumentStart 0
+#define NSApplicationActivationPolicyRegular 0
+#define NSApplicationDefinedEvent 15
+#define NSWindowStyleMaskBorderless 0
+
 namespace webview {
 
 // Helpers to avoid too much typing
@@ -599,6 +624,85 @@ id operator"" _str(const char *s, std::size_t) {
 }
 
 class cocoa_wkwebview_engine {
+
+private:
+    static void run_open_panel(id self, SEL cmd, id webView, id parameters,
+                           id frame, void (^completionHandler)(id)) {
+
+  // id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
+
+  // ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "setAllowsMultipleSelection:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsMultipleSelection"_sel));
+  // ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseFiles:"_sel, 1);
+
+  // ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "beginWithCompletionHandler:"_sel, ^(id result) {
+  //       if (result == (id)NSModalResponseOK) {
+  //         completionHandler(((id(*)(id, SEL))objc_msgSend)(openPanel, sel_registerName("URLs")));
+  //       } else {
+  //         completionHandler(nil);
+  //       }
+  //     });
+}
+
+static void run_save_panel(id self, SEL cmd, id download, id filename,
+                           void (^completionHandler)(int allowOverwrite,
+                                                     id destination)) {
+  // id savePanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSSavePanel"),
+  //                             sel_registerName("savePanel"));
+  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("setCanCreateDirectories:"), 1);
+  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("setNameFieldStringValue:"),
+  //              filename);
+  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("beginWithCompletionHandler:"),
+  //              ^(id result) {
+  //                if (result == (id)NSModalResponseOK) {
+  //                  id url = ((id(*)(id, SEL))objc_msgSend)(savePanel, sel_registerName("URL"));
+  //                  id path = ((id(*)(id, SEL))objc_msgSend)(url, sel_registerName("path"));
+  //                  completionHandler(1, path);
+  //                } else {
+  //                  completionHandler(NO, nil);
+  //                }
+  //              });
+}
+
+static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
+                                   id frame, void (^completionHandler)(bool)) {
+
+  // id alert =
+  //     ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSAlert"), sel_registerName("new"));
+  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setIcon:"),
+  //              ((id(*)(id, SEL, id))objc_msgSend)((id)objc_getClass("NSImage"),
+  //                           sel_registerName("imageNamed:"),
+  //                           get_nsstring("NSCaution")));
+  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setShowsHelp:"), 0);
+  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setInformativeText:"), message);
+  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
+  //              get_nsstring("OK"));
+  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
+  //              get_nsstring("Cancel"));
+  // if (((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("runModal")) ==
+  //     (id)NSAlertFirstButtonReturn) {
+  //   completionHandler(true);
+  // } else {
+  //   completionHandler(false);
+  // }
+  // ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
+}
+
+static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame,
+                            void (^completionHandler)(void)) {
+  id alert =
+      ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSAlert"), sel_registerName("new"));
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setIcon:"),
+               ((id(*)(id, SEL, id))objc_msgSend)((id)objc_getClass("NSImage"),
+                            sel_registerName("imageNamed:"),
+                            "NSCaution"_str));
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setShowsHelp:"), 0);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setInformativeText:"), message);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
+               "OK"_str);
+  ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("runModal"));
+  ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
+  completionHandler();
+}
 public:
   cocoa_wkwebview_engine(bool debug, void *window) {
     // Application
@@ -611,6 +715,7 @@ public:
     auto cls =
         objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
+    class_addProtocol(cls, objc_getProtocol("WKUIDelegate"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     
@@ -685,6 +790,19 @@ public:
                           "UTF8String"_sel));
                     }),
                     "v@:@@");
+
+    //Implement WKUIDelegate protcol
+
+     class_addMethod(cls, sel_registerName("webView:runOpenPanelWithParameters:"
+                                    "initiatedByFrame:completionHandler:"),
+                    (IMP)run_open_panel, "v@:@@@?");
+    class_addMethod(cls, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
+                                    "initiatedByFrame:completionHandler:"),
+                    (IMP)run_alert_panel, "v@:@@@?");
+    class_addMethod(cls, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
+                        "initiatedByFrame:completionHandler:"),
+        (IMP)run_confirmation_panel, "v@:@@@?");
+
     objc_registerClassPair(cls);
 
     auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
