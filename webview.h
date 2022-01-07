@@ -689,11 +689,13 @@ static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
 
 static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame,
                             void (^completionHandler)(void)) {
+  printf("alert panel");
+
   id alert =
-      ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSAlert"), sel_registerName("new"));
-  ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setIcon:"),
-               ((id(*)(id, SEL, id))objc_msgSend)((id)objc_getClass("NSImage"),
-                            sel_registerName("imageNamed:"),
+      ((id(*)(id, SEL))objc_msgSend)("NSAlert"_cls, "new"_sel);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "setIcon:"_sel,
+               ((id(*)(id, SEL, id))objc_msgSend)("NSImage"_cls,
+                            "imageNamed:"_sel,
                             "NSCaution"_str));
   ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setShowsHelp:"), 0);
   ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setInformativeText:"), message);
