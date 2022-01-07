@@ -623,10 +623,10 @@ id operator"" _str(const char *s, std::size_t) {
       "NSString"_cls, "stringWithUTF8String:"_sel, s);
 }
 
-class cocoa_wkwebview_engine {
 
-private:
-    static void run_open_panel(id self, SEL cmd, id webView, id parameters,
+//WKUIDelegate callback handlers
+
+   static void run_open_panel(id self, SEL cmd, id webView, id parameters,
                            id frame, void (^completionHandler)(id)) {
 
   // id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
@@ -704,6 +704,9 @@ static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame, 
   ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
   completionHandler();
 }
+
+
+class cocoa_wkwebview_engine {
 
 public:
   cocoa_wkwebview_engine(bool debug, void *window) {
