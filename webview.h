@@ -631,7 +631,12 @@ static void run_open_panel(id self, SEL cmd, id webView, id parameters, id frame
   id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
 
   ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "setAllowsMultipleSelection:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsMultipleSelection"_sel));
-  ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "canChooseDirectories:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsDirectories"_sel));
+  
+  if(((id(*)(id, SEL))objc_msgSend)(parameters, "allowsDirectories"_sel) == (id)YES) {
+    ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseDirectories:"_sel, YES);
+  }
+
+  //((id(*)(id, SEL, id))objc_msgSend)(openPanel, "canChooseDirectories:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsDirectories"_sel));
   ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseFiles:"_sel, 1);
 
   ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "beginWithCompletionHandler:"_sel, (id)^(id result) {
