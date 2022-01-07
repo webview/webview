@@ -687,8 +687,7 @@ static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
   // ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
 }
 
-static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame,
-                            void (^completionHandler)(void)) {
+static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame, void (^completionHandler)(void)) {
   printf("alert panel");
 
   id alert =
@@ -705,6 +704,7 @@ static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame,
   ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
   completionHandler();
 }
+
 public:
   cocoa_wkwebview_engine(bool debug, void *window) {
     // Application
@@ -716,8 +716,10 @@ public:
     // Delegate
     auto cls =
         objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
+    
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addProtocol(cls, objc_getProtocol("WKUIDelegate"));
+
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     
@@ -793,18 +795,6 @@ public:
                     }),
                     "v@:@@");
 
-    //Implement WKUIDelegate protcol
-
-     class_addMethod(cls, sel_registerName("webView:runOpenPanelWithParameters:"
-                                    "initiatedByFrame:completionHandler:"),
-                    (IMP)run_open_panel, "v@:@@@?");
-    class_addMethod(cls, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
-                                    "initiatedByFrame:completionHandler:"),
-                    (IMP)run_alert_panel, "v@:@@@?");
-    class_addMethod(cls, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
-                        "initiatedByFrame:completionHandler:"),
-        (IMP)run_confirmation_panel, "v@:@@@?");
-
     objc_registerClassPair(cls);
 
     auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
@@ -876,7 +866,26 @@ public:
         m_manager, "addScriptMessageHandler:name:"_sel, delegate,
         "external"_str);
     
-    ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, app);
+
+    //Implement WKUIDelegate protco
+    static Class __WKUIDelegate;
+    if(__WKUIDelegate == NULL) {
+      class_addMethod(__WKUIDelegate, sel_registerName("webView:runOpenPanelWithParameters:"
+                                      "initiatedByFrame:completionHandler:"),
+                      (IMP)run_open_panel, "v@:@@@?");
+      class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
+                                      "initiatedByFrame:completionHandler:"),
+                      (IMP)run_alert_panel, "v@:@@@?");
+      class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
+                          "initiatedByFrame:completionHandler:"),
+          (IMP)run_confirmation_panel, "v@:@@@?");
+      objc_registerClassPair(__WKUIDelegate);
+    }
+
+    id uiDel = ((id(*)(id, SEL))objc_msgSend)((id)__WKUIDelegate, sel_registerName("new"));
+
+
+    ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, uiDel);
 
     init(R"script(
                       window.external = {
