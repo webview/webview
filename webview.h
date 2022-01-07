@@ -626,12 +626,12 @@ id operator"" _str(const char *s, std::size_t) {
 
 //WKUIDelegate callback handlers
 
-   static void run_open_panel(id self, SEL cmd, id webView, id parameters,
-                           id frame, void (^completionHandler)(id)) {
+static void run_open_panel(id self, SEL cmd, id webView, id parameters, id frame, void (^completionHandler)(id)) {
 
   id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
 
   ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "setAllowsMultipleSelection:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsMultipleSelection"_sel));
+  ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "canChooseDirectories:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsDirectories"_sel));
   ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseFiles:"_sel, 1);
 
   ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "beginWithCompletionHandler:"_sel, (id)^(id result) {
@@ -643,9 +643,7 @@ id operator"" _str(const char *s, std::size_t) {
       });
 }
 
-static void run_save_panel(id self, SEL cmd, id download, id filename,
-                           void (^completionHandler)(int allowOverwrite,
-                                                     id destination)) {
+static void run_save_panel(id self, SEL cmd, id download, id filename, void (^completionHandler)(int allowOverwrite, id destination)) {
   id savePanel = ((id(*)(id, SEL))objc_msgSend)("NSSavePanel"_cls, "savePanel"_sel);
   ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setCanCreateDirectories:"_sel, (id)1);
   ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setNameFieldStringValue:"_sel, filename);
@@ -869,26 +867,6 @@ public:
         m_manager, "addScriptMessageHandler:name:"_sel, delegate,
         "external"_str);
     
-
-    // //Implement WKUIDelegate protco
-    // static Class __WKUIDelegate;
-    // if(__WKUIDelegate == NULL) {
-    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runOpenPanelWithParameters:"
-    //                                   "initiatedByFrame:completionHandler:"),
-    //                   (IMP)run_open_panel, "v@:@@@?");
-    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
-    //                                   "initiatedByFrame:completionHandler:"),
-    //                   (IMP)run_alert_panel, "v@:@@@?");
-    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
-    //                       "initiatedByFrame:completionHandler:"),
-    //       (IMP)run_confirmation_panel, "v@:@@@?");
-    //   objc_registerClassPair(__WKUIDelegate);
-    // }
-
-    // id uiDel = ((id(*)(id, SEL))objc_msgSend)((id)__WKUIDelegate, "new"_sel);
-
-
-    // ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, uiDel);
 
     ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, delegate);
 
