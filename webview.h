@@ -875,6 +875,8 @@ public:
     ((void (*)(id, SEL, id, id))objc_msgSend)(
         m_manager, "addScriptMessageHandler:name:"_sel, delegate,
         "external"_str);
+    
+    ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, app);
 
     init(R"script(
                       window.external = {
