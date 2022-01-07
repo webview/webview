@@ -646,21 +646,18 @@ id operator"" _str(const char *s, std::size_t) {
 static void run_save_panel(id self, SEL cmd, id download, id filename,
                            void (^completionHandler)(int allowOverwrite,
                                                      id destination)) {
-  // id savePanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSSavePanel"),
-  //                             sel_registerName("savePanel"));
-  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("setCanCreateDirectories:"), 1);
-  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("setNameFieldStringValue:"),
-  //              filename);
-  // ((id(*)(id, SEL, id))objc_msgSend)(savePanel, sel_registerName("beginWithCompletionHandler:"),
-  //              ^(id result) {
-  //                if (result == (id)NSModalResponseOK) {
-  //                  id url = ((id(*)(id, SEL))objc_msgSend)(savePanel, sel_registerName("URL"));
-  //                  id path = ((id(*)(id, SEL))objc_msgSend)(url, sel_registerName("path"));
-  //                  completionHandler(1, path);
-  //                } else {
-  //                  completionHandler(NO, nil);
-  //                }
-  //              });
+  id savePanel = ((id(*)(id, SEL))objc_msgSend)("NSSavePanel"_cls, "savePanel"_sel);
+  ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setCanCreateDirectories:"_sel, (id)1);
+  ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setNameFieldStringValue:"_sel, filename);
+  ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "beginWithCompletionHandler:"_sel, (id)^(id result) {
+                 if (result == (id)NSModalResponseOK) {
+                   id url = ((id(*)(id, SEL))objc_msgSend)(savePanel, "URL"_sel);
+                   id path = ((id(*)(id, SEL))objc_msgSend)(url, "path"_sel);
+                   completionHandler(1, path);
+                 } else {
+                   completionHandler(NO, nil);
+                 }
+               });
 }
 
 static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
