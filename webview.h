@@ -798,6 +798,15 @@ public:
                     }),
                     "v@:@@");
 
+    class_addMethod(cls, sel_registerName("webView:runOpenPanelWithParameters:"
+                                    "initiatedByFrame:completionHandler:"),
+                    (IMP)run_open_panel, "v@:@@@?");
+    class_addMethod(cls, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
+                                    "initiatedByFrame:completionHandler:"),
+                    (IMP)run_alert_panel, "v@:@@@?");
+    class_addMethod(cls, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
+                        "initiatedByFrame:completionHandler:"),  (IMP)run_confirmation_panel, "v@:@@@?");
+
     objc_registerClassPair(cls);
 
     auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
@@ -870,25 +879,27 @@ public:
         "external"_str);
     
 
-    //Implement WKUIDelegate protco
-    static Class __WKUIDelegate;
-    if(__WKUIDelegate == NULL) {
-      class_addMethod(__WKUIDelegate, sel_registerName("webView:runOpenPanelWithParameters:"
-                                      "initiatedByFrame:completionHandler:"),
-                      (IMP)run_open_panel, "v@:@@@?");
-      class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
-                                      "initiatedByFrame:completionHandler:"),
-                      (IMP)run_alert_panel, "v@:@@@?");
-      class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
-                          "initiatedByFrame:completionHandler:"),
-          (IMP)run_confirmation_panel, "v@:@@@?");
-      objc_registerClassPair(__WKUIDelegate);
-    }
+    // //Implement WKUIDelegate protco
+    // static Class __WKUIDelegate;
+    // if(__WKUIDelegate == NULL) {
+    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runOpenPanelWithParameters:"
+    //                                   "initiatedByFrame:completionHandler:"),
+    //                   (IMP)run_open_panel, "v@:@@@?");
+    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
+    //                                   "initiatedByFrame:completionHandler:"),
+    //                   (IMP)run_alert_panel, "v@:@@@?");
+    //   class_addMethod(__WKUIDelegate, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
+    //                       "initiatedByFrame:completionHandler:"),
+    //       (IMP)run_confirmation_panel, "v@:@@@?");
+    //   objc_registerClassPair(__WKUIDelegate);
+    // }
 
-    id uiDel = ((id(*)(id, SEL))objc_msgSend)((id)__WKUIDelegate, sel_registerName("new"));
+    // id uiDel = ((id(*)(id, SEL))objc_msgSend)((id)__WKUIDelegate, "new"_sel);
 
 
-    ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, uiDel);
+    // ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, uiDel);
+
+    ((id(*)(id, SEL, id))objc_msgSend)(m_webview, "setUIDelegate:"_sel, delegate);
 
     init(R"script(
                       window.external = {
