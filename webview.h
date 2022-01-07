@@ -629,18 +629,18 @@ id operator"" _str(const char *s, std::size_t) {
    static void run_open_panel(id self, SEL cmd, id webView, id parameters,
                            id frame, void (^completionHandler)(id)) {
 
-  // id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
+  id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
 
-  // ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "setAllowsMultipleSelection:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsMultipleSelection"_sel));
-  // ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseFiles:"_sel, 1);
+  ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "setAllowsMultipleSelection:"_sel, ((id(*)(id, SEL))objc_msgSend)(parameters, "allowsMultipleSelection"_sel));
+  ((id(*)(id, SEL, BOOL))objc_msgSend)(openPanel, "setCanChooseFiles:"_sel, 1);
 
-  // ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "beginWithCompletionHandler:"_sel, ^(id result) {
-  //       if (result == (id)NSModalResponseOK) {
-  //         completionHandler(((id(*)(id, SEL))objc_msgSend)(openPanel, sel_registerName("URLs")));
-  //       } else {
-  //         completionHandler(nil);
-  //       }
-  //     });
+  ((id(*)(id, SEL, id))objc_msgSend)(openPanel, "beginWithCompletionHandler:"_sel, (id)^(id result) {
+        if (result == (id)NSModalResponseOK) {
+          completionHandler(((id(*)(id, SEL))objc_msgSend)(openPanel, sel_registerName("URLs")));
+        } else {
+          completionHandler(nil);
+        }
+      });
 }
 
 static void run_save_panel(id self, SEL cmd, id download, id filename,
