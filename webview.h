@@ -666,36 +666,30 @@ static void run_save_panel(id self, SEL cmd, id download, id filename,
 static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
                                    id frame, void (^completionHandler)(bool)) {
 
-  // id alert =
-  //     ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSAlert"), sel_registerName("new"));
-  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setIcon:"),
-  //              ((id(*)(id, SEL, id))objc_msgSend)((id)objc_getClass("NSImage"),
-  //                           sel_registerName("imageNamed:"),
-  //                           get_nsstring("NSCaution")));
-  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setShowsHelp:"), 0);
-  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setInformativeText:"), message);
-  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
-  //              get_nsstring("OK"));
-  // ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
-  //              get_nsstring("Cancel"));
-  // if (((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("runModal")) ==
-  //     (id)NSAlertFirstButtonReturn) {
-  //   completionHandler(true);
-  // } else {
-  //   completionHandler(false);
-  // }
-  // ((id(*)(id, SEL))objc_msgSend)(alert, sel_registerName("release"));
+  id alert = ((id(*)(id, SEL))objc_msgSend)("NSAlert"_cls, "new"_sel);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "setIcon:"_sel, ((id(*)(id, SEL, id))objc_msgSend)("NSImage"_cls, "imageNamed:"_sel, "NSCaution"_str));
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "setShowsHelp:"_sel, 0);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "setInformativeText:"_sel, message);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "addButtonWithTitle:"_sel, "OK"_str);
+  ((id(*)(id, SEL, id))objc_msgSend)(alert, "addButtonWithTitle:"_sel, "Cancel"_str);
+
+  if (((id(*)(id, SEL))objc_msgSend)(alert, "runModal"_sel) ==  (id)NSAlertFirstButtonReturn) {
+    completionHandler(true);
+  } else {
+    completionHandler(false);
+  }
+  ((id(*)(id, SEL))objc_msgSend)(alert, "release"_sel);
 }
 
 static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame, void (^completionHandler)(void)) {
-  printf("alert panel");
+  printf("\nalert panel\n");
 
   id alert =
       ((id(*)(id, SEL))objc_msgSend)("NSAlert"_cls, "new"_sel);
   ((id(*)(id, SEL, id))objc_msgSend)(alert, "setIcon:"_sel,
                ((id(*)(id, SEL, id))objc_msgSend)("NSImage"_cls,
                             "imageNamed:"_sel,
-                            "NSCaution"_str));
+                            "NSInfo"_str));
   ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setShowsHelp:"), 0);
   ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("setInformativeText:"), message);
   ((id(*)(id, SEL, id))objc_msgSend)(alert, sel_registerName("addButtonWithTitle:"),
