@@ -626,7 +626,7 @@ id operator"" _str(const char *s, std::size_t) {
 
 //WKUIDelegate callback handlers
 
-static void run_open_panel(id self, SEL cmd, id webView, id parameters, id frame, void (^completionHandler)(id)) {
+static void handle_open_panel(id self, SEL cmd, id webView, id parameters, id frame, void (^completionHandler)(id)) {
 
   id openPanel = ((id(*)(id, SEL))objc_msgSend)((id)objc_getClass("NSOpenPanel"), "openPanel"_sel);
 
@@ -648,7 +648,7 @@ static void run_open_panel(id self, SEL cmd, id webView, id parameters, id frame
       });
 }
 
-static void run_save_panel(id self, SEL cmd, id download, id filename, void (^completionHandler)(int allowOverwrite, id destination)) {
+static void handle_save_panel(id self, SEL cmd, id download, id filename, void (^completionHandler)(int allowOverwrite, id destination)) {
   id savePanel = ((id(*)(id, SEL))objc_msgSend)("NSSavePanel"_cls, "savePanel"_sel);
   ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setCanCreateDirectories:"_sel, (id)1);
   ((id(*)(id, SEL, id))objc_msgSend)(savePanel, "setNameFieldStringValue:"_sel, filename);
@@ -663,7 +663,7 @@ static void run_save_panel(id self, SEL cmd, id download, id filename, void (^co
                });
 }
 
-static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
+static void handle_confirmation_panel(id self, SEL cmd, id webView, id message,
                                    id frame, void (^completionHandler)(bool)) {
 
   id alert = ((id(*)(id, SEL))objc_msgSend)("NSAlert"_cls, "new"_sel);
@@ -681,7 +681,7 @@ static void run_confirmation_panel(id self, SEL cmd, id webView, id message,
   ((id(*)(id, SEL))objc_msgSend)(alert, "release"_sel);
 }
 
-static void run_alert_panel(id self, SEL cmd, id webView, id message, id frame, void (^completionHandler)(void)) {
+static void handle_alert_panel(id self, SEL cmd, id webView, id message, id frame, void (^completionHandler)(void)) {
   printf("\nalert panel\n");
 
   id alert =
@@ -794,12 +794,12 @@ public:
 
     class_addMethod(cls, sel_registerName("webView:runOpenPanelWithParameters:"
                                     "initiatedByFrame:completionHandler:"),
-                    (IMP)run_open_panel, "v@:@@@?");
+                    (IMP)handle_open_panel, "v@:@@@?");
     class_addMethod(cls, sel_registerName("webView:runJavaScriptAlertPanelWithMessage:"
                                     "initiatedByFrame:completionHandler:"),
-                    (IMP)run_alert_panel, "v@:@@@?");
+                    (IMP)handle_alert_panel, "v@:@@@?");
     class_addMethod(cls, sel_registerName("webView:runJavaScriptConfirmPanelWithMessage:"
-                        "initiatedByFrame:completionHandler:"),  (IMP)run_confirmation_panel, "v@:@@@?");
+                        "initiatedByFrame:completionHandler:"),  (IMP)handle_confirmation_panel, "v@:@@@?");
 
     objc_registerClassPair(cls);
 
