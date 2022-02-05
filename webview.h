@@ -552,6 +552,11 @@ public:
                                    NULL, NULL);
   }
 
+  template <class T, typename... Types>
+  T add_event_listener(const char* event, void (*f)(Types...)) {
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), event, G_CALLBACK(f), this);
+  }
+
 private:
   virtual void on_message(const std::string msg) = 0;
   GtkWidget *m_window;
