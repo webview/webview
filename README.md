@@ -162,6 +162,9 @@ $ g++ main.c -std=c++11 -framework WebKit -o webview-example
 $ g++ main.c -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
 
+This uses `g++` for both the C program and webview. It's also possible to compile webview and the C program separately and link them afterwards. This improves both initial and incremental build time. See https://github.com/petabyt/webviewc for an example.
+
+
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
 
 Full C/C++ API is described at the top of the `webview.h` file.
