@@ -1277,11 +1277,11 @@ public:
   void resolve(const std::string seq, int status, const std::string result) {
     dispatch([=]() {
       if (status == 0) {
-        eval("window._rpc[" + seq + "].resolve(" + result + "); window._rpc[" +
-             seq + "] = undefined");
+        eval("window._rpc[" + seq + "].resolve(" + result + "); delete window._rpc[" +
+             seq + "]");
       } else {
-        eval("window._rpc[" + seq + "].reject(" + result + "); window._rpc[" +
-             seq + "] = undefined");
+        eval("window._rpc[" + seq + "].reject(" + result + "); delete window._rpc[" +
+             seq + "]");
       }
     });
   }
