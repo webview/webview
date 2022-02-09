@@ -1,9 +1,9 @@
 # webview
 
 [![Join the chat at https://gitter.im/zserge/webview](https://badges.gitter.im/zserge/webview.svg)](https://gitter.im/zserge/webview?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://img.shields.io/github/workflow/status/zserge/webview/CI%20Pipeline)](https://github.com/zserge/webview)
-[![GoDoc](https://godoc.org/github.com/zserge/webview?status.svg)](https://godoc.org/github.com/zserge/webview)
-[![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
+[![Build Status](https://img.shields.io/github/workflow/status/webview/webview/CI%20Pipeline)](https://github.com/webview/webview)
+[![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
+[![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
 
 A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/webview/webview_csharp), [Janet bindings](https://github.com/janet-lang/webview), and [Java bindings](https://github.com/shannah/webviewjar) available.
@@ -61,7 +61,7 @@ $ open example.app # Or click on the app in Finder
 $ go build -ldflags="-H windowsgui" -o webview-example.exe
 ```
 
-For more details see [godoc](https://godoc.org/github.com/zserge/webview).
+For more details see [godoc](https://godoc.org/github.com/webview/webview).
 
 ### Distributing webview apps
 
@@ -101,7 +101,7 @@ Also, if you want to cross-compile your webview app - use [xgo](https://github.c
 
 ## Webview for C/C++ developers
 
-Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
+Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code:
 
 ### C++:
 ```c
@@ -133,9 +133,13 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 ```
 
 ### C:
+
 ```c
-// main .c
+// main.c
+#define WEBVIEW_HEADER
 #include "webview.h"
+#include <stddef.h>
+
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
                    int nCmdShow) {
@@ -151,16 +155,28 @@ int main() {
 	return 0;
 }
 ```
+
+Define C++ flags for the platform:
+
+```sh
+# Linux
+$ CPPFLAGS="`pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -lstdc++"
+# MacOS
+$ CPPFLAGS="-std=c++11 -framework WebKit"
+# Windows (x64)
+$ CPPFLAGS="-mwindows -L./dll/x64 -lwebview -lWebView2Loader"
+```
+
 Build it:
 
-```bash
-# Linux
-$ g++ main.c `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
-# MacOS
-$ g++ main.c -std=c++11 -framework WebKit -o webview-example
-# Windows (x64)
-$ g++ main.c -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
+```sh
+$ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
+$ gcc -c main.c -o main.o  # build C program
+$ g++ main.o webview.o $CPPFLAGS -o webview-example  # link them together
 ```
+
+For a complete C example see: https://github.com/petabyt/webviewc
+
 
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
 
