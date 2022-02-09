@@ -133,9 +133,13 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 ```
 
 ### C:
+
 ```c
-// main .c
+// main.c
+#define WEBVIEW_HEADER
 #include "webview.h"
+#include <stddef.h>
+
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
                    int nCmdShow) {
@@ -151,16 +155,28 @@ int main() {
 	return 0;
 }
 ```
+
+Define C++ flags for the platform:
+
+```sh
+# Linux
+$ CPPFLAGS="`pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -lstdc++"
+# MacOS
+$ CPPFLAGS="-std=c++11 -framework WebKit"
+# Windows (x64)
+$ CPPFLAGS="-mwindows -L./dll/x64 -lwebview -lWebView2Loader"
+```
+
 Build it:
 
-```bash
-# Linux
-$ g++ main.c `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
-# MacOS
-$ g++ main.c -std=c++11 -framework WebKit -o webview-example
-# Windows (x64)
-$ g++ main.c -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
+```sh
+$ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
+$ gcc -c main.c -o main.o  # build C program
+$ g++ main.o webview.o $CPPFLAGS -o webview-example  # link them together
 ```
+
+For a complete C example see: https://github.com/petabyt/webviewc
+
 
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
 
