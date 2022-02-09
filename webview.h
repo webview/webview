@@ -1278,7 +1278,7 @@ public:
   }
 
   void unbind(const std::string name) {
-    if(bindings.find(name) != bindings.end()) {
+    if (bindings.find(name) != bindings.end()) {
       auto js = "delete window['" + name + "'];";
       init(js);
       eval(js);
