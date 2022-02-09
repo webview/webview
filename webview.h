@@ -1227,7 +1227,7 @@ public:
                                url_encode("<html><body>Hello</body></html>"));
       return;
     }
-    std::string html = html_from_uri(url);
+    std::string html = html_from_uri(url_encode(url));
     if (html != "") {
       browser_engine::navigate("data:text/html," + url_encode(html));
     } else {
