@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/webview/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/webview/webview_csharp) and [Java bindings](https://github.com/shannah/webviewjar) available.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/webview/webview_csharp), [Janet bindings](https://github.com/janet-lang/webview), and [Java bindings](https://github.com/shannah/webviewjar) available.
 
 The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms. 
 
