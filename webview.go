@@ -104,7 +104,7 @@ type WebView interface {
 	SetSize(w int, h int, hint Hint)
 
 	// Navigate navigates webview to the given URL. URL may be a data URI, i.e.
-	// "data:text/text,<html>...</html>". It is often ok not to url-encode it
+	// "data:text/html,<html>...</html>". It is often ok not to url-encode it
 	// properly, webview will re-encode it for you.
 	Navigate(url string)
 
