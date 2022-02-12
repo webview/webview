@@ -75,9 +75,6 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
-// Set webview render zoom level.
-WEBVIEW_API void webview_set_zoom_level(webview_t w, const float percentage);
-
 // Navigates webview to the given URL. URL may be a data URI, i.e.
 // "data:text/text,<html>...</html>". It is often ok not to url-encode it
 // properly, webview will re-encode it for you.
@@ -519,10 +516,6 @@ public:
     }
   }
 
-  void set_zoom_level(float percentage) {
-    webkit_web_view_set_zoom_level(WEBKIT_WEB_VIEW(m_webview), percentage);
-  }
-
   void navigate(const std::string url) {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
@@ -707,9 +700,6 @@ public:
                    CGRectMake(0, 0, width, height), 1, 0);
     }
   }
-  void set_zoom_level(const float percentage) {
-    // Ignored on Cocoa
-  }
   void navigate(const std::string url) {
     auto nsurl = objc_msgSend(
         "NSURL"_cls, "URLWithString:"_sel,
@@ -793,7 +783,6 @@ class browser {
 public:
   virtual ~browser() = default;
   virtual bool embed(HWND, bool, msg_cb_t) = 0;
-  virtual void set_zoom_level(const float percentage) = 0;
   virtual void navigate(const std::string url) = 0;
   virtual void set_html(const std::string html) = 0;
   virtual void eval(const std::string js) = 0;
@@ -838,10 +827,6 @@ public:
     });
     init("window.external.invoke = s => window.external.notify(s)");
     return true;
-  }
-
-  void set_zoom_level(const float percentage) override {
-    // Ignored on EdgeHTML
   }
 
   void navigate(const std::string url) override {
@@ -930,10 +915,6 @@ public:
     RECT bounds;
     GetClientRect(wnd, &bounds);
     m_controller->put_Bounds(bounds);
-  }
-
-  void set_zoom_level(const float percentage) override {
-    // Ignored on Edge/Chromium
   }
 
   void navigate(const std::string url) override {
@@ -1163,9 +1144,6 @@ public:
     }
   }
 
-  void set_zoom_level(const float percentage) {
-    m_browser->set_zoom_level(percentage);
-  }
   void navigate(const std::string url) { m_browser->navigate(url); }
   void set_html(const std::string html) { m_browser->set_html(html); }
   void eval(const std::string js) { m_browser->eval(js); }
@@ -1193,10 +1171,6 @@ class webview : public browser_engine {
 public:
   webview(bool debug = false, void *wnd = nullptr)
       : browser_engine(debug, wnd) {}
-
-  void set_zoom_level(const float percentage) {
-    browser_engine::set_zoom_level(percentage / 100);
-  }
 
   void navigate(const std::string url) {
     if (url == "") {
@@ -1312,10 +1286,6 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints) {
   static_cast<webview::webview *>(w)->set_size(width, height, hints);
-}
-
-WEBVIEW_API void webview_set_zoom_level(webview_t w, const float percentage) {
-  static_cast<webview::webview *>(w)->set_zoom_level(percentage);
 }
 
 WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
