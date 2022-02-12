@@ -538,6 +538,12 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
+  void add_navigate_listener(std::function<void(const char *)> callback) {
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "load-changed",
+                     G_CALLBACK(on_load_changed), this);
+    navigateCallback = std::move(callback);
+  }
+
   void init(const std::string js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
@@ -553,9 +559,18 @@ public:
   }
 
 private:
-  virtual void on_message(const std::string msg) = 0;
   GtkWidget *m_window;
   GtkWidget *m_webview;
+  virtual void on_message(const std::string msg) = 0;
+  std::function<void(const char *)> navigateCallback = 0;
+
+  static void on_load_changed(WebKitWebView *web_view,
+                              WebKitLoadEvent load_event, gpointer arg) {
+    if (load_event == WEBKIT_LOAD_FINISHED) {
+      static_cast<gtk_webkit_engine *>(arg)->navigateCallback(
+          webkit_web_view_get_uri(web_view));
+    }
+  }
 };
 
 using browser_engine = gtk_webkit_engine;
