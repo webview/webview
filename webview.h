@@ -80,7 +80,7 @@ WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
 // properly, webview will re-encode it for you.
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
-// Set webview HTML manually.
+// Set webview HTML directly.
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
