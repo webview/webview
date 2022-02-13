@@ -534,6 +534,10 @@ public:
     }
   }
 
+  std::string get_url() {
+    return webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+  }
+
   void navigate(const std::string url) {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
