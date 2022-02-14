@@ -553,7 +553,7 @@ public:
   }
 
   template <class T, typename... Types>
-  T add_event_listener(const char *event, void (*f)(Types...)) {
+  void add_event_listener(const char *event, T (*f)(Types...)) {
     g_signal_connect(WEBKIT_WEB_VIEW(m_webview), event, G_CALLBACK(f), this);
   }
 
