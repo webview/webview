@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.Web.WebView2</id>
+    <version>1.0.664.37</version>
+    <authors>Microsoft</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <projectUrl>https://aka.ms/webview</projectUrl>
+    <iconUrl>https://aka.ms/webviewlogo</iconUrl>
+    <description>The WebView2 control enables you to embed web technologies (HTML, CSS, and JavaScript) in your native applications powered by Microsoft Edge (Chromium).
+This package is necessary for Win 32 C/C++ applications. To learn more about package versions checkout https://aka.ms/wv2-packageversion. To learn best practices checkout: https://aka.ms/wv2-bestpractices.</description>
+    <releaseNotes>Release notes are at https://aka.ms/webviewrelease</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>Microsoft Web WebView Native native package Edge C++ Win32 Webview2</tags>
+    <dependencies>
+      <group targetFramework="native0.0" />
+    </dependencies>
+  </metadata>
+</package>

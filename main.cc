@@ -25,7 +25,7 @@ int main()
     auto b = std::stoi(webview::json_parse(s, "", 1));
     return std::to_string(a + b);
   });
-  w.set_html(R"(
+  w.set_html(R"V0G0N(data:text/html,
     <!doctype html>
     <html>
       <body>hello</body>
@@ -41,7 +41,7 @@ int main()
         };
       </script>
     </html>
-  )");
+  )V0G0N");
   w.run();
   return 0;
 }
