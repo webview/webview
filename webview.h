@@ -998,7 +998,7 @@ public:
   }
 
   void set_html(const std::string html) override {
-    auto html2 = to_lpwstr(html);
+    auto html2 = winrt::to_hstring(html);
     m_webview->Navigate(html2);
     delete[] html2;
   }
