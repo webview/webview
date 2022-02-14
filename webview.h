@@ -936,7 +936,8 @@ public:
         createEnvironment(userDataFolder, currentExeNameW, webview2ComHandler);
 
     // "HRESULT - RPC_E_CHANGED_MODE - Cannot change thread mode after it is set."
-    if (webview2ComHandler->getLastEnvironmentCompleteResult() == RPC_E_CHANGED_MODE) {
+    if (webview2ComHandler->getLastEnvironmentCompleteResult() ==
+        RPC_E_CHANGED_MODE) {
       CoUninitialize();
       if (CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED) != S_OK) {
         delete webview2ComHandler;
