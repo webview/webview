@@ -919,7 +919,7 @@ public:
   }
 
   void set_html(const std::string html) override {
-    m_webview.NavigateToString(winrt::to_hstring(html));
+    m_webview.NavigateToString(winrt::to_hstring(html).c_str());
   }
 
   void eval(const std::string js) override {
