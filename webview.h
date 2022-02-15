@@ -781,7 +781,8 @@ public:
     ((void (*)(id, SEL, id, id))objc_msgSend)(
         m_webview, "loadHTMLString:baseURL:"_sel,
         ((id(*)(id, SEL, const char *))objc_msgSend)(
-            "NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()), nullptr);
+            "NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()),
+        nullptr);
   }
   void init(const std::string js) {
     // Equivalent Obj-C:
