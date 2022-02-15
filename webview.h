@@ -778,10 +778,10 @@ public:
                                            "requestWithURL:"_sel, nsurl));
   }
   void set_html(const std::string html) {
-    ((void (*)(id, SEL, id))objc_msgSend)(
-        m_webview, "loadHTMLString:"_sel,
+    ((void (*)(id, SEL, id, id))objc_msgSend)(
+        m_webview, "loadHTMLString:baseURL:"_sel,
         ((id(*)(id, SEL, const char *))objc_msgSend)(
-            "NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()));
+            "NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()), nullptr);
   }
   void init(const std::string js) {
     // Equivalent Obj-C:
