@@ -840,6 +840,7 @@ using browser_engine = cocoa_wkwebview_engine;
 
 // EdgeHTML headers and libs
 #include <objbase.h>
+//#include <wrl.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
@@ -864,6 +865,8 @@ public:
   virtual void eval(const std::string js) = 0;
   virtual void init(const std::string js) = 0;
   virtual void resize(HWND) = 0;
+  virtual void
+  add_navigate_listener(std::function<void(const char *)> callback) = 0;
 };
 
 //
@@ -934,6 +937,8 @@ public:
     m_webview.Bounds(bounds);
   }
 
+  void add_navigate_listener(std::function<void(const char *)> callback){};
+
 private:
   WebViewControl m_webview = nullptr;
   std::string init_js = "";
@@ -945,6 +950,7 @@ private:
 class edge_chromium : public browser {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
+
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -958,16 +964,17 @@ public:
     }
     wchar_t userDataFolder[MAX_PATH];
     PathCombineW(userDataFolder, dataPath, currentExeName);
+    m_com_handler = new webview2_com_handler(
+        wnd, cb, [&](ICoreWebView2Controller *controller) {
+          m_controller = controller;
+          m_controller->get_CoreWebView2(&m_webview);
+          m_webview->AddRef();
+          flag.clear();
+        });
 
     HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, userDataFolder, nullptr,
-        new webview2_com_handler(wnd, cb,
-                                 [&](ICoreWebView2Controller *controller) {
-                                   m_controller = controller;
-                                   m_controller->get_CoreWebView2(&m_webview);
-                                   m_webview->AddRef();
-                                   flag.clear();
-                                 }));
+        nullptr, userDataFolder, nullptr, m_com_handler);
+
     if (res != S_OK) {
       return false;
     }
@@ -1004,6 +1011,10 @@ public:
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
+  void add_navigate_listener(std::function<void(const char *)> callback) {
+    m_com_handler->navigateCallback = std::move(callback);
+  }
+
 private:
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
@@ -1012,7 +1023,8 @@ private:
       : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
         public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
         public ICoreWebView2WebMessageReceivedEventHandler,
-        public ICoreWebView2PermissionRequestedEventHandler {
+        public ICoreWebView2PermissionRequestedEventHandler,
+        public ICoreWebView2NavigationCompletedEventHandler {
     using webview2_com_handler_cb_t =
         std::function<void(ICoreWebView2Controller *)>;
 
@@ -1039,6 +1051,7 @@ private:
       controller->get_CoreWebView2(&webview);
       webview->add_WebMessageReceived(this, &token);
       webview->add_PermissionRequested(this, &token);
+      webview->add_NavigationCompleted(this, &token);
 
       m_cb(controller);
       return S_OK;
@@ -1063,12 +1076,29 @@ private:
       }
       return S_OK;
     }
+    HRESULT STDMETHODCALLTYPE
+    Invoke(ICoreWebView2 *sender,
+           ICoreWebView2NavigationCompletedEventArgs *args) {
+      PWSTR uri;
+      sender->get_Source(&uri);
+      std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+      const char *converted_url = std::string(converter.to_bytes(uri)).c_str();
+      CoTaskMemFree(uri);
+
+      if (navigateCallback)
+        navigateCallback(converted_url);
+      return S_OK;
+    }
+
+    std::function<void(const char *)> navigateCallback = 0;
 
   private:
     HWND m_window;
     msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
   };
+
+  webview2_com_handler *m_com_handler = nullptr;
 };
 
 class win32_edge_engine {
@@ -1200,6 +1230,9 @@ public:
   }
 
   void navigate(const std::string url) { m_browser->navigate(url); }
+  void add_navigate_listener(std::function<void(const char *)> callback) {
+    m_browser->add_navigate_listener(callback);
+  }
   void eval(const std::string js) { m_browser->eval(js); }
   void init(const std::string js) { m_browser->init(js); }
 
