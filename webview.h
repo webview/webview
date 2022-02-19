@@ -840,7 +840,6 @@ using browser_engine = cocoa_wkwebview_engine;
 
 // EdgeHTML headers and libs
 #include <objbase.h>
-//#include <wrl.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Web.UI.Interop.h>
@@ -950,7 +949,6 @@ private:
 class edge_chromium : public browser {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
-
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
