@@ -100,6 +100,9 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                                          void *arg),
                               void *arg);
 
+// Removes a native C callback that was previously set by webview_bind.
+WEBVIEW_API void webview_unbind(webview_t w, const char *name);
+
 // Allows to return a value from the native binding. Original request pointer
 // must be provided to help internal RPC engine match requests with responses.
 // If status is zero - result is expected to be a valid JSON result value.
@@ -1238,7 +1241,7 @@ public:
           auto pair = static_cast<sync_binding_ctx_t *>(arg);
           pair->first->resolve(seq, 0, pair->second(req));
         },
-        new sync_binding_ctx_t(this, fn));
+        0);
   }
 
   void bind(const std::string name, binding_t f, void *arg) {
@@ -1262,6 +1265,17 @@ public:
     })())";
     init(js);
     bindings[name] = new binding_ctx_t(new binding_t(f), arg);
+  }
+
+  void unbind(const std::string name) {
+    if (bindings.find(name) != bindings.end()) {
+      auto js = "delete window['" + name + "'];";
+      init(js);
+      eval(js);
+      delete bindings[name]->first;
+      delete bindings[name];
+      bindings.erase(name);
+    }
   }
 
   void resolve(const std::string seq, int status, const std::string result) {
@@ -1347,6 +1361,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
         fn(seq.c_str(), req.c_str(), arg);
       },
       arg);
+}
+
+WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
+  static_cast<webview::webview *>(w)->unbind(name);
 }
 
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
