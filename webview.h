@@ -100,6 +100,9 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                                          void *arg),
                               void *arg);
 
+// Removes a native C callback that was previously set by webview_bind.
+WEBVIEW_API void webview_unbind(webview_t w, const char *name);
+
 // Allows to return a value from the native binding. Original request pointer
 // must be provided to help internal RPC engine match requests with responses.
 // If status is zero - result is expected to be a valid JSON result value.
@@ -818,8 +821,9 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include <Shlwapi.h>
 #include <codecvt>
+#include <shlobj.h>
+#include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
 
@@ -835,6 +839,7 @@ using browser_engine = cocoa_wkwebview_engine;
 
 // Edge/Chromium headers and libs
 #include "webview2.h"
+#pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 
@@ -932,21 +937,22 @@ private:
 class edge_chromium : public browser {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
-    CoInitializeEx(nullptr, 0);
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
-    char currentExePath[MAX_PATH];
-    GetModuleFileNameA(NULL, currentExePath, MAX_PATH);
-    char *currentExeName = PathFindFileNameA(currentExePath);
+    wchar_t currentExePath[MAX_PATH];
+    GetModuleFileNameW(NULL, currentExePath, MAX_PATH);
+    wchar_t *currentExeName = PathFindFileNameW(currentExePath);
 
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wideCharConverter;
-    std::wstring userDataFolder =
-        wideCharConverter.from_bytes(std::getenv("APPDATA"));
-    std::wstring currentExeNameW = wideCharConverter.from_bytes(currentExeName);
+    wchar_t dataPath[MAX_PATH];
+    if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, dataPath))) {
+      return false;
+    }
+    wchar_t userDataFolder[MAX_PATH];
+    PathCombineW(userDataFolder, dataPath, currentExeName);
 
     HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, (userDataFolder + L"/" + currentExeNameW).c_str(), nullptr,
+        nullptr, userDataFolder, nullptr,
         new webview2_com_handler(wnd, cb,
                                  [&](ICoreWebView2Controller *controller) {
                                    m_controller = controller;
@@ -955,7 +961,6 @@ public:
                                    flag.clear();
                                  }));
     if (res != S_OK) {
-      CoUninitialize();
       return false;
     }
     MSG msg = {};
@@ -977,31 +982,21 @@ public:
   }
 
   void navigate(const std::string url) override {
-    auto wurl = to_lpwstr(url);
-    m_webview->Navigate(wurl);
-    delete[] wurl;
+    auto wurl = winrt::to_hstring(url);
+    m_webview->Navigate(wurl.c_str());
   }
 
   void init(const std::string js) override {
-    LPCWSTR wjs = to_lpwstr(js);
-    m_webview->AddScriptToExecuteOnDocumentCreated(wjs, nullptr);
-    delete[] wjs;
+    auto wjs = winrt::to_hstring(js);
+    m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
   }
 
   void eval(const std::string js) override {
-    LPCWSTR wjs = to_lpwstr(js);
-    m_webview->ExecuteScript(wjs, nullptr);
-    delete[] wjs;
+    auto wjs = winrt::to_hstring(js);
+    m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
 private:
-  LPWSTR to_lpwstr(const std::string s) {
-    int n = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, NULL, 0);
-    wchar_t *ws = new wchar_t[n];
-    MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, ws, n);
-    return ws;
-  }
-
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
 
@@ -1044,9 +1039,7 @@ private:
         ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
       LPWSTR message;
       args->TryGetWebMessageAsString(&message);
-
-      std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> wideCharConverter;
-      m_msgCb(wideCharConverter.to_bytes(message));
+      m_msgCb(winrt::to_string(message));
       sender->PostWebMessageAsString(message);
 
       CoTaskMemFree(message);
@@ -1079,15 +1072,15 @@ public:
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
           GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
 
-      WNDCLASSEX wc;
+      WNDCLASSEXW wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
       wc.cbSize = sizeof(WNDCLASSEX);
       wc.hInstance = hInstance;
-      wc.lpszClassName = "webview";
+      wc.lpszClassName = L"webview";
       wc.hIcon = icon;
       wc.hIconSm = icon;
       wc.lpfnWndProc =
-          (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> int {
+          (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
             auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
             switch (msg) {
             case WM_SIZE:
@@ -1113,14 +1106,14 @@ public:
               }
             } break;
             default:
-              return DefWindowProc(hwnd, msg, wp, lp);
+              return DefWindowProcW(hwnd, msg, wp, lp);
             }
             return 0;
           });
-      RegisterClassEx(&wc);
-      m_window = CreateWindow("webview", "", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                              CW_USEDEFAULT, 640, 480, nullptr, nullptr,
-                              GetModuleHandle(nullptr), nullptr);
+      RegisterClassExW(&wc);
+      m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
+                               CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
+                               nullptr, GetModuleHandle(nullptr), nullptr);
       SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
     } else {
       m_window = *(static_cast<HWND *>(window));
@@ -1167,7 +1160,7 @@ public:
   }
 
   void set_title(const std::string title) {
-    SetWindowText(m_window, title.c_str());
+    SetWindowTextW(m_window, winrt::to_hstring(title).c_str());
   }
 
   void set_size(int width, int height, int hints) {
@@ -1252,7 +1245,7 @@ public:
           auto pair = static_cast<sync_binding_ctx_t *>(arg);
           pair->first->resolve(seq, 0, pair->second(req));
         },
-        new sync_binding_ctx_t(this, fn));
+        0);
   }
 
   void bind(const std::string name, binding_t f, void *arg) {
@@ -1276,6 +1269,17 @@ public:
     })())";
     init(js);
     bindings[name] = new binding_ctx_t(new binding_t(f), arg);
+  }
+
+  void unbind(const std::string name) {
+    if (bindings.find(name) != bindings.end()) {
+      auto js = "delete window['" + name + "'];";
+      init(js);
+      eval(js);
+      delete bindings[name]->first;
+      delete bindings[name];
+      bindings.erase(name);
+    }
   }
 
   void resolve(const std::string seq, int status, const std::string result) {
@@ -1361,6 +1365,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
         fn(seq.c_str(), req.c_str(), arg);
       },
       arg);
+}
+
+WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
+  static_cast<webview::webview *>(w)->unbind(name);
 }
 
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
