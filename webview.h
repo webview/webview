@@ -1241,7 +1241,7 @@ public:
           auto pair = static_cast<sync_binding_ctx_t *>(arg);
           pair->first->resolve(seq, 0, pair->second(req));
         },
-        0);
+        new sync_binding_ctx_t(this, fn));
   }
 
   void bind(const std::string name, binding_t f, void *arg) {
@@ -1273,6 +1273,7 @@ public:
       init(js);
       eval(js);
       delete bindings[name]->first;
+      delete static_cast<sync_binding_ctx_t *>(bindings[name]->second);
       delete bindings[name];
       bindings.erase(name);
     }
