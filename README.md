@@ -188,7 +188,7 @@ $ gcc -c main.c -o main.o  # build C program
 $ g++ main.o webview.o $CPPFLAGS -o webview-example  # link them together
 ```
 
-For a complete C example see: https://github.com/petabyt/webviewc
+For a complete C example see: https://github.com/webview/webview_c
 
 
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
