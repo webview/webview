@@ -856,6 +856,7 @@ public:
   virtual void eval(const std::string js) = 0;
   virtual void init(const std::string js) = 0;
   virtual void resize(HWND) = 0;
+  virtual std::string get_url() = 0;
 };
 
 //
@@ -926,6 +927,8 @@ public:
     m_webview.Bounds(bounds);
   }
 
+  std::string get_url() { return ""; };
+
 private:
   WebViewControl m_webview = nullptr;
   std::string init_js = "";
@@ -994,6 +997,15 @@ public:
   void eval(const std::string js) override {
     auto wjs = winrt::to_hstring(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
+  }
+
+  std::string get_url() {
+    PWSTR uri;
+    m_webview->get_Source(&uri);
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    std::string converted_url = converter.to_bytes(uri);
+    CoTaskMemFree(uri);
+    return converted_url;
   }
 
 private:
@@ -1194,6 +1206,7 @@ public:
   void navigate(const std::string url) { m_browser->navigate(url); }
   void eval(const std::string js) { m_browser->eval(js); }
   void init(const std::string js) { m_browser->init(js); }
+  std::string get_url() { m_browser->get_url(); }
 
 private:
   virtual void on_message(const std::string msg) = 0;
