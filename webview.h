@@ -1206,7 +1206,7 @@ public:
   void navigate(const std::string url) { m_browser->navigate(url); }
   void eval(const std::string js) { m_browser->eval(js); }
   void init(const std::string js) { m_browser->init(js); }
-  std::string get_url() { m_browser->get_url(); }
+  std::string get_url() { return m_browser->get_url(); }
 
 private:
   virtual void on_message(const std::string msg) = 0;
