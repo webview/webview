@@ -843,16 +843,6 @@ namespace webview {
 
 using msg_cb_t = std::function<void(const std::string)>;
 
-// Common interface for EdgeHTML and Edge/Chromium
-class browser {
-public:
-  virtual ~browser() = default;
-  virtual bool embed(HWND, bool, msg_cb_t) = 0;
-  virtual void navigate(const std::string url) = 0;
-  virtual void eval(const std::string js) = 0;
-  virtual void init(const std::string js) = 0;
-  virtual void resize(HWND) = 0;
-};
 
 //
 // EdgeHTML browser engine
@@ -862,77 +852,12 @@ using namespace Windows::Foundation;
 using namespace Windows::Web::UI;
 using namespace Windows::Web::UI::Interop;
 
-class edge_html : public browser {
-public:
-  bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
-    init_apartment(winrt::apartment_type::single_threaded);
-    auto process = WebViewControlProcess();
-    auto op = process.CreateWebViewControlAsync(reinterpret_cast<int64_t>(wnd),
-                                                Rect());
-    if (op.Status() != AsyncStatus::Completed) {
-      handle h(CreateEvent(nullptr, false, false, nullptr));
-      op.Completed([h = h.get()](auto, auto) { SetEvent(h); });
-      HANDLE hs[] = {h.get()};
-      DWORD i;
-      CoWaitForMultipleHandles(COWAIT_DISPATCH_WINDOW_MESSAGES |
-                                   COWAIT_DISPATCH_CALLS |
-                                   COWAIT_INPUTAVAILABLE,
-                               INFINITE, 1, hs, &i);
-    }
-    m_webview = op.GetResults();
-    m_webview.Settings().IsScriptNotifyAllowed(true);
-    m_webview.IsVisible(true);
-    m_webview.ScriptNotify([=](auto const &sender, auto const &args) {
-      std::string s = winrt::to_string(args.Value());
-      cb(s.c_str());
-    });
-    m_webview.NavigationStarting([=](auto const &sender, auto const &args) {
-      m_webview.AddInitializeScript(winrt::to_hstring(init_js));
-    });
-    init("window.external.invoke = s => window.external.notify(s)");
-    return true;
-  }
-
-  void navigate(const std::string url) override {
-    std::string html = html_from_uri(url);
-    if (html != "") {
-      m_webview.NavigateToString(winrt::to_hstring(html));
-    } else {
-      Uri uri(winrt::to_hstring(url));
-      m_webview.Navigate(uri);
-    }
-  }
-
-  void init(const std::string js) override {
-    init_js = init_js + "(function(){" + js + "})();";
-  }
-
-  void eval(const std::string js) override {
-    m_webview.InvokeScriptAsync(
-        L"eval", single_threaded_vector<hstring>({winrt::to_hstring(js)}));
-  }
-
-  void resize(HWND wnd) override {
-    if (m_webview == nullptr) {
-      return;
-    }
-    RECT r;
-    GetClientRect(wnd, &r);
-    Rect bounds(r.left, r.top, r.right - r.left, r.bottom - r.top);
-    m_webview.Bounds(bounds);
-  }
-
-private:
-  WebViewControl m_webview = nullptr;
-  std::string init_js = "";
-};
-
 //
 // Edge/Chromium browser engine
 //
-class edge_chromium : public browser {
+class edge_chromium {
 public:
-  bool embed(HWND wnd, bool debug, msg_cb_t cb) override {
+  bool embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -968,7 +893,7 @@ public:
     return true;
   }
 
-  void resize(HWND wnd) override {
+  void resize(HWND wnd) {
     if (m_controller == nullptr) {
       return;
     }
@@ -977,17 +902,17 @@ public:
     m_controller->put_Bounds(bounds);
   }
 
-  void navigate(const std::string url) override {
+  void navigate(const std::string url) {
     auto wurl = winrt::to_hstring(url);
     m_webview->Navigate(wurl.c_str());
   }
 
-  void init(const std::string js) override {
+  void init(const std::string js) {
     auto wjs = winrt::to_hstring(js);
     m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
   }
 
-  void eval(const std::string js) override {
+  void eval(const std::string js) {
     auto wjs = winrt::to_hstring(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
@@ -1080,7 +1005,7 @@ public:
             auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
             switch (msg) {
             case WM_SIZE:
-              w->m_browser->resize(hwnd);
+              //w->m_browser->resize(hwnd);
               break;
             case WM_CLOSE:
               DestroyWindow(hwnd);
@@ -1123,11 +1048,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    if (!m_browser->embed(m_window, debug, cb)) {
-      m_browser = std::make_unique<webview::edge_html>();
-      m_browser->embed(m_window, debug, cb);
-    }
-
+    m_browser->embed(m_window, debug, cb);
     m_browser->resize(m_window);
   }
 
@@ -1198,7 +1119,7 @@ private:
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
-  std::unique_ptr<webview::browser> m_browser =
+  std::unique_ptr<webview::edge_chromium> m_browser =
       std::make_unique<webview::edge_chromium>();
 };
 
