@@ -1079,8 +1079,7 @@ private:
            ICoreWebView2NavigationCompletedEventArgs *args) {
       PWSTR uri;
       sender->get_Source(&uri);
-      std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-      const char *converted_url = std::string(converter.to_bytes(uri)).c_str();
+      const char *converted_url = winrt::to_string(uri).c_str();
       CoTaskMemFree(uri);
 
       if (navigateCallback)
