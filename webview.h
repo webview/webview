@@ -1002,8 +1002,7 @@ public:
   std::string get_url() {
     PWSTR uri;
     m_webview->get_Source(&uri);
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-    std::string converted_url = converter.to_bytes(uri);
+    std::string converted_url = winrt::to_string(uri);
     CoTaskMemFree(uri);
     return converted_url;
   }
