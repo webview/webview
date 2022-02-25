@@ -25,7 +25,7 @@ int main()
     auto b = std::stoi(webview::json_parse(s, "", 1));
     return std::to_string(a + b);
   });
-  w.navigate(R"V0G0N(data:text/html,
+  w.set_html(R"V0G0N(
     <!doctype html>
     <html>
       <body>hello</body>

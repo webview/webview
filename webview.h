@@ -80,6 +80,9 @@ WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
 // properly, webview will re-encode it for you.
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
+// Set webview HTML directly.
+WEBVIEW_API void webview_set_html(webview_t w, const char *html);
+
 // Injects JavaScript code at the initialization of the new page. Every time
 // the webview will open a the new page - this initialization code will be
 // executed. It is guaranteed that code is executed before window.onload.
@@ -541,6 +544,10 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
+  void set_html(const std::string html) {
+    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(), NULL);
+  }
+
   void init(const std::string js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
@@ -773,6 +780,13 @@ public:
         ((id(*)(id, SEL, id))objc_msgSend)("NSURLRequest"_cls,
                                            "requestWithURL:"_sel, nsurl));
   }
+  void set_html(const std::string html) {
+    ((void (*)(id, SEL, id, id))objc_msgSend)(
+        m_webview, "loadHTMLString:baseURL:"_sel,
+        ((id(*)(id, SEL, const char *))objc_msgSend)(
+            "NSString"_cls, "stringWithUTF8String:"_sel, html.c_str()),
+        nullptr);
+  }
   void init(const std::string js) {
     // Equivalent Obj-C:
     // [m_manager addUserScript:[[WKUserScript alloc] initWithSource:[NSString stringWithUTF8String:js.c_str()] injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES]]
@@ -849,6 +863,7 @@ public:
   virtual ~browser() = default;
   virtual bool embed(HWND, bool, msg_cb_t) = 0;
   virtual void navigate(const std::string url) = 0;
+  virtual void set_html(const std::string html) = 0;
   virtual void eval(const std::string js) = 0;
   virtual void init(const std::string js) = 0;
   virtual void resize(HWND) = 0;
@@ -905,6 +920,10 @@ public:
 
   void init(const std::string js) override {
     init_js = init_js + "(function(){" + js + "})();";
+  }
+
+  void set_html(const std::string html) override {
+    m_webview.NavigateToString(winrt::to_hstring(html).c_str());
   }
 
   void eval(const std::string js) override {
@@ -980,6 +999,11 @@ public:
   void navigate(const std::string url) override {
     auto wurl = winrt::to_hstring(url);
     m_webview->Navigate(wurl.c_str());
+  }
+
+  void set_html(const std::string html) override {
+    auto html2 = winrt::to_hstring(html);
+    m_webview->Navigate(html2.c_str());
   }
 
   void init(const std::string js) override {
@@ -1188,6 +1212,7 @@ public:
   }
 
   void navigate(const std::string url) { m_browser->navigate(url); }
+  void set_html(const std::string html) { m_browser->set_html(html); }
   void eval(const std::string js) { m_browser->eval(js); }
   void init(const std::string js) { m_browser->init(js); }
 
@@ -1227,6 +1252,8 @@ public:
       browser_engine::navigate(url);
     }
   }
+
+  void set_html(const std::string html) { browser_engine::set_html(html); }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
   using binding_ctx_t = std::pair<binding_t *, void *>;
@@ -1342,6 +1369,10 @@ WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
 
 WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
   static_cast<webview::webview *>(w)->navigate(url);
+}
+
+WEBVIEW_API void webview_set_html(webview_t w, const char *html) {
+  static_cast<webview::webview *>(w)->set_html(html);
 }
 
 WEBVIEW_API void webview_init(webview_t w, const char *js) {
