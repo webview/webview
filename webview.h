@@ -822,19 +822,12 @@ using browser_engine = cocoa_wkwebview_engine;
 #include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <winrt/Windows.Foundation.h>
+#include "webview2.h"
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "Shlwapi.lib")
-
-// EdgeHTML headers and libs
-#include <objbase.h>
-#include <winrt/Windows.Foundation.Collections.h>
-#include <winrt/Windows.Foundation.h>
-#include <winrt/Windows.Web.UI.Interop.h>
 #pragma comment(lib, "windowsapp")
-
-// Edge/Chromium headers and libs
-#include "webview2.h"
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
@@ -842,19 +835,8 @@ using browser_engine = cocoa_wkwebview_engine;
 namespace webview {
 
 using msg_cb_t = std::function<void(const std::string)>;
-
-
-//
-// EdgeHTML browser engine
-//
 using namespace winrt;
-using namespace Windows::Foundation;
-using namespace Windows::Web::UI;
-using namespace Windows::Web::UI::Interop;
 
-//
-// Edge/Chromium browser engine
-//
 class edge_chromium {
 public:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) {
@@ -1005,7 +987,7 @@ public:
             auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
             switch (msg) {
             case WM_SIZE:
-              //w->m_browser->resize(hwnd);
+              w->m_browser->resize(hwnd);
               break;
             case WM_CLOSE:
               DestroyWindow(hwnd);
