@@ -923,7 +923,8 @@ public:
   }
 
   void set_html(const std::string html) override {
-    m_webview.NavigateToString(winrt::to_hstring("data:text/html," + html).c_str());
+    m_webview.NavigateToString(
+        winrt::to_hstring("data:text/html," + html).c_str());
   }
 
   void eval(const std::string js) override {
