@@ -831,12 +831,13 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include "webview2.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
 #include <winrt/Windows.Foundation.h>
+
+#include "webview2.h"
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "Shlwapi.lib")
