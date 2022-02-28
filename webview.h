@@ -909,13 +909,8 @@ public:
   }
 
   void navigate(const std::string url) override {
-    std::string html = html_from_uri(url);
-    if (html != "") {
-      m_webview.NavigateToString(winrt::to_hstring(html));
-    } else {
-      Uri uri(winrt::to_hstring(url));
-      m_webview.Navigate(uri);
-    }
+    Uri uri(winrt::to_hstring(url));
+    m_webview.Navigate(uri);
   }
 
   void init(const std::string js) override {
@@ -1246,12 +1241,7 @@ public:
                                url_encode("<html><body>Hello</body></html>"));
       return;
     }
-    std::string html = html_from_uri(url);
-    if (html != "") {
-      browser_engine::navigate("data:text/html," + url_encode(html));
-    } else {
-      browser_engine::navigate(url);
-    }
+    browser_engine::navigate(url);
   }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
