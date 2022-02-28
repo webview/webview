@@ -923,7 +923,8 @@ public:
   }
 
   void set_html(const std::string html) override {
-    m_webview.NavigateToString(winrt::to_hstring(html).c_str());
+    m_webview.NavigateToString(
+        winrt::to_hstring("data:text/html," + url_encode(html)).c_str());
   }
 
   void eval(const std::string js) override {
@@ -1002,7 +1003,7 @@ public:
   }
 
   void set_html(const std::string html) override {
-    auto html2 = winrt::to_hstring(html);
+    auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
     m_webview->Navigate(html2.c_str());
   }
 
@@ -1252,8 +1253,6 @@ public:
       browser_engine::navigate(url);
     }
   }
-
-  void set_html(const std::string html) { browser_engine::set_html(html); }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
   using binding_ctx_t = std::pair<binding_t *, void *>;
