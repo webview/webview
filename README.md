@@ -5,10 +5,9 @@
 [![GoDoc](https://godoc.org/github.com/zserge/webview?status.svg)](https://godoc.org/github.com/zserge/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/zserge/webview)](https://goreportcard.com/report/github.com/zserge/webview)
 
-
 A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are [Rust bindings](https://github.com/Boscop/webview-rs), [Python bindings](https://github.com/zserge/webview-python), [Nim bindings](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C# bindings](https://github.com/webview/webview_csharp) and [Java bindings](https://github.com/shannah/webviewjar) available.
 
-The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms. 
+The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms.
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
@@ -41,33 +40,6 @@ func main() {
 	w.SetSize(800, 600, webview.HintNone)
 	w.Navigate("https://en.m.wikipedia.org/wiki/Main_Page")
 	w.Run()
-}
-```
-
-example to scrape data from javascript back to golang:
-
-```
-w := webview.New(false)
-defer w.Destroy()
-w.SetTitle("scape example")
-w.SetSize(800, 600, webview.HintNone)
-w.Navigate("https://twitter.com/bitclout")
-w.Bind("sendBackBodyInnerHTML", callback)
-
-w.Dispatch(func() {
-  go func() {
-    time.Sleep(time.Second * 4)
-    w.Eval("sendBackBodyInnerHTML(document.body.innerHTML);")
-  }()
-})
-w.Run()
-
-func callback(data string) {
-  tokens := strings.Split(data, "followers")
-  tokens = strings.Split(tokens[1], ">")
-  tokens = strings.Split(tokens[3], "<")
-  fmt.Println("followers:", tokens[0])
-  os.Exit(0)
 }
 ```
 
@@ -120,17 +92,18 @@ Also, if you want to cross-compile your webview app - use [xgo](https://github.c
 4. `Webview.Loop()` has been removed. Use `Run()` instead.
 5. `WebView.Run()`, `WebView.Terminate()`, `WebView.SetTitle()`, `WebView.Dispatch()` stayed the same.
 6. `WebView.Exit()` has been renamed to `WebView.Destroy()`
-6. `WebView.SetColor()` and `WebView.SetFullScreen()` have been removed. Use `Window()` to get native window handle and probably write some Cgo code to adjust native window to your taste.
-7. `webview.Dialog` has been removed. But it is likely to be brought back as a standalone module.
-8. `WebView.Eval()` remained the same.
-9. `WebView.InjectCSS()` has been removed. Use eval to inject style tag with CSS inside.
-10. `WebView.Bind()` kept the name, but changed the semantics. Only functions can be bound. Not the structs, like in Lorca.
+7. `WebView.SetColor()` and `WebView.SetFullScreen()` have been removed. Use `Window()` to get native window handle and probably write some Cgo code to adjust native window to your taste.
+8. `webview.Dialog` has been removed. But it is likely to be brought back as a standalone module.
+9. `WebView.Eval()` remained the same.
+10. `WebView.InjectCSS()` has been removed. Use eval to inject style tag with CSS inside.
+11. `WebView.Bind()` kept the name, but changed the semantics. Only functions can be bound. Not the structs, like in Lorca.
 
 ## Webview for C/C++ developers
 
 Download [webview.h](https://raw.githubusercontent.com/zserge/webview/master/webview.h) and include it in your C/C++ code:
 
 ### C++:
+
 ```c
 // main.cc
 #include "webview.h"
@@ -148,6 +121,7 @@ int main() {
   return 0;
 }
 ```
+
 Build it:
 
 ```bash
@@ -160,6 +134,7 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 ```
 
 ### C:
+
 ```c
 // main .c
 #include "webview.h"
@@ -178,6 +153,7 @@ int main() {
 	return 0;
 }
 ```
+
 Build it:
 
 ```bash
@@ -224,4 +200,3 @@ FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 Code is distributed under MIT license, feel free to use it in your proprietary
 projects as well.
-
