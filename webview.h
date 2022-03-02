@@ -989,7 +989,7 @@ public:
   }
 
   void set_html(const std::string html) {
-    auto html2 = winrt::to_hstring(html);
+    auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
     m_webview->Navigate(html2.c_str());
   }
 
@@ -1129,15 +1129,8 @@ public:
                                url_encode("<html><body>Hello</body></html>"));
       return;
     }
-    std::string html = html_from_uri(url);
-    if (html != "") {
-      browser_engine::navigate("data:text/html," + url_encode(html));
-    } else {
-      browser_engine::navigate(url);
-    }
+    browser_engine::navigate(url);
   }
-
-  void set_html(const std::string html) { browser_engine::set_html(html); }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
   using binding_ctx_t = std::pair<binding_t *, void *>;
