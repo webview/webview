@@ -11,6 +11,7 @@ import (
 )
 
 const account = "CloudNativeFdn"
+const js = `getFollowers(document.body.querySelectorAll('[href="/%s/followers"]')[0].text);`
 
 func main() {
 	w := webview.New(false)
@@ -23,7 +24,7 @@ func main() {
 	w.Dispatch(func() {
 		go func() {
 			time.Sleep(time.Second * 4)
-			w.Eval("getFollowers(document.body.querySelectorAll('[href=\"/" + account + "/followers\"]')[0].text);")
+			w.Eval(fmt.Sprintf(js, account))
 		}()
 	})
 	w.Run()
