@@ -5,13 +5,28 @@
 [![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs. Also, there are bindings for [Rust](https://github.com/Boscop/webview-rs), [Python](https://github.com/zserge/webview-python), [Nim](https://github.com/oskca/webview), [Haskell](https://github.com/lettier/webviewhs), [C#](https://github.com/webview/webview_csharp), [Janet](https://github.com/janet-lang/webview), [Crystal](https://github.com/naqvis/webview), [Java](https://github.com/shannah/webviewjar), [Ruby](https://github.com/Maaarcocr/webview_ruby), and [Pascal](http://github.com/PierceNg/fpwebview) available.
+A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs.
 
 The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms.
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
 
 It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and Edge on Windows 10.
+
+## Bindings
+
+This repository contains bindings for C, C++, and Go. Bindings for other languages are maintained separately.
+
+* [Rust](https://github.com/Boscop/webview-rs)
+* [Python](https://github.com/zserge/webview-python)
+* [Nim](https://github.com/oskca/webview)
+* [Haskell](https://github.com/lettier/webviewhs)
+* [C#](https://github.com/webview/webview_csharp)
+* [Janet](https://github.com/janet-lang/webview)
+* [Crystal](https://github.com/naqvis/webview)
+* [Java](https://github.com/shannah/webviewjar)
+* [Ruby](https://github.com/Maaarcocr/webview_ruby)
+* [Pascal](http://github.com/PierceNg/fpwebview)
 
 ## Webview for Go developers
 
@@ -226,3 +241,4 @@ FreeBSD is also supported, to install webkit2 run `pkg install webkit2-gtk3`.
 
 Code is distributed under MIT license, feel free to use it in your proprietary
 projects as well.
+
