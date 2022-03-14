@@ -233,11 +233,10 @@ Full C/C++ API is described at the top of the `webview.h` file.
 
 ## Known issues
 
-Please note that webview is not a full web browser and thus does not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
-
-Ubuntu users need to install the `webkit2gtk-4.0` as development dependency via `sudo apt install webkit2gtk-4.0`. If the package can't be found `webkit2gtk-4.0-dev` may be used instead. FreeBSD is also supported via webkit2 which may be installed by running `pkg install webkit2-gtk3`.
-
-Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
+- A webview is not a full web browser and thus does not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
+- Ubuntu users need to install the `webkit2gtk-4.0` as development dependency via `sudo apt install webkit2gtk-4.0`. If the package can't be found `webkit2gtk-4.0-dev` may be used instead.
+- FreeBSD is also supported via webkit2 which may be installed by running `pkg install webkit2-gtk3`.
+- Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
 
 ## License
 
