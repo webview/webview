@@ -231,7 +231,7 @@ Full C/C++ API is described at the top of the `webview.h` file.
 13. `webview_inject_css()` has been removed. Use `webview_eval()` to create style tag manually.
 14. `webview_debug()` has been removed. Use whatever fits best to your programming language and environment to debug your GUI apps.
 
-## Known issues
+## Notes
 
 - A webview is not a full web browser and thus does not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
 - Ubuntu users need to install the `webkit2gtk-4.0` as development dependency via `sudo apt install webkit2gtk-4.0`. If the package can't be found `webkit2gtk-4.0-dev` may be used instead.
