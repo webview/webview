@@ -14,7 +14,7 @@ set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%vswhere%" set "vswhere=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%vswhere%" (
 	echo ERROR: Failed to find vswhere.exe
-	exit 1
+	exit /b 1
 )
 echo Found %vswhere%
 
@@ -24,7 +24,7 @@ for /f "usebackq tokens=*" %%i in (`"%vswhere%" -latest -products * -requires Mi
 )
 if not exist "%vc_dir%\Common7\Tools\vsdevcmd.bat" (
 	echo ERROR: Failed to find VC tools x86/x64
-	exit 1
+	exit /b 1
 )
 echo Found %vc_dir%
 
