@@ -67,9 +67,9 @@ func main() {
 		time.Sleep(3 * time.Second)
 		setResourceIcon(w, "TIGER")
 		time.Sleep(3 * time.Second)
-		setExternalIcon(w, "zebra.ico")
+		setExternalIcon(w, "icons/ico/zebra.ico")
 		time.Sleep(3 * time.Second)
-		setExternalIcon(w, "peacock.ico")
+		setExternalIcon(w, "icons/ico/peacock.ico")
 	}()
 
 	defer w.Destroy()
