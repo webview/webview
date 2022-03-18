@@ -1,4 +1,9 @@
 // This example shows you how to change the icon in the webview on Windows
+//
+// To build:
+// - Install Go-Winres: go install github.com/tc-hib/go-winres@latest
+// - Generate syso files: go-winres make
+// - Compile exe: go build .
 
 package main
 
