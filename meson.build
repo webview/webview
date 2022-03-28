@@ -7,6 +7,7 @@ compiler_cpp = meson.get_compiler('cpp')
 webview_dependencies = []
 host_os = host_machine.system().to_lower()
 if host_os.contains('windows')
+  #FIXME: Can't find the webview2loader link lib, need help
   # add_project_arguments(['-I', join_paths(meson.source_root(), 'script')], language: 'c++')
   webview_dependencies = compiler_cpp.find_library('WebView2Loader')
 elif host_os.contains('mingw') or host_os.contains('cygwin') 
@@ -14,6 +15,7 @@ elif host_os.contains('mingw') or host_os.contains('cygwin')
   if webview_dep.found()
     webview_dependencies += webview_dep
   else
+    #FIXME: Can't find the webview2loader link lib, need help
     # add_project_arguments(['-I', join_paths(meson.source_root(), 'script')], language: 'c++')
     webview_dependencies = compiler_cpp.find_library('WebView2Loader')
   endif
