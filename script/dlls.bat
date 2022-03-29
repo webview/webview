@@ -28,24 +28,24 @@ if not exist "%vc_dir%\Common7\Tools\vsdevcmd.bat" (
 )
 echo Found %vc_dir%
 
+mkdir "%src_dir%\dll\x86"
+mkdir "%src_dir%\dll\x64"
+copy "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x64\WebView2Loader.dll"   "%src_dir%\dll\x64"
+copy "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x86\WebView2Loader.dll"   "%src_dir%\dll\x86"
+
+call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x86 -host_arch=x64
+
+echo Building webview.dll (x86)
+cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	/I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
+	"%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x86\WebView2Loader.dll.lib" ^
+	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
+	"%src_dir%\script\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit \b
+
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
-
-copy "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x64\WebView2Loader.dll" "%build_dir%"
-
-echo Building webview.exe (x64)
-cl /I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
+echo Building webview.dll (x64)
+cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	/I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
-
-echo Building webview_test.exe (x64)
-cl /I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
-	"%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x64\WebView2Loader.dll.lib" ^
-	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
-
-echo Running Go tests
-cd /D %src_dir%
-set CGO_ENABLED=1
-set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
-go test || exit \b
+	"%src_dir%\script\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit \b
