@@ -10,19 +10,22 @@ echo Webview directory: %src_dir%
 echo Build directory: %build_dir%
 
 :: If you update the nuget package, change its version here
-set nuget_version=microsoft.web.webview2.1.0.1150.38
-echo Using Nuget Package %nuget_version%
-if not exist "%script_dir%\%nuget_version%" (
+set nuget_version=1.0.1150.38
+echo Using Nuget Package microsoft.web.webview2.%nuget_version%
+if not exist "%script_dir%\microsoft.web.webview2.%nuget_version%" (
 	curl -sSLO https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-	nuget.exe install Microsoft.Web.Webview2 -Version 1.0.1150.38 -OutputDirectory %script_dir%
+	nuget.exe install Microsoft.Web.Webview2 -Version %nuget_version% -OutputDirectory %script_dir%
 	echo Nuget package installed
 )
 
+if not exist "%src_dir%\dll\x64\webview.dll" (
+	call dlls.bat
+)
 if not exist "%build_dir%\webview.dll" (
-	if not exist "%src_dir%\dll\x64\webview.dll" (
-		call dlls.bat
-	)
 	copy "%src_dir%\dll\x64\webview.dll" %build_dir%
+)
+if not exist "%build_dir%\WebView2Loader.dll" (
+	copy "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll" "%build_dir%"
 )
 
 echo Looking for vswhere.exe...
@@ -46,20 +49,16 @@ echo Found %vc_dir%
 
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 
-if not exist "%build_dir%\WebView2Loader.dll" (
-	copy "%script_dir%\%nuget_version%\build\native\x64\WebView2Loader.dll" "%build_dir%"
-)
-
 echo Building webview.exe (x64)
-cl /I "%script_dir%\%nuget_version%\build\native\include" ^
-	"%script_dir%\%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
 
 echo Building webview_test.exe (x64)
-cl /I "%script_dir%\%nuget_version%\build\native\include" ^
-	"%script_dir%\%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
