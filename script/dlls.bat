@@ -40,7 +40,7 @@ cl /D "WEBVIEW_API=__declspec(dllexport)" ^
 	/I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x86\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\script\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit \b
+	"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit \b
 
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 echo Building webview.dll (x64)
@@ -48,4 +48,4 @@ cl /D "WEBVIEW_API=__declspec(dllexport)" ^
 	/I "%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\include" ^
 	"%src_dir%\script\microsoft.web.webview2.1.0.1150.38\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\script\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit \b
+	"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit \b
