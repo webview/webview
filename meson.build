@@ -5,7 +5,7 @@ compiler_cpp = meson.get_compiler('cpp')
 
 # platform specific dependenies
 webview_dependencies = []
-host_os = host_machine.system().to_lower()
+host_os = host_machine.system()
 if host_os.contains('windows')
   #FIXME: Can't find the webview2loader link lib, need help
   # add_project_arguments(['-I', join_paths(meson.source_root(), 'script')], language: 'c++')
@@ -45,8 +45,6 @@ libwebview = library(
 
 pkgconfig.generate(
     libwebview,
-    name: 'webview',
-    filebase: 'webview',
     version: meson.project_version(),
     libraries: [ webview_dependencies ],
     description: 'Webview headers',
