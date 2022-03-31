@@ -18,6 +18,12 @@ if not exist "%script_dir%\%nuget_version%" (
 	echo Nuget package installed
 )
 
+if not exist "%build_dir%\webview.dll" (
+	if not exist "%src_dir%\dll\x64\webview.dll" (
+		call dlls.bat
+	)
+	copy "%src_dir%\dll\x64\webview.dll" %build_dir%
+)
 
 echo Looking for vswhere.exe...
 set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -47,6 +53,7 @@ if not exist "%build_dir%\WebView2Loader.dll" (
 echo Building webview.exe (x64)
 cl /I "%script_dir%\%nuget_version%\build\native\include" ^
 	"%script_dir%\%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
 
