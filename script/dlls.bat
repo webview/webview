@@ -14,7 +14,7 @@ set nuget_version=microsoft.web.webview2.1.0.1150.38
 echo Using Nuget Package %nuget_version%
 if not exist "%script_dir%\%nuget_version%" (
 	curl -sSLO https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-	nuget.exe install Microsoft.Web.Webview2 -Version 1.0.1150.38 -OutputDirectory .
+	nuget.exe install Microsoft.Web.Webview2 -Version 1.0.1150.38 -OutputDirectory %script_dir%
 	echo Nuget package installed
 )
 
