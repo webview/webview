@@ -5,7 +5,7 @@ compiler_cpp = meson.get_compiler('cpp')
 
 # platform specific dependenies
 webview_dependencies = []
-host_os = host_machine.system()
+host_os = host_machine.system().to_lower()
 if host_os.contains('windows')
   #FIXME: Can't find the webview2loader link lib, need help
   # add_project_arguments(['-I', join_paths(meson.source_root(), 'script')], language: 'c++')
@@ -22,11 +22,11 @@ elif host_os.contains('mingw') or host_os.contains('cygwin')
 
   add_project_arguments(['--define', 'WINDOWS'], language: 'c')
 elif host_os.contains('linux')
-  webview_dependencies += dependency('gtk+-3.0', version: '>= 4.4')
+  webview_dependencies += dependency('gtk+-3.0', version: '>= 3.24')
   webview_dependencies += dependency('webkit2gtk-4.0', version: '>= 2.0')
   add_project_arguments(['--define', 'LINUX'], language: 'c')
 elif host_os.contains('darwin') or host_os.contains('machten') or host_os.contains('rhapsody')
-    webview_dependencies += dependency('gtk+-3.0', version: '>= 4.4')
+    webview_dependencies += dependency('gtk+-3.0', version: '>= 3.24')
     webview_dependencies += dependency('webkit2gtk-4.0', version: '>= 2.0')
   add_project_arguments('-DMACOS', language: 'c')
 endif
@@ -45,7 +45,6 @@ libwebview = library(
 
 pkgconfig.generate(
     libwebview,
-    version: meson.project_version(),
     libraries: [ webview_dependencies ],
     description: 'Webview headers',
 )
@@ -56,14 +55,27 @@ libwebview_dep = declare_dependency(
     include_directories: [include_directories('.')]
 )
 
-sources_execute = [
+sources_execute_c = [
   'main.c',
+]
+
+sources_execute_cpp = [
+  'main.cc',
 ]
 
 header_webview = include_directories('.')
 
-appkangaroo = executable(meson.project_name(),
-  sources_execute,
+executable(meson.project_name() + '_c',
+  sources_execute_c,
+  include_directories: [header_webview],
+  dependencies: webview_dependencies,
+  link_with: libwebview,
+  install: true,
+  win_subsystem: 'windows'
+)
+
+executable(meson.project_name() + '_cpp',
+  sources_execute_cpp,
   include_directories: [header_webview],
   dependencies: webview_dependencies,
   link_with: libwebview,
