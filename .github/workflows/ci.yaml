@@ -22,9 +22,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Build dlls
-        run: ./script/dlls.bat
-
       - name: Build and run tests
         run: ./script/build.bat
 
