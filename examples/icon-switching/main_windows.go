@@ -66,8 +66,6 @@ func setResourceIcon(w webview.WebView, resourceName string) {
 func main() {
 	w := webview.New(false)
 
-	setResourceIcon(w, "FISH")
-
 	go func() {
 		time.Sleep(3 * time.Second)
 		setResourceIcon(w, "TIGER")
@@ -75,6 +73,8 @@ func main() {
 		setExternalIcon(w, "icons/ico/zebra.ico")
 		time.Sleep(3 * time.Second)
 		setExternalIcon(w, "icons/ico/peacock.ico")
+		time.Sleep(3 * time.Second)
+		setResourceIcon(w, "#32512") // #32512 = IDI_APPLICATION
 	}()
 
 	defer w.Destroy()
