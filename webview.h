@@ -909,8 +909,13 @@ public:
   }
 
   void navigate(const std::string url) override {
-    Uri uri(winrt::to_hstring(url));
-    m_webview.Navigate(uri);
+    std::string html = html_from_uri(url);
+    if (html != "") {
+      m_webview.NavigateToString(winrt::to_hstring(html));
+    } else {
+      Uri uri(winrt::to_hstring(url));
+      m_webview.Navigate(uri);
+    }
   }
 
   void init(const std::string js) override {
@@ -918,8 +923,7 @@ public:
   }
 
   void set_html(const std::string html) override {
-    m_webview.NavigateToString(
-        winrt::to_hstring("data:text/html," + url_encode(html)).c_str());
+    m_webview.NavigateToString(winrt::to_hstring(html));
   }
 
   void eval(const std::string js) override {
