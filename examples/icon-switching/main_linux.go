@@ -22,12 +22,12 @@ import (
 // Set icon from external file
 func setExternalIcon(w webview.WebView, iconPath string) {
 
-	hwnd := w.Window()
+	gtk_window := w.Window()
 	cstr := C.CString(iconPath)
 
 	defer C.free(unsafe.Pointer(cstr))
 
-	C.set_external_icon(hwnd, cstr)
+	C.set_external_icon(gtk_window, cstr)
 }
 
 func main() {
