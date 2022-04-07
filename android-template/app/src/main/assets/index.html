@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Webview for Android</title>
+    <script>
+      window.onload = function() {
+          console.log('Onload started');
+          document.querySelector('h1').style.background = 'fuchsia';
+          document.querySelector('h1').innerText = `hello, ${navigator.userAgent}`;
+          noop('hello').then(function(res) {
+            console.log('noop res', res);
+          });
+          foo(1, 2).then(function(res) {
+            console.log('add res', res);
+          });
+          console.log('Onload finished');
+      }
+    </script>
+  </head>
+  <body style="height: 100vh; margin: 0;">
+    <h1>Hello NativeActivity Webview!</h1>
+    <noscript>
+      <h2>JS not supported :(</h2>
+    </noscript>
+  </body>
+</html>

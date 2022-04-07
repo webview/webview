@@ -1,0 +1,36 @@
+# The user should review this list, because some of this files can be keep
+# inside their git repo when working in a real project. They are excluded
+# here only to keep webview repo light.
+
+# IDE stuff (usually some of these files are kept in real projects!)
+.idea/
+gradlew
+gradlew.bat
+gradle-wrapper.jar
+gradle-wrapper.properties
+
+# User stuff
+local.properties
+
+# Generated files
+.DS_Store
+/build
+app/.cxx
+
+# Gradle
+.gradle
+
+# Gradle and Maven with auto-import
+*.iml
+*.ipr
+
+# Google
+.google/
+
+# Eclipse
+.classpath
+.project
+org.eclipse.buildship.core.prefs
+
+# Other
+.ionide
