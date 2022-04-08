@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
-A tiny cross-platform webview library for C/C++/Golang to build modern cross-platform GUIs.
+A tiny cross-platform webview library for C/C++/Go to build modern cross-platform GUIs.
 
 The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms.
 
@@ -28,13 +28,13 @@ This repository contains bindings for C, C++, and Go. Bindings for other languag
 * [Ruby](https://github.com/Maaarcocr/webview_ruby)
 * [Pascal](http://github.com/PierceNg/fpwebview)
 
-## Webview for Go developers
+Instructions for [Go](#webview-for-go-developers) and [C/C++](#webview-for-cc-developers) are included below.
 
-If you are interested in writing Webview apps in C/C++, [skip to the next section](#webview-for-cc-developers).
+## Webview for Go developers
 
 ### Getting started
 
-Install Webview library with `go get`:
+Install this library with `go get`:
 
 ```sh
 $ go get github.com/webview/webview
@@ -58,9 +58,9 @@ func main() {
 }
 ```
 
-To build the app use the following commands:
+Build the app:
 
-```bash
+```sh
 # Linux
 $ go build -o webview-example && ./webview-example
 
@@ -79,7 +79,7 @@ For more details see [godoc](https://godoc.org/github.com/webview/webview).
 
 ### Distributing webview apps
 
-On Linux you get a standalone executable. It will depend on GTK3 and GtkWebkit2, so if you distribute your app in DEB or RPM format include those dependencies. An application icon can be specified by providing a `.desktop` file.
+On Linux you get a standalone executable. It depends on GTK3 and GtkWebkit2. Include those dependencies if you distribute in a package like DEB or RPM. An application icon can be specified by providing a `.desktop` file.
 
 On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
 
@@ -93,17 +93,19 @@ example.app
         └── example.icns
 ```
 
-Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You may convert PNG to icns [online](https://iconverticons.com/online/).
+Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You can convert PNG to icns [online](https://iconverticons.com/online/) or with a tool like `icnsutils`.
 
-On Windows you probably would like to have a custom icon for your executable. It can be done by providing a resource file, compiling it and linking with it. Typically, `windres` utility is used to compile resources. Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with your app executable.
+On Windows, you can use a custom icon by providing a resource file, compiling it and linking with it. Typically, `windres` is used to compile resources.
 
-Also, if you want to cross-compile your webview app - use [xgo](https://github.com/karalabe/xgo).
+Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
+
+To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
 
 ### Known issues
 
 #### Accessing localhost on Windows
 
-If Edge (Chromium) isn't installed on the target machine webview will use a UWP application context which disallows loopback by default. To enable it you need to run the following command from a command prompt with admin priviledges:
+If Edge (Chromium) isn't installed on the target machine, webview will use a UWP application context which disallows loopback by default. To enable it you need to run the following command from a command prompt with admin priviledges:
 
 ```sh
 CheckNetIsolation.exe LoopbackExempt -a -n="Microsoft.Win32WebViewHost_cw5n1h2txyewy"
@@ -129,9 +131,9 @@ For app distribution we recommend automating this in your installer.
 
 Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code:
 
-### C++:
+### C++
 
-```c
+```c++
 // main.cc
 #include "webview.h"
 #ifdef WIN32
@@ -151,7 +153,7 @@ int main() {
 
 Build it:
 
-```bash
+```sh
 # Linux
 $ c++ main.cc `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-example
 # MacOS
@@ -160,7 +162,7 @@ $ c++ main.cc -std=c++11 -framework WebKit -o webview-example
 $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
 ```
 
-### C:
+### C
 
 ```c
 // main.c
@@ -206,9 +208,9 @@ $ g++ main.o webview.o $CPPFLAGS -o webview-example  # link them together
 For a complete C example see: https://github.com/webview/webview_c
 
 
-On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link prebuilt webview.dll (this approach is used in Cgo bindings).
+On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link the prebuilt webview.dll (this approach is used in Cgo bindings).
 
-Full C/C++ API is described at the top of the `webview.h` file.
+Full C/C++ API is described at the top of `webview.h`.
 
 ### Migrating from v0.1.1 to v0.10.0
 
