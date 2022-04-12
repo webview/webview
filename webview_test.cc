@@ -45,15 +45,15 @@ static void test_c_api() {
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
 struct test_webview : webview::browser_engine {
-  using cb_t = std::function<void(test_webview *, int, const std::string)>;
+  using cb_t = std::function<void(test_webview *, int, const std::string &)>;
   test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
-  void on_message(const std::string msg) override { m_cb(this, i++, msg); }
+  void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;
 };
 
 static void test_bidir_comms() {
-  test_webview browser([](test_webview *w, int i, const std::string msg) {
+  test_webview browser([](test_webview *w, int i, const std::string &msg) {
     std::cout << msg << std::endl;
     switch (i) {
     case 0:
