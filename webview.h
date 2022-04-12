@@ -120,10 +120,10 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #ifndef WEBVIEW_HEADER
 
 #if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
-#if defined(__linux__)
-#define WEBVIEW_GTK
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #define WEBVIEW_COCOA
+#elif defined(__unix__)
+#define WEBVIEW_GTK
 #elif defined(_WIN32)
 #define WEBVIEW_EDGE
 #else
