@@ -3,6 +3,7 @@
 echo Prepare directories...
 set script_dir=%~dp0
 set src_dir=%script_dir%..
+set include_dir=%script_dir%..
 set build_dir=%script_dir%..\build
 mkdir "%build_dir%"
 
@@ -48,6 +49,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 
 	echo "Building webview.dll (x86)"
 	cl /D  WEBVIEW_BUILDING /D  WEBVIEW_SHARED ^
+		/I "%include_dir%" ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x86\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -56,6 +58,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 	echo "Building webview.dll (x64)"
 	cl /D  WEBVIEW_BUILDING /D  WEBVIEW_SHARED ^
+		/I "%include_dir%" ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -72,6 +75,7 @@ call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 
 echo Building webview.exe (x64)
 cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	/I "%include_dir%" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -79,6 +83,7 @@ cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
 
 echo Building webview_test.exe (x64)
 cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	/I "%include_dir%" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\test\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
