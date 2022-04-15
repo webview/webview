@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#define WEBVIEW_HEADER
 #include "webview.h"
 
 void myFunc(const char *seq, const char *req, void *arg) {

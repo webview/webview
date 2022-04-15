@@ -25,7 +25,21 @@
 #define WEBVIEW_H
 
 #ifndef WEBVIEW_API
-#define WEBVIEW_API extern
+#if defined(WEBVIEW_SHARED)
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(WEBVIEW_BUILDING)
+#define WEBVIEW_API declspec(dllexport)
+#else
+#define WEBVIEW_API declspec(dllimport)
+#endif
+#else
+#define WEBVIEW_API __attribute__((visibility("default")))
+#endif
+#elif !defined(WEBVIEW_STATIC) && defined(__cplusplus)
+#define WEBVIEW_API inline
+#else
+#define WEBVIEW_API
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -115,9 +129,19 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 
 #ifdef __cplusplus
 }
+
+// Always include the implementation when building the library separately.
+// Include the implementation when using the library either as a static or
+// header-only library, but not when using it as a shared library.
+// Library users can opt out of including the implementation by defining
+// WEBVIEW_HEADER.
+#ifndef WEBVIEW_INCLUDE_IMPLEMENTATION
+#if defined(WEBVIEW_BUILDING) || (!defined(WEBVIEW_SHARED) && !defined(WEBVIEW_HEADER))
+#define WEBVIEW_INCLUDE_IMPLEMENTATION
+#endif
 #endif
 
-#ifndef WEBVIEW_HEADER
+#ifdef WEBVIEW_INCLUDE_IMPLEMENTATION
 
 #if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
 #if defined(__APPLE__)
@@ -1281,6 +1305,6 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
-#endif /* WEBVIEW_HEADER */
-
+#endif /* WEBVIEW_INCLUDE_IMPLEMENTATION */
+#endif /* __cplusplus */
 #endif /* WEBVIEW_H */

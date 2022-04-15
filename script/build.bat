@@ -47,7 +47,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x86 -host_arch=x64
 
 	echo "Building webview.dll (x86)"
-	cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	cl /D  WEBVIEW_BUILDING WEBVIEW_SHARED ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x86\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -55,7 +55,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 	echo "Building webview.dll (x64)"
-	cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	cl /D  WEBVIEW_BUILDING WEBVIEW_SHARED ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^

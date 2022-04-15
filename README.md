@@ -166,7 +166,6 @@ $ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-exampl
 
 ```c
 // main.c
-#define WEBVIEW_HEADER
 #include "webview.h"
 #include <stddef.h>
 
