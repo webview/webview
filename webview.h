@@ -942,7 +942,8 @@ public:
   }
 
   void set_title(const std::string title) {
-    SetWindowTextW(m_window, winrt::to_hstring(title).c_str());
+    auto wtitle = winrt::to_hstring(title);
+    SetWindowTextW(m_window, wtitle.c_str());
   }
 
   void set_size(int width, int height, int hints) {
