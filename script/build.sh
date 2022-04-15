@@ -31,14 +31,16 @@ fi
 
 if command -v clang-format >/dev/null 2>&1 ; then
 	echo "Formatting..."
-	find . -type f -regextype posix-extended -iregex '.*\.(h|cc?)$' -exec clang-format -i {} +
+	# TODO: Clean up examples and remove them from the exclusion list
+	find . -type f -not -name "$EXAMPLES_SOURCE_DIR" -regextype posix-extended -iregex '.*\.(h|cc?)$' -exec clang-format -i {} +
 else
 	echo "SKIP: Formatting (clang-format not installed)"
 fi
 
 if command -v clang-tidy >/dev/null 2>&1 ; then
 	echo "Linting..."
-	find . -type f -regextype posix-extended -iregex '.*\.cc$' -exec clang-tidy {} -- $CXXFLAGS \;
+	# TODO: Clean up examples and remove them from the exclusion list
+	find . -type f -not -name "$EXAMPLES_SOURCE_DIR" -regextype posix-extended -iregex '.*\.cc$' -exec clang-tidy {} -- $CXXFLAGS \;
 else
 	echo "SKIP: Linting (clang-tidy not installed)"
 fi
