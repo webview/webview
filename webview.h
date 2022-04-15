@@ -1126,7 +1126,7 @@ public:
   void navigate(const std::string url) {
     if (url == "") {
       browser_engine::navigate("data:text/html," +
-                               url_encode("<html><body>Hello</body></html>"));
+                               url_encode("<html><body></body></html>"));
       return;
     }
     browser_engine::navigate(url);
