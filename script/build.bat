@@ -75,13 +75,13 @@ cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
+	"%src_dir%\examples\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
 
 echo Building webview_test.exe (x64)
 cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
+	"%src_dir%\test\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
 echo Running Go tests
 cd /D %src_dir%
