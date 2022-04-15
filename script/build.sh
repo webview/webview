@@ -22,11 +22,14 @@ EXAMPLES_BIN_DIR=$BUILD_BIN_DIR/examples
 
 CFLAGS="-I$INCLUDE_DIR"
 CXXFLAGS="-I$INCLUDE_DIR"
+LDFLAGS=""
 
 if [ "$(uname)" = "Darwin" ]; then
-	CXXFLAGS="$CXXFLAGS -DWEBVIEW_COCOA -std=c++11 -Wall -Wextra -pedantic -framework WebKit"
+	LDFLAGS="-framework WebKit"
+	CXXFLAGS="$CXXFLAGS -DWEBVIEW_COCOA -std=c++11 -Wall -Wextra -pedantic"
 else
-	CXXFLAGS="$CXXFLAGS -DWEBVIEW_GTK -std=c++11 -Wall -Wextra -pedantic $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)"
+	LDFLAGS="$(pkg-config --libs gtk+-3.0 webkit2gtk-4.0)"
+	CXXFLAGS="$CXXFLAGS -DWEBVIEW_GTK -std=c++11 -Wall -Wextra -pedantic $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0)"
 fi
 
 if command -v clang-format >/dev/null 2>&1 ; then
@@ -56,21 +59,21 @@ ar rcs "$STATIC_BUILD_LIB_DIR/libwebview.a" "$STATIC_BUILD_INT_DIR/webview.o"
 
 echo "Building shared library"
 c++ -c "$SOURCE_DIR/webview.cc" -DWEBVIEW_BUILDING -DWEBVIEW_SHARED -fPIC -fvisibility=hidden -fvisibility-inlines-hidden $CXXFLAGS -o "$SHARED_BUILD_INT_DIR/webview.o"
-c++ -shared "$SHARED_BUILD_INT_DIR/webview.o" -o "$SHARED_BUILD_LIB_DIR/libwebview.so"
+c++ -shared "$SHARED_BUILD_INT_DIR/webview.o" $LDFLAGS -o "$SHARED_BUILD_LIB_DIR/libwebview.so"
 
 echo "Building C++ example using header-only library"
-c++ "$EXAMPLES_SOURCE_DIR/main.cc" $CXXFLAGS -o "$EXAMPLES_BIN_DIR/cpp_example_header"
+c++ "$EXAMPLES_SOURCE_DIR/main.cc" $CXXFLAGS $LDFLAGS -o "$EXAMPLES_BIN_DIR/cpp_example_header"
 
 echo "Building C++ example using static library"
-c++ "$EXAMPLES_SOURCE_DIR/main.cc" "-L$STATIC_BUILD_LIB_DIR" -lwebview -DWEBVIEW_STATIC $CXXFLAGS -o "$EXAMPLES_BIN_DIR/cpp_example_static"
+c++ "$EXAMPLES_SOURCE_DIR/main.cc" "-L$STATIC_BUILD_LIB_DIR" -lwebview -DWEBVIEW_STATIC $CXXFLAGS $LDFLAGS -o "$EXAMPLES_BIN_DIR/cpp_example_static"
 
 echo "Building C example using shared library"
 cc -c "$EXAMPLES_SOURCE_DIR/main.c" -DWEBVIEW_SHARED $CFLAGS -o "$EXAMPLES_INT_DIR/c_example.o"
-c++ "$EXAMPLES_INT_DIR/c_example.o" "-L$SHARED_BUILD_LIB_DIR" -lwebview $CXXFLAGS -o "$EXAMPLES_BIN_DIR/c_example"
+c++ "$EXAMPLES_INT_DIR/c_example.o" "-L$SHARED_BUILD_LIB_DIR" -lwebview $LDFLAGS -o "$EXAMPLES_BIN_DIR/c_example"
 
 echo "Building test app"
-c++ "$TEST_SOURCE_DIR/webview_test.cc" $CXXFLAGS -o "$TEST_BIN_DIR/webview_test_header"
-c++ "$TEST_SOURCE_DIR/webview_test.cc" "-L$STATIC_BUILD_LIB_DIR" -lwebview -DWEBVIEW_STATIC $CXXFLAGS -o "$TEST_BIN_DIR/webview_test_static"
+c++ "$TEST_SOURCE_DIR/webview_test.cc" $CXXFLAGS $LDFLAGS -o "$TEST_BIN_DIR/webview_test_header"
+c++ "$TEST_SOURCE_DIR/webview_test.cc" "-L$STATIC_BUILD_LIB_DIR" -lwebview -DWEBVIEW_STATIC $CXXFLAGS $LDFLAGS -o "$TEST_BIN_DIR/webview_test_static"
 
 find "$TEST_BIN_DIR" -type f -not -name "webview_shared_library_test" | while read f; do
 	echo "Running test app: $(basename "$f")"
@@ -79,7 +82,7 @@ done
 
 test_shared_library() {
 	echo "Building shared library test"
-	c++ "$TEST_SOURCE_DIR/webview_shared_library_test.cc" "-L$SHARED_BUILD_LIB_DIR" -lwebview $CXXFLAGS -o "$TEST_BIN_DIR/webview_shared_library_test"
+	c++ "$TEST_SOURCE_DIR/webview_shared_library_test.cc" "-L$SHARED_BUILD_LIB_DIR" -lwebview $CXXFLAGS $LDFLAGS -o "$TEST_BIN_DIR/webview_shared_library_test"
 	echo "Running shared library tests"
 	set +e
 	local result
