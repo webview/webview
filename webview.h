@@ -136,7 +136,8 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 // Library users can opt out of including the implementation by defining
 // WEBVIEW_HEADER.
 #ifndef WEBVIEW_INCLUDE_IMPLEMENTATION
-#if defined(WEBVIEW_BUILDING) || (!defined(WEBVIEW_SHARED) && !defined(WEBVIEW_HEADER))
+#if defined(WEBVIEW_BUILDING) ||                                               \
+    (!defined(WEBVIEW_SHARED) && !defined(WEBVIEW_HEADER))
 #define WEBVIEW_INCLUDE_IMPLEMENTATION
 #endif
 #endif
