@@ -28,9 +28,9 @@
 #if defined(WEBVIEW_SHARED)
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(WEBVIEW_BUILDING)
-#define WEBVIEW_API declspec(dllexport)
+#define WEBVIEW_API __declspec(dllexport)
 #else
-#define WEBVIEW_API declspec(dllimport)
+#define WEBVIEW_API __declspec(dllimport)
 #endif
 #else
 #define WEBVIEW_API __attribute__((visibility("default")))
