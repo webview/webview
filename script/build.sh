@@ -45,7 +45,7 @@ else
 	echo "SKIP: Linting (clang-tidy not installed)"
 fi
 
-mkdir --parents "$TEST_INT_DIR" "$TEST_BIN_DIR" \
+mkdir -p "$TEST_INT_DIR" "$TEST_BIN_DIR" \
 	"$STATIC_BUILD_INT_DIR" "$STATIC_BUILD_LIB_DIR" \
 	"$SHARED_BUILD_INT_DIR" "$SHARED_BUILD_LIB_DIR" \
 	"$EXAMPLES_INT_DIR" "$EXAMPLES_BIN_DIR"
