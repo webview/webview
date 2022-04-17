@@ -19,7 +19,7 @@ int main() {
 	webview_set_title(w, "Webview Example");
 	webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
 	webview_bind(w, "myFunc", myFunc, NULL);
-	webview_navigate(w, "data:text/html, <button onclick='myFunc(\"Foo bar\")'>Click Me</button>");
+	webview_navigate(w, "data:text/html,%3Cbutton%20onclick%3D%27myFunc%28%22Foo%20bar%22%29%27%3EClick%20Me%3C%2Fbutton%3E");
 	webview_run(w);
 	webview_destroy(w);
 	return 0;
