@@ -419,6 +419,11 @@ func (app App) Run() {
 	}
 	port := <- portChannel
 	w.Navigate("http://localhost:"+port)
+	w.Init(`
+	window.addEventListener("load", ()=>{
+		document.body.style.cssText += 'margin:0px;overflow:hidden;'
+	})
+	`)
 	w.Run()
 }
 
