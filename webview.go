@@ -50,6 +50,12 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+	// App
+	"net"
+	"net/http"
+	"io/fs"
+	"strconv"
+	"embed"
 )
 
 func init() {
@@ -381,4 +387,50 @@ func (w *webview) Center() {
 }
 func (w *webview) NoCtx() {
 	C.webview_no_ctx(w.w)
+}
+
+type App struct {
+	Width int
+	Height int
+	Title string
+	Content embed.FS
+	ContentRoot string
+	Handler func()
+	Topmost bool
+}
+
+func (app App) Run() {
+	portChannel := make(chan string)
+	go serve(&app, portChannel)
+
+	runtime.LockOSThread()
+	w := New(true)
+	defer w.Destroy()
+	w.SetSize(app.Width, app.Height, HintFixed)
+	w.Center()
+	w.NoCtx()
+	w.SetTitle(app.Title)
+	if (app.Topmost) {
+		w.Topmost(true)
+	}
+	port := <- portChannel
+	w.Navigate("http://localhost:"+port)
+	w.Run()
+}
+
+func serve(app *App, portChannel chan<- string) {
+	content, _ := fs.Sub(app.Content, app.ContentRoot)
+	http.Handle("/", http.FileServer(http.FS(content)))
+	if app.Handler != nil {
+		app.Handler()
+	}
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+
+	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
+	portChannel <- port
+	close(portChannel)
+	http.Serve(listener, nil)
 }
