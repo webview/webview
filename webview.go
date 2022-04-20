@@ -395,7 +395,7 @@ type App struct {
 	Title string
 	Content embed.FS
 	ContentRoot string
-	Init func(*WebView)
+	Init func(WebView)
 	ServerInit func()
 	Topmost bool
 }
@@ -415,7 +415,7 @@ func (app App) Run() {
 		w.Topmost(true)
 	}
 	if (app.Init != nil) {
-		app.Init(&w)
+		app.Init(w)
 	}
 	port := <- portChannel
 	w.Navigate("http://localhost:"+port)
