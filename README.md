@@ -77,6 +77,40 @@ So is [Snake](example/cpp/snakeJS) (JS frontend C++ backend)
 I personally also use Webview to build automation tools at my job as a Graphic Designer. This tool [Vomela-Sidewall-Searcher](https://github.com/phillvancejr/Vomela-Sidewall-Searcher) was built with Webview:  
 ![screen-img](https://raw.githubusercontent.com/phillvancejr/Vomela-Sidewall-Searcher/master/demo.gif)
 
+In Go, you can use the [App](example/go/app) struct to quickly host an application
+```go
+package main
+
+import (
+	"github.com/phillvancejr/webview"
+	"embed"
+)
+
+/*
+embed the folder containing your app
+web/
+  index.html
+  triangle.js
+  util.js
+*/
+
+//go:embed web
+var web embed.FS
+
+func main() {
+	webview.App{
+		Width: 500,
+		Height: 500,
+		Title: "Webview App Test",
+		// webview.App.Content must be an embed.FS
+		Content: web,
+		// the root folder containing the content
+		ContentRoot: "web",
+	}.Run()
+}
+
+```
+
 To build the go apps use the following commands:
 
 ```bash

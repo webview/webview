@@ -395,7 +395,8 @@ type App struct {
 	Title string
 	Content embed.FS
 	ContentRoot string
-	Handler func()
+	Init func(*WebView)
+	ServerInit func()
 	Topmost bool
 }
 
@@ -413,6 +414,9 @@ func (app App) Run() {
 	if (app.Topmost) {
 		w.Topmost(true)
 	}
+	if (app.Init != nil) {
+		app.Init(&w)
+	}
 	port := <- portChannel
 	w.Navigate("http://localhost:"+port)
 	w.Run()
@@ -421,8 +425,8 @@ func (app App) Run() {
 func serve(app *App, portChannel chan<- string) {
 	content, _ := fs.Sub(app.Content, app.ContentRoot)
 	http.Handle("/", http.FileServer(http.FS(content)))
-	if app.Handler != nil {
-		app.Handler()
+	if app.ServerInit != nil {
+		app.ServerInit()
 	}
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
