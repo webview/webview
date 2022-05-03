@@ -82,33 +82,9 @@ $ go build -ldflags="-H windowsgui" -o webview-example.exe
 
 For more details see [godoc](https://godoc.org/github.com/webview/webview).
 
-### Distributing webview apps
-
-On Linux you get a standalone executable. It depends on GTK3 and GtkWebkit2. Include those dependencies if you distribute in a package like DEB or RPM. An application icon can be specified by providing a `.desktop` file.
-
-On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
-
-```
-example.app
-└── Contents
-    ├── Info.plist
-    ├── MacOS
-    |   └── example
-    └── Resources
-        └── example.icns
-```
-
-Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You can convert PNG to icns [online](https://iconverticons.com/online/) or with a tool like `icnsutils`.
-
-On Windows, you can use a custom icon by providing a resource file, compiling it and linking with it. Typically, `windres` is used to compile resources.
-
-Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
-
-To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
-
 ## Webview for C/C++ developers
 
-Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code. Other dependancies are descibed in the [Notes](#Notes) section and at https://webview.dev/.
+Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code. Other dependencies are descibed in the [Notes](#Notes) section and at https://webview.dev/.
 
 ### C++
 
@@ -189,6 +165,34 @@ On Windows it is possible to use webview library directly when compiling with cl
 
 Full C/C++ API is described at the top of `webview.h` and at https://webview.dev.
 
+## Windows Build Script Details
+
+Our `build.bat` script is currently the only supported way to build a webview executable on Windows. It automatically installs and builds all needed dependancies before compiling your C++ application. It is easy to modify the build script for anyone's specific use case. For instance: you can easily change the Webview2 nuget package version or the compiler's target architecture. We will distribute stable dlls with every release for convenience. If you do not include them in your project, the build script will build them for you anyway - this applies to GO users as well.
+
+## Distributing webview apps
+
+On Linux you get a standalone executable. It depends on GTK3 and GtkWebkit2. Include those dependencies if you distribute in a package like DEB or RPM. An application icon can be specified by providing a `.desktop` file.
+
+On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
+
+```
+example.app
+└── Contents
+    ├── Info.plist
+    ├── MacOS
+    |   └── example
+    └── Resources
+        └── example.icns
+```
+
+Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You can convert PNG to icns [online](https://iconverticons.com/online/) or with a tool like `icnsutils`.
+
+On Windows, you can use a custom icon by providing a resource file, compiling it and linking with it. Typically, `windres` is used to compile resources.
+
+Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
+
+To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
+
 ## Notes
 
 - A webview is not a full web browser. Although they may work, we do not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
@@ -198,24 +202,8 @@ Full C/C++ API is described at the top of `webview.h` and at https://webview.dev
 - On Windows, users must install:
   - Windows 10 SDK via Visual Studio Installer
   - C++ support via Visual Studio Installer
-  - Install webview2 (you may already have this) [download from Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+  - Webview2 (you may already have this) [download from Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
 - Calling `Eval()` or `Dispatch()` before `Run()` does not work, because the webview instance has only configured, but not started yet. 
-
-## Contributing
-Contributing to the webview project is always welcome! We are especially in need of MacOs developers. Active maintainers who review pull requests and triage issues are listed here.
-- @justjosias
-- @dandeto
-- @nicklasfrahm
-
-### Guidelines for Contributing Examples
-All examples will be held to the same standard as the main codebase.
-
-Additionally, examples should...
-- Be cross platform except under certain circumstances
-- Highlight a subset of the webview library's API
-- Be well documented
-- Have a simple goal in mind and lack large dependencies
-- Link to external libraries instead of copying them to the webview repo
 
 ## License
 
