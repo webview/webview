@@ -14,6 +14,7 @@ It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to
 It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and Edge on Windows 10.
 
 ## [API Documentation](https://webview.dev "API Documentation")
+
 API Documentation is available online for this repository and all available bindings at https://webview.dev.
 
 Contributions to the documentation are managed at https://github.com/webview/docs.
