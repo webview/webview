@@ -992,6 +992,7 @@ public:
   void set_html(const std::string html) {
     auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
     m_webview->Navigate(html2.c_str());
+    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
 private:
