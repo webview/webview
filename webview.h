@@ -976,6 +976,7 @@ public:
   void navigate(const std::string url) {
     auto wurl = winrt::to_hstring(url);
     m_webview->Navigate(wurl.c_str());
+    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
   void init(const std::string js) {
