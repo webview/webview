@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
   // With a single argument - run the requested test
   if (argc == 1) {
     int failed = 0;
-    for (auto test : all_tests) {
+    for (const auto &test : all_tests) {
       std::cout << "TEST: " << test.first << std::endl;
       int status = system((std::string(argv[0]) + " " + test.first).c_str());
       if (status == 0) {
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
   }
   std::cout << "USAGE: " << argv[0] << " [test name]" << std::endl;
   std::cout << "Tests: " << std::endl;
-  for (auto test : all_tests) {
+  for (const auto &test : all_tests) {
     std::cout << "  " << test.first << std::endl;
   }
   return 1;
