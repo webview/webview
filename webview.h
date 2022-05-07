@@ -1037,7 +1037,7 @@ private:
 
     HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
         nullptr, userDataFolder, nullptr, m_com_handler);
-    
+
     if (res != S_OK) {
       return false;
     }
