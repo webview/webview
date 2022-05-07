@@ -915,6 +915,7 @@ public:
 
     embed(m_window, debug, cb);
     resize(m_window);
+    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
   void run() {
@@ -976,7 +977,6 @@ public:
   void navigate(const std::string url) {
     auto wurl = winrt::to_hstring(url);
     m_webview->Navigate(wurl.c_str());
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
   void init(const std::string js) {
@@ -992,7 +992,6 @@ public:
   void set_html(const std::string html) {
     auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
     m_webview->Navigate(html2.c_str());
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
 private:
