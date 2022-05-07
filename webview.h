@@ -544,6 +544,12 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
+  void add_navigate_listener(std::function<void(const char *)> callback) {
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "load-changed",
+                     G_CALLBACK(on_load_changed), this);
+    navigateCallback = std::move(callback);
+  }
+
   void set_html(const std::string html) {
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(), NULL);
   }
@@ -563,9 +569,18 @@ public:
   }
 
 private:
-  virtual void on_message(const std::string msg) = 0;
   GtkWidget *m_window;
   GtkWidget *m_webview;
+  virtual void on_message(const std::string msg) = 0;
+  std::function<void(const char *)> navigateCallback = 0;
+
+  static void on_load_changed(WebKitWebView *web_view,
+                              WebKitLoadEvent load_event, gpointer arg) {
+    if (load_event == WEBKIT_LOAD_FINISHED) {
+      static_cast<gtk_webkit_engine *>(arg)->navigateCallback(
+          webkit_web_view_get_uri(web_view));
+    }
+  }
 };
 
 using browser_engine = gtk_webkit_engine;
@@ -989,6 +1004,10 @@ public:
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
+  void add_navigate_listener(std::function<void(const char *)> callback) {
+    m_com_handler->navigateCallback = std::move(callback);
+  }
+
   void set_html(const std::string html) {
     auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
     m_webview->Navigate(html2.c_str());
@@ -1009,16 +1028,17 @@ private:
     }
     wchar_t userDataFolder[MAX_PATH];
     PathCombineW(userDataFolder, dataPath, currentExeName);
+    m_com_handler = new webview2_com_handler(
+        wnd, cb, [&](ICoreWebView2Controller *controller) {
+          m_controller = controller;
+          m_controller->get_CoreWebView2(&m_webview);
+          m_webview->AddRef();
+          flag.clear();
+        });
 
     HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, userDataFolder, nullptr,
-        new webview2_com_handler(wnd, cb,
-                                 [&](ICoreWebView2Controller *controller) {
-                                   m_controller = controller;
-                                   m_controller->get_CoreWebView2(&m_webview);
-                                   m_webview->AddRef();
-                                   flag.clear();
-                                 }));
+        nullptr, userDataFolder, nullptr, m_com_handler);
+
     if (res != S_OK) {
       return false;
     }
@@ -1053,7 +1073,8 @@ private:
       : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
         public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
         public ICoreWebView2WebMessageReceivedEventHandler,
-        public ICoreWebView2PermissionRequestedEventHandler {
+        public ICoreWebView2PermissionRequestedEventHandler,
+        public ICoreWebView2NavigationCompletedEventHandler {
     using webview2_com_handler_cb_t =
         std::function<void(ICoreWebView2Controller *)>;
 
@@ -1080,6 +1101,7 @@ private:
       controller->get_CoreWebView2(&webview);
       webview->add_WebMessageReceived(this, &token);
       webview->add_PermissionRequested(this, &token);
+      webview->add_NavigationCompleted(this, &token);
 
       m_cb(controller);
       return S_OK;
@@ -1104,12 +1126,28 @@ private:
       }
       return S_OK;
     }
+    HRESULT STDMETHODCALLTYPE
+    Invoke(ICoreWebView2 *sender,
+           ICoreWebView2NavigationCompletedEventArgs *args) {
+      PWSTR uri;
+      sender->get_Source(&uri);
+      const char *converted_url = winrt::to_string(uri).c_str();
+      CoTaskMemFree(uri);
+
+      if (navigateCallback)
+        navigateCallback(converted_url);
+      return S_OK;
+    }
+
+    std::function<void(const char *)> navigateCallback = 0;
 
   private:
     HWND m_window;
     msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
   };
+
+  webview2_com_handler *m_com_handler = nullptr;
 };
 
 using browser_engine = win32_edge_engine;
