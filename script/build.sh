@@ -28,8 +28,13 @@ else
 	echo "SKIP: Linting (clang-tidy not installed)"
 fi
 
-echo "Building example"
+echo "Building C++ example"
 c++ main.cc $FLAGS -o webview
+
+echo "Building C example"
+c++ -c $FLAGS webview.cc -o webview.o
+cc -c main.c -o main.o
+c++ main.o webview.o $FLAGS -o webview-example
 
 echo "Building test app"
 c++ webview_test.cc $FLAGS -o webview_test
