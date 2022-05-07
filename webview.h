@@ -915,6 +915,7 @@ public:
 
     embed(m_window, debug, cb);
     resize(m_window);
+    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
   void run() {
