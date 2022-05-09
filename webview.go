@@ -108,7 +108,7 @@ type WebView interface {
 	Navigate(url string)
 
 	// Set webview HTML directly. This does not require URL-encoding.
-	SetHTML(html string)
+	SetHtml(html string)
 
 	// Init injects JavaScript code at the initialization of the new page. Every
 	// time the webview will open a the new page - this initialization code will
@@ -187,7 +187,7 @@ func (w *webview) Navigate(url string) {
 	C.webview_navigate(w.w, s)
 }
 
-func (w *webview) SetHTML(html string) {
+func (w *webview) SetHtml(html string) {
 	s := C.CString(html)
 	defer C.free(unsafe.Pointer(s))
 	C.webview_set_html(w.w, s)
