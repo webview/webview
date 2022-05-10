@@ -999,6 +999,10 @@ public:
     m_webview->Navigate(html2.c_str());
   }
 
+  ICoreWebView2 *get_native_webview() {
+    return m_webview;
+  }
+
 private:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
