@@ -728,16 +728,25 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "terminate:"_sel,
                                           nullptr);
   }
-  // TODO
-  // int step(int blocking) {
-  //   id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
-  //                                           "sharedApplication"_sel);
-  //   dispatch([&]() {
-  //     ((void (*)(id, SEL, BOOL))objc_msgSend)(
-  //         app, "activateIgnoringOtherApps:"_sel, 1);
-  //   });
-  //   ((void (*)(id, SEL))objc_msgSend)(app, "run"_sel);
-  // }
+  int step(int blocking) {
+    id until = (blocking ? ((id(*)(id, SEL))objc_msgSend)("NSDate"_cls, "distantFuture"_sel)
+                         : ((id(*)(id, SEL))objc_msgSend)("NSDate"_cls, "distantPast"_sel));
+    id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
+                                            "sharedApplication"_sel);
+    
+    id event = ((id(*)(id, SEL, id, id, id, id))objc_msgSend)(
+      app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel,
+      ULONG_MAX, until, ((id(*)(id, SEL, const char*))objc_msgSend)(
+        "NSString"_cls, "stringWithUTF8String:"_sel, "kCFRunLoopDefaultMode"),
+      true);
+
+    if (event) {
+      ((id(*)(id, SEL, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
+                                       "sharedApplication"_sel),
+        "sendEvent:"_sel, event);
+    }
+  }
   void run() {
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                             "sharedApplication"_sel);
@@ -936,9 +945,11 @@ public:
     MSG msg;
 
     if (blocking) {
-      if (GetMessage(&msg, nullptr, 0, 0) < 0) return 0;
+      if (GetMessage(&msg, nullptr, 0, 0) < 0)
+        return 0;
     } else {
-      if (!PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) return 0;
+      if (!PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        return 0;
     }
 
     if (msg.hwnd) {
