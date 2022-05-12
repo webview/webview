@@ -42,6 +42,7 @@ int main()
       </script>
     </html>
   )V0G0N");
+  // while(w.step(0) == 0);
   w.run();
   return 0;
 }

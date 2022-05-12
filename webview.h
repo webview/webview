@@ -45,6 +45,9 @@ WEBVIEW_API webview_t webview_create(int debug, void *window);
 // Destroys a webview and closes the native window.
 WEBVIEW_API void webview_destroy(webview_t w);
 
+// Steps one step in the main loop
+WEBVIEW_API int webview_step(webview_t w, int blocking);
+
 // Runs the main loop until it's terminated. After this function exits - you
 // must destroy the webview.
 WEBVIEW_API void webview_run(webview_t w);
@@ -508,6 +511,7 @@ public:
     gtk_widget_show_all(m_window);
   }
   void *window() { return (void *)m_window; }
+  int step(int blocking) { return gtk_main_iteration_do(blocking); }
   void run() { gtk_main(); }
   void terminate() { gtk_main_quit(); }
   void dispatch(std::function<void()> f) {
@@ -724,6 +728,16 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "terminate:"_sel,
                                           nullptr);
   }
+  // TODO
+  // int step(int blocking) {
+  //   id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
+  //                                           "sharedApplication"_sel);
+  //   dispatch([&]() {
+  //     ((void (*)(id, SEL, BOOL))objc_msgSend)(
+  //         app, "activateIgnoringOtherApps:"_sel, 1);
+  //   });
+  //   ((void (*)(id, SEL))objc_msgSend)(app, "run"_sel);
+  // }
   void run() {
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                             "sharedApplication"_sel);
@@ -916,6 +930,32 @@ public:
     embed(m_window, debug, cb);
     resize(m_window);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+  }
+
+  int step(int blocking) {
+    MSG msg;
+
+    if (blocking) {
+      if (GetMessage(&msg, nullptr, 0, 0) < 0) return 0;
+    } else {
+      if (!PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) return 0;
+    }
+
+    if (msg.hwnd) {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+      return 0;
+    }
+
+    if (msg.message == WM_APP) {
+      auto f = (dispatch_fn_t *)(msg.lParam);
+      (*f)();
+      delete f;
+    } else if (msg.message == WM_QUIT) {
+      return -1;
+    }
+
+    return 0;
   }
 
   void run() {
@@ -1218,6 +1258,10 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
 
 WEBVIEW_API void webview_destroy(webview_t w) {
   delete static_cast<webview::webview *>(w);
+}
+
+WEBVIEW_API int webview_step(webview_t w, int blocking) {
+  return static_cast<webview::webview *>(w)->step(blocking);
 }
 
 WEBVIEW_API void webview_run(webview_t w) {
