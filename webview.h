@@ -175,7 +175,7 @@ static inline unsigned char hex2nibble(char c) {
 // Decode a hex-encoded byte from a sequence of exactly two ASCII characters.
 // Example: hex2byte("41") == 0x41
 static inline unsigned char hex2byte(const char *p) {
-  return (hex2nibble(p[0]) << 4) | hex2nibble(p[1]);
+  return static_cast<unsigned char>(hex2nibble(p[0]) << 4) | hex2nibble(p[1]);
 }
 
 // Decode a hex-encoded ASCII character from a sequence of exactly two ASCII characters.
