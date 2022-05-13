@@ -591,7 +591,11 @@ using browser_engine = gtk_webkit_engine;
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/objc-runtime.h>
 
+#define NSApplicationDefinedEvent 15
+
 #define NSBackingStoreBuffered 2
+
+#define NSEventMaskAny ULONG_MAX
 
 #define NSWindowStyleMaskResizable 8
 #define NSWindowStyleMaskMiniaturizable 4
@@ -643,8 +647,7 @@ public:
     auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
     objc_setAssociatedObject(delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    ((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setDelegate:"),
-                                          delegate);
+    ((void (*)(id, SEL, id))objc_msgSend)(app, "setDelegate:"_sel, delegate);
 
     // Main window
     if (window == nullptr) {
@@ -656,6 +659,23 @@ public:
     } else {
       m_window = (id)window;
     }
+
+    auto window_cls = objc_allocateClassPair((Class) "NSObject"_cls, "WindowDelegate", 0);
+    class_addProtocol(window_cls, objc_getProtocol("NSWindowDelegate"));
+    class_replaceMethod(window_cls, "windowWillClose:"_sel,
+                        (IMP)(+[](id self, SEL, id) {
+                          auto w =
+                          (cocoa_wkwebview_engine *)objc_getAssociatedObject(
+                              self, "webview");
+                          assert(w);
+                          w->should_exit = 1;
+                        }), "v@:@");
+    class_replaceMethod(window_cls, "windowShouldClose:"_sel,
+                        (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "B@:@");
+    objc_registerClassPair(window_cls);
+    auto window_delegate = ((id(*)(id, SEL))objc_msgSend)((id)window_cls, "new"_sel);
+    objc_setAssociatedObject(window_delegate, "webview", (id)this, OBJC_ASSOCIATION_ASSIGN);
+    ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setDelegate:"_sel, window_delegate);
 
     // Webview
     auto config =
@@ -734,18 +754,15 @@ public:
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                             "sharedApplication"_sel);
     
-    id event = ((id(*)(id, SEL, id, id, id, id))objc_msgSend)(
+    id event = ((id(*)(id, SEL, unsigned long long, id, id, bool))objc_msgSend)(
       app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel,
-      ULONG_MAX, until, ((id(*)(id, SEL, const char*))objc_msgSend)(
-        "NSString"_cls, "stringWithUTF8String:"_sel, "kCFRunLoopDefaultMode"),
-      true);
+      ULONG_MAX, until, "kCFRunLoopDefaultMode"_str, true);
 
     if (event) {
-      ((id(*)(id, SEL, id))objc_msgSend)(
-        ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
-                                       "sharedApplication"_sel),
-        "sendEvent:"_sel, event);
+      ((id(*)(id, SEL, id))objc_msgSend)(app, "sendEvent:"_sel, event);
     }
+    
+    return should_exit;
   }
   void run() {
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
@@ -833,6 +850,7 @@ public:
 private:
   virtual void on_message(const std::string &msg) = 0;
   void close() { ((void (*)(id, SEL))objc_msgSend)(m_window, "close"_sel); }
+  int should_exit = 0;
   id m_window;
   id m_webview;
   id m_manager;
