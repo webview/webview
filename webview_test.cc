@@ -113,12 +113,12 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 // =================================================================
 static void test_hex2nibble() {
   using namespace webview;
-  static const std::pair<char, unsigned char> alphabet[]{
+  static const std::pair<char, unsigned char> testData[]{
       {'0', 0x0}, {'1', 0x1}, {'2', 0x2}, {'3', 0x3}, {'4', 0x4}, {'5', 0x5},
       {'6', 0x6}, {'7', 0x7}, {'8', 0x8}, {'9', 0x9}, {'a', 0xA}, {'b', 0xB},
       {'c', 0xC}, {'d', 0xD}, {'e', 0xE}, {'f', 0xF}, {'A', 0xA}, {'B', 0xB},
       {'C', 0xC}, {'D', 0xD}, {'E', 0xE}, {'F', 0xF}, {'x', 0x0}};
-  for (const auto &kv : alphabet) {
+  for (const auto &kv : testData) {
     assert(hex2nibble(kv.first) == kv.second);
   }
 }
@@ -128,11 +128,11 @@ static void test_hex2nibble() {
 // =================================================================
 static void test_hex2byte() {
   using namespace webview;
-  static const std::pair<const char *, unsigned char> alphabet[]{
+  static const std::pair<const char *, unsigned char> testData[]{
       {"00", 0x00}, {"12", 0x12}, {"34", 0x34}, {"56", 0x56}, {"78", 0x78},
       {"9A", 0x9A}, {"BC", 0xBC}, {"DE", 0xDE}, {"FF", 0xFF}, {"ab", 0xAB},
       {"cd", 0xCD}, {"ef", 0xEF}, {"0x", 0x00}, {"x0", 0x00}, {"xx", 0x00}};
-  for (const auto &kv : alphabet) {
+  for (const auto &kv : testData) {
     assert(hex2byte(kv.first) == kv.second);
   }
 }
@@ -142,10 +142,10 @@ static void test_hex2byte() {
 // =================================================================
 static void test_hex2char() {
   using namespace webview;
-  static const std::pair<const char *, char> alphabet[]{
+  static const std::pair<const char *, char> testData[]{
       {"00", '\0'}, {"30", '0'}, {"39", '9'},    {"41", 'A'}, {"5A", 'Z'},
       {"61", 'a'},  {"7A", 'z'}, {"FF", '\xff'}, {"xx", '\0'}};
-  for (const auto &kv : alphabet) {
+  for (const auto &kv : testData) {
     assert(hex2char(kv.first) == kv.second);
   }
 }
