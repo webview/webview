@@ -473,20 +473,7 @@ public:
                      G_CALLBACK(+[](WebKitUserContentManager *,
                                     WebKitJavascriptResult *r, gpointer arg) {
                        auto *w = static_cast<gtk_webkit_engine *>(arg);
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
-                       JSCValue *value =
-                           webkit_javascript_result_get_js_value(r);
-                       char *s = jsc_value_to_string(value);
-#else
-                       JSGlobalContextRef ctx =
-                           webkit_javascript_result_get_global_context(r);
-                       JSValueRef value = webkit_javascript_result_get_value(r);
-                       JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
-                       size_t n = JSStringGetMaximumUTF8CStringSize(js);
-                       char *s = g_new(char, n);
-                       JSStringGetUTF8CString(js, s, n);
-                       JSStringRelease(js);
-#endif
+                       char *s = get_string_from_js_result(r);
                        w->on_message(s);
                        g_free(s);
                      }),
@@ -510,6 +497,7 @@ public:
 
     gtk_widget_show_all(m_window);
   }
+  virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
   int step(int blocking) { return gtk_main_iteration_do(blocking); }
   void run() { gtk_main(); }
@@ -568,6 +556,24 @@ public:
 
 private:
   virtual void on_message(const std::string &msg) = 0;
+
+  static char *get_string_from_js_result(WebKitJavascriptResult *r) {
+    char *s;
+#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+    JSCValue *value = webkit_javascript_result_get_js_value(r);
+    s = jsc_value_to_string(value);
+#else
+    JSGlobalContextRef ctx = webkit_javascript_result_get_global_context(r);
+    JSValueRef value = webkit_javascript_result_get_value(r);
+    JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
+    size_t n = JSStringGetMaximumUTF8CStringSize(js);
+    s = g_new(char, n);
+    JSStringGetUTF8CString(js, s, n);
+    JSStringRelease(js);
+#endif
+    return s;
+  }
+
   GtkWidget *m_window;
   GtkWidget *m_webview;
 };
@@ -745,7 +751,7 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
   }
-  ~cocoa_wkwebview_engine() { close(); }
+  virtual ~cocoa_wkwebview_engine() { close(); }
   void *window() { return (void *)m_window; }
   void terminate() {
     close();
@@ -992,6 +998,7 @@ public:
 
     return 0;
   }
+  virtual ~win32_edge_engine() = default;
 
   void run() {
     MSG msg;
@@ -1261,7 +1268,7 @@ public:
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
-    dispatch([=]() {
+    dispatch([seq, status, result, this]() {
       if (status == 0) {
         eval("window._rpc[" + seq + "].resolve(" + result +
              "); delete window._rpc[" + seq + "]");
