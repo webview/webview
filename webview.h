@@ -1189,7 +1189,7 @@ public:
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
-    dispatch([=]() {
+    dispatch([seq, status, result, this]() {
       if (status == 0) {
         eval("window._rpc[" + seq + "].resolve(" + result +
              "); delete window._rpc[" + seq + "]");
