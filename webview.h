@@ -470,20 +470,7 @@ public:
                      G_CALLBACK(+[](WebKitUserContentManager *,
                                     WebKitJavascriptResult *r, gpointer arg) {
                        auto *w = static_cast<gtk_webkit_engine *>(arg);
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
-                       JSCValue *value =
-                           webkit_javascript_result_get_js_value(r);
-                       char *s = jsc_value_to_string(value);
-#else
-                       JSGlobalContextRef ctx =
-                           webkit_javascript_result_get_global_context(r);
-                       JSValueRef value = webkit_javascript_result_get_value(r);
-                       JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
-                       size_t n = JSStringGetMaximumUTF8CStringSize(js);
-                       char *s = g_new(char, n);
-                       JSStringGetUTF8CString(js, s, n);
-                       JSStringRelease(js);
-#endif
+                       char *s = get_string_from_js_result(r);
                        w->on_message(s);
                        g_free(s);
                      }),
@@ -565,6 +552,24 @@ public:
 
 private:
   virtual void on_message(const std::string &msg) = 0;
+
+  static char *get_string_from_js_result(WebKitJavascriptResult *r) {
+    char *s;
+#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+    JSCValue *value = webkit_javascript_result_get_js_value(r);
+    s = jsc_value_to_string(value);
+#else
+    JSGlobalContextRef ctx = webkit_javascript_result_get_global_context(r);
+    JSValueRef value = webkit_javascript_result_get_value(r);
+    JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
+    size_t n = JSStringGetMaximumUTF8CStringSize(js);
+    s = g_new(char, n);
+    JSStringGetUTF8CString(js, s, n);
+    JSStringRelease(js);
+#endif
+    return s;
+  }
+
   GtkWidget *m_window;
   GtkWidget *m_webview;
 };
