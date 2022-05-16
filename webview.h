@@ -507,6 +507,7 @@ public:
 
     gtk_widget_show_all(m_window);
   }
+  virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
   void run() { gtk_main(); }
   void terminate() { gtk_main_quit(); }
@@ -717,7 +718,7 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
   }
-  ~cocoa_wkwebview_engine() { close(); }
+  virtual ~cocoa_wkwebview_engine() { close(); }
   void *window() { return (void *)m_window; }
   void terminate() {
     close();
@@ -917,6 +918,8 @@ public:
     resize(m_window);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
+
+  virtual ~win32_edge_engine() = default;
 
   void run() {
     MSG msg;
