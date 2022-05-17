@@ -103,11 +103,15 @@ type WebView interface {
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
 
-	// Navigate navigates webview to the given URL. URL may be a data URI, i.e.
-	// "data:text/html,<html>...</html>". Input will not be URL-encoded.
+	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
+	// URI. Examples:
+	// w.Navigate("https://github.com/webview/webview")
+	// w.Navigate("data:text/html,%3Ch1%3EHello%3C%2Fh1%3E")
+	// w.Navigate("data:text/html;base64,PGgxPkhlbGxvPC9oMT4=")
 	Navigate(url string)
 
-	// Set webview HTML directly. This does not require URL-encoding.
+	// SetHtml sets the webview HTML directly.
+	// Example: w.SetHtml(w, "<h1>Hello</h1>");
 	SetHtml(html string)
 
 	// Init injects JavaScript code at the initialization of the new page. Every
