@@ -131,6 +131,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #endif
 #endif
 
+#include <array>
 #include <atomic>
 #include <functional>
 #include <future>
@@ -165,17 +166,19 @@ static inline char hex2char(const char *p) {
   return hex2nibble(p[0]) * 16 + hex2nibble(p[1]);
 }
 
-inline std::string url_encode(const std::string &s) {
+// Percent-encodes (%xx) each character of a string.
+inline std::string percent_encode(const std::string &s) {
+  static const std::array<char, 16> alphabet{'0', '1', '2', '3', '4', '5',
+                                             '6', '7', '8', '9', 'A', 'B',
+                                             'C', 'D', 'E', 'F'};
+  static const int output_chars_per_input_char = 3;
   std::string encoded;
-  for (unsigned int i = 0; i < s.length(); i++) {
-    auto c = s[i];
-    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-      encoded = encoded + c;
-    } else {
-      char hex[4];
-      snprintf(hex, sizeof(hex), "%%%02x", c);
-      encoded = encoded + hex;
-    }
+  encoded.reserve(s.size() * output_chars_per_input_char);
+  for (char c : s) {
+    auto uc = static_cast<unsigned char>(c);
+    encoded += '%';
+    encoded += alphabet[uc >> 4];
+    encoded += alphabet[uc & 15];
   }
   return encoded;
 }
@@ -998,7 +1001,7 @@ public:
   }
 
   void set_html(const std::string &html) {
-    auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
+    auto html2 = winrt::to_hstring("data:text/html," + percent_encode(html));
     m_webview->Navigate(html2.c_str());
   }
 
@@ -1135,7 +1138,7 @@ public:
   void navigate(const std::string &url) {
     if (url == "") {
       browser_engine::navigate("data:text/html," +
-                               url_encode("<html><body></body></html>"));
+                               percent_encode("<html><body></body></html>"));
       return;
     }
     browser_engine::navigate(url);
