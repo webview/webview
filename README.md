@@ -157,7 +157,7 @@ Build it:
 ```sh
 $ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
 $ gcc -c main.c -o main.o  # build C program
-$ script/build.bat
+$ g++ main.o webview.o $CPPFLAGS -o webview-example
 ```
 
 For a complete C example see: https://github.com/webview/webview_c
