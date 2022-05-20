@@ -155,9 +155,9 @@ $ CPPFLAGS="-std=c++11 -framework WebKit"
 Build it:
 
 ```sh
-$ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
-$ gcc -c main.c -o main.o  # build C program
-$ g++ main.o webview.o $CPPFLAGS -o webview-example
+$ c++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
+$ cc -c main.c -o main.o  # build C program
+$ c++ main.o webview.o $CPPFLAGS -o webview-example
 ```
 
 On Windows, run `script/build.bat`.
