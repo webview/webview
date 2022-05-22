@@ -1222,8 +1222,9 @@ private:
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   auto w = new webview::webview(debug, wnd);
-  if (w->window() == NULL) {
-    return NULL;
+  if (!w->window()) {
+    delete w;
+    return nullptr;
   }
   return w;
 }
