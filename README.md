@@ -13,6 +13,12 @@ It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to
 
 It uses Cocoa/WebKit on macOS, gtk-webkit2 on Linux and Edge on Windows 10.
 
+## [API Documentation](https://webview.dev "API Documentation")
+
+API Documentation is available online for this repository and all available bindings at https://webview.dev.
+
+Contributions to the documentation are managed at https://github.com/webview/docs.
+
 ## Bindings
 
 This repository contains bindings for C, C++, and Go. Bindings for other languages are maintained separately.
@@ -77,59 +83,9 @@ $ go build -ldflags="-H windowsgui" -o webview-example.exe
 
 For more details see [godoc](https://godoc.org/github.com/webview/webview).
 
-### Distributing webview apps
-
-On Linux you get a standalone executable. It depends on GTK3 and GtkWebkit2. Include those dependencies if you distribute in a package like DEB or RPM. An application icon can be specified by providing a `.desktop` file.
-
-On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
-
-```
-example.app
-└── Contents
-    ├── Info.plist
-    ├── MacOS
-    |   └── example
-    └── Resources
-        └── example.icns
-```
-
-Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You can convert PNG to icns [online](https://iconverticons.com/online/) or with a tool like `icnsutils`.
-
-On Windows, you can use a custom icon by providing a resource file, compiling it and linking with it. Typically, `windres` is used to compile resources.
-
-Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
-
-To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
-
-### Known issues
-
-#### Accessing localhost on Windows
-
-If Edge (Chromium) isn't installed on the target machine, webview will use a UWP application context which disallows loopback by default. To enable it you need to run the following command from a command prompt with admin priviledges:
-
-```sh
-CheckNetIsolation.exe LoopbackExempt -a -n="Microsoft.Win32WebViewHost_cw5n1h2txyewy"
-```
-
-For app distribution we recommend automating this in your installer.
-
-### Migrating from v0.1.1 to v0.10.0
-
-1. `webview.Open()` has been removed. Use other webview APIs to create a window, open a link and run main UI loop.
-2. `webview.Debug()` and `webview.Debugf()` have been removed. Use your favorite logging library to debug webview apps.
-3. `webview.Settings` struct has been removed. Title, URL and size are controlled via other API setters and can be updated at any time, not only when webview is created.
-4. `Webview.Loop()` has been removed. Use `Run()` instead.
-5. `WebView.Run()`, `WebView.Terminate()`, `WebView.SetTitle()`, `WebView.Dispatch()` stayed the same.
-6. `WebView.Exit()` has been renamed to `WebView.Destroy()`
-7. `WebView.SetColor()` and `WebView.SetFullScreen()` have been removed. Use `Window()` to get native window handle and probably write some Cgo code to adjust native window to your taste.
-8. `webview.Dialog` has been removed. But it is likely to be brought back as a standalone module.
-9. `WebView.Eval()` remained the same.
-10. `WebView.InjectCSS()` has been removed. Use eval to inject style tag with CSS inside.
-11. `WebView.Bind()` kept the name, but changed the semantics. Only functions can be bound. Not the structs, like in Lorca.
-
 ## Webview for C/C++ developers
 
-Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code:
+Download [webview.h](https://raw.githubusercontent.com/webview/webview/master/webview.h) and include it in your C/C++ code. Other dependencies are descibed in the [Notes](#Notes) section and at https://webview.dev/.
 
 ### C++
 
@@ -159,7 +115,7 @@ $ c++ main.cc `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -o webview-ex
 # MacOS
 $ c++ main.cc -std=c++11 -framework WebKit -o webview-example
 # Windows (x64)
-$ c++ main.cc -mwindows -L./dll/x64 -lwebview -lWebView2Loader -o webview-example.exe
+$ script/build.bat
 ```
 
 ### C
@@ -193,8 +149,7 @@ Define C++ flags for the platform:
 $ CPPFLAGS="`pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0` -lstdc++"
 # MacOS
 $ CPPFLAGS="-std=c++11 -framework WebKit"
-# Windows (x64)
-$ CPPFLAGS="-mwindows -L./dll/x64 -lwebview -lWebView2Loader"
+# Windows (x64) uses the build script
 ```
 
 Build it:
@@ -202,46 +157,55 @@ Build it:
 ```sh
 $ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
 $ gcc -c main.c -o main.o  # build C program
-$ g++ main.o webview.o $CPPFLAGS -o webview-example  # link them together
+$ script/build.bat
 ```
 
 For a complete C example see: https://github.com/webview/webview_c
 
-
 On Windows it is possible to use webview library directly when compiling with cl.exe, but WebView2Loader.dll is still required. To use MinGW you may dynamically link the prebuilt webview.dll (this approach is used in Cgo bindings).
 
-Full C/C++ API is described at the top of `webview.h`.
+Full C/C++ API is described at the top of `webview.h` and at https://webview.dev.
 
-### Migrating from v0.1.1 to v0.10.0
+## Windows Build Script Details
 
-1. Use opaque `webview_t` type instead of `struct webview`. Size, title and URL are controlled via API setter functions. Invoke callback has been replaced with `webview_bind()` and `webview_return()` to make native function bindings inter-operate with JS.
-2. If you have been using simplified `webview()` API to only open a single URL
-   in a webview window - this function has been removed. You now have to create
-   a new webview instance, configure and run it explicitly.
-3. `webview_init()` is replaced by `webview_create()` which creates a new webview instance.
-4. `webview_exit()` has been replaced with more meaningful `webview_destroy()`.
-5. Main UI loop with `webview_loop()` inside has been replaced with `webview_run()` runs infinitely until the webview window is closed.
-6. `webview_terminate()` remains the same.
-7. `webview_dispatch()` remains the same.
-8. `webview_set_title()` remains the same.
-9. `webview_set_color()` has been removed. Use `webview_get_window` and native
-   window APIs to control colors, transparency and other native window
-   properties. At some point these APIs might be brought back.
-10. `webview_set_fullscreen()` has been removed, see above.
-11. `webview_dialog()` has been removed. But I'd like to see it added back as a separate independent module or library.
-12. `webview_eval()` remains the same.
-13. `webview_inject_css()` has been removed. Use `webview_eval()` to create style tag manually.
-14. `webview_debug()` has been removed. Use whatever fits best to your programming language and environment to debug your GUI apps.
+Our `build.bat` script is currently the only supported way to build a webview executable on Windows. It automatically installs and builds all needed dependancies before compiling your C++ application. It is easy to modify the build script for anyone's specific use case. For instance: you can easily change the Webview2 nuget package version or the compiler's target architecture. We will distribute stable dlls with every release for convenience. If you do not include them in your project, the build script will build them for you anyway - this applies to GO users as well.
+
+## Distributing webview apps
+
+On Linux you get a standalone executable. It depends on GTK3 and GtkWebkit2. Include those dependencies if you distribute in a package like DEB or RPM. An application icon can be specified by providing a `.desktop` file.
+
+On MacOS you are likely to ship an app bundle. Make the following directory structure and just zip it:
+
+```
+example.app
+└── Contents
+    ├── Info.plist
+    ├── MacOS
+    |   └── example
+    └── Resources
+        └── example.icns
+```
+
+Here, `Info.plist` is a [property list file](https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html) and `*.icns` is a special icon format. You can convert PNG to icns [online](https://iconverticons.com/online/) or with a tool like `icnsutils`.
+
+On Windows, you can use a custom icon by providing a resource file, compiling it and linking with it. Typically, `windres` is used to compile resources.
+
+Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
+
+To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
 
 ## Notes
 
-- A webview is not a full web browser and thus does not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
+- A webview is not a full web browser. Although they may work, we do not support `alert`, `confirm` and `prompt` dialogs. Additionally, `console.*` methods are not supported.
 - Ubuntu users need to install the `webkit2gtk-4.0` as development dependency via `sudo apt install webkit2gtk-4.0`. If the package can't be found `webkit2gtk-4.0-dev` may be used instead.
 - FreeBSD is also supported via webkit2 which may be installed by running `pkg install webkit2-gtk3`.
 - Execution on OpenBSD requires `wxallowed` [mount(8)](https://man.openbsd.org/mount.8) option.
-- Calling `Eval()` or `Dispatch()` before `Run()` does not work, because the webview instance has only been configured, but not started yet. 
+- On Windows, users must install:
+  - Windows 10 SDK via Visual Studio Installer
+  - C++ support via Visual Studio Installer
+  - Webview2 (you may already have this) [download from Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+- Calling `Eval()` or `Dispatch()` before `Run()` does not work, because the webview instance has only configured, but not started yet. 
 
 ## License
 
-Code is distributed under MIT license, feel free to use it in your proprietary
-projects as well.
+Code is distributed under MIT license, feel free to use it in your proprietary projects as well.
