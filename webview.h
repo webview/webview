@@ -409,11 +409,6 @@ static inline std::string json_parse(const std::string &s,
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
-inline std::string url_encode(const std::string &s) {
-  return detail::url_encode(s);
-}
-
-WEBVIEW_DEPRECATED_PRIVATE
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
   return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
