@@ -904,7 +904,7 @@ public:
       RegisterClassExW(&wc);
       m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
                                CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                               nullptr, GetModuleHandle(nullptr), nullptr);
+                               nullptr, hInstance, nullptr);
       if (m_window == nullptr) {
         return;
       }
