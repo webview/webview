@@ -112,7 +112,7 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 // TEST: ensure that percent-encoding works.
 // =================================================================
 static void test_percent_encode() {
-  using webview::percent_encode;
+  using webview::detail::percent_encode;
   // Generate a string with all the possible ASCII characters
   std::string input(256, '\0');
   for (std::size_t i = 0; i < input.size(); ++i) {
