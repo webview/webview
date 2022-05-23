@@ -856,9 +856,6 @@ public:
   win32_edge_engine(bool debug, void *window) {
     if (window == nullptr) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
-      if (hInstance == nullptr) {
-        return;
-      }
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
           GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
