@@ -134,6 +134,21 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #endif
 #endif
 
+#ifndef WEBVIEW_DEPRECATED
+#if __cplusplus >= 201402L
+#define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
+#elif defined(_MSC_VER)
+#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
+#else
+#define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
+#endif
+#endif
+
+#ifndef WEBVIEW_DEPRECATED_PRIVATE
+#define WEBVIEW_DEPRECATED_PRIVATE                                             \
+  WEBVIEW_DEPRECATED("Private API should not be used")
+#endif
+
 #include <array>
 #include <atomic>
 #include <functional>
@@ -146,7 +161,10 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #include <cstring>
 
 namespace webview {
+
 using dispatch_fn_t = std::function<void()>;
+
+namespace detail {
 
 // Percent-encodes (%xx) each character of a string.
 inline std::string percent_encode(const std::string &s) {
@@ -390,6 +408,30 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+} // namespace detail
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
+                        const char **value, size_t *valuesz) {
+  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_escape(const std::string &s) {
+  return detail::json_escape(s);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_unescape(const char *s, size_t n, char *out) {
+  return detail::json_unescape(s, n, out);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_parse(const std::string &s, const std::string &key,
+                              const int index) {
+  return detail::json_parse(s, key, index);
+}
+
 } // namespace webview
 
 #if defined(WEBVIEW_GTK)
@@ -408,6 +450,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 #include <webkit2/webkit2.h>
 
 namespace webview {
+namespace detail {
 
 class gtk_webkit_engine {
 public:
@@ -535,7 +578,9 @@ private:
   GtkWidget *m_webview;
 };
 
-using browser_engine = gtk_webkit_engine;
+} // namespace detail
+
+using browser_engine = detail::gtk_webkit_engine;
 
 } // namespace webview
 
@@ -566,6 +611,7 @@ using browser_engine = gtk_webkit_engine;
 #define WKUserScriptInjectionTimeAtDocumentStart 0
 
 namespace webview {
+namespace detail {
 
 // Helpers to avoid too much typing
 id operator"" _cls(const char *s, std::size_t) { return (id)objc_getClass(s); }
@@ -782,7 +828,9 @@ private:
   id m_manager;
 };
 
-using browser_engine = cocoa_wkwebview_engine;
+} // namespace detail
+
+using browser_engine = detail::cocoa_wkwebview_engine;
 
 } // namespace webview
 
@@ -812,6 +860,7 @@ using browser_engine = cocoa_wkwebview_engine;
 #pragma comment(lib, "shell32.lib")
 
 namespace webview {
+namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
 using namespace winrt;
@@ -959,7 +1008,8 @@ public:
   }
 
   void set_html(const std::string &html) {
-    auto html2 = winrt::to_hstring("data:text/html," + percent_encode(html));
+    auto html2 =
+        winrt::to_hstring("data:text/html," + detail::percent_encode(html));
     m_webview->Navigate(html2.c_str());
   }
 
@@ -1081,7 +1131,10 @@ private:
   };
 };
 
-using browser_engine = win32_edge_engine;
+} // namespace detail
+
+using browser_engine = detail::win32_edge_engine;
+
 } // namespace webview
 
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE */
@@ -1167,9 +1220,9 @@ public:
 
 private:
   void on_message(const std::string &msg) {
-    auto seq = json_parse(msg, "id", 0);
-    auto name = json_parse(msg, "method", 0);
-    auto args = json_parse(msg, "params", 0);
+    auto seq = detail::json_parse(msg, "id", 0);
+    auto name = detail::json_parse(msg, "method", 0);
+    auto args = detail::json_parse(msg, "params", 0);
     if (bindings.find(name) == bindings.end()) {
       return;
     }

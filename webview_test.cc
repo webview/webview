@@ -82,7 +82,7 @@ static void test_bidir_comms() {
 // TEST: ensure that JSON parsing works.
 // =================================================================
 static void test_json() {
-  auto J = webview::json_parse;
+  auto J = webview::detail::json_parse;
   // Valid input with expected output
   assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
   assert(J(R"({"foo":""})", "foo", -1) == "");
@@ -138,7 +138,7 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 // TEST: ensure that percent-encoding works.
 // =================================================================
 static void test_percent_encode() {
-  using webview::percent_encode;
+  using webview::detail::percent_encode;
   // Generate a string with all the possible ASCII characters
   std::string input(256, '\0');
   for (std::size_t i = 0; i < input.size(); ++i) {
