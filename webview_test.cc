@@ -83,11 +83,35 @@ static void test_bidir_comms() {
 // =================================================================
 static void test_json() {
   auto J = webview::json_parse;
+  // Valid input with expected output
   assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
   assert(J(R"({"foo":""})", "foo", -1) == "");
+  assert(J(R"({"foo":{}")", "foo", -1) == "{}");
   assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
   assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
   assert(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
+  // Valid UTF-8 with expected output
+  assert(J(R"({"フー":"バー"})", "フー", -1) == "バー");
+  assert(J(R"(["フー", "バー", "バズ"])", "", 2) == "バズ");
+  // Invalid input with valid output - should probably fail
+  assert(J(R"({"foo":"bar")", "foo", -1) == "bar");
+  // Valid input with other invalid parameters - should fail
+  assert(J(R"([])", "", 0) == "");
+  assert(J(R"({})", "foo", -1) == "");
+  assert(J(R"(["foo", "bar", "baz"])", "", -1) == "");
+  assert(J(R"(["foo"])", "", 1234) == "");
+  assert(J(R"(["foo"])", "", -1234) == "");
+  // Invalid input - should fail
+  assert(J(R"()", "", 0) == "");
+  assert(J(R"()", "foo", -1) == "");
+  assert(J(R"({"foo":")", "foo", -1) == "");
+  assert(J(R"({"foo":{)", "foo", -1) == "");
+  assert(J(R"({"foo":{")", "foo", -1) == "");
+  assert(J(R"(}")", "foo", -1) == "");
+  assert(J(R"({}}")", "foo", -1) == "");
+  assert(J(R"("foo)", "foo", -1) == "");
+  assert(J(R"(foo)", "foo", -1) == "");
+  assert(J(R"({{[[""foo""]]}})", "", 1234) == "");
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
