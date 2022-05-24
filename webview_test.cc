@@ -102,8 +102,8 @@ static void test_json() {
   assert(J(R"(["foo"])", "", 1234) == "");
   assert(J(R"(["foo"])", "", -1234) == "");
   // Invalid input - should fail
-  assert(J(R"()", "", 0) == "");
-  assert(J(R"()", "foo", -1) == "");
+  assert(J("", "", 0) == "");
+  assert(J("", "foo", -1) == "");
   assert(J(R"({"foo":")", "foo", -1) == "");
   assert(J(R"({"foo":{)", "foo", -1) == "");
   assert(J(R"({"foo":{")", "foo", -1) == "");
