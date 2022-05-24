@@ -180,7 +180,7 @@ inline std::string percent_encode(const std::string &s) {
   return encoded;
 }
 
-static inline int json_parse_c(const char *s, size_t sz, const char *key,
+inline int json_parse_c(const char *s, size_t sz, const char *key,
                                size_t keysz, const char **value,
                                size_t *valuesz) {
   enum {
@@ -320,12 +320,12 @@ static inline int json_parse_c(const char *s, size_t sz, const char *key,
   return -1;
 }
 
-static inline std::string json_escape(const std::string &s) {
+inline std::string json_escape(const std::string &s) {
   // TODO: implement
   return '"' + s + '"';
 }
 
-static inline int json_unescape(const char *s, size_t n, char *out) {
+inline int json_unescape(const char *s, size_t n, char *out) {
   int r = 0;
   if (*s++ != '"') {
     return -1;
@@ -380,7 +380,7 @@ static inline int json_unescape(const char *s, size_t n, char *out) {
   return r;
 }
 
-static inline std::string json_parse(const std::string &s,
+inline std::string json_parse(const std::string &s,
                                      const std::string &key, const int index) {
   const char *value;
   size_t value_sz;
