@@ -112,6 +112,8 @@ static void test_json() {
   assert(J(R"("foo)", "foo", -1) == "");
   assert(J(R"(foo)", "foo", -1) == "");
   assert(J(R"({{[[""foo""]]}})", "", 1234) == "");
+  assert(J("bad", "", 0) == "");
+  assert(J("bad", "foo", -1) == "");
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
