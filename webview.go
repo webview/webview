@@ -103,10 +103,16 @@ type WebView interface {
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
 
-	// Navigate navigates webview to the given URL. URL may be a data URI, i.e.
-	// "data:text/html,<html>...</html>". It is often ok not to url-encode it
-	// properly, webview will re-encode it for you.
+	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
+	// URI. Examples:
+	// w.Navigate("https://github.com/webview/webview")
+	// w.Navigate("data:text/html,%3Ch1%3EHello%3C%2Fh1%3E")
+	// w.Navigate("data:text/html;base64,PGgxPkhlbGxvPC9oMT4=")
 	Navigate(url string)
+
+	// SetHtml sets the webview HTML directly.
+	// Example: w.SetHtml(w, "<h1>Hello</h1>");
+	SetHtml(html string)
 
 	// Init injects JavaScript code at the initialization of the new page. Every
 	// time the webview will open a the new page - this initialization code will
@@ -183,6 +189,12 @@ func (w *webview) Navigate(url string) {
 	s := C.CString(url)
 	defer C.free(unsafe.Pointer(s))
 	C.webview_navigate(w.w, s)
+}
+
+func (w *webview) SetHtml(html string) {
+	s := C.CString(html)
+	defer C.free(unsafe.Pointer(s))
+	C.webview_set_html(w.w, s)
 }
 
 func (w *webview) SetTitle(title string) {

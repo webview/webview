@@ -75,12 +75,15 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
-// Navigates webview to the given URL. URL may be a data URI, i.e.
-// "data:text/html,<html>...</html>". It is often ok not to url-encode it
-// properly, webview will re-encode it for you.
+// Navigates webview to the given URL. URL may be a properly encoded data URI.
+// Examples:
+// webview_navigate(w, "https://github.com/webview/webview");
+// webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
+// webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
 // Set webview HTML directly.
+// Example: webview_set_html(w, "<h1>Hello</h1>");
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
