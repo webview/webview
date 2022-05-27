@@ -878,8 +878,8 @@ std::wstring widen_string(const std::string &input) {
   auto required_length =
       MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
   if (required_length > 0) {
-    std::wstring output(static_cast<std::size_t>(required_length), '\0');
-    if (MultiByteToWideChar(cp, flags, input_c, input_length, output.data(),
+    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
+    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
                             required_length) > 0) {
       return output;
     }
@@ -901,7 +901,7 @@ std::string narrow_string(const std::wstring &input) {
                                              nullptr, 0, nullptr, nullptr);
   if (required_length > 0) {
     std::string output(static_cast<std::size_t>(required_length), '\0');
-    if (WideCharToMultiByte(cp, flags, input_c, input_length, output.data(),
+    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
                             required_length, nullptr, nullptr) > 0) {
       return output;
     }
