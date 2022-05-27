@@ -208,16 +208,15 @@ static void test_win32_narrow_wide_string_conversion() {
 
 int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
-    {"terminate", test_terminate},
-    {"c_api", test_c_api},
-    {"bidir_comms", test_bidir_comms},
-    {"json", test_json},
-    {"percent_encode", test_percent_encode},
+      {"terminate", test_terminate},
+      {"c_api", test_c_api},
+      {"bidir_comms", test_bidir_comms},
+      {"json", test_json},
+      {"percent_encode", test_percent_encode}};
 #if _WIN32
-    {"win32_narrow_wide_string_conversion",
-     test_win32_narrow_wide_string_conversion},
+  all_tests.emplace("win32_narrow_wide_string_conversion",
+                    test_win32_narrow_wide_string_conversion);
 #endif
-  };
   // Without arguments run all tests, one-by-one by forking itself.
   // With a single argument - run the requested test
   if (argc == 1) {
