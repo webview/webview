@@ -867,21 +867,21 @@ namespace detail {
 using msg_cb_t = std::function<void(const std::string)>;
 
 // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-std::wstring widen_string(const std::string &narrow_string) {
-  if (narrow_string.empty()) {
+std::wstring widen_string(const std::string &input) {
+  if (input.empty()) {
     return std::wstring();
   }
   UINT cp = CP_UTF8;
   DWORD flags = MB_ERR_INVALID_CHARS;
-  auto narrow_string_c = narrow_string.c_str();
-  auto narrow_string_length = static_cast<int>(narrow_string.size());
-  auto required_length = MultiByteToWideChar(cp, flags, narrow_string_c,
-                                             narrow_string_length, nullptr, 0);
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length =
+      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
   if (required_length > 0) {
-    std::wstring wide_string(static_cast<std::size_t>(required_length), '\0');
-    if (MultiByteToWideChar(cp, flags, narrow_string_c, narrow_string_length,
-                            wide_string.data(), required_length) > 0) {
-      return wide_string;
+    std::wstring output(static_cast<std::size_t>(required_length), '\0');
+    if (MultiByteToWideChar(cp, flags, input_c, input_length, output.data(),
+                            required_length) > 0) {
+      return output;
     }
   }
   // Failed to convert string from UTF-8 to UTF-16
@@ -889,23 +889,21 @@ std::wstring widen_string(const std::string &narrow_string) {
 }
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
-std::string narrow_string(const std::wstring &wide_string) {
-  if (wide_string.empty()) {
+std::string narrow_string(const std::wstring &input) {
+  if (input.empty()) {
     return std::string();
   }
   UINT cp = CP_UTF8;
   DWORD flags = WC_ERR_INVALID_CHARS;
-  auto wide_string_c = wide_string.c_str();
-  auto wide_string_length = static_cast<int>(wide_string.size());
-  auto required_length =
-      WideCharToMultiByte(cp, flags, wide_string_c, wide_string_length, nullptr,
-                          0, nullptr, nullptr);
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
+                                             nullptr, 0, nullptr, nullptr);
   if (required_length > 0) {
-    std::string narrow_string(static_cast<std::size_t>(required_length), '\0');
-    if (WideCharToMultiByte(cp, flags, wide_string_c, wide_string_length,
-                            narrow_string.data(), required_length, nullptr,
-                            nullptr) > 0) {
-      return narrow_string;
+    std::string output(static_cast<std::size_t>(required_length), '\0');
+    if (WideCharToMultiByte(cp, flags, input_c, input_length, output.data(),
+                            required_length, nullptr, nullptr) > 0) {
+      return output;
     }
   }
   // Failed to convert string from UTF-16 to UTF-8
