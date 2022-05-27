@@ -866,6 +866,7 @@ namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
 
+// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
 std::wstring widen_string(const std::string &narrow_string) {
   if (narrow_string.empty()) {
     return std::wstring();
@@ -887,6 +888,7 @@ std::wstring widen_string(const std::string &narrow_string) {
   return std::wstring();
 }
 
+// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
 std::string narrow_string(const std::wstring &wide_string) {
   if (wide_string.empty()) {
     return std::string();
@@ -910,6 +912,7 @@ std::string narrow_string(const std::wstring &wide_string) {
   return std::string();
 }
 
+// Holds a symbol name and associated type for code clarity.
 template <typename T> class library_symbol {
 public:
   using type = T;
@@ -921,6 +924,8 @@ private:
   const char *m_name;
 };
 
+// Loads a native shared library and allows one to get addresses for those
+// symbols.
 class native_library {
 public:
   explicit native_library(const wchar_t *name) : m_handle(LoadLibraryW(name)) {}
@@ -937,8 +942,10 @@ public:
   native_library(native_library &&other) = default;
   native_library &operator=(native_library &&other) = default;
 
+  // Returns true if the library is currently loaded; otherwise false.
   operator bool() const { return is_loaded(); }
 
+  // Get the address for the specified symbol or nullptr if not found.
   template <typename Symbol>
   typename Symbol::type get(const Symbol &symbol) const {
     if (is_loaded()) {
@@ -948,6 +955,7 @@ public:
     return nullptr;
   }
 
+  // Returns true if the library is currently loaded; otherwise false.
   bool is_loaded() const { return !!m_handle; }
 
 private:
