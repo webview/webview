@@ -927,8 +927,7 @@ public:
     }
 
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-    ShowWindow(m_window, SW_SHOW);
-    UpdateWindow(m_window);
+    // If this is not here then we don't get the controller
     SetFocus(m_window);
 
     auto cb =
@@ -936,6 +935,9 @@ public:
 
     embed(m_window, debug, cb);
     resize(m_window);
+    m_controller->put_IsVisible(TRUE);
+    ShowWindow(m_window, SW_SHOW);
+    UpdateWindow(m_window);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
