@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
   if (argc == 2) {
     auto it = all_tests.find(argv[1]);
     if (it != all_tests.end()) {
-      run_with_timeout(it->second, 5000);
+      run_with_timeout(it->second, 60000);
       return 0;
     }
   }
