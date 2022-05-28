@@ -90,6 +90,8 @@ cl %warning_params% ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
+"%build_dir%\webview_test.exe" || exit \b
+
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
