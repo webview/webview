@@ -831,24 +831,151 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
+#include <shellscalingapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
-#include <winrt/Windows.Foundation.h>
 
 #include "webview2.h"
 
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "windowsapp")
+#pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "user32.lib")
 
 namespace webview {
 namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
-using namespace winrt;
+
+// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
+std::wstring widen_string(const std::string &input) {
+  if (input.empty()) {
+    return std::wstring();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = MB_ERR_INVALID_CHARS;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length =
+      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
+  if (required_length > 0) {
+    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
+    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
+                            required_length) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-8 to UTF-16
+  return std::wstring();
+}
+
+// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
+std::string narrow_string(const std::wstring &input) {
+  if (input.empty()) {
+    return std::string();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = WC_ERR_INVALID_CHARS;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
+                                             nullptr, 0, nullptr, nullptr);
+  if (required_length > 0) {
+    std::string output(static_cast<std::size_t>(required_length), '\0');
+    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
+                            required_length, nullptr, nullptr) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-16 to UTF-8
+  return std::string();
+}
+
+// Holds a symbol name and associated type for code clarity.
+template <typename T> class library_symbol {
+public:
+  using type = T;
+
+  constexpr explicit library_symbol(const char *name) : m_name(name) {}
+  constexpr const char *get_name() const { return m_name; }
+
+private:
+  const char *m_name;
+};
+
+// Loads a native shared library and allows one to get addresses for those
+// symbols.
+class native_library {
+public:
+  explicit native_library(const wchar_t *name) : m_handle(LoadLibraryW(name)) {}
+
+  ~native_library() {
+    if (m_handle) {
+      FreeLibrary(m_handle);
+      m_handle = nullptr;
+    }
+  }
+
+  native_library(const native_library &other) = delete;
+  native_library &operator=(const native_library &other) = delete;
+  native_library(native_library &&other) = default;
+  native_library &operator=(native_library &&other) = default;
+
+  // Returns true if the library is currently loaded; otherwise false.
+  operator bool() const { return is_loaded(); }
+
+  // Get the address for the specified symbol or nullptr if not found.
+  template <typename Symbol>
+  typename Symbol::type get(const Symbol &symbol) const {
+    if (is_loaded()) {
+      return reinterpret_cast<typename Symbol::type>(
+          GetProcAddress(m_handle, symbol.get_name()));
+    }
+    return nullptr;
+  }
+
+  // Returns true if the library is currently loaded; otherwise false.
+  bool is_loaded() const { return !!m_handle; }
+
+private:
+  HMODULE m_handle = nullptr;
+};
+
+struct user32_symbols {
+  static constexpr auto SetProcessDpiAwarenessContext =
+      library_symbol<decltype(&SetProcessDpiAwarenessContext)>(
+          "SetProcessDpiAwarenessContext");
+  static constexpr auto SetProcessDPIAware =
+      library_symbol<decltype(&SetProcessDPIAware)>("SetProcessDPIAware");
+};
+
+struct shcore_symbols {
+  static constexpr auto SetProcessDpiAwareness =
+      library_symbol<decltype(&SetProcessDpiAwareness)>(
+          "SetProcessDpiAwareness");
+};
+
+bool enable_dpi_awareness() {
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
+    if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+      return true;
+    }
+    return GetLastError() == ERROR_ACCESS_DENIED;
+  }
+  if (auto shcore = native_library(L"shcore.dll")) {
+    if (auto fn = shcore.get(shcore_symbols::SetProcessDpiAwareness)) {
+      auto result = fn(PROCESS_PER_MONITOR_DPI_AWARE);
+      return result == S_OK || result == E_ACCESSDENIED;
+    }
+  }
+  if (auto fn = user32.get(user32_symbols::SetProcessDPIAware)) {
+    return !!fn();
+  }
+  return true;
+}
 
 class win32_edge_engine {
 public:
@@ -909,7 +1036,7 @@ public:
       m_window = *(static_cast<HWND *>(window));
     }
 
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+    enable_dpi_awareness();
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
     SetFocus(m_window);
@@ -949,7 +1076,7 @@ public:
   }
 
   void set_title(const std::string &title) {
-    SetWindowTextW(m_window, winrt::to_hstring(title).c_str());
+    SetWindowTextW(m_window, widen_string(title).c_str());
   }
 
   void set_size(int width, int height, int hints) {
@@ -981,22 +1108,22 @@ public:
   }
 
   void navigate(const std::string &url) {
-    auto wurl = winrt::to_hstring(url);
+    auto wurl = widen_string(url);
     m_webview->Navigate(wurl.c_str());
   }
 
   void init(const std::string &js) {
-    auto wjs = winrt::to_hstring(js);
+    auto wjs = widen_string(js);
     m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
   }
 
   void eval(const std::string &js) {
-    auto wjs = winrt::to_hstring(js);
+    auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
   void set_html(const std::string &html) {
-    m_webview->NavigateToString(winrt::to_hstring(html).c_str());
+    m_webview->NavigateToString(widen_string(html).c_str());
   }
 
 private:
@@ -1093,7 +1220,7 @@ private:
         ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
       LPWSTR message;
       args->TryGetWebMessageAsString(&message);
-      m_msgCb(winrt::to_string(message));
+      m_msgCb(narrow_string(message));
       sender->PostWebMessageAsString(message);
 
       CoTaskMemFree(message);

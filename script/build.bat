@@ -85,6 +85,7 @@ cl %warning_params% ^
 
 echo Building webview_test.exe (x64)
 cl %warning_params% ^
+	/utf-8 ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
