@@ -899,7 +899,7 @@ public:
   using type = T;
 
   constexpr explicit library_symbol(const char *name) : m_name(name) {}
-  const char *get_name() const { return m_name; }
+  constexpr const char *get_name() const { return m_name; }
 
 private:
   const char *m_name;
