@@ -166,23 +166,6 @@ using dispatch_fn_t = std::function<void()>;
 
 namespace detail {
 
-// Percent-encodes (%xx) each character of a string.
-inline std::string percent_encode(const std::string &s) {
-  static const std::array<char, 16> alphabet{'0', '1', '2', '3', '4', '5',
-                                             '6', '7', '8', '9', 'A', 'B',
-                                             'C', 'D', 'E', 'F'};
-  static const int output_chars_per_input_char = 3;
-  std::string encoded;
-  encoded.reserve(s.size() * output_chars_per_input_char);
-  for (char c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    encoded += '%';
-    encoded += alphabet[uc >> 4];
-    encoded += alphabet[uc & 15];
-  }
-  return encoded;
-}
-
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
   enum {
@@ -1013,9 +996,7 @@ public:
   }
 
   void set_html(const std::string &html) {
-    auto html2 =
-        winrt::to_hstring("data:text/html," + detail::percent_encode(html));
-    m_webview->Navigate(html2.c_str());
+    m_webview->NavigateToString(winrt::to_hstring(html).c_str());
   }
 
 private:
