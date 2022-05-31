@@ -90,6 +90,23 @@ static void test_json() {
   assert(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
 }
 
+// =================================================================
+// TEST: start app as loop using step and terminate it.
+// =================================================================
+static void test_step() {
+  webview::webview w(false, nullptr);
+  w.navigate("https://github.com/webview/webview");
+  int i;
+  for (i = 0; i < 25; i++) {
+    assert(w.step(0) == 0);
+  }
+  for (i = 0; i < 25; i++) {
+    assert(w.step(1) == 0);
+  }
+  w.terminate();
+  assert(w.step(0) != 0);
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -114,6 +131,7 @@ int main(int argc, char *argv[]) {
       {"c_api", test_c_api},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json},
+      {"step", test_step},
   };
   // Without arguments run all tests, one-by-one by forking itself.
   // With a single argument - run the requested test
