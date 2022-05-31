@@ -21,8 +21,8 @@ int main()
     return s;
   });
   w.bind("add", [](const std::string &s) -> std::string {
-    auto a = std::stoi(webview::json_parse(s, "", 0));
-    auto b = std::stoi(webview::json_parse(s, "", 1));
+    auto a = std::stoi(webview::detail::json_parse(s, "", 0));
+    auto b = std::stoi(webview::detail::json_parse(s, "", 1));
     return std::to_string(a + b);
   });
   w.set_html(R"V0G0N(

@@ -155,10 +155,12 @@ $ CPPFLAGS="-std=c++11 -framework WebKit"
 Build it:
 
 ```sh
-$ g++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
-$ gcc -c main.c -o main.o  # build C program
-$ script/build.bat
+$ c++ -c $CPPFLAGS webview.cc -o webview.o  # build webview
+$ cc -c main.c -o main.o  # build C program
+$ c++ main.o webview.o $CPPFLAGS -o webview-example
 ```
+
+On Windows, run `script/build.bat`.
 
 For a complete C example see: https://github.com/webview/webview_c
 
@@ -168,7 +170,7 @@ Full C/C++ API is described at the top of `webview.h` and at https://webview.dev
 
 ## Windows Build Script Details
 
-Our `build.bat` script is currently the only supported way to build a webview executable on Windows. It automatically installs and builds all needed dependancies before compiling your C++ application. It is easy to modify the build script for anyone's specific use case. For instance: you can easily change the Webview2 nuget package version or the compiler's target architecture. We will distribute stable dlls with every release for convenience. If you do not include them in your project, the build script will build them for you anyway - this applies to GO users as well.
+The `build.bat` script is currently the only supported way to build a webview executable on Windows. It automatically installs and builds all needed dependencies before compiling a C++ application. It is easy to modify the build script for specific use cases. For instance: you can change the Webview2 nuget package version or the compiler's target architecture. We will distribute stable DLLs with every release. If you do not include them in your project, the build script will build them for you. This applies to Go users as well.
 
 ## Distributing webview apps
 
@@ -192,7 +194,7 @@ On Windows, you can use a custom icon by providing a resource file, compiling it
 
 Also, on Windows, `webview.dll` and `WebView2Loader.dll` must be placed into the same directory with the app executable.
 
-To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
+To cross-compile a webview app, use [xgo](https://github.com/karalabe/xgo).
 
 ## Notes
 
@@ -203,7 +205,7 @@ To cross-compile a webview app - use [xgo](https://github.com/karalabe/xgo).
 - On Windows, users must install:
   - Windows 10 SDK via Visual Studio Installer
   - C++ support via Visual Studio Installer
-  - Webview2 (you may already have this) [download from Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)
+  - [Webview2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (you may already have this)
 - Calling `Eval()` or `Dispatch()` before `Run()` does not work, because the webview instance has only configured, but not started yet. 
 
 ## License

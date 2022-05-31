@@ -78,12 +78,15 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
-// Navigates webview to the given URL. URL may be a data URI, i.e.
-// "data:text/html,<html>...</html>". It is often ok not to url-encode it
-// properly, webview will re-encode it for you.
+// Navigates webview to the given URL. URL may be a properly encoded data URI.
+// Examples:
+// webview_navigate(w, "https://github.com/webview/webview");
+// webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
+// webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
 // Set webview HTML directly.
+// Example: webview_set_html(w, "<h1>Hello</h1>");
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
@@ -134,6 +137,22 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #endif
 #endif
 
+#ifndef WEBVIEW_DEPRECATED
+#if __cplusplus >= 201402L
+#define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
+#elif defined(_MSC_VER)
+#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
+#else
+#define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
+#endif
+#endif
+
+#ifndef WEBVIEW_DEPRECATED_PRIVATE
+#define WEBVIEW_DEPRECATED_PRIVATE                                             \
+  WEBVIEW_DEPRECATED("Private API should not be used")
+#endif
+
+#include <array>
 #include <atomic>
 #include <functional>
 #include <future>
@@ -145,67 +164,10 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 #include <cstring>
 
 namespace webview {
+
 using dispatch_fn_t = std::function<void()>;
 
-// Convert ASCII hex digit to a nibble (four bits, 0 - 15).
-//
-// Use unsigned to avoid signed overflow UB.
-static inline unsigned char hex2nibble(unsigned char c) {
-  if (c >= '0' && c <= '9') {
-    return c - '0';
-  } else if (c >= 'a' && c <= 'f') {
-    return 10 + (c - 'a');
-  } else if (c >= 'A' && c <= 'F') {
-    return 10 + (c - 'A');
-  }
-  return 0;
-}
-
-// Convert ASCII hex string (two characters) to byte.
-//
-// E.g., "0B" => 0x0B, "af" => 0xAF.
-static inline char hex2char(const char *p) {
-  return hex2nibble(p[0]) * 16 + hex2nibble(p[1]);
-}
-
-inline std::string url_encode(const std::string &s) {
-  std::string encoded;
-  for (unsigned int i = 0; i < s.length(); i++) {
-    auto c = s[i];
-    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-      encoded = encoded + c;
-    } else {
-      char hex[4];
-      snprintf(hex, sizeof(hex), "%%%02x", c);
-      encoded = encoded + hex;
-    }
-  }
-  return encoded;
-}
-
-inline std::string url_decode(const std::string &st) {
-  std::string decoded;
-  const char *s = st.c_str();
-  size_t length = strlen(s);
-  for (unsigned int i = 0; i < length; i++) {
-    if (s[i] == '%') {
-      decoded.push_back(hex2char(s + i + 1));
-      i = i + 2;
-    } else if (s[i] == '+') {
-      decoded.push_back(' ');
-    } else {
-      decoded.push_back(s[i]);
-    }
-  }
-  return decoded;
-}
-
-inline std::string html_from_uri(const std::string &s) {
-  if (s.substr(0, 15) == "data:text/html,") {
-    return url_decode(s.substr(15));
-  }
-  return "";
-}
+namespace detail {
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -432,6 +394,30 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+} // namespace detail
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
+                        const char **value, size_t *valuesz) {
+  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_escape(const std::string &s) {
+  return detail::json_escape(s);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_unescape(const char *s, size_t n, char *out) {
+  return detail::json_unescape(s, n, out);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_parse(const std::string &s, const std::string &key,
+                              const int index) {
+  return detail::json_parse(s, key, index);
+}
+
 } // namespace webview
 
 #if defined(WEBVIEW_GTK)
@@ -450,12 +436,15 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 #include <webkit2/webkit2.h>
 
 namespace webview {
+namespace detail {
 
 class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)) {
-    gtk_init_check(0, NULL);
+    if (gtk_init_check(0, NULL) == FALSE) {
+      return;
+    }
     m_window = static_cast<GtkWidget *>(window);
     if (m_window == nullptr) {
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -578,7 +567,9 @@ private:
   GtkWidget *m_webview;
 };
 
-using browser_engine = gtk_webkit_engine;
+} // namespace detail
+
+using browser_engine = detail::gtk_webkit_engine;
 
 } // namespace webview
 
@@ -613,6 +604,7 @@ using browser_engine = gtk_webkit_engine;
 #define WKUserScriptInjectionTimeAtDocumentStart 0
 
 namespace webview {
+namespace detail {
 
 // Helpers to avoid too much typing
 id operator"" _cls(const char *s, std::size_t) { return (id)objc_getClass(s); }
@@ -868,7 +860,9 @@ private:
   id m_manager;
 };
 
-using browser_engine = cocoa_wkwebview_engine;
+} // namespace detail
+
+using browser_engine = detail::cocoa_wkwebview_engine;
 
 } // namespace webview
 
@@ -884,23 +878,151 @@ using browser_engine = cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
+#include <shellscalingapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
-#include <winrt/Windows.Foundation.h>
 
 #include "webview2.h"
 
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "windowsapp")
+#pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "user32.lib")
 
 namespace webview {
+namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
-using namespace winrt;
+
+// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
+std::wstring widen_string(const std::string &input) {
+  if (input.empty()) {
+    return std::wstring();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = MB_ERR_INVALID_CHARS;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length =
+      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
+  if (required_length > 0) {
+    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
+    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
+                            required_length) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-8 to UTF-16
+  return std::wstring();
+}
+
+// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
+std::string narrow_string(const std::wstring &input) {
+  if (input.empty()) {
+    return std::string();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = WC_ERR_INVALID_CHARS;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
+                                             nullptr, 0, nullptr, nullptr);
+  if (required_length > 0) {
+    std::string output(static_cast<std::size_t>(required_length), '\0');
+    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
+                            required_length, nullptr, nullptr) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-16 to UTF-8
+  return std::string();
+}
+
+// Holds a symbol name and associated type for code clarity.
+template <typename T> class library_symbol {
+public:
+  using type = T;
+
+  constexpr explicit library_symbol(const char *name) : m_name(name) {}
+  constexpr const char *get_name() const { return m_name; }
+
+private:
+  const char *m_name;
+};
+
+// Loads a native shared library and allows one to get addresses for those
+// symbols.
+class native_library {
+public:
+  explicit native_library(const wchar_t *name) : m_handle(LoadLibraryW(name)) {}
+
+  ~native_library() {
+    if (m_handle) {
+      FreeLibrary(m_handle);
+      m_handle = nullptr;
+    }
+  }
+
+  native_library(const native_library &other) = delete;
+  native_library &operator=(const native_library &other) = delete;
+  native_library(native_library &&other) = default;
+  native_library &operator=(native_library &&other) = default;
+
+  // Returns true if the library is currently loaded; otherwise false.
+  operator bool() const { return is_loaded(); }
+
+  // Get the address for the specified symbol or nullptr if not found.
+  template <typename Symbol>
+  typename Symbol::type get(const Symbol &symbol) const {
+    if (is_loaded()) {
+      return reinterpret_cast<typename Symbol::type>(
+          GetProcAddress(m_handle, symbol.get_name()));
+    }
+    return nullptr;
+  }
+
+  // Returns true if the library is currently loaded; otherwise false.
+  bool is_loaded() const { return !!m_handle; }
+
+private:
+  HMODULE m_handle = nullptr;
+};
+
+struct user32_symbols {
+  static constexpr auto SetProcessDpiAwarenessContext =
+      library_symbol<decltype(&SetProcessDpiAwarenessContext)>(
+          "SetProcessDpiAwarenessContext");
+  static constexpr auto SetProcessDPIAware =
+      library_symbol<decltype(&SetProcessDPIAware)>("SetProcessDPIAware");
+};
+
+struct shcore_symbols {
+  static constexpr auto SetProcessDpiAwareness =
+      library_symbol<decltype(&SetProcessDpiAwareness)>(
+          "SetProcessDpiAwareness");
+};
+
+bool enable_dpi_awareness() {
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
+    if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+      return true;
+    }
+    return GetLastError() == ERROR_ACCESS_DENIED;
+  }
+  if (auto shcore = native_library(L"shcore.dll")) {
+    if (auto fn = shcore.get(shcore_symbols::SetProcessDpiAwareness)) {
+      auto result = fn(PROCESS_PER_MONITOR_DPI_AWARE);
+      return result == S_OK || result == E_ACCESSDENIED;
+    }
+  }
+  if (auto fn = user32.get(user32_symbols::SetProcessDPIAware)) {
+    return !!fn();
+  }
+  return true;
+}
 
 class win32_edge_engine {
 public:
@@ -952,13 +1074,16 @@ public:
       RegisterClassExW(&wc);
       m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
                                CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                               nullptr, GetModuleHandle(nullptr), nullptr);
+                               nullptr, hInstance, nullptr);
+      if (m_window == nullptr) {
+        return;
+      }
       SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
     } else {
       m_window = *(static_cast<HWND *>(window));
     }
 
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+    enable_dpi_awareness();
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
     SetFocus(m_window);
@@ -1025,7 +1150,7 @@ public:
   }
 
   void set_title(const std::string &title) {
-    SetWindowTextW(m_window, winrt::to_hstring(title).c_str());
+    SetWindowTextW(m_window, widen_string(title).c_str());
   }
 
   void set_size(int width, int height, int hints) {
@@ -1057,23 +1182,22 @@ public:
   }
 
   void navigate(const std::string &url) {
-    auto wurl = winrt::to_hstring(url);
+    auto wurl = widen_string(url);
     m_webview->Navigate(wurl.c_str());
   }
 
   void init(const std::string &js) {
-    auto wjs = winrt::to_hstring(js);
+    auto wjs = widen_string(js);
     m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
   }
 
   void eval(const std::string &js) {
-    auto wjs = winrt::to_hstring(js);
+    auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
   void set_html(const std::string &html) {
-    auto html2 = winrt::to_hstring("data:text/html," + url_encode(html));
-    m_webview->Navigate(html2.c_str());
+    m_webview->NavigateToString(widen_string(html).c_str());
   }
 
 private:
@@ -1170,7 +1294,7 @@ private:
         ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
       LPWSTR message;
       args->TryGetWebMessageAsString(&message);
-      m_msgCb(winrt::to_string(message));
+      m_msgCb(narrow_string(message));
       sender->PostWebMessageAsString(message);
 
       CoTaskMemFree(message);
@@ -1194,7 +1318,10 @@ private:
   };
 };
 
-using browser_engine = win32_edge_engine;
+} // namespace detail
+
+using browser_engine = detail::win32_edge_engine;
+
 } // namespace webview
 
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE */
@@ -1208,8 +1335,7 @@ public:
 
   void navigate(const std::string &url) {
     if (url == "") {
-      browser_engine::navigate("data:text/html," +
-                               url_encode("<html><body></body></html>"));
+      browser_engine::navigate("about:blank");
       return;
     }
     browser_engine::navigate(url);
@@ -1281,9 +1407,9 @@ public:
 
 private:
   void on_message(const std::string &msg) {
-    auto seq = json_parse(msg, "id", 0);
-    auto name = json_parse(msg, "method", 0);
-    auto args = json_parse(msg, "params", 0);
+    auto seq = detail::json_parse(msg, "id", 0);
+    auto name = detail::json_parse(msg, "method", 0);
+    auto args = detail::json_parse(msg, "params", 0);
     if (bindings.find(name) == bindings.end()) {
       return;
     }
@@ -1295,7 +1421,12 @@ private:
 } // namespace webview
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
-  return new webview::webview(debug, wnd);
+  auto w = new webview::webview(debug, wnd);
+  if (!w->window()) {
+    delete w;
+    return nullptr;
+  }
+  return w;
 }
 
 WEBVIEW_API void webview_destroy(webview_t w) {

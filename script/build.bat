@@ -37,6 +37,9 @@ if not exist "%vc_dir%\Common7\Tools\vsdevcmd.bat" (
 )
 echo Found %vc_dir%
 
+:: 4100: unreferenced formal parameter
+set warning_params=/W4 /wd4100
+
 :: build dlls if not found
 if not exist "%src_dir%\dll\x64\webview.dll" (
 	mkdir "%src_dir%\dll\x86"
@@ -47,7 +50,8 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x86 -host_arch=x64
 
 	echo "Building webview.dll (x86)"
-	cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	cl %warning_params% ^
+		/D "WEBVIEW_API=__declspec(dllexport)" ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x86\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -55,7 +59,8 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 	echo "Building webview.dll (x64)"
-	cl /D "WEBVIEW_API=__declspec(dllexport)" ^
+	cl %warning_params% ^
+		/D "WEBVIEW_API=__declspec(dllexport)" ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -71,17 +76,22 @@ if not exist "%build_dir%\WebView2Loader.dll" (
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 
 echo Building webview.exe (x64)
-cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+cl %warning_params% ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
 
 echo Building webview_test.exe (x64)
-cl /I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+cl %warning_params% ^
+	/utf-8 ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
+
+"%build_dir%\webview_test.exe" || exit \b
 
 echo Running Go tests
 cd /D %src_dir%
