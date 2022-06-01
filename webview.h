@@ -643,10 +643,11 @@ public:
     // Main window
     if (window == nullptr) {
       m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
+      unsigned int style = NSWindowStyleMaskTitled;
       m_window =
           ((id(*)(id, SEL, CGRect, int, unsigned long, int))objc_msgSend)(
               m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
-              CGRectMake(0, 0, 0, 0), 0, NSBackingStoreBuffered, 0);
+              CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
     } else {
       m_window = (id)window;
     }
