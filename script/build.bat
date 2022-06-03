@@ -58,7 +58,6 @@ goto :eof
 
     if "!build_x64!" == "true" call :build_super x64 || goto :eof
     if "!build_x86!" == "true" call :build_super x86 || goto :eof
-    if "!option_go-test!" == "true" call :go_run_tests || goto :eof
 
     goto :eof
 
@@ -201,6 +200,9 @@ rem All tasks related to building and testing are to be invoked here.
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" call :run_tests || goto :eof
 
+    call :is_true_string "!option_go-test!"
+    if "!option_go-test!" == "true" call :go_run_tests || goto :eof
+
     goto :eof
 
 rem Copy external dependencies into the build directory.
@@ -267,10 +269,15 @@ rem Run tests.
 rem Run Go tests.
 :go_run_tests
     setlocal
-    echo Running Go tests...
+    echo Running Go tests (%arch%)...
+    if "%arch%" == "x64" (
+        set GOARCH=amd64
+    ) else if "%arch%" == "x86" (
+        set GOARCH=386
+    )
     set CGO_ENABLED=1
     set "PATH=%PATH%;%build_arch_dir%"
-    go test
+    go test || (endlocal & exit /b 1)
     endlocal
     goto :eof
 
@@ -280,8 +287,10 @@ rem Install dependencies.
     rem If you update the nuget package, change its version here
     echo Using Nuget Package microsoft.web.webview2.!option_webview2-version!.
     if not exist "%webview2_dir%" (
-        curl -sSLO --output-dir "%build_deps_dir%" https://dist.nuget.org/win-x86-commandline/latest/nuget.exe || goto :eof
-        "%build_deps_dir%\nuget.exe" install Microsoft.Web.Webview2 -Version "!option_webview2-version!" -OutputDirectory "%build_deps_dir%" || goto :eof
+        curl -sSLO --output-dir "%build_deps_dir%" ^
+            https://dist.nuget.org/win-x86-commandline/latest/nuget.exe || goto :eof
+        "%build_deps_dir%\nuget.exe" install Microsoft.Web.Webview2 ^
+            -Version "!option_webview2-version!" -OutputDirectory "%build_deps_dir%" || goto :eof
         echo Nuget package installed.
     )
     goto :eof
@@ -399,3 +408,22 @@ rem Returns "true" if true; otherwise "false".
     if "%~1" == "1" set __result__=true
     if "%~1" == "true" set __result__=true
     if "%~1" == "yes" set __result__=true
+
+rem Get the host machine/CPU architecture.
+:get_host_arch
+    setlocal
+    if not "%PROCESSOR_ARCHITEW6432%" == "" (
+        set "host_arch=%PROCESSOR_ARCHITEW6432%"
+    ) else (
+        set "host_arch=%PROCESSOR_ARCHITECTURE%"
+    )
+    if "%host_arch%" == "AMD64" (
+        set __result__=x64
+    ) else if "%host_arch%" == "x86" (
+        set __result__=x86
+    ) else (
+        echo Unsupported host machine architecture.
+        exit /b 1
+    )
+    endlocal & set "__result__=!__result__!"
+    goto :eof

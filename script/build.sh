@@ -52,10 +52,6 @@ function main {
     if [[ "${build_x86}" == "true" ]]; then
         build x86
     fi
-
-    if [[ "${options[go-test]}" == "true" ]]; then
-        go_run_tests
-    fi
 }
 
 function print_help {
@@ -105,7 +101,8 @@ function set_option_overrides {
     if [[ ! -z "${CI}" ]]; then
         options["build-examples"]=true
         options["test"]=true
-        options["target-arch"]=all
+        # 2022-06-04: We do not set the target architecture here because GitHub Actions has troubles with
+        # installing *:i386 packages.
         options["go-test"]=true
     fi
 
@@ -126,11 +123,7 @@ function set_option_overrides {
 
     # Set the target architecture based on the machine's architecture.
     if [[ -z "${options[target-arch]}" ]]; then
-        if [[ "$(uname -m)" == "x86_64" ]]; then
-            options["target-arch"]=x64
-        else
-            options["target-arch"]=x86
-        fi
+        options["target-arch"]=$(get_host_arch)
     fi
 }
 
@@ -175,10 +168,13 @@ function build {
         link_params="${link_params} ${pkgconfig_ldflags}"
         cxx_params="${cxx_params} ${pkgconfig_cflags} -DWEBVIEW_GTK"
     fi
-    if [[ "${arch}" == "x64" ]]; then
-        common_params="${common_params} -m64"
-    else
-        common_params="${common_params} -m32"
+
+    if [[ "$(get_host_arch)" != "${arch}" ]]; then
+        if [[ "${arch}" == "x64" ]]; then
+            common_params="${common_params} -m64"
+        elif [[ "${arch}" == "x86" ]]; then
+            common_params="${common_params} -m32"
+        fi
     fi
 
     if [[ "$(is_true_string "${options[lint]}")" == "true" ]]; then
@@ -203,13 +199,18 @@ function build {
     if [[ "$(is_true_string "${options[test]}")" == "true" ]]; then
         run_tests
     fi
+
+    if [[ "$(is_true_string "${options[go-test]}")" == "true" ]]; then
+        go_run_tests
+    fi
 }
 
 # Build the library.
 function build_library {
     echo "Building library (${arch})..."
     local output_file=${build_arch_dir}/webview
-    c++ -c "-I${src_dir}" "${src_dir}/webview.cc" ${common_params} ${cxx_params} -o "${output_file}.o"
+    c++ -c "-I${src_dir}" "${src_dir}/webview.cc" \
+        ${common_params} ${cxx_params} -o "${output_file}.o"
 }
 
 # Build examples.
@@ -218,19 +219,22 @@ function build_examples {
 
     echo "Building C++ example (${arch})..."
     output_file=${build_arch_dir}/basic_cpp
-    c++ "-I${src_dir}" "${examples_dir}/basic_cpp.cc" ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
+    c++ "-I${src_dir}" "${examples_dir}/basic_cpp.cc" \
+        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
 
     echo "Building C example (${arch})..."
     output_file=${build_arch_dir}/basic_c
     cc -c "-I${src_dir}" "${examples_dir}/basic_c.c" ${common_params} -o "${output_file}.o"
-    c++ "-I${src_dir}" "${output_file}.o" "${build_arch_dir}/webview.o" ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
+    c++ "-I${src_dir}" "${output_file}.o" "${build_arch_dir}/webview.o" \
+        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
 }
 
 # Build tests.
 function build_tests {
     echo "Building tests (${arch})..."
     local output_file=${build_arch_dir}/webview_test
-    c++ "-I${src_dir}" "${src_dir}/webview_test.cc" ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
+    c++ "-I${src_dir}" "${src_dir}/webview_test.cc" \
+        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
 }
 
 # Run tests.
@@ -241,8 +245,13 @@ function run_tests {
 
 # Run Go tests.
 function go_run_tests {
-    echo "Running Go tests..."
-    CGO_ENABLED=1 go test
+    echo "Running Go tests (${arch})..."
+    if [[ "${arch}" == "x64" ]]; then
+        local GOARCH=amd64
+    elif [[ "${arch}" == "x86" ]]; then
+        local GOARCH=386
+    fi
+    GOARCH=${GOARCH} CGO_ENABLED=1 go test
 }
 
 # Parses a command line option prefixed with "--".
@@ -294,6 +303,19 @@ function is_true_string {
 	fi
 	echo "false"
     return 0
+}
+
+# Get the host machine/CPU architecture.
+function get_host_arch {
+    local host_arch=$(uname -m)
+    if [[ "${host_arch}" == "x86_64" ]]; then
+        echo x64
+    elif [[ "${host_arch}" == "i386" ]]; then
+        echo x86
+    else
+        echo Unsupported host machine architecture.
+        return 1
+    fi
 }
 
 (main $@) || exit 1

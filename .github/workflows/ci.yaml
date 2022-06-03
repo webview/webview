@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Build and run tests
-        run: ./script/build.bat
+        run: script\build.bat
+        shell: cmd
 
   clang-format:
     runs-on: ubuntu-latest
