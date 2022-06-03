@@ -106,6 +106,7 @@ function set_option_overrides {
         options["build-examples"]=true
         options["test"]=true
         options["target-arch"]=all
+        options["go-test"]=true
     fi
 
     # Running tests requires building tests.

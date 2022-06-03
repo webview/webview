@@ -113,6 +113,7 @@ rem Overrides options if needed. For example, options can be changed conditional
         set option_build-examples=true
         set option_test=true
         set option_target-arch=all
+        set option_go-test=true
     )
 
     rem Running tests requires building tests.
