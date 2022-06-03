@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
-declare -A options
-options["help"]=
-options["clean"]=false
-options["build"]=false
-options["build-examples"]=false
-options["build-tests"]=false
-options["test"]=false
-options["target-arch"]=
-options["reformat"]=false
-options["lint"]=false
-options["go-test"]=false
+option_help=
+option_clean=false
+option_build=false
+option_build_examples=false
+option_build_tests=false
+option_test=false
+option_target_arch=
+option_reformat=false
+option_lint=false
+option_go_test=false
 
 function main {
     parse_options on_option_parsed $@
 
-    if [[ "${options["help"]}" == "true" ]]; then
+    if [[ "${option_help}" == "true" ]]; then
         print_help
         return 0
     fi
@@ -29,16 +28,16 @@ function main {
     set_option_overrides
     print_current_options
 
-    if [[ "$(is_true_string "${options[reformat]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_reformat}")" == "true" ]]; then
         reformat
     fi
 
-    if [[ "${options[target-arch]}" == "all" ]]; then
+    if [[ "${option_target_arch}" == "all" ]]; then
         local build_x64=true
         local build_x86=true
-    elif [[ "${options[target-arch]}" == "x64" ]]; then
+    elif [[ "${option_target_arch}" == "x64" ]]; then
         local build_x64=true
-    elif [[ "${options[target-arch]}" == "x86" ]]; then
+    elif [[ "${option_target_arch}" == "x86" ]]; then
         local build_x86=true
     else
         echo "Invalid target architecture."
@@ -79,51 +78,52 @@ function print_help {
 # Print option and their current values in a human-readable way.
 function print_current_options {
     echo "Options:"
-    echo "  Clean build: ${options[clean]}"
-    echo "  Build library: ${options[build]}"
-    echo "  Build examples: ${options[build-examples]}"
-    echo "  Build tests: ${options[build-tests]}"
-    echo "  Run tests: ${options[test]}"
-    echo "  Target architecture: ${options[target-arch]}"
-    echo "  Reformat code: ${options[reformat]}"
-    echo "  Run lint checks: ${options[lint]}"
-    echo "  Run Go tests: ${options[go-test]}"
+    echo "  Clean build: ${option_clean}"
+    echo "  Build library: ${option_build}"
+    echo "  Build examples: ${option_build_examples}"
+    echo "  Build tests: ${option_build_tests}"
+    echo "  Run tests: ${option_test}"
+    echo "  Target architecture: ${option_target_arch}"
+    echo "  Reformat code: ${option_reformat}"
+    echo "  Run lint checks: ${option_lint}"
+    echo "  Run Go tests: ${option_go_test}"
 }
 
 # Stores the option as a variable.
 function on_option_parsed {
-    options[$1]=$2
+    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]")
+    eval "option_${name}=${2}"
 }
 
 # Overrides options if needed. For example, options can be changed conditionally.
 function set_option_overrides {
     # Use specific options in the CI environment.
     if [[ ! -z "${CI}" ]]; then
-        options["build-examples"]=true
-        options["test"]=true
+        option_build_examples=true
+        option_test=true
         # 2022-06-04: We do not set the target architecture here because GitHub Actions has troubles with
         # installing *:i386 packages.
-        options["go-test"]=true
+        option_go_test=true
     fi
 
     # Running tests requires building tests.
-    if [[ "$(is_true_string "${options[test]}")" == "true" && "${options[build-tests]}" != "true" ]]; then
-        options["build-tests"]=true
+    if [[ "$(is_true_string "${option_test}")" == "true" && "${option_build_tests}" != "true" ]]; then
+        option_build_tests=true
     fi
 
     # Building examples requires building library.
-    if [[ "$(is_true_string "${options[build-examples]}")" == "true" && "${options[build]}" != "true" ]]; then
-        options["build"]=true
+    if [[ "$(is_true_string "${option_build_examples}")" == "true" && "${option_build}" != "true" ]]; then
+        option_build=true
     fi
 
     # Building tests requires building library.
-    if [[ "$(is_true_string "${options[build-tests]}")" == "true" && "${options[build]}" != "true" ]]; then
-        options["build"]=true
+    if [[ "$(is_true_string "${option_build_tests}")" == "true" && "${option_build}" != "true" ]]; then
+        option_build=true
     fi
 
     # Set the target architecture based on the machine's architecture.
-    if [[ -z "${options[target-arch]}" ]]; then
-        options["target-arch"]=$(get_host_arch)
+    if [[ -z "${option_target_arch}" ]]; then
+        option_target_arch=$(get_host_arch)
     fi
 }
 
@@ -148,7 +148,7 @@ function build {
     local arch=${1}
     local build_arch_dir=${build_dir}/${arch}
 
-    if [[ "$(is_true_string "${options[clean]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_clean}")" == "true" ]]; then
         echo "Cleaning build directory (${arch})..."
         rm -rf "${build_arch_dir}"
     fi
@@ -162,9 +162,9 @@ function build {
         link_params="${link_params} -framework WebKit"
         cxx_params="${cxx_params} -DWEBVIEW_COCOA"
     else
-        local pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
-        local pkgconfig_ldflags=$(pkg-config --libs "${pkgconfig_libs[@]}")
-        local pkgconfig_cflags=$(pkg-config --cflags "${pkgconfig_libs[@]}")
+        local pkgconfig_libs="gtk+-3.0 webkit2gtk-4.0"
+        local pkgconfig_ldflags=$(pkg-config --libs "${pkgconfig_libs}")
+        local pkgconfig_cflags=$(pkg-config --cflags "${pkgconfig_libs}")
         link_params="${link_params} ${pkgconfig_ldflags}"
         cxx_params="${cxx_params} ${pkgconfig_cflags} -DWEBVIEW_GTK"
     fi
@@ -177,30 +177,30 @@ function build {
         fi
     fi
 
-    if [[ "$(is_true_string "${options[lint]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_lint}")" == "true" ]]; then
         lint
     fi
 
-    if [[ "$(is_true_string "${options[build]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_build}")" == "true" ]]; then
         if [[ ! -d "${build_arch_dir}" ]]; then
             mkdir -p "${build_arch_dir}"
         fi
         build_library
     fi
 
-    if [[ "$(is_true_string "${options[build-examples]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_build_examples}")" == "true" ]]; then
         build_examples
     fi
 
-    if [[ "$(is_true_string "${options[build-tests]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_build_tests}")" == "true" ]]; then
         build_tests
     fi
 
-    if [[ "$(is_true_string "${options[test]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_test}")" == "true" ]]; then
         run_tests
     fi
 
-    if [[ "$(is_true_string "${options[go-test]}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_go_test}")" == "true" ]]; then
         go_run_tests
     fi
 }
