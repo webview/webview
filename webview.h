@@ -118,7 +118,6 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 
 #ifdef __cplusplus
 }
-#endif
 
 #ifndef WEBVIEW_HEADER
 
@@ -1424,5 +1423,5 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 }
 
 #endif /* WEBVIEW_HEADER */
-
+#endif /* __cplusplus */
 #endif /* WEBVIEW_H */
