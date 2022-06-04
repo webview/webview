@@ -185,7 +185,7 @@ rem All tasks related to building and testing are to be invoked here.
     set warning_params=/W4 /wd4100
     set cl_params=/nologo /utf-8 %warning_params%
     set cc_params=/std:c11 %cl_params%
-    set cxx_params=/std:c++17 /EHsc %cl_params%
+    set cxx_params=/std:c++17 /EHsc %cl_params% /DWEBVIEW_EDGE
 
     call :is_true_string "!option_lint!"
     if "!__result__!" == "true" call :lint || goto :eof
