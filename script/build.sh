@@ -260,8 +260,16 @@ function build_tests {
 
 # Run tests.
 function run_tests {
-    echo "Running tests (${arch})..."
-    "${build_arch_dir}/webview_test"
+    local failed=false
+    # Continue even when tests fail.
+    while read file; do
+        local name=$(basename "-s.${file##*.}" "${file}")
+        echo "Running test ${name} (${arch})..."
+        "${file}" || failed=true
+    done <<< $(find "${build_arch_dir}" -type f -name "*_test")
+    if [[ "${failed}" == "true" ]]; then
+        return 1
+    fi
 }
 
 # Run Go tests.
