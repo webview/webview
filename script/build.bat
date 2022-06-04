@@ -186,9 +186,13 @@ rem All tasks related to building and testing are to be invoked here.
 
     rem 4100: unreferenced formal parameter
     set warning_params=/W4 /wd4100
-    set cl_params=/nologo /utf-8 %warning_params%
+    set cl_params=/nologo /utf-8 %warning_params% ^
+        "/Fo%build_arch_dir%"\ ^
+        "/I%src_dir%" ^
+        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib"
     set cc_params=/std:c11 %cl_params%
-    set cxx_params=/std:c++17 /EHsc %cl_params% /DWEBVIEW_EDGE
+    set cxx_params=/std:c++17 /EHsc %cl_params% /DWEBVIEW_EDGE ^
+        "/I%webview2_dir%\build\native\include"
 
     call :is_true_string "!option_lint!"
     if "!__result__!" == "true" call :lint || goto :eof
@@ -228,11 +232,9 @@ rem Build the library.
     echo Building shared library (%arch%)...
     set output_file=%build_arch_dir%\webview.dll
     cl %cxx_params% ^
-        /D "WEBVIEW_API=__declspec(dllexport)" ^
-        /I "%webview2_dir%\build\native\include" ^
-        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib" ^
-        "/Fo%build_arch_dir%"\ ^
-        "%src_dir%\webview.cc" /link /DLL "/OUT:%output_file%" || goto :eof
+        "/DWEBVIEW_API=__declspec(dllexport)" ^
+        "%src_dir%\webview.cc" ^
+        /link /DLL "/OUT:%output_file%" || goto :eof
     goto :eof
 
 rem Build examples.
@@ -240,21 +242,16 @@ rem Build examples.
     echo Building C++ example (%arch%)...
     set output_file=%build_arch_dir%\basic_cpp.exe
     cl %cxx_params% ^
-        /I "%src_dir%" ^
-        /I "%webview2_dir%\build\native\include" ^
-        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib" ^
         "%build_arch_dir%\webview.lib" ^
-        "/Fo%build_arch_dir%"\ ^
-        "%examples_dir%\basic_cpp.cc" /link "/OUT:%output_file%" || goto :eof
+        "%examples_dir%\basic_cpp.cc" ^
+        /link "/OUT:%output_file%" || goto :eof
 
     echo Building C example (%arch%)...
     set output_file=%build_arch_dir%\basic_c.exe
     cl %cc_params% ^
-        /I "%src_dir%" ^
-        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib" ^
         "%build_arch_dir%\webview.lib" ^
-        "/Fo%build_arch_dir%"\ ^
-        "%examples_dir%\basic_c.c" /link "/OUT:%output_file%" || goto :eof
+        "%examples_dir%\basic_c.c" ^
+        /link "/OUT:%output_file%" || goto :eof
 
     goto :eof
 
@@ -263,12 +260,9 @@ rem Build tests.
     echo Building tests (%arch%)...
     set output_file=%build_arch_dir%\webview_test.exe
     cl %cxx_params% ^
-        /I "%src_dir%" ^
-        /I "%webview2_dir%\build\native\include" ^
-        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib" ^
         "%build_arch_dir%\webview.lib" ^
-        "/Fo%build_arch_dir%"\ ^
-        "%src_dir%\webview_test.cc" /link "/OUT:%output_file%" || goto :eof
+        "%src_dir%\webview_test.cc" ^
+        /link "/OUT:%output_file%" || goto :eof
     goto :eof
 
 rem Run tests.
