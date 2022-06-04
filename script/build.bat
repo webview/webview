@@ -149,14 +149,14 @@ rem Overrides options if needed. For example, options can be changed conditional
 rem Reformat code.
 :reformat
     echo Reformatting code...
-    echo Error: Not yet implemented. & exit /b 1
-    goto :eof
+    echo Error: Not yet implemented.>&2
+    exit /b 1
 
 rem Run lint checks.
 :lint
     echo Running lint checks (%arch%)...
-    echo Error: Not yet implemented. & exit /b 1
-    goto :eof
+    echo Error: Not yet implemented.>&2
+    exit /b 1
 
 :build_super
     rem Keep vsdevcmd from polluting the current environment
@@ -304,7 +304,7 @@ rem Find the latest installed MSVC (VC++).
     set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
     if not exist "%vswhere%" set "vswhere=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
     if not exist "%vswhere%" (
-        echo Error: Failed to find vswhere.exe
+        echo Error: Failed to find vswhere.exe>&2
         exit /b 1
     )
     echo Found %vswhere%.
@@ -314,7 +314,7 @@ rem Find the latest installed MSVC (VC++).
         set vc_dir=%%i
     )
     if not exist "%vc_dir%\Common7\Tools\vsdevcmd.bat" (
-        echo Error: Failed to find VC tools.
+        echo Error: Failed to find VC tools.>&2
         exit /b 1
     )
     echo Found %vc_dir%.
