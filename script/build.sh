@@ -100,6 +100,7 @@ function print_current_options {
 # Stores the option as a variable.
 function on_option_parsed {
     local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]")
+    name=${name//-/_}
     eval "option_${name}=${2}"
 }
 
