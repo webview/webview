@@ -74,6 +74,12 @@ function print_help {
     echo "    --reformat                  Reformat code (requires clang-format)."
     echo "    --lint                      Run lint checks (requires clang-tidy)."
     echo "    --go-test                   Run Go tests."
+    echo
+    echo "Cross-compilation"
+    echo "================="
+    echo
+    echo "Your toolchain must have multilib support. In addition you must also"
+    echo "install 32-bit versions of dependencies onto your system."
 }
 
 # Print option and their current values in a human-readable way.
