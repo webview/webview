@@ -18,12 +18,16 @@ call :main %*
 goto :eof
 
 :main
+    call :on_pre_parse_options || goto :eof
     call :parse_options :on_option_parsed %* || goto :eof
+    call :on_post_parse_options || goto :eof
 
     if "!option_help!" == "true" (
         call :print_help
         goto :eof
     )
+
+    call :print_current_options || goto :eof
 
     set script_dir=%~dp0
     set src_dir=%script_dir%..
@@ -31,9 +35,6 @@ goto :eof
     set build_dir=%src_dir%\build
     set build_deps_dir=%build_dir%\deps
     set webview2_dir=%build_deps_dir%\microsoft.web.webview2.!option_webview2-version!
-
-    call :set_option_overrides || goto :eof
-    call :print_current_options || goto :eof
 
     call :is_true_string "!option_reformat!"
     if "!__result__!" == "true" call :reformat || goto :eof
@@ -109,20 +110,23 @@ rem Print option and their current values in a human-readable way.
     echo   Run Go tests: !option_go-test!
     goto :eof
 
-rem Stores the option as a variable.
-:on_option_parsed name value
-    set "option_%~1=%~2"
-    goto :eof
-
-rem Overrides options if needed. For example, options can be changed conditionally.
-:set_option_overrides
+rem Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
+:on_pre_parse_options
     rem Use specific options in the CI environment.
     if defined CI (
         set option_build-examples=true
         set option_test=true
         set option_go-test=true
     )
+    goto :eof
 
+rem Stores the option as a variable.
+:on_option_parsed name value
+    set "option_%~1=%~2"
+    goto :eof
+
+rem Overrides options after being parsed.
+:on_post_parse_options
     rem Running tests requires building tests.
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" (

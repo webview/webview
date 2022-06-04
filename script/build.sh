@@ -14,20 +14,21 @@ option_lint=false
 option_go_test=false
 
 function main {
+    on_pre_parse_options
     parse_options on_option_parsed $@
+    on_post_parse_options
 
     if [[ "${option_help}" == "true" ]]; then
         print_help
         return
     fi
 
+    print_current_options
+
     local script_dir=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
     local src_dir=$(dirname "${script_dir}")
     local examples_dir=${src_dir}/examples
     local build_dir=${src_dir}/build
-
-    set_option_overrides
-    print_current_options
 
     if [[ "$(is_true_string "${option_reformat}")" == "true" ]]; then
         reformat
@@ -96,21 +97,24 @@ function print_current_options {
     echo "  Run Go tests: ${option_go_test}"
 }
 
-# Stores the option as a variable.
-function on_option_parsed {
-    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]")
-    eval "option_${name}=${2}"
-}
-
-# Overrides options if needed. For example, options can be changed conditionally.
-function set_option_overrides {
+# Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
+function on_pre_parse_options {
     # Use specific options in the CI environment.
     if [[ ! -z "${CI}" ]]; then
         option_build_examples=true
         option_test=true
         option_go_test=true
     fi
+}
 
+# Stores the option as a variable.
+function on_option_parsed {
+    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]")
+    eval "option_${name}=${2}"
+}
+
+# Overrides options after being parsed.
+function on_post_parse_options {
     # Running tests requires building tests.
     if [[ "$(is_true_string "${option_test}")" == "true" && "${option_build_tests}" != "true" ]]; then
         option_build_tests=true
