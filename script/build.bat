@@ -1,6 +1,5 @@
 @echo off
-setlocal enableextensions
-setlocal enabledelayedexpansion
+setlocal enableextensions enabledelayedexpansion
 
 set option_help=
 set option_clean=false
