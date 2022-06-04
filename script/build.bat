@@ -156,8 +156,15 @@ rem Reformat code.
 rem Run lint checks.
 :lint
     echo Running lint checks (%arch%)...
-    echo Error: Not yet implemented.>&2
-    exit /b 1
+    rem These parameters should should roughly match the parameters passed to cl.exe
+    for %%p in ("!examples_dir!/basic_cpp.cc" "!src_dir!/webview_test.cc") do (
+        clang-tidy "%%~p" -- ^
+            --std=c++17 -DWEBVIEW_EDGE ^
+            "-I!src_dir!" ^
+            "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
+    )
+:lint_loop_end
+    goto :eof
 
 :build_super
     rem Keep vsdevcmd from polluting the current environment
