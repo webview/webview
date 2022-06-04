@@ -89,7 +89,9 @@ goto :eof
     echo.
     echo Unless your MinGW-w64 toolchain has multilib support then you need to
     echo install both the 64-bit- and 32-bit toolchains. MinGW-w64 is expected
-    echo to be found at %SystemDrive%\mingw64 or %SystemDrive%\mingw32.
+    echo to be found in one of the following locations:
+    echo  - %SystemDrive%\mingw64 or %SystemDrive%\mingw32
+    echo  - Chocolatey
     goto :eof
 
 rem Print option and their current values in a human-readable way.
@@ -277,8 +279,37 @@ rem Find MinGW-w64.
 :find_mingw arch
     setlocal
     set arch=%~1
-    set mingw64_path=%SystemDrive%\mingw64
-    set mingw32_path=%SystemDrive%\mingw32
+    set mingw_path=
+    for %%p in ("%SystemDrive%" "%ProgramData%\chocolatey\lib\mingw\tools\install") do (
+        call :find_mingw_path "!arch!" "%%~p"
+        if not "!__result__!" == "" (
+            set mingw_path=!__result__!
+            goto :find_mingw_loop_end
+        )
+    )
+:find_mingw_loop_end
+    if "!mingw_path!" == "" (
+        rem Hope for the best outcome if it's invocable.
+        where gcc > nul 2>&1 && (
+            endlocal
+            goto :eof
+        )
+        echo Error: Unable to find MinGW-w64.>&2
+        endlocal
+        exit /b 1
+    )
+    echo MinGW found: !mingw_path!
+    set PATH=!mingw_path!\bin;!PATH!
+    endlocal & set PATH=%PATH%
+    goto :eof
+
+rem Find MinGW-w64 under a specific path.
+:find_mingw_path arch path_hint
+    setlocal
+    set arch=%~1
+    set path_hint=%~2
+    set mingw64_path=!path_hint!\mingw64
+    set mingw32_path=!path_hint!\mingw32
     set mingw_path=
     if "!arch!" == "x64" (
         if exist "!mingw64_path!" (
@@ -291,22 +322,13 @@ rem Find MinGW-w64.
             set mingw_path=!mingw64_path!
         )
     )
-    if "!mingw_path!" == "" (
-        rem Hope for the best outcome.
-        where gcc > nul 2>&1 && (endlocal & goto :eof)
-        echo Error: Unable to find MinGW-w64.>&2
-        endlocal
-        exit /b 1
-    )
-    echo MinGW found: !mingw_path!
-    set PATH=!mingw_path!\bin;!PATH!
-    endlocal & set PATH=%PATH%
+    endlocal & set __result__=%mingw_path%
     goto :eof
 
 rem Run Go tests.
 :go_run_tests
-    setlocal
     call :find_mingw "%arch%" || goto :eof
+    setlocal
     echo Running Go tests (%arch%)...
     if "%arch%" == "x64" (
         set GOARCH=amd64
