@@ -174,6 +174,7 @@ function build {
         cxx_params="${cxx_params} ${pkgconfig_cflags} -DWEBVIEW_GTK"
     fi
 
+    # Specify target architecture only if it differs from the host architecture.
     if [[ "$(get_host_arch)" != "${arch}" ]]; then
         if [[ "${arch}" == "x64" ]]; then
             common_params="${common_params} -m64"
