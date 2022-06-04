@@ -1,7 +1,3 @@
-rem Cross-compilation:
-rem The official MinGW-w64 (tested 8.1.0) does not have multilib support so a 64-bit toolchain cannot build 32-bit binaries.
-rem Multilib-enabled version tested: ray_linn/gcc-10.x-with-ada
-
 @echo off
 setlocal enableextensions
 setlocal enabledelayedexpansion
@@ -87,6 +83,13 @@ goto :eof
     echo     --lint                      Run lint checks (requires clang-tidy).
     echo     --go-test                   Run Go tests.
     echo     --webview2-version=VERSION  WebView2 version to use.
+    echo.
+    echo Cross-compilation with Go
+    echo =========================
+    echo.
+    echo Unless your MinGW-w64 toolchain has multilib support then you need to
+    echo install both the 64-bit- and 32-bit toolchains. MinGW-w64 is expected
+    echo to be found at %SystemDrive%\mingw64 or %SystemDrive%\mingw32.
     goto :eof
 
 rem Print option and their current values in a human-readable way.
@@ -269,9 +272,40 @@ rem Run tests.
     "%build_arch_dir%\webview_test.exe" || goto :eof
     goto :eof
 
+rem Find MinGW-w64.
+:find_mingw arch
+    setlocal
+    set arch=%~1
+    set mingw64_path=%SystemDrive%\mingw64
+    set mingw32_path=%SystemDrive%\mingw32
+    set mingw_path=
+    if "!arch!" == "x64" (
+        if exist "!mingw64_path!" (
+            set mingw_path=!mingw64_path!
+        )
+    ) else if "!arch!" == "x86" (
+        if exist "!mingw32_path!" (
+            set mingw_path=!mingw32_path!
+        ) else if exist "!mingw64_path!" (
+            set mingw_path=!mingw64_path!
+        )
+    )
+    if "!mingw_path!" == "" (
+        rem Hope for the best outcome.
+        where gcc > nul 2>&1 && (endlocal & goto :eof)
+        echo Error: Unable to find MinGW-w64.>&2
+        endlocal
+        exit /b 1
+    )
+    echo MinGW found: !mingw_path!
+    set PATH=!mingw_path!\bin;!PATH!
+    endlocal & set PATH=%PATH%
+    goto :eof
+
 rem Run Go tests.
 :go_run_tests
     setlocal
+    call :find_mingw "%arch%" || goto :eof
     echo Running Go tests (%arch%)...
     if "%arch%" == "x64" (
         set GOARCH=amd64

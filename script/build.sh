@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Cross-compilation:
-# Install multilib packages when compiling with GCC in addition to i386 versions of dependencies.
-# As of 2022-06-04 GitHub Actions has troubles with installing *:i386 packages.
-
 set -e
 
 option_help=
