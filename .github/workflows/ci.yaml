@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Build and run tests
-        run: script\build.bat --target-arch=all --go-test=false
+        run: script\build.bat --target-arch=all --build-examples --test
         shell: cmd
       - name: Run Go tests
         run: script\build.bat --go-test

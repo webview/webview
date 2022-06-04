@@ -113,11 +113,7 @@ rem Print option and their current values in a human-readable way.
 rem Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
 :on_pre_parse_options
     rem Use specific options in the CI environment.
-    if defined CI (
-        set option_build-examples=true
-        set option_test=true
-        set option_go-test=true
-    )
+    rem if defined CI (...)
     goto :eof
 
 rem Stores the option as a variable.
