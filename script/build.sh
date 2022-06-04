@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Cross-compilation:
+# Install multilib packages when compiling with GCC in addition to i386 versions of dependencies.
+# As of 2022-06-04 GitHub Actions has troubles with installing *:i386 packages.
+
 set -e
 
 option_help=
@@ -101,8 +106,6 @@ function set_option_overrides {
     if [[ ! -z "${CI}" ]]; then
         option_build_examples=true
         option_test=true
-        # 2022-06-04: We do not set the target architecture here because GitHub Actions has troubles with
-        # installing *:i386 packages.
         option_go_test=true
     fi
 

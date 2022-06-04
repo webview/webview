@@ -1,3 +1,7 @@
+rem Cross-compilation:
+rem The official MinGW-w64 (tested 8.1.0) does not have multilib support so a 64-bit toolchain cannot build 32-bit binaries.
+rem Multilib-enabled version tested: ray_linn/gcc-10.x-with-ada
+
 @echo off
 setlocal enableextensions
 setlocal enabledelayedexpansion
@@ -111,7 +115,6 @@ rem Overrides options if needed. For example, options can be changed conditional
     if defined CI (
         set option_build-examples=true
         set option_test=true
-        set option_target-arch=all
         set option_go-test=true
     )
 
