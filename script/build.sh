@@ -25,7 +25,7 @@ function main {
 
     print_current_options
 
-    local script_dir=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
+    local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
     local src_dir=$(dirname "${script_dir}")
     local examples_dir=${src_dir}/examples
     local build_dir=${src_dir}/build
