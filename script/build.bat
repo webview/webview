@@ -124,20 +124,23 @@ rem Overrides options if needed. For example, options can be changed conditional
 
     rem Running tests requires building tests.
     call :is_true_string "!option_test!"
-    if "!__result__!" == "true" if not "!option_build-tests!" == "true" (
-        set option_build-tests=true
+    if "!__result__!" == "true" (
+        call :is_true_string "!option_build-tests!"
+        if not "!__result__!" == "true" set option_build-tests=true
     )
 
     rem Building examples requires building library.
     call :is_true_string "!option_build-examples!"
-    if "!__result__!" == "true" if not "!option_build!" == "true" (
-        set option_build=true
+    if "!__result__!" == "true" (
+        call :is_true_string "!option_build!"
+        if not "!__result__!" == "true" set option_build=true
     )
 
     rem Building tests requires building library.
     call :is_true_string "!option_build-tests!"
-    if "!__result__!" == "true" if not "!option_build!" == "true" (
-        set option_build=true
+    if "!__result__!" == "true" (
+        call :is_true_string "!option_build!"
+        if not "!__result__!" == "true" set option_build=true
     )
 
     rem Set the target architecture based on the machine's architecture.
@@ -205,7 +208,7 @@ rem All tasks related to building and testing are to be invoked here.
     if "!__result__!" == "true" call :run_tests || goto :eof
 
     call :is_true_string "!option_go-test!"
-    if "!option_go-test!" == "true" call :go_run_tests || goto :eof
+    if "!__result__!" == "true" call :go_run_tests || goto :eof
 
     goto :eof
 
