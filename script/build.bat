@@ -144,11 +144,8 @@ rem Overrides options if needed. For example, options can be changed conditional
 
     rem Set the target architecture based on the machine's architecture.
     if "!option_target-arch!" == "" (
-        if "%PROCESSOR_ARCHITECTURE%" == "AMD64" (
-            set option_target-arch=x64
-        ) else (
-            set option_target-arch=x86
-        )
+        call :get_host_arch || goto :eof
+        set option_target-arch=!__result__!
     )
     goto :eof
 
