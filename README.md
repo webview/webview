@@ -122,7 +122,6 @@ $ script/build.bat
 
 ```c
 // main.c
-#define WEBVIEW_HEADER
 #include "webview.h"
 #include <stddef.h>
 
