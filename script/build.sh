@@ -41,7 +41,7 @@ function main {
     elif [[ "${option_target_arch}" == "x86" ]]; then
         local build_x86=true
     else
-        echo "Invalid target architecture."
+        echo "Invalid target architecture." 2>&1
         return 1
     fi
 
@@ -308,11 +308,11 @@ function is_true_string {
 function get_host_arch {
     local host_arch=$(uname -m)
     if [[ "${host_arch}" == "x86_64" ]]; then
-        echo x64
+        echo "x64"
     elif [[ "${host_arch}" == "i386" ]]; then
-        echo x86
+        echo "x86"
     else
-        echo Unsupported host machine architecture.
+        echo "Unsupported host machine architecture." 2>&1
         return 1
     fi
 }
