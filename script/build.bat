@@ -147,8 +147,11 @@ rem Overrides options after being parsed.
 rem Reformat code.
 :reformat
     echo Reformatting code...
-    echo Error: Not yet implemented.>&2
-    exit /b 1
+    clang-format -i ^
+        "!src_dir!/webview.h" ^
+        "!src_dir!/webview_test.cc" ^
+        "!examples_dir!/basic_cpp.cc"
+    goto :eof
 
 rem Run lint checks.
 :lint
