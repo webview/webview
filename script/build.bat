@@ -120,6 +120,7 @@ rem Overrides options if needed. For example, options can be changed conditional
     if defined CI (
         set option_build-examples=true
         set option_test=true
+        set option_go-test=true
     )
 
     rem Running tests requires building tests.
