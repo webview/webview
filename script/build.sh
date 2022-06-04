@@ -78,8 +78,8 @@ function print_help {
     echo "Cross-compilation"
     echo "================="
     echo
-    echo "Your toolchain must have multilib support. In addition you must also"
-    echo "install 32-bit versions of dependencies onto your system."
+    echo "Your toolchain must have multilib support. In addition you must install"
+    echo "dependencies for your target architecture onto your system."
 }
 
 # Print option and their current values in a human-readable way.
