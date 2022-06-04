@@ -42,7 +42,7 @@ function main {
     elif [[ "${option_target_arch}" == "x86" ]]; then
         local build_x86=true
     else
-        echo "Invalid target architecture." 2>&1
+        echo "Error: Invalid target architecture." >&2
         return 1
     fi
 
@@ -151,15 +151,18 @@ function lint {
         -or -path "${examples_dir}/*.c" \
         -or -path "${examples_dir}/*.cc" \
     | while read f; do
-        if [[ "${f##*.}" == "c" ]]; then
-            clang-tidy "--config-file=${src_dir}/.clang-tidy" \
-                "--warnings-as-errors=*" \
-                "${f}" -- "-I${src_dir}" ${cc_params} || break
-        elif [[ "${f##*.}" == "cc" ]]; then
-            clang-tidy "--config-file=${src_dir}/.clang-tidy" \
-                "--warnings-as-errors=*" \
-                "${f}" -- "-I${src_dir}" ${cxx_params} || break
+        local ext=${f##*.}
+        if [[ "${ext}" == "c" ]]; then
+            local tidy_params=${cc_params}
+        elif [[ "${ext}" == "cc" ]]; then
+            local tidy_params=${cxx_params}
+        else
+            echo "Error: Unknown file extension: ${ext}" >&2
+            return 1
         fi
+        clang-tidy "--config-file=${src_dir}/.clang-tidy" \
+            "--warnings-as-errors=*" \
+            "${f}" -- "-I${src_dir}" ${tidy_params} || break
     done
 }
 
@@ -170,7 +173,9 @@ function build {
 
     if [[ "$(is_true_string "${option_clean}")" == "true" ]]; then
         echo "Cleaning build directory (${arch})..."
-        rm -rf "${build_arch_dir}"
+        if [[ -d "${build_arch_dir}" ]]; then
+            rm -rf "${build_arch_dir}" || return
+        fi
     fi
 
     local warning_params="-Wall -Wextra -pedantic"
@@ -229,33 +234,28 @@ function build {
 # Build the library.
 function build_library {
     echo "Building library (${arch})..."
-    local output_file=${build_arch_dir}/webview
     c++ -c "-I${src_dir}" "${src_dir}/webview.cc" \
-        ${common_params} ${cxx_params} -o "${output_file}.o"
+        ${common_params} ${cxx_params} -o "${build_arch_dir}/webview.o"
 }
 
 # Build examples.
 function build_examples {
-    local output_file=
-
-    echo "Building C++ example (${arch})..."
-    output_file=${build_arch_dir}/basic_cpp
-    c++ "-I${src_dir}" "${examples_dir}/basic_cpp.cc" \
-        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
-
-    echo "Building C example (${arch})..."
-    output_file=${build_arch_dir}/basic_c
-    cc -c "-I${src_dir}" "${examples_dir}/basic_c.c" ${common_params} -o "${output_file}.o"
-    c++ "-I${src_dir}" "${output_file}.o" "${build_arch_dir}/webview.o" \
-        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
+    find "${src_dir}" -type f \
+        -path "${examples_dir}/*.c" \
+        -or -path "${examples_dir}/*.cc" \
+    | while read file; do
+        compile_exe "${file}" "example" || break
+    done
 }
 
 # Build tests.
 function build_tests {
-    echo "Building tests (${arch})..."
-    local output_file=${build_arch_dir}/webview_test
-    c++ "-I${src_dir}" "${src_dir}/webview_test.cc" \
-        ${common_params} ${link_params} ${cxx_params} -o "${output_file}"
+    find "${src_dir}" -type f \
+        -path "${src_dir}/*_test.c" \
+        -or -path "${src_dir}/*_test.cc" \
+    | while read file; do
+        compile_exe "${file}" "test" || break
+    done
 }
 
 # Run tests.
@@ -273,6 +273,29 @@ function go_run_tests {
         local GOARCH=386
     fi
     GOARCH=${GOARCH} CGO_ENABLED=1 go test
+}
+
+# Compile a C/C++ file into an executable.
+function compile_exe {
+    local file=${1}
+    local description=${2}
+    local name=$(basename "-s.${file##*.}" "${file}")
+    local output_path_excl_ext=${build_arch_dir}/${name}
+    local message="Building ${description} ${name} (${arch})..."
+    echo "${message}"
+    if [[ "${file##*.}" == "c" ]]; then
+        cc -c "-I${src_dir}" "${file}" \
+            ${common_params} \
+            -o "${output_path_excl_ext}.o"|| return
+        c++ "-I${src_dir}" "${output_path_excl_ext}.o" \
+            "${build_arch_dir}/webview.o" \
+            ${common_params} ${link_params} ${cxx_params} \
+            -o "${output_path_excl_ext}"|| return
+    elif [[ "${file##*.}" == "cc" ]]; then
+        c++ "-I${src_dir}" "${file}" \
+            ${common_params} ${link_params} ${cxx_params} \
+            -o "${output_path_excl_ext}" || return
+    fi
 }
 
 # Parses a command line option prefixed with "--".
@@ -334,7 +357,7 @@ function get_host_arch {
     elif [[ "${host_arch}" == "i386" ]]; then
         echo "x86"
     else
-        echo "Unsupported host machine architecture." 2>&1
+        echo "Error: Unsupported host machine architecture." >&2
         return 1
     fi
 }

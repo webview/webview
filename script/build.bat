@@ -29,11 +29,11 @@ goto :eof
     call :print_current_options || goto :eof
 
     set script_dir=%~dp0
-    set src_dir=%script_dir%..
-    set examples_dir=%src_dir%\examples
-    set build_dir=%src_dir%\build
-    set build_deps_dir=%build_dir%\deps
-    set webview2_dir=%build_deps_dir%\microsoft.web.webview2.!option_webview2-version!
+    set src_dir=!script_dir!..
+    set examples_dir=!src_dir!\examples
+    set build_dir=!src_dir!\build
+    set build_deps_dir=!build_dir!\deps
+    set webview2_dir=!build_deps_dir!\microsoft.web.webview2.!option_webview2-version!
 
     call :is_true_string "!option_reformat!"
     if "!__result__!" == "true" call :reformat || goto :eof
@@ -46,7 +46,7 @@ goto :eof
     ) else if "!option_target-arch!" == "x86" (
         set build_x86=true
     ) else (
-        echo Invalid target architecture.
+        echo Error: Invalid target architecture.>&2
         exit /b 1
     )
 
@@ -90,7 +90,7 @@ goto :eof
     echo Unless your MinGW-w64 toolchain has multilib support then you need to
     echo install both the 64-bit- and 32-bit toolchains. MinGW-w64 is expected
     echo to be found in one of the following locations:
-    echo  - %SystemDrive%\mingw64 or %SystemDrive%\mingw32
+    echo  - !SystemDrive!\mingw64 or !SystemDrive!\mingw32
     echo  - Chocolatey
     goto :eof
 
@@ -149,7 +149,7 @@ rem Reformat code.
     setlocal
     set file_params=
     echo Reformatting code...
-    for %%f in ("%src_dir%\*.c" "%src_dir%\*.cc" "%src_dir%\*.h" "%examples_dir%\*.c" "%examples_dir%\*.cc" "%examples_dir%\*.h") do (
+    for %%f in ("!src_dir!\*.c" "!src_dir!\*.cc" "!src_dir!\*.h" "!examples_dir!\*.c" "!examples_dir!\*.cc" "!examples_dir!\*.h") do (
         set file_params=!file_params! "%%f"
     )
     clang-format -i !file_params! || (endlocal & exit /b 1)
@@ -158,24 +158,27 @@ rem Reformat code.
 
 rem Run lint checks.
 :lint
-    echo Running lint checks (%arch%)...
+    echo Running lint checks (!arch!)...
     rem These parameters should should roughly match the parameters passed to cl.exe
-    for %%f in ("%src_dir%\*.c" "%src_dir%\*.cc" "%examples_dir%\*.c" "%examples_dir%\*.cc") do (
-        if "%%~xf" == "c" (
-            clang-tidy "--config-file=!src_dir!\.clang-tidy" ^
-                "--warnings-as-errors=*" ^
-                "%%~f" -- ^
-                --std=c11 -DWEBVIEW_EDGE ^
-                "-I%src_dir%" ^
-                "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
-        ) else if "%%~xf" == "cc" (
-            clang-tidy "--config-file=!src_dir!\.clang-tidy"
-                "--warnings-as-errors=*" ^
-                "%%~f" -- ^
-                --std=c++17 -DWEBVIEW_EDGE ^
-                "-I%src_dir%" ^
-                "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
+    for %%f in ("!src_dir!\*.c" "!src_dir!\*.cc" "!examples_dir!\*.c" "!examples_dir!\*.cc") do (
+        setlocal
+        set ext=%%~xf
+        set ext=!ext:~1!
+        if "!ext!" == "c" (
+            set std=c++11
+        ) else if "!ext!" == "cc" (
+            set std=c++17
+        ) else (
+            echo Error: Unknown file extension: !ext!>&2
+            endlocal & cmd /c exit 1 & goto :lint_loop_end
         )
+        clang-tidy "--config-file=!src_dir!\.clang-tidy" ^
+            "--warnings-as-errors=*" ^
+            "%%~f" -- ^
+            "--std=!std!" -DWEBVIEW_EDGE ^
+            "-I!src_dir!" ^
+            "-I!webview2_dir!\build\native\include" || (endlocal & cmd /c exit 1 & goto :lint_loop_end)
+        endlocal
     )
 :lint_loop_end
     goto :eof
@@ -190,31 +193,31 @@ rem Run lint checks.
 rem All tasks related to building and testing are to be invoked here.
 :build arch
     set arch=%~1
-    set build_arch_dir=%build_dir%\%arch%
+    set build_arch_dir=!build_dir!\!arch!
 
     call :is_true_string "!option_clean!"
     if "!__result__!" == "true" (
-        echo Cleaning build directory ^(%arch%^)...
-        rmdir /q /s "%build_arch_dir%" > nul
+        echo Cleaning build directory ^(!arch!^)...
+        if exist "!build_arch_dir!" rmdir /q /s "!build_arch_dir!" > nul || goto :eof
     )
 
     rem 4100: unreferenced formal parameter
     set warning_params=/W4 /wd4100
-    set cl_params=/nologo /utf-8 %warning_params% "/Fo%build_arch_dir%"\ "/I%src_dir%" ^
-        "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib"
-    set cc_params=/std:c11 %cl_params%
-    set cxx_params=/std:c++17 /EHsc %cl_params% /DWEBVIEW_EDGE ^
-        "/I%webview2_dir%\build\native\include"
+    set cl_params=/nologo /utf-8 !warning_params! "/Fo!build_arch_dir!"\ "/I!src_dir!" ^
+        "!webview2_dir!\build\native\!arch!\WebView2Loader.dll.lib"
+    set cc_params=/std:c11 !cl_params!
+    set cxx_params=/std:c++17 /EHsc !cl_params! /DWEBVIEW_EDGE ^
+        "/I!webview2_dir!\build\native\include"
 
     call :is_true_string "!option_lint!"
     if "!__result__!" == "true" call :lint || goto :eof
 
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
-        echo Setting up VS environment ^(%arch%^)...
-        call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -no_logo -arch=%arch% -host_arch=x64 || goto :eof
+        echo Setting up VS environment ^(!arch!^)...
+        call "!vc_dir!\Common7\Tools\vsdevcmd.bat" -no_logo -arch=!arch! -host_arch=x64 || goto :eof
         call :copy_deps || goto :eof
-        if not exist "%build_arch_dir%" mkdir "%build_arch_dir%" || goto :eof
+        if not exist "!build_arch_dir!" mkdir "!build_arch_dir!" || goto :eof
         call :build_shared_library || goto :eof
     )
 
@@ -234,46 +237,32 @@ rem All tasks related to building and testing are to be invoked here.
 
 rem Copy external dependencies into the build directory.
 :copy_deps
-    echo Copying dependencies (%arch%)...
+    echo Copying dependencies (!arch!)...
     rem Copy only if needed
-    robocopy "%webview2_dir%\build\native\%arch%" "%build_arch_dir%" "WebView2Loader.dll" > nul
+    robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "WebView2Loader.dll" > nul
     exit /b 0
 
 rem Build the library.
 :build_shared_library
-    echo Building shared library (%arch%)...
-    cl %cxx_params% ^
+    echo Building shared library (!arch!)...
+    cl !cxx_params! ^
         "/DWEBVIEW_API=__declspec(dllexport)" ^
-        "%src_dir%\webview.cc" ^
-        /link /DLL "/OUT:%build_arch_dir%\webview.dll" || goto :eof
+        "!src_dir!\webview.cc" ^
+        /link /DLL "/OUT:!build_arch_dir!\webview.dll" || goto :eof
     goto :eof
 
 rem Build examples.
 :build_examples
-    for %%f in ("%examples_dir%\*.cc") do (
-        echo Building %%~nxf ^(%arch%^)...
-        cl %cxx_params% "%build_arch_dir%\webview.lib" "%%~f" ^
-            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_examples_loop_end
-    )
-    for %%f in ("%examples_dir%\*.c") do (
-        echo Building %%~nxf ^(%arch%^)...
-        cl %cc_params% "%build_arch_dir%\webview.lib" "%%~f" ^
-            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_examples_loop_end
+    for %%f in ("!examples_dir!\*.c" "!examples_dir!\*.cc") do (
+        call :compile_exe "%%f" "example" || goto :build_examples_loop_end
     )
 :build_examples_loop_end
     goto :eof
 
 rem Build tests.
 :build_tests
-    for %%f in ("%src_dir%\*_test.cc") do (
-        echo Building %%~nxf ^(%arch%^)...
-        cl %cxx_params% "%build_arch_dir%\webview.lib" "%%~f" ^
-            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_tests_loop_end
-    )
-    for %%f in ("%src_dir%\*_test.c") do (
-        echo Building %%~nxf ^(%arch%^)...
-        cl %cc_params% "%build_arch_dir%\webview.lib" "%%~f" ^
-            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_tests_loop_end
+    for %%f in ("!src_dir!\*_test.c" "!src_dir!\*_test.cc") do (
+        call :compile_exe "%%f" "test" || goto :build_tests_loop_end
     )
 :build_tests_loop_end
     goto :eof
@@ -283,11 +272,51 @@ rem Run tests.
     setlocal
     set failed=false
     rem Continue even when tests fail.
-    for %%f in ("%build_arch_dir%\*_test.exe") do (
-        echo Running test %%~nxf ^(%arch%^)...
+    for %%f in ("!build_arch_dir!\*_test.exe") do (
+        echo Running test %%~nxf ^(!arch!^)...
         cmd /c "%%~f" || set failed=true
     )
     if "!failed!" == "true" (endlocal & exit /b 1)
+    endlocal
+    goto :eof
+
+rem Run Go tests.
+:go_run_tests
+    call :find_mingw "!arch!" || goto :eof
+    setlocal
+    echo Running Go tests (!arch!)...
+    if "!arch!" == "x64" (
+        set GOARCH=amd64
+    ) else if "!arch!" == "x86" (
+        set GOARCH=386
+    )
+    set CGO_ENABLED=1
+    set "PATH=!PATH!;!build_arch_dir!"
+    go test || (endlocal & exit /b 1)
+    endlocal
+    goto :eof
+
+rem Compile a C/C++ file into an executable.
+:compile_exe file description
+    setlocal
+    set file=%~1
+    set name=%~n1
+    set ext=%~x1
+    set ext=!ext:~1!
+    set description=%~2
+    set output_path_excl_ext=!build_arch_dir!\!name!
+    set message=Building !description! !name! (!arch!)...
+    echo !message!
+    if "!ext!" == "c" (
+        cl !cc_params! "!build_arch_dir!\webview.lib" "!file!" ^
+            /link "/OUT:!build_arch_dir!\!name!.exe" || (endlocal & goto :eof)
+    ) else if "!ext!" == "cc" (
+        cl !cxx_params! "!build_arch_dir!\webview.lib" "!file!" ^
+            /link "/OUT:!output_path_excl_ext!.exe" || (endlocal & goto :eof)
+    ) else (
+        echo Error: Unknown file extension: !ext!>&2
+        endlocal & exit /b 1
+    )
     endlocal
     goto :eof
 
@@ -296,7 +325,7 @@ rem Find MinGW-w64.
     setlocal
     set arch=%~1
     set mingw_path=
-    for %%p in ("%SystemDrive%" "%ProgramData%\chocolatey\lib\mingw\tools\install") do (
+    for %%p in ("!SystemDrive!" "!ProgramData!\chocolatey\lib\mingw\tools\install") do (
         call :find_mingw_path "!arch!" "%%~p"
         if not "!__result__!" == "" (
             set mingw_path=!__result__!
@@ -341,32 +370,16 @@ rem Find MinGW-w64 under a specific path.
     endlocal & set __result__=%mingw_path%
     goto :eof
 
-rem Run Go tests.
-:go_run_tests
-    call :find_mingw "%arch%" || goto :eof
-    setlocal
-    echo Running Go tests (%arch%)...
-    if "%arch%" == "x64" (
-        set GOARCH=amd64
-    ) else if "%arch%" == "x86" (
-        set GOARCH=386
-    )
-    set CGO_ENABLED=1
-    set "PATH=%PATH%;%build_arch_dir%"
-    go test || (endlocal & exit /b 1)
-    endlocal
-    goto :eof
-
 rem Install dependencies.
 :install_deps
-    if not exist "%build_deps_dir%" mkdir "%build_deps_dir%" || goto :eof
+    if not exist "!build_deps_dir!" mkdir "!build_deps_dir!" || goto :eof
     rem If you update the nuget package, change its version here
     echo Using Nuget Package microsoft.web.webview2.!option_webview2-version!.
-    if not exist "%webview2_dir%" (
-        curl -sSLO --output-dir "%build_deps_dir%" ^
+    if not exist "!webview2_dir!" (
+        curl -sSLO --output-dir "!build_deps_dir!" ^
             https://dist.nuget.org/win-x86-commandline/latest/nuget.exe || goto :eof
-        "%build_deps_dir%\nuget.exe" install Microsoft.Web.Webview2 ^
-            -Version "!option_webview2-version!" -OutputDirectory "%build_deps_dir%" || goto :eof
+        "!build_deps_dir!\nuget.exe" install Microsoft.Web.Webview2 ^
+            -Version "!option_webview2-version!" -OutputDirectory "!build_deps_dir!" || goto :eof
         echo Nuget package installed.
     )
     goto :eof
@@ -375,22 +388,22 @@ rem Find the latest installed MSVC (VC++).
 :find_msvc
     echo Looking for vswhere.exe...
     set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-    if not exist "%vswhere%" set "vswhere=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
-    if not exist "%vswhere%" (
+    if not exist "!vswhere!" set "vswhere=!ProgramFiles!\Microsoft Visual Studio\Installer\vswhere.exe"
+    if not exist "!vswhere!" (
         echo Error: Failed to find vswhere.exe>&2
         exit /b 1
     )
-    echo Found %vswhere%.
+    echo Found !vswhere!.
 
     echo Looking for VC...
-    for /f "usebackq tokens=*" %%i in (`"%vswhere%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+    for /f "usebackq tokens=*" %%i in (`"!vswhere!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
         set vc_dir=%%i
     )
-    if not exist "%vc_dir%\Common7\Tools\vsdevcmd.bat" (
+    if not exist "!vc_dir!\Common7\Tools\vsdevcmd.bat" (
         echo Error: Failed to find VC tools.>&2
         exit /b 1
     )
-    echo Found %vc_dir%.
+    echo Found !vc_dir!.
     goto :eof
 
 rem Parses a command line option prefixed with "--".
@@ -405,14 +418,14 @@ rem If the value is omitted then it will be "true".
         if "!option:~0,2!" == "--" (
             rem If we are waiting for a value while parsing a new option then the previous option is a switch.
             if not "!awaiting_value_for_option!" == "" (
-                call %callback% "!awaiting_value_for_option!" "true"
+                call !callback! "!awaiting_value_for_option!" "true"
                 set awaiting_value_for_option=
             )
             rem Attempts to parse the option name and value if present ("foo=bar").
             call :parse_option "!option:~2!"
             if defined option_name (
                 if defined option_value (
-                    call %callback% "!option_name!" "!option_value!"
+                    call !callback! "!option_name!" "!option_value!"
                     set option_name=
                     set option_value=
                 ) else (
@@ -424,13 +437,13 @@ rem If the value is omitted then it will be "true".
         ) else if not "!awaiting_value_for_option!" == "" (
             rem If we are waiting for a value while parsing the next parameter that has no prefix then it is the value.
             rem This handles input like "--foo bar" and "--foo=bar" without quotes ("=" is treated like space).
-            call %callback% "!awaiting_value_for_option!" "!option!"
+            call !callback! "!awaiting_value_for_option!" "!option!"
             set awaiting_value_for_option=
         )
     )
     rem If we are waiting for a value while there are no more parameters to parse then the option is a switch.
     if not "!awaiting_value_for_option!" == "" (
-        call %callback% "!awaiting_value_for_option!" "true"
+        call !callback! "!awaiting_value_for_option!" "true"
         set awaiting_value_for_option=
     )
     goto :eof
@@ -490,16 +503,16 @@ rem Get the host machine/CPU architecture.
 :get_host_arch
     setlocal
     if defined PROCESSOR_ARCHITEW6432 (
-        set "host_arch=%PROCESSOR_ARCHITEW6432%"
+        set "host_arch=!PROCESSOR_ARCHITEW6432!"
     ) else (
-        set "host_arch=%PROCESSOR_ARCHITECTURE%"
+        set "host_arch=!PROCESSOR_ARCHITECTURE!"
     )
-    if "%host_arch%" == "AMD64" (
+    if "!host_arch!" == "AMD64" (
         set __result__=x64
-    ) else if "%host_arch%" == "x86" (
+    ) else if "!host_arch!" == "x86" (
         set __result__=x86
     ) else (
-        echo Unsupported host machine architecture.
+        echo Error: Unsupported host machine architecture.>&2
         endlocal
         exit /b 1
     )
