@@ -108,7 +108,6 @@ function set_option_overrides {
     if [[ ! -z "${CI}" ]]; then
         option_build_examples=true
         option_test=true
-        option_go_test=true
     fi
 
     # Running tests requires building tests.
