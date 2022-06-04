@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
 # Options with their default values.
 option_help=
 option_clean=false
@@ -15,23 +13,23 @@ option_lint=false
 option_go_test=false
 
 function main {
-    parse_options on_option_parsed $@
-    on_post_parse_options
+    parse_options on_option_parsed $@ || return
+    on_post_parse_options || return
 
     if [[ "${option_help}" == "true" ]]; then
-        print_help
+        print_help || return
         return
     fi
 
-    print_current_options
+    print_current_options || return
 
-    local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-    local src_dir=$(dirname "${script_dir}")
+    local script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || return
+    local src_dir=$(dirname "${script_dir}") || return
     local examples_dir=${src_dir}/examples
     local build_dir=${src_dir}/build
 
     if [[ "$(is_true_string "${option_reformat}")" == "true" ]]; then
-        reformat
+        reformat || return
     fi
 
     if [[ "${option_target_arch}" == "all" ]]; then
@@ -47,11 +45,11 @@ function main {
     fi
 
     if [[ "${build_x64}" == "true" ]]; then
-        build x64
+        build x64 || return
     fi
 
     if [[ "${build_x86}" == "true" ]]; then
-        build x86
+        build x86 || return
     fi
 }
 
@@ -99,9 +97,9 @@ function print_current_options {
 
 # Stores the option as a variable.
 function on_option_parsed {
-    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]")
+    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]") || return
     name=${name//-/_}
-    eval "option_${name}=${2}"
+    eval "option_${name}=${2}" || return
 }
 
 # Overrides options after being parsed.
@@ -130,27 +128,21 @@ function on_post_parse_options {
 # Reformat code.
 function reformat {
     echo "Reformatting code..."
-    find "${src_dir}" -type f \
+    while read f; do
+        clang-format -i "${f}" || return
+    done <<< $(find "${src_dir}" -type f \
         -path "${src_dir}/*.c" \
         -or -path "${src_dir}/*.cc" \
         -or -path "${src_dir}/*.h" \
         -or -path "${examples_dir}/*.c" \
         -or -path "${examples_dir}/*.cc" \
-        -or -path "${examples_dir}/*.h" \
-    | while read f; do
-        clang-format -i "${f}"
-    done
+        -or -path "${examples_dir}/*.h")
 }
 
 # Run lint checks.
 function lint {
     echo "Running lint checks (${arch})..."
-    find "${src_dir}" -type f \
-        -path "${src_dir}/*.c" \
-        -or -path "${src_dir}/*.cc" \
-        -or -path "${examples_dir}/*.c" \
-        -or -path "${examples_dir}/*.cc" \
-    | while read f; do
+    while read f; do
         local ext=${f##*.}
         if [[ "${ext}" == "c" ]]; then
             local tidy_params=${cc_params}
@@ -162,8 +154,12 @@ function lint {
         fi
         clang-tidy "--config-file=${src_dir}/.clang-tidy" \
             "--warnings-as-errors=*" \
-            "${f}" -- "-I${src_dir}" ${tidy_params} || break
-    done
+            "${f}" -- "-I${src_dir}" ${tidy_params} || return
+    done <<< $(find "${src_dir}" -type f \
+        -path "${src_dir}/*.c" \
+        -or -path "${src_dir}/*.cc" \
+        -or -path "${examples_dir}/*.c" \
+        -or -path "${examples_dir}/*.cc")
 }
 
 # All tasks related to building and testing are to be invoked here.
@@ -188,8 +184,8 @@ function build {
         cxx_params="${cxx_params} -DWEBVIEW_COCOA"
     else
         local pkgconfig_libs="gtk+-3.0 webkit2gtk-4.0"
-        local pkgconfig_ldflags=$(pkg-config --libs "${pkgconfig_libs}")
-        local pkgconfig_cflags=$(pkg-config --cflags "${pkgconfig_libs}")
+        local pkgconfig_ldflags=$(pkg-config --libs "${pkgconfig_libs}") || return
+        local pkgconfig_cflags=$(pkg-config --cflags "${pkgconfig_libs}") || return
         link_params="${link_params} ${pkgconfig_ldflags}"
         cxx_params="${cxx_params} ${pkgconfig_cflags} -DWEBVIEW_GTK"
     fi
@@ -204,30 +200,30 @@ function build {
     fi
 
     if [[ "$(is_true_string "${option_lint}")" == "true" ]]; then
-        lint
+        lint || return
     fi
 
     if [[ "$(is_true_string "${option_build}")" == "true" ]]; then
         if [[ ! -d "${build_arch_dir}" ]]; then
-            mkdir -p "${build_arch_dir}"
+            mkdir -p "${build_arch_dir}" || return
         fi
-        build_library
+        build_library || return
     fi
 
     if [[ "$(is_true_string "${option_build_examples}")" == "true" ]]; then
-        build_examples
+        build_examples || return
     fi
 
     if [[ "$(is_true_string "${option_build_tests}")" == "true" ]]; then
-        build_tests
+        build_tests || return
     fi
 
     if [[ "$(is_true_string "${option_test}")" == "true" ]]; then
-        run_tests
+        run_tests || return
     fi
 
     if [[ "$(is_true_string "${option_go_test}")" == "true" ]]; then
-        go_run_tests
+        go_run_tests || return
     fi
 }
 
@@ -235,27 +231,25 @@ function build {
 function build_library {
     echo "Building library (${arch})..."
     c++ -c "-I${src_dir}" "${src_dir}/webview.cc" \
-        ${common_params} ${cxx_params} -o "${build_arch_dir}/webview.o"
+        ${common_params} ${cxx_params} -o "${build_arch_dir}/webview.o" || return
 }
 
 # Build examples.
 function build_examples {
-    find "${src_dir}" -type f \
+    while read file; do
+        compile_exe "${file}" "example" || return
+    done <<< $(find "${src_dir}" -type f \
         -path "${examples_dir}/*.c" \
-        -or -path "${examples_dir}/*.cc" \
-    | while read file; do
-        compile_exe "${file}" "example" || break
-    done
+        -or -path "${examples_dir}/*.cc")
 }
 
 # Build tests.
 function build_tests {
-    find "${src_dir}" -type f \
+    while read file; do
+        compile_exe "${file}" "test" || return
+    done <<< $(find "${src_dir}" -type f \
         -path "${src_dir}/*_test.c" \
-        -or -path "${src_dir}/*_test.cc" \
-    | while read file; do
-        compile_exe "${file}" "test" || break
-    done
+        -or -path "${src_dir}/*_test.cc")
 }
 
 # Run tests.
@@ -270,6 +264,7 @@ function run_tests {
     if [[ "${failed}" == "true" ]]; then
         return 1
     fi
+    return 0
 }
 
 # Run Go tests.
@@ -280,7 +275,7 @@ function go_run_tests {
     elif [[ "${arch}" == "x86" ]]; then
         local GOARCH=386
     fi
-    GOARCH=${GOARCH} CGO_ENABLED=1 go test
+    GOARCH=${GOARCH} CGO_ENABLED=1 go test || return
 }
 
 # Compile a C/C++ file into an executable.
@@ -368,6 +363,7 @@ function get_host_arch {
         echo "Error: Unsupported host machine architecture." >&2
         return 1
     fi
+    return 0
 }
 
 (main $@) || exit 1
