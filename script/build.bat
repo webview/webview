@@ -116,6 +116,7 @@ rem Overrides options if needed. For example, options can be changed conditional
 :set_option_overrides
     rem Use specific options in the CI environment.
     if defined CI (
+        set option_target-arch=all
         set option_build-examples=true
         set option_test=true
         set option_go-test=true
