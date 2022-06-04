@@ -18,7 +18,6 @@ call :main %*
 goto :eof
 
 :main
-    call :on_pre_parse_options || goto :eof
     call :parse_options :on_option_parsed %* || goto :eof
     call :on_post_parse_options || goto :eof
 
@@ -108,12 +107,6 @@ rem Print option and their current values in a human-readable way.
     echo   Run lint checks: !option_lint!
     echo   WebView2 version: !option_webview2-version!
     echo   Run Go tests: !option_go-test!
-    goto :eof
-
-rem Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
-:on_pre_parse_options
-    rem Use specific options in the CI environment.
-    rem if defined CI (...)
     goto :eof
 
 rem Stores the option as a variable.

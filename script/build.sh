@@ -14,7 +14,6 @@ option_lint=false
 option_go_test=false
 
 function main {
-    on_pre_parse_options
     parse_options on_option_parsed $@
     on_post_parse_options
 
@@ -95,12 +94,6 @@ function print_current_options {
     echo "  Reformat code: ${option_reformat}"
     echo "  Run lint checks: ${option_lint}"
     echo "  Run Go tests: ${option_go_test}"
-}
-
-# Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
-function on_pre_parse_options {
-    # Use specific options in the CI environment.
-    #if [[ ! -z "${CI}" ]]; then ... fi
 }
 
 # Stores the option as a variable.
