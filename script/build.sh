@@ -18,7 +18,7 @@ function main {
 
     if [[ "${option_help}" == "true" ]]; then
         print_help
-        return 0
+        return
     fi
 
     local script_dir=$(dirname "$(realpath "${BASH_SOURCE[0]}")")

@@ -467,11 +467,12 @@ rem Returns "true" if true; otherwise "false".
     if "%~1" == "1" set __result__=true
     if "%~1" == "true" set __result__=true
     if "%~1" == "yes" set __result__=true
+    goto :eof
 
 rem Get the host machine/CPU architecture.
 :get_host_arch
     setlocal
-    if not "%PROCESSOR_ARCHITEW6432%" == "" (
+    if defined PROCESSOR_ARCHITEW6432 (
         set "host_arch=%PROCESSOR_ARCHITEW6432%"
     ) else (
         set "host_arch=%PROCESSOR_ARCHITECTURE%"
@@ -482,7 +483,8 @@ rem Get the host machine/CPU architecture.
         set __result__=x86
     ) else (
         echo Unsupported host machine architecture.
+        endlocal
         exit /b 1
     )
-    endlocal & set "__result__=!__result__!"
+    endlocal & set __result__=%__result__%
     goto :eof
