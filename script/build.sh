@@ -2,6 +2,7 @@
 
 set -e
 
+# Options with their default values.
 option_help=
 option_clean=false
 option_build=false

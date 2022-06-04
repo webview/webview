@@ -1,6 +1,7 @@
 @echo off
 setlocal enableextensions enabledelayedexpansion
 
+rem Options with their default values.
 set option_help=
 set option_clean=false
 set option_build=false
