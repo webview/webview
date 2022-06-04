@@ -129,17 +129,37 @@ function on_post_parse_options {
 # Reformat code.
 function reformat {
     echo "Reformatting code..."
-    clang-format -i \
-        "${src_dir}/webview.h" \
-        "${src_dir}/webview_test.cc" \
-        "${examples_dir}/basic_cpp.cc"
+    find "${src_dir}" -type f \
+        -path "${src_dir}/*.c" \
+        -or -path "${src_dir}/*.cc" \
+        -or -path "${src_dir}/*.h" \
+        -or -path "${examples_dir}/*.c" \
+        -or -path "${examples_dir}/*.cc" \
+        -or -path "${examples_dir}/*.h" \
+    | while read f; do
+        clang-format -i "${f}"
+    done
 }
 
 # Run lint checks.
 function lint {
     echo "Running lint checks (${arch})..."
-    clang-tidy "${examples_dir}/basic_cpp.cc" -- "-I${src_dir}" ${link_params} ${cxx_params}
-    clang-tidy "${src_dir}/webview_test.cc" -- "-I${src_dir}" ${link_params} ${cxx_params}
+    find "${src_dir}" -type f \
+        -path "${src_dir}/*.c" \
+        -or -path "${src_dir}/*.cc" \
+        -or -path "${examples_dir}/*.c" \
+        -or -path "${examples_dir}/*.cc" \
+    | while read f; do
+        if [[ "${f##*.}" == "c" ]]; then
+            clang-tidy "--config-file=${src_dir}/.clang-tidy" \
+                "--warnings-as-errors=*" \
+                "${f}" -- "-I${src_dir}" ${cc_params} || break
+        elif [[ "${f##*.}" == "cc" ]]; then
+            clang-tidy "--config-file=${src_dir}/.clang-tidy" \
+                "--warnings-as-errors=*" \
+                "${f}" -- "-I${src_dir}" ${cxx_params} || break
+        fi
+    done
 }
 
 # All tasks related to building and testing are to be invoked here.

@@ -146,22 +146,36 @@ rem Overrides options after being parsed.
 
 rem Reformat code.
 :reformat
+    setlocal
+    set file_params=
     echo Reformatting code...
-    clang-format -i ^
-        "!src_dir!/webview.h" ^
-        "!src_dir!/webview_test.cc" ^
-        "!examples_dir!/basic_cpp.cc"
+    for %%f in ("%src_dir%\*.c" "%src_dir%\*.cc" "%src_dir%\*.h" "%examples_dir%\*.c" "%examples_dir%\*.cc" "%examples_dir%\*.h") do (
+        set file_params=!file_params! "%%f"
+    )
+    clang-format -i !file_params! || (endlocal & exit /b 1)
+    endlocal
     goto :eof
 
 rem Run lint checks.
 :lint
     echo Running lint checks (%arch%)...
     rem These parameters should should roughly match the parameters passed to cl.exe
-    for %%p in ("!examples_dir!/basic_cpp.cc" "!src_dir!/webview_test.cc") do (
-        clang-tidy "%%~p" -- ^
-            --std=c++17 -DWEBVIEW_EDGE ^
-            "-I!src_dir!" ^
-            "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
+    for %%f in ("%src_dir%\*.c" "%src_dir%\*.cc" "%examples_dir%\*.c" "%examples_dir%\*.cc") do (
+        if "%%~xf" == "c" (
+            clang-tidy "--config-file=!src_dir!\.clang-tidy" ^
+                "--warnings-as-errors=*" ^
+                "%%~f" -- ^
+                --std=c11 -DWEBVIEW_EDGE ^
+                "-I%src_dir%" ^
+                "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
+        ) else if "%%~xf" == "cc" (
+            clang-tidy "--config-file=!src_dir!\.clang-tidy"
+                "--warnings-as-errors=*" ^
+                "%%~f" -- ^
+                --std=c++17 -DWEBVIEW_EDGE ^
+                "-I%src_dir%" ^
+                "-I%webview2_dir%\build\native\include" || goto :lint_loop_end
+        )
     )
 :lint_loop_end
     goto :eof
@@ -186,9 +200,7 @@ rem All tasks related to building and testing are to be invoked here.
 
     rem 4100: unreferenced formal parameter
     set warning_params=/W4 /wd4100
-    set cl_params=/nologo /utf-8 %warning_params% ^
-        "/Fo%build_arch_dir%"\ ^
-        "/I%src_dir%" ^
+    set cl_params=/nologo /utf-8 %warning_params% "/Fo%build_arch_dir%"\ "/I%src_dir%" ^
         "%webview2_dir%\build\native\%arch%\WebView2Loader.dll.lib"
     set cc_params=/std:c11 %cl_params%
     set cxx_params=/std:c++17 /EHsc %cl_params% /DWEBVIEW_EDGE ^
@@ -230,45 +242,53 @@ rem Copy external dependencies into the build directory.
 rem Build the library.
 :build_shared_library
     echo Building shared library (%arch%)...
-    set output_file=%build_arch_dir%\webview.dll
     cl %cxx_params% ^
         "/DWEBVIEW_API=__declspec(dllexport)" ^
         "%src_dir%\webview.cc" ^
-        /link /DLL "/OUT:%output_file%" || goto :eof
+        /link /DLL "/OUT:%build_arch_dir%\webview.dll" || goto :eof
     goto :eof
 
 rem Build examples.
 :build_examples
-    echo Building C++ example (%arch%)...
-    set output_file=%build_arch_dir%\basic_cpp.exe
-    cl %cxx_params% ^
-        "%build_arch_dir%\webview.lib" ^
-        "%examples_dir%\basic_cpp.cc" ^
-        /link "/OUT:%output_file%" || goto :eof
-
-    echo Building C example (%arch%)...
-    set output_file=%build_arch_dir%\basic_c.exe
-    cl %cc_params% ^
-        "%build_arch_dir%\webview.lib" ^
-        "%examples_dir%\basic_c.c" ^
-        /link "/OUT:%output_file%" || goto :eof
-
+    for %%f in ("%examples_dir%\*.cc") do (
+        echo Building %%~nxf ^(%arch%^)...
+        cl %cxx_params% "%build_arch_dir%\webview.lib" "%%~f" ^
+            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_examples_loop_end
+    )
+    for %%f in ("%examples_dir%\*.c") do (
+        echo Building %%~nxf ^(%arch%^)...
+        cl %cc_params% "%build_arch_dir%\webview.lib" "%%~f" ^
+            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_examples_loop_end
+    )
+:build_examples_loop_end
     goto :eof
 
 rem Build tests.
 :build_tests
-    echo Building tests (%arch%)...
-    set output_file=%build_arch_dir%\webview_test.exe
-    cl %cxx_params% ^
-        "%build_arch_dir%\webview.lib" ^
-        "%src_dir%\webview_test.cc" ^
-        /link "/OUT:%output_file%" || goto :eof
+    for %%f in ("%src_dir%\*_test.cc") do (
+        echo Building %%~nxf ^(%arch%^)...
+        cl %cxx_params% "%build_arch_dir%\webview.lib" "%%~f" ^
+            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_tests_loop_end
+    )
+    for %%f in ("%src_dir%\*_test.c") do (
+        echo Building %%~nxf ^(%arch%^)...
+        cl %cc_params% "%build_arch_dir%\webview.lib" "%%~f" ^
+            /link "/OUT:%build_arch_dir%\%%~nf.exe" || goto :build_tests_loop_end
+    )
+:build_tests_loop_end
     goto :eof
 
 rem Run tests.
 :run_tests
-    echo Running tests (%arch%)...
-    "%build_arch_dir%\webview_test.exe" || goto :eof
+    setlocal
+    set failed=false
+    rem Continue even when tests fail.
+    for %%f in ("%build_arch_dir%\*_test.exe") do (
+        echo Running test %%~nxf ^(%arch%^)...
+        cmd /c "%%~f" || set failed=true
+    )
+    if "!failed!" == "true" (endlocal & exit /b 1)
+    endlocal
     goto :eof
 
 rem Find MinGW-w64.
