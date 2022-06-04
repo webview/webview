@@ -100,11 +100,7 @@ function print_current_options {
 # Sets initial options programmatically before being parsed, allowing them to be overriden from the command line.
 function on_pre_parse_options {
     # Use specific options in the CI environment.
-    if [[ ! -z "${CI}" ]]; then
-        option_build_examples=true
-        option_test=true
-        option_go_test=true
-    fi
+    #if [[ ! -z "${CI}" ]]; then ... fi
 }
 
 # Stores the option as a variable.
