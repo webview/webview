@@ -21,7 +21,8 @@ goto :eof
     call :parse_options :on_option_parsed %* || goto :eof
     call :on_post_parse_options || goto :eof
 
-    if "!option_help!" == "true" (
+    call :is_true_string "!option_help!"
+    if "!__result__!" == "true" (
         call :print_help
         goto :eof
     )
