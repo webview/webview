@@ -33,6 +33,7 @@ static void cb_terminate(webview_t w, void *arg) {
 static void test_c_api() {
   webview_t w;
   w = webview_create(false, nullptr);
+  assert(w);
   webview_set_size(w, 480, 320, 0);
   webview_set_title(w, "Test");
   webview_navigate(w, "https://github.com/zserge/webview");
@@ -130,7 +131,19 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
     std::cout << "Exiting due to a timeout." << std::endl;
     exit(1);
   });
-  fn();
+  try {
+    fn();
+  } catch (const webview_exception &e) {
+    std::cout << "A webview exception was thrown with error code " << e.code()
+              << ": " << e.what() << std::endl;
+    exit(1);
+  } catch (const std::exception &e) {
+    std::cout << "An exception was thrown: " << e.what() << std::endl;
+    exit(1);
+  } catch (...) {
+    std::cout << "An unknown exception was thrown." << std::endl;
+    exit(1);
+  }
   flag_running.clear();
   timeout_thread.join();
 }
