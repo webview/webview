@@ -267,6 +267,7 @@ function run_tests {
         "${file}" || failed=true
     done <<< "$(find "${build_arch_dir}" -type f -name "*_test")"
     if [[ "${failed}" == "true" ]]; then
+        echo "Error: One or more test executables failed." >&2
         return 1
     fi
     return 0

@@ -282,7 +282,10 @@ rem Run tests.
         echo Running test %%~nxf ^(!arch!^)...
         cmd /c "%%~f" || set failed=true
     )
-    if "!failed!" == "true" (endlocal & exit /b 1)
+    if "!failed!" == "true" (
+        echo Error: One or more test executables failed.>&2
+        endlocal & exit /b 1
+    )
     endlocal
     goto :eof
 
