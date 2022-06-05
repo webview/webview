@@ -18,6 +18,11 @@ call :main %*
 goto :eof
 
 :main
+    if "%~1" == "" (
+        call :print_help
+        goto :eof
+    )
+
     call :parse_options :on_option_parsed %* || goto :eof
     call :on_post_parse_options || goto :eof
 

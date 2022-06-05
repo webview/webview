@@ -13,11 +13,16 @@ option_lint=false
 option_go_test=false
 
 function main {
+    if [[ "${#@}" == "0" ]]; then
+        print_help
+        return
+    fi
+
     parse_options on_option_parsed $@ || return
     on_post_parse_options || return
 
     if [[ "${option_help}" == "true" ]]; then
-        print_help || return
+        print_help
         return
     fi
 
