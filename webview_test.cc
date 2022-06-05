@@ -44,6 +44,35 @@ static void test_c_api() {
 }
 
 // =================================================================
+// TEST: ensure that C API can return error codes.
+// =================================================================
+static void test_c_api_error_codes() {
+  webview_error_code_t ec;
+
+  ec = webview_create_with_options(nullptr, nullptr);
+  assert(ec == webview_error_invalid_argument);
+
+  webview_t w;
+  webview_create_options_t options;
+  memset(&options, 0, sizeof(options));
+
+  options.api_version = WEBVIEW_MIN_API_VERSION - 1;
+  ec = webview_create_with_options(&w, &options);
+  assert(ec == webview_error_api_version_too_old);
+
+  options.api_version = WEBVIEW_API_VERSION + 1;
+  ec = webview_create_with_options(&w, &options);
+  assert(ec == webview_error_api_version_too_new);
+
+  options.api_version = WEBVIEW_API_VERSION;
+  ec = webview_create_with_options(&w, &options);
+  assert(ec == webview_error_ok);
+
+  ec = webview_destroy(w);
+  assert(ec == webview_error_ok);
+}
+
+// =================================================================
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
 struct test_webview : webview::browser_engine {
@@ -191,6 +220,7 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
+      {"c_api_error_codes", test_c_api_error_codes},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json}};
 #if _WIN32
