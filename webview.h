@@ -504,7 +504,7 @@ public:
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_window_resize(GTK_WINDOW(m_window), width, height);
     } else if (hints == WEBVIEW_HINT_FIXED) {
-      gtk_widget_set_size_request(m_window, width, height);
+      gtk_window_set_default_size(GTK_WINDOW(m_window), width, height);
     } else {
       GdkGeometry g;
       g.min_width = g.max_width = width;
