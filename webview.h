@@ -161,6 +161,7 @@ WEBVIEW_API int webview_api_version();
 }
 
 #include <stdexcept>
+#include <string>
 
 class webview_exception : public std::domain_error {
 public:
@@ -210,7 +211,6 @@ private:
 #include <functional>
 #include <future>
 #include <map>
-#include <string>
 #include <utility>
 #include <vector>
 
