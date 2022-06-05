@@ -135,13 +135,13 @@ function reformat {
     echo "Reformatting code..."
     while read f; do
         clang-format -i "${f}" || return
-    done <<< $(find "${src_dir}" -type f \
+    done <<< "$(find "${src_dir}" -type f \
         -path "${src_dir}/*.c" \
         -or -path "${src_dir}/*.cc" \
         -or -path "${src_dir}/*.h" \
         -or -path "${examples_dir}/*.c" \
         -or -path "${examples_dir}/*.cc" \
-        -or -path "${examples_dir}/*.h")
+        -or -path "${examples_dir}/*.h")"
 }
 
 # Run lint checks.
@@ -160,11 +160,11 @@ function lint {
         clang-tidy "--config-file=${src_dir}/.clang-tidy" \
             "--warnings-as-errors=*" \
             "${f}" -- "-I${src_dir}" ${tidy_params} || return
-    done <<< $(find "${src_dir}" -type f \
+    done <<< "$(find "${src_dir}" -type f \
         -path "${src_dir}/*.c" \
         -or -path "${src_dir}/*.cc" \
         -or -path "${examples_dir}/*.c" \
-        -or -path "${examples_dir}/*.cc")
+        -or -path "${examples_dir}/*.cc")"
 }
 
 # All tasks related to building and testing are to be invoked here.
@@ -243,18 +243,18 @@ function build_library {
 function build_examples {
     while read file; do
         compile_exe "${file}" "example" || return
-    done <<< $(find "${src_dir}" -type f \
+    done <<< "$(find "${src_dir}" -type f \
         -path "${examples_dir}/*.c" \
-        -or -path "${examples_dir}/*.cc")
+        -or -path "${examples_dir}/*.cc")"
 }
 
 # Build tests.
 function build_tests {
     while read file; do
         compile_exe "${file}" "test" || return
-    done <<< $(find "${src_dir}" -type f \
+    done <<< "$(find "${src_dir}" -type f \
         -path "${src_dir}/*_test.c" \
-        -or -path "${src_dir}/*_test.cc")
+        -or -path "${src_dir}/*_test.cc")"
 }
 
 # Run tests.
@@ -265,7 +265,7 @@ function run_tests {
         local name=$(basename "-s.${file##*.}" "${file}")
         echo "Running test ${name} (${arch})..."
         "${file}" || failed=true
-    done <<< $(find "${build_arch_dir}" -type f -name "*_test")
+    done <<< "$(find "${build_arch_dir}" -type f -name "*_test")"
     if [[ "${failed}" == "true" ]]; then
         return 1
     fi
