@@ -28,7 +28,9 @@
 #define WEBVIEW_API extern
 #endif
 
+// The minimum API version supported by the library.
 #define WEBVIEW_MIN_API_VERSION 1
+// The current library API version.
 #define WEBVIEW_API_VERSION 2
 
 #ifdef __cplusplus
@@ -40,14 +42,21 @@ typedef void *webview_t;
 #if WEBVIEW_API_VERSION >= 2
 // Options for webview_create_with_options
 typedef struct {
+  // API version to use with the library. Must be set to WEBVIEW_API_VERSION.
   int api_version;
+  // Enables debug/developer tools for supported browser engines if set to a
+  // non-zero value.
   int debug;
+  // An optional native window handle of a window in which to embed the
+  // underlying webview window. Depending on the platform it should be a
+  // pointer to GtkWindow, NSWindow or HWND.
   void *window;
 } webview_create_options_t;
 
 // Error codes returned to callers of the API.
 typedef enum {
-  // OK/Success.
+  // OK/Success. All functions that return an error code will return this if
+  // the operation succeeded.
   webview_error_ok = 0,
   // Internal error.
   webview_error_internal = 1000,
@@ -73,11 +82,17 @@ typedef enum {
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 #if WEBVIEW_API_VERSION >= 2
+// Creates a new webview instance with the specified options and returns the
+// new instance in the webview parameter.
+// Noteworthy error codes:
+//  - webview_error_api_version_too_old
+//  - webview_error_api_version_too_new
 WEBVIEW_API webview_error_code_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
 #endif
 
 // Destroys a webview and closes the native window.
+// Always returns webview_error_ok given correct input.
 WEBVIEW_API webview_error_code_t webview_destroy(webview_t w);
 
 // Runs the main loop until it's terminated. After this function exits - you
