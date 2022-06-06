@@ -259,6 +259,10 @@ function build_tests {
 
 # Run tests.
 function run_tests {
+    if [[ ! -d "${build_arch_dir}" ]]; then
+        echo "Error: Please build the tests." >&2
+        return 1
+    fi
     local failed=false
     # Continue even when tests fail.
     while read file; do

@@ -275,6 +275,10 @@ rem Build tests.
 
 rem Run tests.
 :run_tests
+    if not exist "!build_arch_dir!" (
+        echo Error: Please build the tests.>&2
+        exit /b 1
+    )
     setlocal
     set failed=false
     rem Continue even when tests fail.
