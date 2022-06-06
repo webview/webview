@@ -110,17 +110,17 @@ function on_option_parsed {
 # Overrides options after being parsed.
 function on_post_parse_options {
     # Running tests requires building tests.
-    if [[ "$(is_true_string "${option_test}")" == "true" && "${option_build_tests}" != "true" ]]; then
+    if [[ "$(is_true_string "${option_test}")" == "true" && "$(is_true_string "${option_build_tests}")" != "true" ]]; then
         option_build_tests=true
     fi
 
     # Building examples requires building library.
-    if [[ "$(is_true_string "${option_build_examples}")" == "true" && "${option_build}" != "true" ]]; then
+    if [[ "$(is_true_string "${option_build_examples}")" == "true" && "$(is_true_string "${option_build}")" != "true" ]]; then
         option_build=true
     fi
 
     # Building tests requires building library.
-    if [[ "$(is_true_string "${option_build_tests}")" == "true" && "${option_build}" != "true" ]]; then
+    if [[ "$(is_true_string "${option_build_tests}")" == "true" && "$(is_true_string "${option_build}")" != "true" ]]; then
         option_build=true
     fi
 
