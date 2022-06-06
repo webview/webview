@@ -72,6 +72,14 @@ static void test_c_api_error_codes() {
 }
 
 // =================================================================
+// TEST: webview_api_version() should return WEBVIEW_API_VERSION.
+// =================================================================
+static void test_c_api_version() {
+  auto version = webview_api_version();
+  assert(version == WEBVIEW_API_VERSION);
+}
+
+// =================================================================
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
 struct test_webview : webview::browser_engine {
@@ -220,6 +228,7 @@ int main(int argc, char *argv[]) {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
       {"c_api_error_codes", test_c_api_error_codes},
+      {"c_api_version", test_c_api_version},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json}};
 #if _WIN32
