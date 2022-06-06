@@ -945,15 +945,15 @@ private:
 
 struct user32_symbols {
   static constexpr auto SetProcessDpiAwarenessContext =
-      library_symbol<decltype(&SetProcessDpiAwarenessContext)>(
+      library_symbol<decltype(&::SetProcessDpiAwarenessContext)>(
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
-      library_symbol<decltype(&SetProcessDPIAware)>("SetProcessDPIAware");
+      library_symbol<decltype(&::SetProcessDPIAware)>("SetProcessDPIAware");
 };
 
 struct shcore_symbols {
   static constexpr auto SetProcessDpiAwareness =
-      library_symbol<decltype(&SetProcessDpiAwareness)>(
+      library_symbol<decltype(&::SetProcessDpiAwareness)>(
           "SetProcessDpiAwareness");
 };
 
