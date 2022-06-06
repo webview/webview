@@ -1,8 +1,4 @@
 # Build artifacts
 /build
-webview
-webview_test
-webview-example
-*.o
 
 examples/scrape/scrape
