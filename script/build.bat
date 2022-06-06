@@ -86,7 +86,7 @@ goto :eof
     echo                                 Choices: all, x86, x64
     echo     --reformat                  Reformat code (requires clang-format).
     echo     --lint                      Run lint checks (requires clang-tidy).
-    echo     --go-test                   Run Go tests.
+    echo     --go-test                   Run Go tests (implies --build).
     echo     --webview2-version=VERSION  WebView2 version to use.
     echo.
     echo Cross-compilation with Go
@@ -129,6 +129,15 @@ rem Make sure to allow the user to override options that are being set here.
         call :is_option_set_explicitly build-tests
         if not "!__result__!" == "true" (
             set option_build-tests=true
+        )
+    )
+
+    rem Running Go tests requires building library.
+    call :is_true_string "!option_go-test!"
+    if "!__result__!" == "true" (
+        call :is_option_set_explicitly build
+        if not "!__result__!" == "true" (
+            set option_build=true
         )
     )
 
