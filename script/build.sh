@@ -64,7 +64,7 @@ function print_help {
     echo "Usage:"
     echo "    program --help"
     echo "    program [--clean] [--build] [--build-examples] [--build-tests]"
-    echo "            [--test] [--target-arch=ARCH] [--reformat] [--lint]"
+    echo "            [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]"
     echo
     echo "Options:"
     echo "    --help                      Display this help text."
@@ -77,6 +77,7 @@ function print_help {
     echo "                                Choices: all, x86, x64"
     echo "    --reformat                  Reformat code (requires clang-format)."
     echo "    --lint                      Run lint checks (requires clang-tidy)."
+    echo "    --lint=lax                  Run lint checks in lax mode."
     echo "    --go-test                   Run Go tests."
     echo
     echo "Cross-compilation"
@@ -149,7 +150,12 @@ function reformat {
 # Run lint checks.
 function lint {
     echo "Running lint checks (${arch})..."
+    local strict_params="--warnings-as-errors=*"
+    if [[ "${option_lint}" == "lax" ]]; then
+        strict_params=
+    fi
     while read f; do
+        echo "Checking ${f}..."
         local ext=${f##*.}
         if [[ "${ext}" == "c" ]]; then
             local tidy_params=${cc_params}
@@ -159,8 +165,7 @@ function lint {
             echo "Error: Unknown file extension: ${ext}" >&2
             return 1
         fi
-        clang-tidy "--config-file=${src_dir}/.clang-tidy" \
-            "--warnings-as-errors=*" \
+        clang-tidy ${strict_params} \
             "${f}" -- "-I${src_dir}" ${tidy_params} || return
     done <<< "$(find "${src_dir}" -type f \
         -path "${src_dir}/*.c" \
@@ -206,7 +211,7 @@ function build {
         fi
     fi
 
-    if [[ "$(is_true_string "${option_lint}")" == "true" ]]; then
+    if [[ "$(is_true_string "${option_lint}")" == "true" || "${option_lint}" == "lax" ]]; then
         lint || return
     fi
 

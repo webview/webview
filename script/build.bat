@@ -72,7 +72,7 @@ goto :eof
     echo Usage:
     echo     program --help
     echo     program [--clean] [--build] [--build-examples] [--build-tests]
-    echo             [--test] [--target-arch=ARCH] [--reformat] [--lint]
+    echo             [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]
     echo             [--webview2-version=VERSION]
     echo.
     echo Options:
@@ -86,6 +86,7 @@ goto :eof
     echo                                 Choices: all, x86, x64
     echo     --reformat                  Reformat code (requires clang-format).
     echo     --lint                      Run lint checks (requires clang-tidy).
+    echo     --lint=lax                  Run lint checks in lax mode.
     echo     --go-test                   Run Go tests (implies --build).
     echo     --webview2-version=VERSION  WebView2 version to use.
     echo.
@@ -184,21 +185,23 @@ rem Reformat code.
 rem Run lint checks.
 :lint
     echo Running lint checks (!arch!)...
+    set strict_params=--warnings-as-errors=*
+    if "!option_lint!" == "lax" set strict_params=
     rem These parameters should should roughly match the parameters passed to cl.exe
     for %%f in ("!src_dir!\*.c" "!src_dir!\*.cc" "!examples_dir!\*.c" "!examples_dir!\*.cc") do (
+        echo Checking %%~f...
         setlocal
         set ext=%%~xf
         set ext=!ext:~1!
         if "!ext!" == "c" (
-            set std=c++11
+            set std=c11
         ) else if "!ext!" == "cc" (
             set std=c++17
         ) else (
             echo Error: Unknown file extension: !ext!>&2
             endlocal & cmd /c exit 1 & goto :lint_loop_end
         )
-        clang-tidy "--config-file=!src_dir!\.clang-tidy" ^
-            "--warnings-as-errors=*" ^
+        clang-tidy !strict_params! ^
             "%%~f" -- ^
             "--std=!std!" -DWEBVIEW_EDGE ^
             "-I!src_dir!" ^
@@ -234,8 +237,11 @@ rem All tasks related to building and testing are to be invoked here.
     set cxx_params=/std:c++17 /EHsc !cl_params! /DWEBVIEW_EDGE ^
         "/I!webview2_dir!\build\native\include"
 
+    set run_lint_check=false
     call :is_true_string "!option_lint!"
-    if "!__result__!" == "true" call :lint || goto :eof
+    if "!__result__!" == "true" set run_lint_check=true
+    if not "!run_lint_check!" == "true" if "!option_lint!" == "lax" set run_lint_check=true
+    if "!run_lint_check!" == "true" call :lint || goto :eof
 
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
