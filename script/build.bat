@@ -59,7 +59,6 @@ goto :eof
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
         call :install_deps || goto :eof
-        call :find_msvc || goto :eof
     )
 
     if "!build_x64!" == "true" call :build_super x64 || goto :eof
@@ -231,8 +230,6 @@ rem All tasks related to building and testing are to be invoked here.
 
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
-        echo Setting up VS environment ^(!arch!^)...
-        call "!vc_dir!\Common7\Tools\vsdevcmd.bat" -no_logo -arch=!arch! -host_arch=x64 || goto :eof
         call :copy_deps || goto :eof
         if not exist "!build_arch_dir!" mkdir "!build_arch_dir!" || goto :eof
         call :build_shared_library || goto :eof
@@ -261,6 +258,7 @@ rem Copy external dependencies into the build directory.
 
 rem Build the library.
 :build_shared_library
+    call :use_msvc "!arch!" || goto :eof
     echo Building shared library (!arch!)...
     cl !cxx_params! ^
         "/DWEBVIEW_API=__declspec(dllexport)" ^
@@ -270,6 +268,7 @@ rem Build the library.
 
 rem Build examples.
 :build_examples
+    call :use_msvc "!arch!" || goto :eof
     for %%f in ("!examples_dir!\*.c" "!examples_dir!\*.cc") do (
         call :compile_exe "%%f" "example" || goto :build_examples_loop_end
     )
@@ -278,6 +277,7 @@ rem Build examples.
 
 rem Build tests.
 :build_tests
+    call :use_msvc "!arch!" || goto :eof
     for %%f in ("!src_dir!\*_test.c" "!src_dir!\*_test.cc") do (
         call :compile_exe "%%f" "test" || goto :build_tests_loop_end
     )
@@ -406,6 +406,15 @@ rem Install dependencies.
             -Version "!option_webview2-version!" -OutputDirectory "!build_deps_dir!" || goto :eof
         echo Nuget package installed.
     )
+    goto :eof
+
+rem Set up a MSVC (VC++) environment if needed.
+:use_msvc arch
+    where cl.exe > nul 2>&1 && goto :eof || cmd /c exit /b 0
+    call :find_msvc || goto :eof
+    echo Setting up VS environment ^(%~1^)...
+    call :get_host_arch || goto :eof
+    call "!vc_dir!\Common7\Tools\vsdevcmd.bat" -no_logo -arch=%~1 -host_arch=!__result__! || goto :eof
     goto :eof
 
 rem Find the latest installed MSVC (VC++).
