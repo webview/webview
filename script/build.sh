@@ -105,27 +105,29 @@ function on_option_parsed {
     local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]") || return
     name=${name//-/_}
     eval "option_${name}=${2}" || return
+    eval "_option_set_explicitly_${name}=true" || return
 }
 
 # Overrides options after being parsed.
+# Make sure to allow the user to override options that are being set here.
 function on_post_parse_options {
     # Running tests requires building tests.
-    if [[ "$(is_true_string "${option_test}")" == "true" && "$(is_true_string "${option_build_tests}")" != "true" ]]; then
+    if [[ "$(is_true_string "${option_test}")" == "true" && "$(is_option_set_explicitly build_tests)" != "true" ]]; then
         option_build_tests=true
     fi
 
     # Building examples requires building library.
-    if [[ "$(is_true_string "${option_build_examples}")" == "true" && "$(is_true_string "${option_build}")" != "true" ]]; then
+    if [[ "$(is_true_string "${option_build_examples}")" == "true" && "$(is_option_set_explicitly build)" != "true" ]]; then
         option_build=true
     fi
 
     # Building tests requires building library.
-    if [[ "$(is_true_string "${option_build_tests}")" == "true" && "$(is_true_string "${option_build}")" != "true" ]]; then
+    if [[ "$(is_true_string "${option_build_tests}")" == "true" && "$(is_option_set_explicitly build)" != "true" ]]; then
         option_build=true
     fi
 
     # Set the target architecture based on the machine's architecture.
-    if [[ -z "${option_target_arch}" ]]; then
+    if [[ -z "${option_target_arch}" && "$(is_option_set_explicitly target_arch)" != "true" ]]; then
         option_target_arch=$(get_host_arch)
     fi
 }
@@ -349,6 +351,18 @@ function parse_options {
         "${callback}" "${awaiting_value_for_option}" "true"
         awaiting_value_for_option=
     fi
+}
+
+# Checks whether the given option was set explicitly.
+# Returns "true" if true; otherwise "false".
+function is_option_set_explicitly {
+    eval "local is_set=\${_option_set_explicitly_${1}}"
+    if [[ "${is_set}" == "true" ]]; then
+        echo "true"
+        return 0
+    fi
+    echo "false"
+    return 0
 }
 
 # Checks whether the given string is equivalent to "true"

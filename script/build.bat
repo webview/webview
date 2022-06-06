@@ -118,35 +118,46 @@ rem Print option and their current values in a human-readable way.
 rem Stores the option as a variable.
 :on_option_parsed name value
     set "option_%~1=%~2"
+    set "_option_set_explicitly_%~1=true"
     goto :eof
 
 rem Overrides options after being parsed.
+rem Make sure to allow the user to override options that are being set here.
 :on_post_parse_options
     rem Running tests requires building tests.
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" (
-        call :is_true_string "!option_build-tests!"
-        if not "!__result__!" == "true" set option_build-tests=true
+        call :is_option_set_explicitly build-tests
+        if not "!__result__!" == "true" (
+            set option_build-tests=true
+        )
     )
 
     rem Building examples requires building library.
     call :is_true_string "!option_build-examples!"
     if "!__result__!" == "true" (
-        call :is_true_string "!option_build!"
-        if not "!__result__!" == "true" set option_build=true
+        call :is_option_set_explicitly build
+        if not "!__result__!" == "true" (
+            set option_build=true
+        )
     )
 
     rem Building tests requires building library.
     call :is_true_string "!option_build-tests!"
     if "!__result__!" == "true" (
-        call :is_true_string "!option_build!"
-        if not "!__result__!" == "true" set option_build=true
+        call :is_option_set_explicitly build
+        if not "!__result__!" == "true" (
+            set option_build=true
+        )
     )
 
     rem Set the target architecture based on the machine's architecture.
     if "!option_target-arch!" == "" (
-        call :get_host_arch || goto :eof
-        set option_target-arch=!__result__!
+        call :is_option_set_explicitly target-arch
+        if not "!__result__!" == "true" (
+            call :get_host_arch || goto :eof
+            set option_target-arch=!__result__!
+        )
     )
     goto :eof
 
@@ -501,6 +512,13 @@ rem Parses a key/value pair separated by "=", e.g. "foo=bar".
     goto :parse_option_loop
 
 :parse_option_loop_end
+    goto :eof
+
+rem Checks whether the given option was set explicitly.
+rem Returns "true" if true; otherwise "false".
+:is_option_set_explicitly option_name
+    set __result__=false
+    if "!_option_set_explicitly_%~1!" == "true" set __result__=true
     goto :eof
 
 rem Checks whether the given string is equivalent to "true"
