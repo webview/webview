@@ -53,8 +53,7 @@ static void test_c_api_error_codes() {
   assert(ec == webview_error_invalid_argument);
 
   webview_t w;
-  webview_create_options_t options;
-  memset(&options, 0, sizeof(options));
+  webview_create_options_t options{};
 
   options.api_version = WEBVIEW_MIN_API_VERSION - 1;
   ec = webview_create_with_options(&w, &options);
