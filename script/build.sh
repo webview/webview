@@ -350,11 +350,11 @@ function parse_options {
 # Checks whether the given string is equivalent to "true"
 # Returns "true" if true; otherwise "false".
 function is_true_string {
-	if [[ "${1}" =~ 1|true|yes ]]; then
-		echo "true"
+    if [[ "${1}" =~ 1|true|yes ]]; then
+        echo "true"
         return 0
-	fi
-	echo "false"
+    fi
+    echo "false"
     return 0
 }
 
