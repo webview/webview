@@ -412,14 +412,11 @@ rem Find MinGW-w64 under a specific path.
 rem Install dependencies.
 :install_deps
     if not exist "!build_deps_dir!" mkdir "!build_deps_dir!" || goto :eof
-    rem If you update the nuget package, change its version here
-    echo Using Nuget Package microsoft.web.webview2.!option_webview2-version!.
     if not exist "!webview2_dir!" (
-        curl -sSLO --output-dir "!build_deps_dir!" ^
-            https://dist.nuget.org/win-x86-commandline/latest/nuget.exe || goto :eof
-        "!build_deps_dir!\nuget.exe" install Microsoft.Web.Webview2 ^
-            -Version "!option_webview2-version!" -OutputDirectory "!build_deps_dir!" || goto :eof
-        echo Nuget package installed.
+        mkdir "!webview2_dir!" || goto :eof
+        echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2-version!...
+        curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/!option_webview2-version!" ^
+            | tar -xf - -C "!webview2_dir!" || goto :eof
     )
     goto :eof
 
