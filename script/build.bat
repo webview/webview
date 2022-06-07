@@ -411,7 +411,6 @@ rem Find MinGW-w64 under a specific path.
 
 rem Install dependencies.
 :install_deps
-    if not exist "!build_deps_dir!" mkdir "!build_deps_dir!" || goto :eof
     if not exist "!webview2_dir!" (
         mkdir "!webview2_dir!" || goto :eof
         echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2-version!...
