@@ -1,4 +1,5 @@
 ---
+# We should aim to fix the code and re-enable most of the rules here.
 Checks: >
     bugprone-*,
     clang-analyzer-*,
@@ -8,10 +9,13 @@ Checks: >
     performance-*,
     portability-*,
     readability-*,
+    -bugprone-easily-swappable-parameters,
     -clang-analyzer-core.CallAndMessage,
     -clang-analyzer-optin.cplusplus.UninitializedObject,
     -clang-diagnostic-unused-parameter,
     -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-init-variables,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
     -hicpp-no-array-decay,
     -hicpp-explicit-conversions,
     -modernize-pass-by-value,
@@ -22,3 +26,10 @@ Checks: >
     -readability-inconsistent-declaration-parameter-name,
     -readability-implicit-bool-conversion,
     -readability-magic-numbers
+CheckOptions:
+  # We use short variables like "w"
+  - key:   readability-identifier-length.MinimumVariableNameLength
+    value: 1
+  # We use short parameters like "w"
+  - key:   readability-identifier-length.MinimumParameterNameLength
+    value: 1
