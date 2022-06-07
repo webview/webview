@@ -175,23 +175,6 @@ WEBVIEW_API int webview_api_version();
 #ifdef __cplusplus
 }
 
-#include <stdexcept>
-#include <string>
-
-class webview_exception : public std::domain_error {
-public:
-  webview_exception(webview_error_code_t code, const std::string &reason)
-      : domain_error(reason), m_code(code) {}
-  explicit webview_exception(webview_error_code_t code)
-      : domain_error(std::string()), m_code(code) {}
-  webview_exception() : domain_error(std::string()) {}
-
-  webview_error_code_t code() const { return m_code; }
-
-private:
-  webview_error_code_t m_code = webview_error_internal;
-};
-
 #ifndef WEBVIEW_HEADER
 
 #if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
@@ -223,15 +206,30 @@ private:
 
 #include <array>
 #include <atomic>
+#include <cstring>
 #include <functional>
 #include <future>
 #include <map>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
-#include <cstring>
-
 namespace webview {
+
+class webview_exception : public std::domain_error {
+public:
+  webview_exception(webview_error_code_t code, const std::string &reason)
+      : domain_error(reason), m_code(code) {}
+  explicit webview_exception(webview_error_code_t code)
+      : domain_error(std::string()), m_code(code) {}
+  webview_exception() : domain_error(std::string()) {}
+
+  webview_error_code_t code() const { return m_code; }
+
+private:
+  webview_error_code_t m_code = webview_error_internal;
+};
 
 using dispatch_fn_t = std::function<void()>;
 
