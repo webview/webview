@@ -169,7 +169,7 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   });
   try {
     fn();
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     std::cout << "A webview exception was thrown with error code " << e.code()
               << ": " << e.what() << std::endl;
     exit(1);

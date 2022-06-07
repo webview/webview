@@ -1532,7 +1532,7 @@ WEBVIEW_API webview_error_code_t webview_create_with_options(
     }
     *w = instance;
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1552,7 +1552,7 @@ WEBVIEW_API webview_error_code_t webview_run(webview_t w) {
   try {
     static_cast<webview::webview *>(w)->run();
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1564,7 +1564,7 @@ WEBVIEW_API webview_error_code_t webview_terminate(webview_t w) {
   try {
     static_cast<webview::webview *>(w)->terminate();
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1578,7 +1578,7 @@ WEBVIEW_API webview_error_code_t webview_dispatch(webview_t w,
   try {
     static_cast<webview::webview *>(w)->dispatch([=]() { fn(w, arg); });
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1598,7 +1598,7 @@ WEBVIEW_API webview_error_code_t webview_set_title(webview_t w,
   try {
     static_cast<webview::webview *>(w)->set_title(title);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1611,7 +1611,7 @@ WEBVIEW_API webview_error_code_t webview_set_size(webview_t w, int width,
   try {
     static_cast<webview::webview *>(w)->set_size(width, height, hints);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1624,7 +1624,7 @@ WEBVIEW_API webview_error_code_t webview_navigate(webview_t w,
   try {
     static_cast<webview::webview *>(w)->navigate(url);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1637,7 +1637,7 @@ WEBVIEW_API webview_error_code_t webview_set_html(webview_t w,
   try {
     static_cast<webview::webview *>(w)->set_html(html);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1649,7 +1649,7 @@ WEBVIEW_API webview_error_code_t webview_init(webview_t w, const char *js) {
   try {
     static_cast<webview::webview *>(w)->init(js);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1661,7 +1661,7 @@ WEBVIEW_API webview_error_code_t webview_eval(webview_t w, const char *js) {
   try {
     static_cast<webview::webview *>(w)->eval(js);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1680,7 +1680,7 @@ WEBVIEW_API webview_error_code_t webview_bind(
         },
         arg);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1692,7 +1692,7 @@ WEBVIEW_API webview_error_code_t webview_unbind(webview_t w, const char *name) {
   try {
     static_cast<webview::webview *>(w)->unbind(name);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
@@ -1706,7 +1706,7 @@ WEBVIEW_API webview_error_code_t webview_return(webview_t w, const char *seq,
   try {
     static_cast<webview::webview *>(w)->resolve(seq, status, result);
     return webview_error_ok;
-  } catch (const webview_exception &e) {
+  } catch (const webview::webview_exception &e) {
     return e.code();
   }
 }
