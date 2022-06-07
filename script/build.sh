@@ -103,8 +103,7 @@ function print_current_options {
 
 # Stores the option as a variable.
 function on_option_parsed {
-    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]") || return
-    name=${name//-/_}
+    local name=$(sanetize_option_name "${1}") || return
     eval "option_${name}=${2}" || return
     eval "_option_set_explicitly_${name}=true" || return
 }
@@ -358,10 +357,18 @@ function parse_options {
     fi
 }
 
+# Sanetizes the given option name by converting "-" to "_" and letters to lower-case.
+function sanetize_option_name {
+    local name=$(echo "${1}" | tr "[:upper:]" "[:lower:]") || return
+    name=${name//-/_}
+    echo "${name}"
+}
+
 # Checks whether the given option was set explicitly.
 # Returns "true" if true; otherwise "false".
 function is_option_set_explicitly {
-    eval "local is_set=\${_option_set_explicitly_${1}}"
+    local name=$(sanetize_option_name "${1}")
+    eval "local is_set=\${_option_set_explicitly_${name}}"
     if [[ "${is_set}" == "true" ]]; then
         echo "true"
         return 0

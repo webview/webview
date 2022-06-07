@@ -5,14 +5,14 @@ rem Options with their default values.
 set option_help=
 set option_clean=false
 set option_build=false
-set option_build-examples=false
-set option_build-tests=false
+set option_build_examples=false
+set option_build_tests=false
 set option_test=false
-set option_target-arch=
+set option_target_arch=
 set option_reformat=false
 set option_lint=false
-set option_go-test=false
-set option_webview2-version=1.0.1150.38
+set option_go_test=false
+set option_webview2_version=1.0.1150.38
 
 call :main %*
 goto :eof
@@ -39,17 +39,17 @@ goto :eof
     set examples_dir=!src_dir!\examples
     set build_dir=!src_dir!\build
     set build_deps_dir=!build_dir!\deps
-    set webview2_dir=!build_deps_dir!\microsoft.web.webview2.!option_webview2-version!
+    set webview2_dir=!build_deps_dir!\microsoft.web.webview2.!option_webview2_version!
 
     call :is_true_string "!option_reformat!"
     if "!__result__!" == "true" call :reformat || goto :eof
 
-    if "!option_target-arch!" == "all" (
+    if "!option_target_arch!" == "all" (
         set build_x64=true
         set build_x86=true
-    ) else if "!option_target-arch!" == "x64" (
+    ) else if "!option_target_arch!" == "x64" (
         set build_x64=true
-    ) else if "!option_target-arch!" == "x86" (
+    ) else if "!option_target_arch!" == "x86" (
         set build_x86=true
     ) else (
         echo Error: Invalid target architecture.>&2
@@ -105,20 +105,21 @@ rem Print option and their current values in a human-readable way.
     echo Options:
     echo   Clean build: !option_clean!
     echo   Build library: !option_build!
-    echo   Build examples: !option_build-examples!
-    echo   Build tests: !option_build-tests!
+    echo   Build examples: !option_build_examples!
+    echo   Build tests: !option_build_tests!
     echo   Run tests: !option_test!
-    echo   Target architecture: !option_target-arch!
+    echo   Target architecture: !option_target_arch!
     echo   Reformat code: !option_reformat!
     echo   Run lint checks: !option_lint!
-    echo   WebView2 version: !option_webview2-version!
-    echo   Run Go tests: !option_go-test!
+    echo   WebView2 version: !option_webview2_version!
+    echo   Run Go tests: !option_go_test!
     goto :eof
 
 rem Stores the option as a variable.
 :on_option_parsed name value
-    set "option_%~1=%~2"
-    set "_option_set_explicitly_%~1=true"
+    call :sanetize_option_name "%~1"
+    set "option_!__result__!=%~2"
+    set "_option_set_explicitly_!__result__!=true"
     goto :eof
 
 rem Overrides options after being parsed.
@@ -127,14 +128,14 @@ rem Make sure to allow the user to override options that are being set here.
     rem Running tests requires building tests.
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly build-tests
+        call :is_option_set_explicitly build_tests
         if not "!__result__!" == "true" (
-            set option_build-tests=true
+            set option_build_tests=true
         )
     )
 
     rem Running Go tests requires building library.
-    call :is_true_string "!option_go-test!"
+    call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" (
         call :is_option_set_explicitly build
         if not "!__result__!" == "true" (
@@ -143,7 +144,7 @@ rem Make sure to allow the user to override options that are being set here.
     )
 
     rem Building examples requires building library.
-    call :is_true_string "!option_build-examples!"
+    call :is_true_string "!option_build_examples!"
     if "!__result__!" == "true" (
         call :is_option_set_explicitly build
         if not "!__result__!" == "true" (
@@ -152,7 +153,7 @@ rem Make sure to allow the user to override options that are being set here.
     )
 
     rem Building tests requires building library.
-    call :is_true_string "!option_build-tests!"
+    call :is_true_string "!option_build_tests!"
     if "!__result__!" == "true" (
         call :is_option_set_explicitly build
         if not "!__result__!" == "true" (
@@ -161,11 +162,11 @@ rem Make sure to allow the user to override options that are being set here.
     )
 
     rem Set the target architecture based on the machine's architecture.
-    if "!option_target-arch!" == "" (
-        call :is_option_set_explicitly target-arch
+    if "!option_target_arch!" == "" (
+        call :is_option_set_explicitly target_arch
         if not "!__result__!" == "true" (
             call :get_host_arch || goto :eof
-            set option_target-arch=!__result__!
+            set option_target_arch=!__result__!
         )
     )
     goto :eof
@@ -250,16 +251,16 @@ rem All tasks related to building and testing are to be invoked here.
         call :build_shared_library || goto :eof
     )
 
-    call :is_true_string "!option_build-examples!"
+    call :is_true_string "!option_build_examples!"
     if "!__result__!" == "true" call :build_examples || goto :eof
 
-    call :is_true_string "!option_build-tests!"
+    call :is_true_string "!option_build_tests!"
     if "!__result__!" == "true" call :build_tests || goto :eof
 
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" call :run_tests || goto :eof
 
-    call :is_true_string "!option_go-test!"
+    call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" call :go_run_tests || goto :eof
 
     goto :eof
@@ -413,8 +414,8 @@ rem Install dependencies.
 :install_deps
     if not exist "!webview2_dir!" (
         mkdir "!webview2_dir!" || goto :eof
-        echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2-version!...
-        curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/!option_webview2-version!" ^
+        echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2_version!...
+        curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/!option_webview2_version!" ^
             | tar -xf - -C "!webview2_dir!" || goto :eof
     )
     goto :eof
@@ -534,11 +535,22 @@ rem Parses a key/value pair separated by "=", e.g. "foo=bar".
 :parse_option_loop_end
     goto :eof
 
+rem Sanetizes the given option name by converting "-" to "_".
+rem Letter casing is untouched because variable names are case-insensitive.
+:sanetize_option_name name
+    set __result__=%~1
+    set __result__=!__result__:-=_!
+    goto :eof
+
 rem Checks whether the given option was set explicitly.
 rem Returns "true" if true; otherwise "false".
 :is_option_set_explicitly option_name
-    set __result__=false
-    if "!_option_set_explicitly_%~1!" == "true" set __result__=true
+    call :sanetize_option_name "%~1" || goto :eof
+    if "!_option_set_explicitly_%__result__%!" == "true" (
+        set __result__=true
+    ) else (
+        set __result__=false
+    )
     goto :eof
 
 rem Checks whether the given string is equivalent to "true"
