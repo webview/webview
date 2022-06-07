@@ -1,3 +1,2 @@
 ---
 Checks:          'bugprone-,clang-analyzer-*,clang-diagnostic-*,cppcoreguidelines,modernize-*,hicpp-*,performance-*,portability-*,readability-*,-clang-analyzer-core.CallAndMessage,-clang-analyzer-optin.cplusplus.UninitializedObject,-clang-diagnostic-unused-parameter,-hicpp-no-array-decay,-hicpp-explicit-conversions,-modernize-pass-by-value,-modernize-use-trailing-return-type,-performance-unnecessary-value-param,-readability-function-cognitive-complexity,-readability-container-size-empty,-readability-inconsistent-declaration-parameter-name,-readability-implicit-bool-conversion,-readability-magic-numbers'
-HeaderFilterRegex: ''
