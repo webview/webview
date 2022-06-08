@@ -103,6 +103,7 @@ goto :eof
     echo install both the 64-bit- and 32-bit toolchains for cross-compilation.
     echo MinGW-w64 is expected to be found in one of the following locations:
     echo  - !SystemDrive!\mingw64 or !SystemDrive!\mingw32
+    echo  - !SystemDrive!\msys64\mingw64 or !SystemDrive!\msys64\mingw32
     echo  - Chocolatey
     goto :eof
 
@@ -481,7 +482,7 @@ rem Find and activate MinGW-w64.
     setlocal
     set arch=%~1
     set mingw_path=
-    for %%p in ("!SystemDrive!" "!ProgramData!\chocolatey\lib\mingw\tools\install") do (
+    for %%p in ("!SystemDrive!" "!ProgramData!\chocolatey\lib\mingw\tools\install" "!SystemDrive!\msys64") do (
         call :find_mingw_path "!arch!" "%%~p"
         if not "!__result__!" == "" (
             set mingw_path=!__result__!
@@ -512,14 +513,15 @@ rem Find MinGW-w64 under a specific path.
     set mingw64_path=!path_hint!\mingw64
     set mingw32_path=!path_hint!\mingw32
     set mingw_path=
+    set test_sub_path=bin\g++.exe
     if "!arch!" == "x64" (
-        if exist "!mingw64_path!" (
+        if exist "!mingw64_path!\!test_sub_path!" (
             set mingw_path=!mingw64_path!
         )
     ) else if "!arch!" == "x86" (
-        if exist "!mingw32_path!" (
+        if exist "!mingw32_path!\!test_sub_path!" (
             set mingw_path=!mingw32_path!
-        ) else if exist "!mingw64_path!" (
+        ) else if exist "!mingw64_path!\!test_sub_path!" (
             set mingw_path=!mingw64_path!
         )
     )
