@@ -198,6 +198,16 @@ rem Run lint checks.
     echo Running lint checks (!arch!)...
     set strict_params=--warnings-as-errors=*
     if "!option_lint!" == "lax" set strict_params=
+    rem Specify target architecture only if it differs from the host architecture.
+    set arch_param=
+    call :get_host_arch || goto :eof
+    if not "!__result__!" == "!arch!" (
+        if "!arch!" == "x64" (
+            set arch_param=-m64
+        ) else if "!arch!" == "x86" (
+            set arch_param=-m32
+        )
+    )
     rem These parameters should should roughly match the parameters passed to cl.exe
     for %%f in ("!src_dir!\*.c" "!src_dir!\*.cc" "!examples_dir!\*.c" "!examples_dir!\*.cc") do (
         echo Checking %%~f...
@@ -214,7 +224,7 @@ rem Run lint checks.
         )
         clang-tidy !strict_params! ^
             "%%~f" -- ^
-            "--std=!std!" -DWEBVIEW_EDGE ^
+            "--std=!std!" !arch_param! -DWEBVIEW_EDGE ^
             "-I!src_dir!" ^
             "-I!webview2_dir!\build\native\include" || (endlocal & cmd /c exit 1 & goto :lint_loop_end)
         endlocal
