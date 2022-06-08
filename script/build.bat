@@ -13,6 +13,7 @@ set option_reformat=false
 set option_lint=false
 set option_go_test=false
 set option_webview2_version=1.0.1150.38
+set option_toolchain=msvc
 
 call :main %*
 goto :eof
@@ -44,6 +45,11 @@ goto :eof
     call :is_true_string "!option_reformat!"
     if "!__result__!" == "true" call :reformat || goto :eof
 
+    call :is_true_string "!option_build!"
+    if "!__result__!" == "true" (
+        call :install_deps || goto :eof
+    )
+
     if "!option_target_arch!" == "all" (
         set build_x64=true
         set build_x86=true
@@ -54,11 +60,6 @@ goto :eof
     ) else (
         echo Error: Invalid target architecture.>&2
         exit /b 1
-    )
-
-    call :is_true_string "!option_build!"
-    if "!__result__!" == "true" (
-        call :install_deps || goto :eof
     )
 
     if "!build_x64!" == "true" call :build_super x64 || goto :eof
@@ -89,6 +90,8 @@ goto :eof
     echo     --lint=lax                  Run lint checks in lax mode.
     echo     --go-test                   Run Go tests (implies --build).
     echo     --webview2-version=VERSION  WebView2 version to use.
+    echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
+    echo                                 Choices: msvc, mingw.
     echo.
     echo Cross-compilation with Go
     echo =========================
@@ -111,8 +114,9 @@ rem Print option and their current values in a human-readable way.
     echo   Target architecture: !option_target_arch!
     echo   Reformat code: !option_reformat!
     echo   Run lint checks: !option_lint!
-    echo   WebView2 version: !option_webview2_version!
     echo   Run Go tests: !option_go_test!
+    echo   WebView2 version: !option_webview2_version!
+    echo   Toolchain: !option_toolchain!
     goto :eof
 
 rem Stores the option as a variable.
@@ -122,7 +126,7 @@ rem Stores the option as a variable.
     set "_option_set_explicitly_!__result__!=true"
     goto :eof
 
-rem Overrides options after being parsed.
+rem Overrides and validates options after being parsed.
 rem Make sure to allow the user to override options that are being set here.
 :on_post_parse_options
     rem Running tests requires building tests.
@@ -168,6 +172,12 @@ rem Make sure to allow the user to override options that are being set here.
             call :get_host_arch || goto :eof
             set option_target_arch=!__result__!
         )
+    )
+
+    rem Validate toolchain.
+    if not "!option_toolchain!" == "msvc" if not "!option_toolchain!" == "mingw" (
+        echo Error: Invalid toolchain : !option_toolchain!>&2
+        exit /b 1
     )
     goto :eof
 
@@ -230,13 +240,32 @@ rem All tasks related to building and testing are to be invoked here.
         if exist "!build_arch_dir!" rmdir /q /s "!build_arch_dir!" > nul || goto :eof
     )
 
-    rem 4100: unreferenced formal parameter
-    set warning_params=/W4 /wd4100
-    set cl_params=/nologo /utf-8 !warning_params! "/Fo!build_arch_dir!"\ "/I!src_dir!" ^
-        "!webview2_dir!\build\native\!arch!\WebView2Loader.dll.lib"
-    set cc_params=/std:c11 !cl_params!
-    set cxx_params=/std:c++17 /EHsc !cl_params! /DWEBVIEW_EDGE ^
-        "/I!webview2_dir!\build\native\include"
+    if "!option_toolchain!" == "msvc" (
+        rem 4100: unreferenced formal parameter
+        set warning_params=/W4 /wd4100
+        set common_params=/nologo /utf-8 !warning_params! "/Fo!build_arch_dir!"\ ^
+            "/I!src_dir!" "!webview2_dir!\build\native\!arch!\WebView2Loader.dll.lib"
+        set cc_params=/std:c11
+        set cxx_params=/std:c++17 /EHsc /DWEBVIEW_EDGE ^
+            "/I!webview2_dir!\build\native\include"
+    ) else if "!option_toolchain!" == "mingw" (
+        set warning_params=-Wall -Wextra -pedantic -Wno-unknown-pragmas -Wno-unused-parameter -Wno-cast-function-type
+        set common_params= !warning_params! ^
+            "-I!src_dir!" "-I!webview2_dir!\build\native\include"
+        set link_params="-L!webview2_dir!\build\native\!arch!" -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32
+        set cc_params=--std=c11
+        set cxx_params=--std=c++17 -DWEBVIEW_EDGE
+
+        rem Specify target architecture only if it differs from the host architecture.
+        call :get_host_arch || goto :eof
+        if not "!__result__!" == "!arch!" (
+            if "!arch!" == "x64" (
+                set common_params=!common_params! -m64
+            ) else if "!arch!" == "x86" (
+                set common_params=!common_params! -m32
+            )
+        )
+    )
 
     set run_lint_check=false
     call :is_true_string "!option_lint!"
@@ -274,28 +303,24 @@ rem Copy external dependencies into the build directory.
 
 rem Build the library.
 :build_shared_library
-    call :use_msvc "!arch!" || goto :eof
-    echo Building shared library (!arch!)...
-    cl !cxx_params! ^
-        "/DWEBVIEW_API=__declspec(dllexport)" ^
-        "!src_dir!\webview.cc" ^
-        /link /DLL "/OUT:!build_arch_dir!\webview.dll" || goto :eof
+    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
+    call :compile shared_library "!src_dir!\webview.cc" "shared library" || goto :eof
     goto :eof
 
 rem Build examples.
 :build_examples
-    call :use_msvc "!arch!" || goto :eof
+    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
     for %%f in ("!examples_dir!\*.c" "!examples_dir!\*.cc") do (
-        call :compile_exe "%%f" "example" || goto :build_examples_loop_end
+        call :compile exe "%%f" "example" || goto :build_examples_loop_end
     )
 :build_examples_loop_end
     goto :eof
 
 rem Build tests.
 :build_tests
-    call :use_msvc "!arch!" || goto :eof
+    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
     for %%f in ("!src_dir!\*_test.c" "!src_dir!\*_test.cc") do (
-        call :compile_exe "%%f" "test" || goto :build_tests_loop_end
+        call :compile exe "%%f" "test" || goto :build_tests_loop_end
     )
 :build_tests_loop_end
     goto :eof
@@ -322,7 +347,7 @@ rem Run tests.
 
 rem Run Go tests.
 :go_run_tests
-    call :find_mingw "!arch!" || goto :eof
+    call :activate_toolchain mingw "!arch!" || goto :eof
     setlocal
     echo Running Go tests (!arch!)...
     if "!arch!" == "x64" (
@@ -336,32 +361,89 @@ rem Run Go tests.
     endlocal
     goto :eof
 
-rem Compile a C/C++ file into an executable.
-:compile_exe file description
+rem Compile a C/C++ file into an executable or library.
+:compile type file description
+    if not "%~1" == "exe" if not "%~1" == "shared_library" (
+        echo Error: Invalid type : %~1>&2
+        exit /b 1
+    )
     setlocal
-    set file=%~1
-    set name=%~n1
-    set ext=%~x1
+    set type=%~1
+    set file=%~2
+    set name=%~n2
+    set ext=%~x2
     set ext=!ext:~1!
-    set description=%~2
+    set description=%~3
     set output_path_excl_ext=!build_arch_dir!\!name!
     set message=Building !description! !name! (!arch!)...
     echo !message!
-    if "!ext!" == "c" (
-        cl !cc_params! "!build_arch_dir!\webview.lib" "!file!" ^
-            /link "/OUT:!build_arch_dir!\!name!.exe" || (endlocal & goto :eof)
-    ) else if "!ext!" == "cc" (
-        cl !cxx_params! "!build_arch_dir!\webview.lib" "!file!" ^
-            /link "/OUT:!output_path_excl_ext!.exe" || (endlocal & goto :eof)
-    ) else (
-        echo Error: Unknown file extension: !ext!>&2
-        endlocal & exit /b 1
-    )
+    call :compile_!type!_!option_toolchain!_!ext! || (endlocal & exit /b 1)
     endlocal
     goto :eof
 
-rem Find MinGW-w64.
-:find_mingw arch
+:compile_shared_library_mingw_c
+:compile_shared_library_msvc_c
+    echo Error: Invalid combination (!type!, !option_toolchain!, !ext!).>&2
+    exit /b 1
+
+:compile_shared_library_msvc_cc
+    cl !common_params! !cxx_params! "/DWEBVIEW_API=__declspec(dllexport)" "!file!" ^
+        /link /DLL "/OUT:!output_path_excl_ext!.dll"
+    goto :eof
+
+:compile_shared_library_mingw_cc
+    g++ -fPIC --shared "!file!" !common_params! !cxx_params! !link_params! ^
+        -o "!output_path_excl_ext!.dll"
+    goto :eof
+
+:compile_exe_msvc_c
+    cl !common_params! !cc_params! "!build_arch_dir!\webview.lib" "!file!" ^
+        /link "/OUT:!output_path_excl_ext!.exe"
+    goto :eof
+
+:compile_exe_msvc_cc
+    cl !common_params! !cxx_params! "!build_arch_dir!\webview.lib" "!file!" ^
+        /link "/OUT:!output_path_excl_ext!.exe"
+    goto :eof
+
+:compile_exe_mingw_c
+    gcc "!file!" !common_params! !cc_params! !link_params! ^
+        "-L!build_arch_dir!" -lwebview ^
+        -o "!output_path_excl_ext!.exe"
+    goto :eof
+
+:compile_exe_mingw_cc
+    g++ "!file!" !common_params! !cxx_params! !link_params! ^
+        "-L!build_arch_dir!" -lwebview ^
+        -o "!output_path_excl_ext!.exe"
+    goto :eof
+
+rem Install dependencies.
+:install_deps
+    if not exist "!webview2_dir!" (
+        mkdir "!webview2_dir!" || goto :eof
+        echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2_version!...
+        curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/!option_webview2_version!" ^
+            | tar -xf - -C "!webview2_dir!" || goto :eof
+    )
+    goto :eof
+
+rem Attempt to find and activate the specified toolchain.
+:activate_toolchain toolchain arch
+    if "%~1" == "msvc" (
+        call :activate_msvc "%~2" && goto :eof
+    ) else if "%~1" == "mingw" (
+        call :activate_mingw "%~2" && goto :eof
+    ) else (
+        echo Error: Invalid toolchain: %~1>&2
+        exit /b 1
+    )
+    echo Error: Unable to activate toolchain "%~1".>&2
+    exit /b 1
+
+rem Find and activate MinGW-w64.
+:activate_mingw arch
+    where c++.exe > nul 2>&1 && goto :eof || cmd /c exit /b 0
     setlocal
     set arch=%~1
     set mingw_path=
@@ -369,10 +451,10 @@ rem Find MinGW-w64.
         call :find_mingw_path "!arch!" "%%~p"
         if not "!__result__!" == "" (
             set mingw_path=!__result__!
-            goto :find_mingw_loop_end
+            goto :activate_mingw_loop_end
         )
     )
-:find_mingw_loop_end
+:activate_mingw_loop_end
     if "!mingw_path!" == "" (
         rem Hope for the best outcome if it's invocable.
         where gcc > nul 2>&1 && (
@@ -410,18 +492,8 @@ rem Find MinGW-w64 under a specific path.
     endlocal & set __result__=%mingw_path%
     goto :eof
 
-rem Install dependencies.
-:install_deps
-    if not exist "!webview2_dir!" (
-        mkdir "!webview2_dir!" || goto :eof
-        echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2_version!...
-        curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/!option_webview2_version!" ^
-            | tar -xf - -C "!webview2_dir!" || goto :eof
-    )
-    goto :eof
-
 rem Set up a MSVC (VC++) environment if needed.
-:use_msvc arch
+:activate_msvc arch
     where cl.exe > nul 2>&1 && goto :eof || cmd /c exit /b 0
     call :find_msvc || goto :eof
     echo Setting up VS environment ^(%~1^)...

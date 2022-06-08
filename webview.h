@@ -839,10 +839,12 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 
 #include "webview2.h"
 
+#ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "user32.lib")
+#endif
 
 namespace webview {
 namespace detail {
