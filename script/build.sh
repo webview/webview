@@ -157,9 +157,9 @@ function lint {
         echo "Checking ${f}..."
         local ext=${f##*.}
         if [[ "${ext}" == "c" ]]; then
-            local tidy_params=${cc_params}
+            local tidy_params=${cc_params[@]}
         elif [[ "${ext}" == "cc" ]]; then
-            local tidy_params=${cxx_params}
+            local tidy_params=${cxx_params[@]}
         else
             echo "Error: Unknown file extension: ${ext}" >&2
             return 1
@@ -185,28 +185,28 @@ function build {
         fi
     fi
 
-    local warning_params="-Wall -Wextra -pedantic"
-    local common_params=
-    local link_params=
-    local cc_params="--std=c99 ${warning_params}"
-    local cxx_params="--std=c++11 ${warning_params}"
+    local warning_params=(-Wall -Wextra -pedantic)
+    local common_params=("${warning_params[@]}" "-I${src_dir}")
+    local link_params=()
+    local cc_params=(--std=c99)
+    local cxx_params=(--std=c++11)
     if [[ "$(uname)" = "Darwin" ]]; then
-        link_params="${link_params} -framework WebKit"
-        cxx_params="${cxx_params} -DWEBVIEW_COCOA"
+        link_params+=(-framework WebKit)
+        cxx_params+=(-DWEBVIEW_COCOA)
     else
-        local pkgconfig_libs="gtk+-3.0 webkit2gtk-4.0"
-        local pkgconfig_ldflags=$(pkg-config --libs "${pkgconfig_libs}") || return
-        local pkgconfig_cflags=$(pkg-config --cflags "${pkgconfig_libs}") || return
-        link_params="${link_params} ${pkgconfig_ldflags}"
-        cxx_params="${cxx_params} ${pkgconfig_cflags} -DWEBVIEW_GTK"
+        local pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
+        local pkgconfig_ldflags=($(pkg-config --libs "${pkgconfig_libs[@]}")) || return
+        local pkgconfig_cflags=($(pkg-config --cflags "${pkgconfig_libs[@]}")) || return
+        link_params+=("${pkgconfig_ldflags[@]}")
+        cxx_params+=("${pkgconfig_cflags[@]}" -DWEBVIEW_GTK)
     fi
 
     # Specify target architecture only if it differs from the host architecture.
     if [[ "$(get_host_arch)" != "${arch}" ]]; then
         if [[ "${arch}" == "x64" ]]; then
-            common_params="${common_params} -m64"
+            common_params+=(-m64)
         elif [[ "${arch}" == "x86" ]]; then
-            common_params="${common_params} -m32"
+            common_params+=(-m32)
         fi
     fi
 
@@ -240,15 +240,13 @@ function build {
 
 # Build the library.
 function build_library {
-    echo "Building library (${arch})..."
-    c++ -c "-I${src_dir}" "${src_dir}/webview.cc" \
-        ${common_params} ${cxx_params} -o "${build_arch_dir}/webview.o" || return
+    compile library "${src_dir}/webview.cc" "library" || return
 }
 
 # Build examples.
 function build_examples {
     while read file; do
-        compile_exe "${file}" "example" || return
+        compile exe "${file}" "example" || return
     done <<< "$(find "${src_dir}" -type f \
         -path "${examples_dir}/*.c" \
         -or -path "${examples_dir}/*.cc")"
@@ -257,7 +255,7 @@ function build_examples {
 # Build tests.
 function build_tests {
     while read file; do
-        compile_exe "${file}" "test" || return
+        compile exe "${file}" "test" || return
     done <<< "$(find "${src_dir}" -type f \
         -path "${src_dir}/*_test.c" \
         -or -path "${src_dir}/*_test.cc")"
@@ -294,27 +292,44 @@ function go_run_tests {
     GOARCH=${GOARCH} CGO_ENABLED=1 go test || return
 }
 
-# Compile a C/C++ file into an executable.
-function compile_exe {
-    local file=${1}
-    local description=${2}
+# Compile a C/C++ file into an executable or library.
+function compile {
+    local type=${1}
+    if [[ "${type}" != "exe" && "${type}" != "library" ]]; then
+        echo "Error: Invalid type: ${type}." >&2
+        return 1
+    fi
+    local file=${2}
+    local description=${3}
     local name=$(basename "-s.${file##*.}" "${file}")
+    local ext=${file##*.}
     local output_path_excl_ext=${build_arch_dir}/${name}
     local message="Building ${description} ${name} (${arch})..."
     echo "${message}"
-    if [[ "${file##*.}" == "c" ]]; then
-        cc -c "-I${src_dir}" "${file}" \
-            ${common_params} \
-            -o "${output_path_excl_ext}.o"|| return
-        c++ "-I${src_dir}" "${output_path_excl_ext}.o" \
-            "${build_arch_dir}/webview.o" \
-            ${common_params} ${link_params} ${cxx_params} \
-            -o "${output_path_excl_ext}"|| return
-    elif [[ "${file##*.}" == "cc" ]]; then
-        c++ "-I${src_dir}" "${file}" \
-            ${common_params} ${link_params} ${cxx_params} \
-            -o "${output_path_excl_ext}" || return
-    fi
+    "compile_${type}_${ext}" || return
+}
+
+function compile_library_c {
+    echo "Error: Invalid combination (${type}, ${ext})." >&2
+    return 1
+}
+
+function compile_library_cc {
+    c++ -c "${file}" "${common_params[@]}" "${cxx_params[@]}" \
+        -o "${output_path_excl_ext}.o" || return
+}
+
+function compile_exe_c {
+    cc -c "${file}" "${common_params[@]}" -o "${output_path_excl_ext}.o"|| return
+    c++ "${output_path_excl_ext}.o" "${build_arch_dir}/webview.o" \
+        "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
+        -o "${output_path_excl_ext}"|| return
+    echo 1
+}
+
+function compile_exe_cc {
+    c++ "${file}" "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
+        -o "${output_path_excl_ext}" || return
 }
 
 # Parses a command line option prefixed with "--".
