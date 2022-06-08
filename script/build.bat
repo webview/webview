@@ -202,7 +202,7 @@ rem Make sure to allow the user to override options that are being set here.
 
     rem Validate toolchain.
     if not "!option_toolchain!" == "msvc" if not "!option_toolchain!" == "mingw" (
-        echo Error: Invalid toolchain : !option_toolchain!>&2
+        echo Error: Invalid toolchain: !option_toolchain!>&2
         exit /b 1
     )
     goto :eof
