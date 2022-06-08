@@ -14,6 +14,7 @@ set option_lint=false
 set option_go_test=false
 set option_webview2_version=1.0.1150.38
 set option_toolchain=msvc
+set option_fetch_deps=false
 
 call :main %*
 goto :eof
@@ -45,9 +46,9 @@ goto :eof
     call :is_true_string "!option_reformat!"
     if "!__result__!" == "true" call :reformat || goto :eof
 
-    call :is_true_string "!option_build!"
+    call :is_true_string "!option_fetch_deps!"
     if "!__result__!" == "true" (
-        call :install_deps || goto :eof
+        call :fetch_deps || goto :eof
     )
 
     if "!option_target_arch!" == "all" (
@@ -92,6 +93,8 @@ goto :eof
     echo     --webview2-version=VERSION  WebView2 version to use.
     echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
     echo                                 Choices: msvc, mingw.
+    echo     --fetch-deps                Fetch library dependencies.
+    echo                                 Implied when building and linting.
     echo.
     echo Compilation with MinGW-w64
     echo ==========================
@@ -162,6 +165,29 @@ rem Make sure to allow the user to override options that are being set here.
         call :is_option_set_explicitly build
         if not "!__result__!" == "true" (
             set option_build=true
+        )
+    )
+
+    rem Building the requires fetching dependencies.
+    call :is_true_string "!option_build!"
+    if "!__result__!" == "true" (
+        call :is_option_set_explicitly fetch_deps
+        if not "!__result__!" == "true" (
+            set option_fetch_deps=true
+        )
+    )
+
+    rem Lint check with clang-tidy requires fetching dependencies.
+    call :is_false_string "!option_lint!"
+    if not "!__result__!" == "true" (
+        call :is_true_string "!option_lint!"
+        if not "!__result__!" == "true" if not "!option_lint!" == "lax" (
+            echo Error: Invalid lint option: !option_lint!>&2
+            exit /b 1
+        )
+        call :is_option_set_explicitly fetch_deps
+        if not "!__result__!" == "true" (
+            set option_fetch_deps=true
         )
     )
 
@@ -277,11 +303,8 @@ rem All tasks related to building and testing are to be invoked here.
         )
     )
 
-    set run_lint_check=false
-    call :is_true_string "!option_lint!"
-    if "!__result__!" == "true" set run_lint_check=true
-    if not "!run_lint_check!" == "true" if "!option_lint!" == "lax" set run_lint_check=true
-    if "!run_lint_check!" == "true" call :lint || goto :eof
+    call :is_false_string "!option_lint!"
+    if not "!__result__!" == "true" call :lint || goto :eof
 
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
@@ -428,8 +451,8 @@ rem Compile a C/C++ file into an executable or library.
         -o "!output_path_excl_ext!.exe"
     goto :eof
 
-rem Install dependencies.
-:install_deps
+rem Fetch dependencies.
+:fetch_deps
     if not exist "!webview2_dir!" (
         mkdir "!webview2_dir!" || goto :eof
         echo Fetching Nuget package Microsoft.Web.WebView2 version !option_webview2_version!...
@@ -642,6 +665,16 @@ rem Returns "true" if true; otherwise "false".
     if "%~1" == "1" set __result__=true
     if "%~1" == "true" set __result__=true
     if "%~1" == "yes" set __result__=true
+    goto :eof
+
+rem Checks whether the given string is equivalent to "false"
+rem Returns "true" if true; otherwise "false".
+:is_false_string value
+    set __result__=false
+    if "%~1" == "" set __result__=true
+    if "%~1" == "0" set __result__=true
+    if "%~1" == "false" set __result__=true
+    if "%~1" == "no" set __result__=true
     goto :eof
 
 rem Get the host machine/CPU architecture.
