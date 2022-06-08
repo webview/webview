@@ -56,7 +56,7 @@ jobs:
         shell: cmd
       - name: Run Go tests
         if: matrix.arch == 'x64'
-        run: script\build.bat --go-test
+        run: script\build.bat --build=false --go-test
         shell: cmd
 
   clang-format:
