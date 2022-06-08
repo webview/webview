@@ -21,12 +21,16 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
     steps:
       - uses: actions/checkout@v1
       - name: Build and run tests
-        run: script\build.bat --reformat --lint=lax --target-arch=all --build-examples --test
+        run: script\build.bat --reformat --lint=lax --target-arch=${{ matrix.arch }} --build-examples --test
         shell: cmd
       - name: Run Go tests
+        if: matrix.arch == 'x64'
         run: script\build.bat --go-test
         shell: cmd
 
