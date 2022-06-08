@@ -74,7 +74,7 @@ goto :eof
     echo     program --help
     echo     program [--clean] [--build] [--build-examples] [--build-tests]
     echo             [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]
-    echo             [--webview2-version=VERSION]
+    echo             [--webview2-version=VERSION] [--toolchain=TOOLCHAIN]
     echo.
     echo Options:
     echo     --help                      Display this help text.
@@ -93,12 +93,12 @@ goto :eof
     echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
     echo                                 Choices: msvc, mingw.
     echo.
-    echo Cross-compilation with Go
-    echo =========================
+    echo Compilation with MinGW-w64
+    echo ==========================
     echo.
     echo Unless your MinGW-w64 toolchain has multilib support then you need to
-    echo install both the 64-bit- and 32-bit toolchains. MinGW-w64 is expected
-    echo to be found in one of the following locations:
+    echo install both the 64-bit- and 32-bit toolchains for cross-compilation.
+    echo MinGW-w64 is expected to be found in one of the following locations:
     echo  - !SystemDrive!\mingw64 or !SystemDrive!\mingw32
     echo  - Chocolatey
     goto :eof
