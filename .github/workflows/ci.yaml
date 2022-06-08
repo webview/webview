@@ -2,6 +2,32 @@ name: CI Pipeline
 on: [push, pull_request]
 
 jobs:
+  lint:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS was excluded because clang-tidy is not installed.
+        include:
+          - arch: x64
+            os: ubuntu-latest
+          - arch: x64
+            os: windows-latest
+          - arch: x86
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
+      - name: Run lint checks
+        if: runner.os == 'Windows'
+        run: script\build.bat --lint=lax --target-arch=${{ matrix.arch }}
+        shell: cmd
+      - name: Run lint checks
+        if: runner.os != 'Windows'
+        run: script/build.sh --lint=lax --target-arch=${{ matrix.arch }}
+
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -9,14 +35,13 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
-        run: xvfb-run ./script/build.sh --reformat --lint=lax --build-examples --test --go-test
+        run: xvfb-run ./script/build.sh --build-examples --test --go-test
 
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - name: Build and run tests
-        # clang-format and clang-tidy are not installed.
         run: ./script/build.sh --build-examples --test --go-test
 
   build-windows:
@@ -27,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Build and run tests
-        run: script\build.bat --reformat --lint=lax --target-arch=${{ matrix.arch }} --build-examples --test
+        run: script\build.bat --target-arch=${{ matrix.arch }} --build-examples --test
         shell: cmd
       - name: Run Go tests
         if: matrix.arch == 'x64'
