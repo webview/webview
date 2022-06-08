@@ -120,6 +120,7 @@ rem Print option and their current values in a human-readable way.
     echo   Run Go tests: !option_go_test!
     echo   WebView2 version: !option_webview2_version!
     echo   Toolchain: !option_toolchain!
+    echo   Fetch dependencies: !option_fetch_deps!
     goto :eof
 
 rem Stores the option as a variable.
