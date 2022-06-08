@@ -831,7 +831,6 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include <shellscalingapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
@@ -946,17 +945,22 @@ private:
 };
 
 struct user32_symbols {
+  using DPI_AWARENESS_CONTEXT = HANDLE;
+  using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+
   static constexpr auto SetProcessDpiAwarenessContext =
-      library_symbol<decltype(&::SetProcessDpiAwarenessContext)>(
+      library_symbol<SetProcessDpiAwarenessContext_t>(
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
       library_symbol<decltype(&::SetProcessDPIAware)>("SetProcessDPIAware");
 };
 
 struct shcore_symbols {
+  typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+  using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+
   static constexpr auto SetProcessDpiAwareness =
-      library_symbol<decltype(&::SetProcessDpiAwareness)>(
-          "SetProcessDpiAwareness");
+      library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
 };
 
 bool enable_dpi_awareness() {
@@ -969,7 +973,7 @@ bool enable_dpi_awareness() {
   }
   if (auto shcore = native_library(L"shcore.dll")) {
     if (auto fn = shcore.get(shcore_symbols::SetProcessDpiAwareness)) {
-      auto result = fn(PROCESS_PER_MONITOR_DPI_AWARE);
+      auto result = fn(shcore_symbols::PROCESS_PER_MONITOR_DPI_AWARE);
       return result == S_OK || result == E_ACCESSDENIED;
     }
   }
