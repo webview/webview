@@ -23,22 +23,9 @@ Windows  | [Windows API][win32-api], [WebView2][ms-webview2]
 
 We have started working on publishing documentation at [webview.dev] but you can always find the most up-to-date documentation right in the source code. Improving the documentation is a continuous effort and you are more than welcome to [offer suggestions][issues] or [contribute with content][docs-repo]. Please bear with us if the latest updates are not yet published.
 
-## Getting Started
+## Prerequisites
 
-To keep this section simple, instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
-
-We are going to show you just enough to get a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
-
-Start with creating a new directory structure for your project because you will need it to follow along.
-
-```sh
-mkdir my-project && cd my-project
-mkdir build libs "libs/webview"
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
-```
-
-### Linux Preperation
+### Linux
 
 The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your Linux distribution regarding how to install those those.
 
@@ -53,11 +40,30 @@ BSD-based systems:
 * FreeBSD packages: `pkg install webkit2-gtk3`
 * Execution on BSD-based systems may require adding the `wxallowed` option (see [mount(8)](https://man.openbsd.org/mount.8))  to your fstab to bypass [W^X](https://en.wikipedia.org/wiki/W%5EX "write xor execute") memory protection for your executable. Please see if it works without disabling this security feature first.
 
-### Windows Preperation
+### Windows
 
 Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] installed on their system for any version of Windows before Windows 11.
 
-In addition the [WebView2 library](ms-webview2-lib) is required when compiling programs:
+## Getting Started
+
+If you are a developer of this project then please go to the [development section](#development).
+
+To keep this section simple, instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+
+Onward we are going to show you just enough to get a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
+
+Start with creating a new directory structure for your project because you will need it to follow along.
+
+```sh
+mkdir my-project && cd my-project
+mkdir build libs "libs/webview"
+curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
+curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+```
+
+### Windows Preperation
+
+The [WebView2 library](ms-webview2-lib) is required when compiling programs:
 
 ```bat
 mkdir libs\webview2
@@ -65,7 +71,7 @@ curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -x
 copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
 
-> **Note:** You need to distribute the `WebView2Loader.dll` file along with your app unless you link `WebView2LoaderStatic.lib` but you must build the library and examples using Visual C++ if so.
+> **Note:** You need to distribute the `WebView2Loader.dll` file along with your app unless you link it statically but you must build our library and its examples using Visual C++ if so.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
 
@@ -88,7 +94,7 @@ g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./bui
 g++ basic.cc -std=c++17 -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
-#### Bonus for VC++
+#### Bonus for Visual C++
 
 Build a shared library with WebView2 linked statically:
 
@@ -170,6 +176,18 @@ go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.ex
 
 > **Note:** On macOS you would generally [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata for your app.
 
+### Try More Examples
+
+While the basic examples shown here may not be enough to get the whole picture, the good news is that the same procedure will work for all of our examples so please help yourself and try the other examples as well!
+
+We hope that you found it easy to get started using this library but if not then we have some more work to do and would appreciate [your feedback][issues-new].
+
+## Development
+
+To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+
+> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
+
 ## MinGW-w64 Requirements
 
 In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
@@ -202,7 +220,7 @@ Read more about the [structure of bundles][macos-app-bundle] at the Apple Develo
 
 ### Windows Apps
 
-You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program.
+You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program. If you instead use Visual C++ then look into the [Windows Resource Compiler][win32-rc].
 
 Remember to bundle `WebView2Loader.dll` unless you linked it statically.
 
@@ -253,4 +271,5 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [ms-webview2-lib]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-[win32-api]:         https://docs.microsoftom/en-us/windows/win32/apiindex/windows-api-list
+[win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
+[win32-rc]:          https://docs.microsoft.com/en-us/windows/win32/menurc/resource-compiler
