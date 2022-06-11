@@ -21,7 +21,7 @@ int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
 #else
 int main() {
 #endif
-  int count = 0;
+  unsigned int count = 0;
   webview::webview w(false, nullptr);
   w.set_title("Bind Example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);

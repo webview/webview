@@ -4,7 +4,7 @@
 
 typedef struct {
   webview_t w;
-  int count;
+  unsigned int count;
 } context_t;
 
 static const char html[] =
@@ -25,7 +25,7 @@ static const char html[] =
 void increment(const char *seq, const char *req, void *arg) {
   context_t *context = (context_t *)arg;
   char count_string[10] = {0};
-  sprintf(count_string, "%d", ++context->count);
+  sprintf(count_string, "%u", ++context->count);
   char result[21] = {0};
   strcat(result, "{\"count\": ");
   strcat(result, count_string);

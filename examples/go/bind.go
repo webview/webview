@@ -17,11 +17,11 @@ const html = `<button id="increment">Tap me</button>
 </script>`;
 
 type IncrementResult struct {
-	Count int `json:"count"`
+	Count uint `json:"count"`
 }
 
 func main() {
-	var count int = 0
+	var count uint = 0
 	w := webview.New(false)
 	defer w.Destroy()
 	w.SetTitle("Bind Example")
