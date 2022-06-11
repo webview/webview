@@ -27,6 +27,8 @@ We have started working on publishing documentation at [webview.dev] but you can
 
 To keep this section simple, instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
+We are going to show you just enough to get a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
+
 Start with creating a new directory structure for your project because you will need it to follow along.
 
 ```sh
@@ -240,6 +242,7 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 
 [macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
 [docs-repo]:         https://github.com/webview/docs
+[examples]:          https://github.com/webview/webview/tree/master/examples
 [go-docs]:           https://pkg.go.dev/github.com/webview/webview
 [gtk]:               https://docs.gtk.org/gtk3/
 [issues]:            https://github.com/webview/docs/issues
