@@ -224,6 +224,8 @@ example.app                 bundle (zip archive)
 
 Read more about the [structure of bundles][macos-app-bundle] at the Apple Developer site.
 
+> Tip: The `png2icns` tool can create icns files from PNG files. See the `icnsutils` package for Debian-based systems.
+
 ### Windows Apps
 
 You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program. If you instead use Visual C++ then look into the [Windows Resource Compiler][win32-rc].
