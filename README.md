@@ -25,6 +25,8 @@ We have started working on publishing documentation at [webview.dev] but you can
 
 ## Prerequisites
 
+Your compiler must support minimum C++11 except for platforms that require a more modern version.
+
 ### Linux
 
 The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your Linux distribution regarding how to install those those.
@@ -41,6 +43,10 @@ BSD-based systems:
 * Execution on BSD-based systems may require adding the `wxallowed` option (see [mount(8)](https://man.openbsd.org/mount.8))  to your fstab to bypass [W^X](https://en.wikipedia.org/wiki/W%5EX "write xor execute") memory protection for your executable. Please see if it works without disabling this security feature first.
 
 ### Windows
+
+Your compiler must support C++17 and we recommend to pair it with an up-to-date Windows 10 SDK.
+
+For Visual C++ we recommend Visual Studio 2022 or later. We have a [separate section for MinGW-w64](#mingw-w64-requirements).
 
 Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] installed on their system for any version of Windows before Windows 11.
 
