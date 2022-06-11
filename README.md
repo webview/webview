@@ -180,7 +180,7 @@ go build -o build/basic basic.go && ./build/basic
 go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
 
-> **Note:** On macOS you would generally [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata for your app.
+> **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata for your app.
 
 ### Try More Examples
 
