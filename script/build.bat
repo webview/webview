@@ -130,7 +130,6 @@ go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\go\bind
 echo Running tests
 "%build_dir%\webview_test.exe" || exit \b
 
-
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
