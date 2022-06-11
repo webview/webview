@@ -21,7 +21,8 @@ func Example() {
 	w.Bind("quit", func() {
 		w.Terminate()
 	})
-	w.SetHtml(`<!doctype html>
+	w.Navigate(`data:text/html,
+		<!doctype html>
 		<html>
 			<body>hello</body>
 			<script>
