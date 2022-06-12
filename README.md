@@ -27,9 +27,9 @@ We have started working on publishing documentation at [webview.dev] but you can
 
 Your compiler must support minimum C++11 except for platforms that require a more modern version.
 
-### Linux
+### Unix-like Systems
 
-The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your Linux distribution regarding how to install those those.
+The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your system distribution regarding how to install those those.
 
 Debian-based systems:
 
