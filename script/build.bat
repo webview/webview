@@ -83,14 +83,14 @@ cl %warning_params% ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
-	"%src_dir%\examples\cpp\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit \b
+	"%src_dir%\examples\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
-	"%src_dir%\examples\cpp\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit \b
+	"%src_dir%\examples\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit \b
 
 echo Building C examples (x64)
 mkdir build\examples\c
@@ -101,7 +101,7 @@ cl %warning_params% ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
 	"%src_dir%\dll\x64\webview.lib" ^
-	"%src_dir%\examples\c\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit \b
+	"%src_dir%\examples\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
@@ -109,7 +109,7 @@ cl %warning_params% ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
 	"%src_dir%\dll\x64\webview.lib" ^
-	"%src_dir%\examples\c\bind.c" /link "/OUT:%build_dir%\examples\c\bind.exe" || exit \b
+	"%src_dir%\examples\bind.c" /link "/OUT:%build_dir%\examples\c\bind.exe" || exit \b
 
 echo Building webview_test.exe (x64)
 cl %warning_params% ^
@@ -124,8 +124,8 @@ echo Building Go examples
 mkdir build\examples\go
 set CGO_CPPFLAGS="-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
 set CGO_LDFLAGS="-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
-go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\go\basic.go || exit /b
-go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\go\bind.go || exit /b
+go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
+go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
 
 echo Running tests
 "%build_dir%\webview_test.exe" || exit \b
