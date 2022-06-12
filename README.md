@@ -56,7 +56,7 @@ If you are a developer of this project then please go to the [development sectio
 
 Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
-You will have a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
+You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
 
 Start with creating a new directory structure for your project:
 
