@@ -77,7 +77,7 @@ curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -x
 copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
 
-> **Note:** You need to distribute the `WebView2Loader.dll` file along with your app unless you link it statically but you must build our library and its examples using Visual C++ if so.
+> **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
 
