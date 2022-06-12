@@ -86,7 +86,7 @@ copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 Save the basic C++ example into your project directory:
 
 ```sh
-curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/cpp/basic.cc"
+curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/basic.cc"
 ```
 
 Build and run the example:
@@ -127,7 +127,7 @@ cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
 Save the basic C example into your project directory:
 
 ```sh
-curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/c/basic.c"
+curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/basic.c"
 ```
 
 Build the library and example, then run it:
@@ -168,7 +168,7 @@ set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 Save the basic Go example into your project directory:
 
 ```sh
-curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/go/basic.go"
+curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/basic.go"
 ```
 
 Build and run the example:

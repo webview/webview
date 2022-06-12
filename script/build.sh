@@ -17,37 +17,37 @@ if command -v clang-format >/dev/null 2>&1 ; then
 	clang-format -i \
 		"$DIR/webview.h" \
 		"$DIR/webview_test.cc" \
-		"$DIR/examples/c/"*.c \
-		"$DIR/examples/cpp/"*.cc
+		"$DIR/examples/"*.c \
+		"$DIR/examples/"*.cc
 else
 	echo "SKIP: Formatting (clang-format not installed)"
 fi
 
 if command -v clang-tidy >/dev/null 2>&1 ; then
 	echo "Linting..."
-	clang-tidy "$DIR/examples/cpp/basic.cc" -- $CXXFLAGS
-	clang-tidy "$DIR/examples/cpp/bind.cc" -- $CXXFLAGS
+	clang-tidy "$DIR/examples/basic.cc" -- $CXXFLAGS
+	clang-tidy "$DIR/examples/bind.cc" -- $CXXFLAGS
 	clang-tidy "$DIR/webview_test.cc" -- $CXXFLAGS
 else
 	echo "SKIP: Linting (clang-tidy not installed)"
 fi
 
-mkdir -p build/examples/cpp build/examples/c || true
+mkdir -p build/examples/c build/examples/cc build/examples/go || true
 
 echo "Building C++ examples"
-c++ examples/cpp/basic.cc $CXXFLAGS -o build/examples/cpp/basic
-c++ examples/cpp/bind.cc $CXXFLAGS -o build/examples/cpp/bind
+c++ examples/basic.cc $CXXFLAGS -o build/examples/cc/basic
+c++ examples/bind.cc $CXXFLAGS -o build/examples/cc/bind
 
 echo "Building C examples"
 c++ -c $CXXFLAGS webview.cc -o build/webview.o
-cc -c examples/c/basic.c $CFLAGS -o build/examples/c/basic.o
-cc -c examples/c/bind.c $CFLAGS -o build/examples/c/bind.o
+cc -c examples/basic.c $CFLAGS -o build/examples/c/basic.o
+cc -c examples/bind.c $CFLAGS -o build/examples/c/bind.o
 c++ build/examples/c/basic.o build/webview.o $CXXFLAGS -o build/examples/c/basic
 c++ build/examples/c/bind.o build/webview.o $CXXFLAGS -o build/examples/c/bind
 
 echo "Building Go examples"
-go build -o build/examples/go/basic examples/go/basic.go
-go build -o build/examples/go/bind examples/go/bind.go
+go build -o build/examples/go/basic examples/basic.go
+go build -o build/examples/go/bind examples/bind.go
 
 echo "Building test app"
 c++ webview_test.cc $CXXFLAGS -o webview_test
