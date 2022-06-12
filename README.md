@@ -54,11 +54,11 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-To keep this section simple, instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
-Onward we are going to show you just enough to get a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
+You will have a working app but you are encouraged to explore the [available examples](examples) and try the ones that go beyond the mere basics.
 
-Start with creating a new directory structure for your project because you will need it to follow along.
+Start with creating a new directory structure for your project:
 
 ```sh
 mkdir my-project && cd my-project
@@ -158,7 +158,7 @@ go mod init example.com/m
 go get github.com/webview/webview
 ```
 
-On Windows you'll need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)).
+On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)).
 
 ```bat
 set CGO_CPPFLAGS="-I%cd%\libs\webview2\build\native\include"
