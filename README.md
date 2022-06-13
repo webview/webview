@@ -183,11 +183,9 @@ go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.ex
 
 > **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata for your app.
 
-### Try More Examples
+### More Examples
 
-While the basic examples shown here may not be enough to get the whole picture, the good news is that the same procedure will work for all of our examples so please help yourself and try the other examples as well!
-
-We hope that you found it easy to get started using this library but if not then we have some more work to do and would appreciate [your feedback][issues-new].
+The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
 
 ## Development
 
