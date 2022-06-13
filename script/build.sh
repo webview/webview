@@ -324,7 +324,6 @@ function compile_exe_c {
     c++ "${output_path_excl_ext}.o" "${build_arch_dir}/webview.o" \
         "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
         -o "${output_path_excl_ext}"|| return
-    echo 1
 }
 
 function compile_exe_cc {
