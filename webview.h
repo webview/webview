@@ -836,7 +836,7 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 #include <stdlib.h>
 #include <windows.h>
 
-#include "webview2.h"
+#include "WebView2.h"
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
