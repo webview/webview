@@ -75,26 +75,62 @@ if not exist "%build_dir%\WebView2Loader.dll" (
 
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 
-echo Building webview.exe (x64)
+echo Building C++ examples (x64)
+mkdir build\examples\cpp
 cl %warning_params% ^
+	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	"%src_dir%\dll\x64\webview.lib" ^
-	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
-	"%src_dir%\main.cc" /link "/OUT:%build_dir%\webview.exe" || exit \b
+	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
+	"%src_dir%\examples\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit \b
+cl %warning_params% ^
+	/I "%src_dir%" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+	"%src_dir%\dll\x64\webview.lib" ^
+	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
+	"%src_dir%\examples\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit \b
+
+echo Building C examples (x64)
+mkdir build\examples\c
+cl %warning_params% ^
+	/I "%src_dir%" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+	"%src_dir%\dll\x64\webview.lib" ^
+	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
+	"%src_dir%\dll\x64\webview.lib" ^
+	"%src_dir%\examples\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit \b
+cl %warning_params% ^
+	/I "%src_dir%" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
+	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
+	"%src_dir%\dll\x64\webview.lib" ^
+	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
+	"%src_dir%\dll\x64\webview.lib" ^
+	"%src_dir%\examples\bind.c" /link "/OUT:%build_dir%\examples\c\bind.exe" || exit \b
 
 echo Building webview_test.exe (x64)
 cl %warning_params% ^
 	/utf-8 ^
+	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
+echo Building Go examples
+mkdir build\examples\go
+set CGO_CPPFLAGS="-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
+set CGO_LDFLAGS="-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
+go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
+go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
+
+echo Running tests
 "%build_dir%\webview_test.exe" || exit \b
 
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
-set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
 go test || exit \b
