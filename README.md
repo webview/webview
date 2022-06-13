@@ -152,14 +152,14 @@ g++ build/basic.o build/webview.o -Llibs/webview2/build/native/x64 -lWebView2Loa
 
 See [Go package documentation][go-docs] for the Go API documentation, or simply read the source code.
 
-Install the package:
+Create a new module and install the package:
 
 ```sh
 go mod init example.com/m
 go get github.com/webview/webview
 ```
 
-On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)).
+On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
 
 ```bat
 set CGO_CPPFLAGS="-I%cd%\libs\webview2\build\native\include"
@@ -237,11 +237,11 @@ Remember to bundle `WebView2Loader.dll` unless you linked it statically.
 
 Since a browser engine is not a full web browser it may not support every feature you may expect from a browser. If you find that a feature does not work as expected then please consult with the browser engine's documentation and [open an issue][issues-new] if you think that the library should support it.
 
-For example, the library does not attempt to support user interaction features like `alert()`, `confirm()` and `prompt()` and other non-essential features like the `console.log`.
+For example, the library does not attempt to support user interaction features like `alert()`, `confirm()` and `prompt()` and other non-essential features like `console.log()`.
 
 ### Go Bindings
 
-Calling `Eval()` or `Dispatch()` before `Run()` does not work, because the webview instance has only configured, but not started yet.
+Calling `Eval()` or `Dispatch()` before `Run()` does not work because the webview instance has only been configured and not yet started.
 
 ## Bindings
 
