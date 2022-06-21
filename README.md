@@ -54,7 +54,7 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. Use the Command shell on Windows with these instructions rather than PowerShell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
 You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
 
@@ -63,8 +63,6 @@ Start with creating a new directory structure for your project:
 ```sh
 mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
 ```
 
 ### Windows Preperation
@@ -80,6 +78,15 @@ copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 > **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
+
+### C/C++ Preparation
+
+Fetch the webview library:
+
+```sh
+curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
+curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+```
 
 ### Getting Started with C++
 
@@ -162,7 +169,7 @@ go get github.com/webview/webview
 On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
 
 ```bat
-set CGO_CPPFLAGS="-I%cd%\libs\webview2\build\native\include"
+set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
 set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
