@@ -162,7 +162,7 @@ go get github.com/webview/webview
 On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
 
 ```bat
-set CGO_CPPFLAGS="-I%cd%\libs\webview2\build\native\include"
+set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
 set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
