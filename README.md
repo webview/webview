@@ -63,8 +63,6 @@ Start with creating a new directory structure for your project:
 ```sh
 mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
 ```
 
 ### Windows Preperation
@@ -80,6 +78,15 @@ copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 > **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
+
+### C/C++ Preparation
+
+Fetch the webview library:
+
+```sh
+curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
+curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+```
 
 ### Getting Started with C++
 
