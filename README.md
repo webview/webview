@@ -261,7 +261,7 @@ windres -o build/resources.o resources.rc
 g++ basic.cc build/resources.o [...]
 ```
 
-Remember to bundle `WebView2Loader.dll` unless you linked it statically.
+Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
 
 ## Limitations
 
