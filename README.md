@@ -236,6 +236,31 @@ Read more about the [structure of bundles][macos-app-bundle] at the Apple Develo
 
 You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program. If you instead use Visual C++ then look into the [Windows Resource Compiler][win32-rc].
 
+The directory structure could look like this:
+
+```
+my-project/
+├── icons/
+|   ├── application.ico
+|   └── window.ico
+├── basic.cc
+└── resources.rc
+```
+
+`resources.rc`:
+```
+100 ICON "icons\\application.ico"
+32512 ICON "icons\\window.ico"
+```
+
+> Note: The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
+
+Compile:
+```sh
+windres -o build/resources.o resources.rc
+g++ basic.cc build/resources.o [...]
+```
+
 Remember to bundle `WebView2Loader.dll` unless you linked it statically.
 
 ## Limitations
