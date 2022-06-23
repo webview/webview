@@ -104,7 +104,7 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 #### Bonus for Visual C++
@@ -152,7 +152,7 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o  -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
@@ -236,7 +236,32 @@ Read more about the [structure of bundles][macos-app-bundle] at the Apple Develo
 
 You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program. If you instead use Visual C++ then look into the [Windows Resource Compiler][win32-rc].
 
-Remember to bundle `WebView2Loader.dll` unless you linked it statically.
+The directory structure could look like this:
+
+```
+my-project/
+├── icons/
+|   ├── application.ico
+|   └── window.ico
+├── basic.cc
+└── resources.rc
+```
+
+`resources.rc`:
+```
+100 ICON "icons\\application.ico"
+32512 ICON "icons\\window.ico"
+```
+
+> Note: The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
+
+Compile:
+```sh
+windres -o build/resources.o resources.rc
+g++ basic.cc build/resources.o [...]
+```
+
+Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
 
 ## Limitations
 
