@@ -1013,13 +1013,12 @@ struct webview2_symbols {
 
 std::wstring find_edge_webview_client_dll() {
   std::wstring stable_release_guid = L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
-  std::wstring sub_key_string =
+  std::wstring sub_key =
       L"SOFTWARE\\Microsoft\\EdgeUpdate\\ClientState\\" + stable_release_guid;
   HKEY root_key = HKEY_LOCAL_MACHINE;
   REGSAM sam = KEY_READ | KEY_WOW64_32KEY;
   HKEY key;
-  LSTATUS status =
-      RegOpenKeyExW(root_key, sub_key_string.c_str(), 0, sam, &key);
+  LSTATUS status = RegOpenKeyExW(root_key, sub_key.c_str(), 0, sam, &key);
   if (status != ERROR_SUCCESS) {
     return std::wstring();
   }
@@ -1334,10 +1333,9 @@ private:
       if (!ppv) {
         return E_POINTER;
       }
-      if (IsEqualIID(
-              riid,
-              mswebview2::
-                  IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler)) {
+      auto other_iid = mswebview2::
+          IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
+      if (IsEqualIID(riid, other_iid)) {
         *ppv = static_cast<
             ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *>(this);
       }
