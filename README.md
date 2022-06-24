@@ -72,10 +72,7 @@ The [WebView2 library][ms-webview2-lib] is required when compiling programs:
 ```bat
 mkdir libs\webview2
 curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
-copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
-
-> **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
 
@@ -104,7 +101,7 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 #### Bonus for Visual C++
@@ -152,7 +149,7 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o  -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go

@@ -839,6 +839,7 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 #include "WebView2.h"
 
 #ifdef _MSC_VER
+#pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
@@ -940,6 +941,10 @@ public:
   // Returns true if the library is currently loaded; otherwise false.
   bool is_loaded() const { return !!m_handle; }
 
+  void detach() {
+    m_handle = nullptr;
+  }
+
 private:
   HMODULE m_handle = nullptr;
 };
@@ -981,6 +986,91 @@ bool enable_dpi_awareness() {
     return !!fn();
   }
   return true;
+}
+
+namespace mswebview2 {
+  static constexpr IID IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler{
+    0x4E8A3389, 0xC9D8, 0x4BD2, 0xB6, 0xB5, 0x12, 0x4F, 0xEE, 0x6C, 0xC1, 0x4D
+  };
+
+  struct WebView2RunTimeType {
+    enum type {
+      installed = 0
+    };
+  };
+
+  struct webview2_symbols {
+    using CreateWebViewEnvironmentWithOptionsInternal_t = HRESULT(STDMETHODCALLTYPE *)(bool, WebView2RunTimeType::type, PCWSTR, IUnknown*, ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+    using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
+
+    static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
+        webview::detail::library_symbol<CreateWebViewEnvironmentWithOptionsInternal_t>(
+            "CreateWebViewEnvironmentWithOptionsInternal");
+    static constexpr auto DllCanUnloadNow =
+        webview::detail::library_symbol<DllCanUnloadNow_t>(
+            "DllCanUnloadNow");
+  };
+
+  std::wstring find_edge_webview_client_dll() {
+    std::wstring stable_release_guid = L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+    std::wstring sub_key_string = L"SOFTWARE\\Microsoft\\EdgeUpdate\\ClientState\\" + stable_release_guid;
+    HKEY root_key = HKEY_LOCAL_MACHINE;
+    REGSAM sam = KEY_READ | KEY_WOW64_32KEY;
+    HKEY key;
+    LSTATUS status = RegOpenKeyExW(root_key, sub_key_string.c_str(), 0, sam, &key);
+    if (status != ERROR_SUCCESS) {
+      return std::wstring();
+    }
+    auto value_name = L"EBWebView";
+    DWORD buf_length = 0;
+    status = RegQueryValueExW(key, value_name, nullptr, nullptr, nullptr, &buf_length);
+    if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) {
+      return std::wstring();
+    }
+    std::wstring client_dll_path(buf_length / sizeof(wchar_t), 0);
+    auto buf = reinterpret_cast<LPBYTE>(&client_dll_path[0]);
+    status = RegQueryValueExW(key, value_name, nullptr, nullptr, buf, &buf_length);
+    if (status != ERROR_SUCCESS) {
+      return std::wstring();
+    }
+    for (std::size_t length = client_dll_path.size(); length > 0; --length) {
+      if (client_dll_path[length - 1] != 0) {
+        client_dll_path.resize(length);
+        break;
+      }
+    }
+    RegCloseKey(key);
+    client_dll_path += L"\\EBWebView\\";
+  #if defined(_M_X64) || defined(_M_AMD64)
+    client_dll_path += L"x64";
+  #elif defined(_M_X86)
+    client_dll_path += L"x86";
+  #elif defined(_M_ARM64)
+    // TODO: Check if this is actually possible
+    client_dll_path += L"arm64";
+  #endif
+    client_dll_path += L"\\EmbeddedBrowserWebView.dll";
+    return client_dll_path;
+  }
+
+  STDAPI CreateCoreWebView2EnvironmentWithOptions(PCWSTR browserExecutableFolder, PCWSTR userDataFolder, ICoreWebView2EnvironmentOptions* environmentOptions, ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler) {
+    auto client_dll_path = find_edge_webview_client_dll();
+    if (client_dll_path.empty()) {
+      return -1;
+    }
+    auto client_dll = webview::detail::native_library(client_dll_path.c_str());
+    if (auto fn = client_dll.get(webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
+      auto rtt = WebView2RunTimeType::installed;
+      environmentCreatedHandler->AddRef();
+      return fn(true, rtt, userDataFolder, environmentOptions, environmentCreatedHandler);
+    }
+    if (auto fn = client_dll.get(webview2_symbols::DllCanUnloadNow)) {
+      if (!fn()) {
+        client_dll.detach();
+      }
+    }
+    return ERROR_SUCCESS;
+  }
 }
 
 class win32_edge_engine {
@@ -1171,7 +1261,7 @@ private:
           m_webview = webview;
           flag.clear();
         });
-    HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
+    HRESULT res = detail::mswebview2::CreateCoreWebView2EnvironmentWithOptions(
         nullptr, userDataFolder, nullptr, handler);
     if (res != S_OK) {
       return false;
@@ -1231,6 +1321,12 @@ private:
       return 0;
     }
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+      if (!ppv) {
+        return E_POINTER;
+      }
+      if (IsEqualIID(riid, mswebview2::IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler)) {
+        *ppv = static_cast<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *>(this);
+      }
       return S_OK;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,

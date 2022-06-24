@@ -1,6 +1,7 @@
 # Build artifacts
 /build
 /dll
+/libs
 /script/Microsoft*
 /script/nuget.exe
 webview
