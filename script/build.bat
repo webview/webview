@@ -122,7 +122,7 @@ cl %warning_params% ^
 
 echo Building Go examples
 mkdir build\examples\go
-set CGO_CPPFLAGS="-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
+set CGO_CXXFLAGS="-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
 set CGO_LDFLAGS="-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
 go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
 go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
