@@ -65,17 +65,6 @@ mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
 ```
 
-### Windows Preperation
-
-The [WebView2 library][ms-webview2-lib] is required when compiling programs:
-
-```bat
-mkdir libs\webview2
-curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
-```
-
-> **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
-
 ### C/C++ Preparation
 
 Fetch the webview library:
@@ -83,6 +72,13 @@ Fetch the webview library:
 ```sh
 curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
 curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+```
+
+If you are building on Windows then you need the [WebView2 library][ms-webview2-lib]'s header file:
+
+```bat
+mkdir libs\webview2
+curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
 ```
 
 ### Getting Started with C++
@@ -101,30 +97,28 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 #### Bonus for Visual C++
 
-Build a shared library with WebView2 linked statically:
+Build a shared library:
 
 ```bat
 cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
     /D "WEBVIEW_API=__declspec(dllexport)" ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link /DLL advapi32.lib /OUT:build\webview.dll
+    /link /DLL /OUT:build\webview.dll
 ```
 
-Build the example with WebView2 linked statically:
+Build an example:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link advapi32.lib /OUT:build\basic.exe
+    /link /OUT:build\basic.exe
 ```
 
 ### Getting Started with C
@@ -149,7 +143,7 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
@@ -161,13 +155,6 @@ Create a new module and install the package:
 ```sh
 go mod init example.com/m
 go get github.com/webview/webview
-```
-
-On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
-
-```bat
-set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
-set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
 Save the basic Go example into your project directory:
@@ -258,7 +245,7 @@ windres -o build/resources.o resources.rc
 g++ basic.cc build/resources.o [...]
 ```
 
-Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
+Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64.
 
 ## Limitations
 
@@ -278,7 +265,7 @@ Language    | Project
 ----------  | -------
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
-Go          | [webview/webview](https://github.com/webview/webview)
+Go          | [webview/webview][webview]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [shannah/webviewjar](https://github.com/shannah/webviewjar)
@@ -304,6 +291,7 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
 [webkitgtk]:         https://webkitgtk.org/
+[webview]:           https://github.com/webview/webview
 [webview.dev]:       https://webview.dev
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [ms-webview2-lib]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
