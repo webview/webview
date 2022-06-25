@@ -836,7 +836,23 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 #include <stdlib.h>
 #include <windows.h>
 
+// Selects whether to use embedded headers for the WebView2 library or external headers.
+// - Don't include embedded header if WEBVIEW_NO_EMBEDDED_WEBVIEW2 is defined.
+// - Include embedded header if it can be detected (convenience for MinGW-w64/GCC).
+// - Include embedded header if WEBVIEW_USE_EMBEDDED_WEBVIEW2 i defined.
+// - Include external header if embedded header has not been included.
+#if !defined(WEBVIEW_NO_EMBEDDED_WEBVIEW2)
+#if defined(__has_include)
+#if __has_include("libs/mswebview2/versions/auto.h")
+#include "libs/mswebview2/versions/auto.h"
+#endif
+#elif defined(WEBVIEW_USE_EMBEDDED_WEBVIEW2)
+#include "libs/mswebview2/versions/auto.h"
+#endif
+#endif
+#ifndef __webview2_h__
 #include "WebView2.h"
+#endif
 
 #ifdef _MSC_VER
 #pragma comment(lib, "advapi32.lib")

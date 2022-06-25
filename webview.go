@@ -8,7 +8,6 @@ package webview
 #cgo darwin LDFLAGS: -framework WebKit
 
 #cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
-#cgo windows,dev CXXFLAGS: -Ilibs/webview2/build/native/include
 #cgo windows LDFLAGS: -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32
 
 #include "webview.h"

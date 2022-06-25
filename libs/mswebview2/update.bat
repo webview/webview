@@ -9,7 +9,7 @@ if "%desired_version%" == "" (
     exit /b 1
 )
 
-set "dest_dir=%script_dir%\include\webview\mswebview2"
+set "dest_dir=%script_dir%\versions"
 
 :temp_name_loop
     set temp_name_prefix=webview_temp_
@@ -61,7 +61,7 @@ set "dest_dir=%script_dir%\include\webview\mswebview2"
 
 :stage_3
     echo Generating redirection header...
-    set "stage_gen_header_path=%temp_stage_dir%\select_webview2.h"
+    set "stage_gen_header_path=%temp_stage_dir%\auto.h"
     set no_wv2_guard_def=WEBVIEW_EMBEDDED_WEBVIEW2_H
     set use_wv2_def=WEBVIEW_USE_EMBEDDED_WEBVIEW2
     set no_wv2_def=WEBVIEW_NO_EMBEDDED_WEBVIEW2
@@ -69,14 +69,10 @@ set "dest_dir=%script_dir%\include\webview\mswebview2"
     (
         echo #ifndef %no_wv2_guard_def%
         echo #define %no_wv2_guard_def%
-        echo #if defined^(%use_wv2_def%^) ^&^& ^!defined^(%no_wv2_def%^)
         echo #ifndef %wv2_header_path_def%
         echo #define %wv2_header_path_def% "%version%/WebView2.h"
         echo #endif /* %wv2_header_path_def% */
         echo #include %wv2_header_path_def%
-        echo #else
-        echo #include ^<WebView2.h^>
-        echo #endif /* defined^(%use_wv2_def%^) ^&^& ^!defined^(%no_wv2_def%^) */
         echo #endif /* %no_wv2_guard_def% */
     ) > "%stage_gen_header_path%" || exit /b
 
