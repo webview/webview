@@ -5,19 +5,10 @@ set script_dir=%~dp0
 set src_dir=%script_dir%..
 set build_dir=%script_dir%..\build
 set libs_dir=%src_dir%\libs
-set libs_webview2_dir=%libs_dir%\webview2
 mkdir "%build_dir%"
 
 echo Webview directory: %src_dir%
 echo Build directory: %build_dir%
-
-:: If you update the nuget package, change its version here
-set nuget_version=1.0.1150.38
-echo Using Nuget Package microsoft.web.webview2.%nuget_version%
-if not exist "%libs_webview2_dir%\Microsoft.Web.WebView2.nuspec" (
-	curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/%nuget_version%" | tar -xf - -C "%libs_webview2_dir%" || exit /b
-	echo Nuget package installed
-)
 
 echo Looking for vswhere.exe...
 set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -51,7 +42,6 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo "Building webview.dll (x86)"
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
-		/I "%libs_webview2_dir%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit \b
 
@@ -59,7 +49,6 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo "Building webview.dll (x64)"
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
-		/I "%libs_webview2_dir%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit \b
 )
@@ -73,13 +62,11 @@ echo Building C++ examples (x64)
 mkdir build\examples\cpp
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
 	"%src_dir%\examples\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
 	"%src_dir%\examples\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit \b
@@ -88,30 +75,24 @@ echo Building C examples (x64)
 mkdir build\examples\c
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
-	"%src_dir%\dll\x64\webview.lib" ^
 	"%src_dir%\examples\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
-	"%src_dir%\dll\x64\webview.lib" ^
 	"%src_dir%\examples\bind.c" /link "/OUT:%build_dir%\examples\c\bind.exe" || exit \b
 
 echo Building webview_test.exe (x64)
 cl %warning_params% ^
 	/utf-8 ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
 echo Building Go examples
 mkdir build\examples\go
-set CGO_CPPFLAGS="-I%libs_webview2_dir%\build\native\include"
 go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
 go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
 
