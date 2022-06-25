@@ -1,4 +1,5 @@
 @echo off
+setlocal
 
 echo Prepare directories...
 set script_dir=%~dp0
