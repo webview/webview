@@ -1074,12 +1074,20 @@ struct WebView2RunTimeType {
 };
 
 struct webview2_symbols {
+  using CreateCoreWebView2EnvironmentWithOptions_t =
+      HRESULT(STDMETHODCALLTYPE *)(
+          PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
   using CreateWebViewEnvironmentWithOptionsInternal_t =
       HRESULT(STDMETHODCALLTYPE *)(
           bool, WebView2RunTimeType::type, PCWSTR, IUnknown *,
           ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
   using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
 
+  static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
+      webview::detail::library_symbol<
+          CreateCoreWebView2EnvironmentWithOptions_t>(
+          "CreateCoreWebView2EnvironmentWithOptions");
   static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
       webview::detail::library_symbol<
           CreateWebViewEnvironmentWithOptionsInternal_t>(
@@ -1110,7 +1118,7 @@ std::wstring find_edge_webview_client_dll() {
   return client_dll_path;
 }
 
-STDAPI CreateCoreWebView2EnvironmentWithOptions(
+STDAPI create_environment_with_options_impl(
     PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
@@ -1134,6 +1142,25 @@ STDAPI CreateCoreWebView2EnvironmentWithOptions(
   }
   return ERROR_SUCCESS;
 }
+
+STDAPI create_environment_with_options(
+    PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
+    ICoreWebView2EnvironmentOptions *environmentOptions,
+    ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+        *environmentCreatedHandler) {
+  native_library loader_lib(L"WebView2Loader.dll");
+  if (loader_lib.is_loaded()) {
+    if (auto fn = loader_lib.get(
+            webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
+      return fn(browserExecutableFolder, userDataFolder, environmentOptions,
+                environmentCreatedHandler);
+    }
+  }
+  return create_environment_with_options_impl(
+      browserExecutableFolder, userDataFolder, environmentOptions,
+      environmentCreatedHandler);
+}
+
 } // namespace mswebview2
 
 class win32_edge_engine {
@@ -1324,7 +1351,7 @@ private:
           m_webview = webview;
           flag.clear();
         });
-    HRESULT res = detail::mswebview2::CreateCoreWebView2EnvironmentWithOptions(
+    HRESULT res = mswebview2::create_environment_with_options(
         nullptr, userDataFolder, nullptr, handler);
     if (res != S_OK) {
       return false;
