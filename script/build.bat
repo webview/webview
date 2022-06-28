@@ -44,6 +44,8 @@ set warning_params=/W4 /wd4100
 if not exist "%src_dir%\dll\x64\webview.dll" (
 	mkdir "%src_dir%\dll\x86"
 	mkdir "%src_dir%\dll\x64"
+	copy  "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll" "%src_dir%\dll\x64"
+	copy  "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x86\WebView2Loader.dll" "%src_dir%\dll\x86"
 
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x86 -host_arch=x64
 
@@ -64,6 +66,9 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 )
 if not exist "%build_dir%\webview.dll" (
 	copy "%src_dir%\dll\x64\webview.dll" %build_dir%
+)
+if not exist "%build_dir%\WebView2Loader.dll" (
+	copy "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll" "%build_dir%"
 )
 
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
