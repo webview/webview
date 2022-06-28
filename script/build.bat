@@ -122,4 +122,4 @@ echo Running tests
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
-go test -mod=vendor || exit \b
+go test -mod=vendor || exit /b
