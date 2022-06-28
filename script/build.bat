@@ -91,10 +91,13 @@ cl %warning_params% ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
+echo Setting up Go vendoring...
+go mod vendor || exit /b
+
 echo Building Go examples
 mkdir build\examples\go
-go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
-go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
+go build -mod=vendor -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
+go build -mod=vendor -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
 
 echo Running tests
 "%build_dir%\webview_test.exe" || exit \b
@@ -102,4 +105,4 @@ echo Running tests
 echo Running Go tests
 cd /D %src_dir%
 set CGO_ENABLED=1
-go test || exit \b
+go test -mod=vendor || exit \b
