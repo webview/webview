@@ -22,6 +22,7 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
+	_ "github.com/SteffenL/mswebview2"
 	"reflect"
 	"runtime"
 	"sync"
