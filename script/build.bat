@@ -5,8 +5,8 @@ set script_dir=%~dp0
 set src_dir=%script_dir%..
 set build_dir=%script_dir%..\build
 set libs_dir=%src_dir%\libs
-set libs_webview2_dir=%libs_dir%\webview2
-mkdir "%build_dir%"
+set libs_webview2_dir=%libs_dir%\mswebview2
+mkdir "%build_dir%" "%libs_webview2_dir%"
 
 echo Webview directory: %src_dir%
 echo Build directory: %build_dir%
