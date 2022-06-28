@@ -74,12 +74,14 @@ curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/w
 curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
 ```
 
-If you are building on Windows then you need the [WebView2 library][ms-webview2-lib]'s header file:
+If you are building on Windows then you need the [WebView2 SDK][ms-webview2-sdk]:
 
 ```bat
 mkdir libs\webview2
 curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
 ```
+
+> **Note:** See our [notes for the WebView2 loader](#ms-webview2-loader) if you wish to use the official loader (`WebView2Loader.dll`).
 
 ### Getting Started with C++
 
@@ -184,6 +186,14 @@ To build the library, examples and run tests, run `script/build.sh` on Unix-base
 
 > **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
 
+## MS WebView2 Loader
+
+Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing it with your app.
+
+If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
+
+Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
+
 ## MinGW-w64 Requirements
 
 In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
@@ -245,7 +255,7 @@ windres -o build/resources.o resources.rc
 g++ basic.cc build/resources.o [...]
 ```
 
-Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64.
+Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64 and optionally `WebView2Loader.dll`.
 
 ## Limitations
 
@@ -294,7 +304,7 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [webview]:           https://github.com/webview/webview
 [webview.dev]:       https://webview.dev
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-[ms-webview2-lib]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
+[ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
 [win32-rc]:          https://docs.microsoft.com/en-us/windows/win32/menurc/resource-compiler
