@@ -1,8 +1,10 @@
 # Build artifacts
-/build
-/dll
+/build/
+/dll/
+/libs/
 /script/Microsoft*
 /script/nuget.exe
+/vendor/
 webview
 webview_test
 webview-example
