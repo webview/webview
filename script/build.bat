@@ -4,9 +4,7 @@ echo Prepare directories...
 set script_dir=%~dp0
 set src_dir=%script_dir%..
 set build_dir=%script_dir%..\build
-set libs_dir=%src_dir%\libs
-set libs_webview2_dir=%libs_dir%\mswebview2
-mkdir "%build_dir%" "%libs_webview2_dir%"
+mkdir "%build_dir%"
 
 echo Webview directory: %src_dir%
 echo Build directory: %build_dir%
@@ -14,8 +12,9 @@ echo Build directory: %build_dir%
 :: If you update the nuget package, change its version here
 set nuget_version=1.0.1150.38
 echo Using Nuget Package microsoft.web.webview2.%nuget_version%
-if not exist "%libs_webview2_dir%\Microsoft.Web.WebView2.nuspec" (
-	curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/%nuget_version%" | tar -xf - -C "%libs_webview2_dir%" || exit /b
+if not exist "%script_dir%\microsoft.web.webview2.%nuget_version%" (
+	curl -sSLO https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+	nuget.exe install Microsoft.Web.Webview2 -Version %nuget_version% -OutputDirectory %script_dir%
 	echo Nuget package installed
 )
 
@@ -51,7 +50,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo "Building webview.dll (x86)"
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
-		/I "%libs_webview2_dir%\build\native\include" ^
+		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit \b
 
@@ -59,7 +58,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo "Building webview.dll (x64)"
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
-		/I "%libs_webview2_dir%\build\native\include" ^
+		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit \b
 )
@@ -73,13 +72,13 @@ echo Building C++ examples (x64)
 mkdir build\examples\cpp
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
 	"%src_dir%\examples\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
 	"%src_dir%\examples\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit \b
@@ -88,14 +87,14 @@ echo Building C examples (x64)
 mkdir build\examples\c
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	"%src_dir%\examples\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit \b
 cl %warning_params% ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\c"\ ^
 	"%src_dir%\dll\x64\webview.lib" ^
@@ -105,7 +104,7 @@ echo Building webview_test.exe (x64)
 cl %warning_params% ^
 	/utf-8 ^
 	/I "%src_dir%" ^
-	/I "%libs_webview2_dir%\build\native\include" ^
+	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit \b
 
