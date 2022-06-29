@@ -1460,13 +1460,15 @@ private:
       if (!ppv) {
         return E_POINTER;
       }
-      auto other_iid = mswebview2::
+      // Note: We should probably add all of the interfaces we implement here.
+      auto CreateWebView2EnvironmentHandler =
           IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
-      if (IsEqualIID(riid, other_iid)) {
+      if (IsEqualIID(riid, CreateWebView2EnvironmentHandler)) {
         *ppv = static_cast<
             ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *>(this);
+        return S_OK;
       }
-      return S_OK;
+      return E_NOTIMPL;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
