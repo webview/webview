@@ -122,13 +122,16 @@ cl %warning_params% ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 	"%src_dir%\webview_test.cc" /link "/OUT:%build_dir%\webview_test.exe" || exit /b
 
-echo Building Go examples
-mkdir build\examples\go
+echo Setting up environment for Go...
 rem Argument quoting works for Go 1.18 and later but as of 2022-06-26 GitHub Actions has Go 1.17.11.
 rem See https://go-review.googlesource.com/c/go/+/334732/
 rem TODO: Use proper quoting when GHA has Go 1.18 or later.
 set "CGO_CXXFLAGS=-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
 set "CGO_LDFLAGS=-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
+set CGO_ENABLED=1
+
+echo Building Go examples
+mkdir build\examples\go
 go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
 go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
 
@@ -137,6 +140,5 @@ echo Running tests
 
 echo Running Go tests
 cd /D %src_dir%
-set CGO_ENABLED=1
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
 go test || exit /b
