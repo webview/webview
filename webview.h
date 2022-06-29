@@ -1116,7 +1116,17 @@ struct webview2_symbols {
       webview::detail::library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
 };
 
-std::wstring find_edge_webview_client_dll() {
+template <typename T>
+std::basic_string<T>
+get_last_native_path_component(const std::basic_string<T> &path) {
+  if (auto pos = path.find_last_of(static_cast<T>('\\'));
+      pos != std::basic_string<T>::npos) {
+    return path.substr(pos + 1);
+  }
+  return std::basic_string<T>();
+}
+
+std::wstring find_edge_webview_client_dll(unsigned int min_api_version) {
   std::wstring stable_release_guid = L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
   std::wstring sub_key =
       L"SOFTWARE\\Microsoft\\EdgeUpdate\\ClientState\\" + stable_release_guid;
@@ -1124,7 +1134,16 @@ std::wstring find_edge_webview_client_dll() {
   if (!key.is_open()) {
     return std::wstring();
   }
-  auto client_dll_path = key.query_string(L"EBWebView");
+  auto ebwebview_value = key.query_string(L"EBWebView");
+
+  auto client_version_string = get_last_native_path_component(ebwebview_value);
+  auto client_version = parse_version(client_version_string);
+  if (client_version[2] < min_api_version) {
+    // Our API version is greater than the runtime API version.
+    return std::wstring();
+  }
+
+  auto client_dll_path = ebwebview_value;
   client_dll_path += L"\\EBWebView\\";
 #if defined(_M_X64) || defined(_M_AMD64)
   client_dll_path += L"x64";
@@ -1143,7 +1162,14 @@ HRESULT create_environment_with_options_impl(
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
         *environmentCreatedHandler) {
-  auto client_dll_path = find_edge_webview_client_dll();
+  // The minimum WebView2 API version we need regardless of the SDK release
+  // actually used. The number comes from the SDK release version,
+  // e.g. 1.0.1150.38. To be safe the SDK should have a number that is greater
+  // than or equal to this number. The Edge browser webview client must
+  // have a number greater than or equal to this number.
+  constexpr unsigned int api_version = 1150;
+
+  auto client_dll_path = find_edge_webview_client_dll(api_version);
   if (client_dll_path.empty()) {
     return -1;
   }
