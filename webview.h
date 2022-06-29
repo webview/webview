@@ -1102,7 +1102,7 @@ std::wstring find_edge_webview_client_dll() {
   return client_dll_path;
 }
 
-STDAPI create_environment_with_options_impl(
+HRESULT create_environment_with_options_impl(
     PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
@@ -1127,7 +1127,7 @@ STDAPI create_environment_with_options_impl(
   return ERROR_SUCCESS;
 }
 
-STDAPI create_environment_with_options(
+HRESULT create_environment_with_options(
     PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
