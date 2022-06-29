@@ -895,6 +895,42 @@ std::string narrow_string(const std::wstring &input) {
   return std::string();
 }
 
+// Parses a version string with 1-4 integral components, e.g. "1.2.3.4".
+// Missing or invalid components default to 0, and excess components are ignored.
+template <typename T>
+std::array<unsigned int, 4>
+parse_version(const std::basic_string<T> &version) noexcept {
+  auto parse_component = [](auto sb, auto se) -> unsigned int {
+    try {
+      return std::stoul(std::basic_string<T>(sb, se));
+    } catch (std::exception &) {
+      return 0;
+    }
+  };
+  auto end = version.end();
+  auto sb = version.begin(); // subrange begin
+  auto se = sb;              // subrange end
+  unsigned int ci = 0;       // component index
+  std::array<unsigned int, 4> components{};
+  while (sb != end && se != end && ci < components.size()) {
+    if (*se == static_cast<T>('.')) {
+      components[ci++] = parse_component(sb, se);
+      sb = ++se;
+      continue;
+    }
+    ++se;
+  }
+  if (sb < se && ci < components.size()) {
+    components[ci] = parse_component(sb, se);
+  }
+  return components;
+}
+
+template <typename T, std::size_t Length>
+auto parse_version(const T (&version)[Length]) noexcept {
+  return parse_version(std::basic_string<T>(version, Length));
+}
+
 // Holds a symbol name and associated type for code clarity.
 template <typename T> class library_symbol {
 public:
