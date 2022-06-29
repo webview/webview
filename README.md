@@ -152,11 +152,10 @@ g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwa
 
 See [Go package documentation][go-docs] for the Go API documentation, or simply read the source code.
 
-Create a new module and install the package:
+Create a new Go module:
 
 ```sh
 go mod init example.com/m
-go get github.com/webview/webview
 ```
 
 Save the basic Go example into your project directory:
@@ -165,14 +164,23 @@ Save the basic Go example into your project directory:
 curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/basic.go"
 ```
 
+Install dependencies:
+
+```sh
+go get github.com/webview/webview
+go mod vendor
+```
+
 Build and run the example:
 
 ```sh
 # Linux, macOS
-go build -o build/basic basic.go && ./build/basic
+go build -mod=vendor -o build/basic basic.go && ./build/basic
 # Windows
-go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
+go build -mod=vendor -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
+
+> **Note:** `-mod=vendor` is optional if you use Go 1.14 or later.
 
 > **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata.
 
