@@ -1463,11 +1463,14 @@ private:
       auto CreateWebView2EnvironmentHandler =
           IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
       if (IsEqualIID(riid, CreateWebView2EnvironmentHandler)) {
-        *ppv = static_cast<
+        auto ptr = static_cast<
             ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *>(this);
+        ptr->AddRef();
+        *ppv = ptr;
         return S_OK;
       }
-      return E_NOTIMPL;
+      *ppv = nullptr;
+      return E_NOINTERFACE;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
