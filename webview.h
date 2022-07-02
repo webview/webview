@@ -1177,7 +1177,6 @@ HRESULT create_environment_with_options_impl(
   if (auto fn = client_dll.get(
           webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
     auto rtt = WebView2RunTimeType::installed;
-    environmentCreatedHandler->AddRef();
     return fn(true, rtt, userDataFolder, environmentOptions,
               environmentCreatedHandler);
   }
