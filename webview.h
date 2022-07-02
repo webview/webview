@@ -1232,7 +1232,11 @@ private:
       return 0;
     }
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
-      return S_OK;
+      if (!ppv) {
+        return E_POINTER;
+      }
+      *ppv = nullptr;
+      return E_NOINTERFACE;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
