@@ -1281,6 +1281,10 @@ public:
   }
 
   virtual ~win32_edge_engine() {
+    if (m_com_handler) {
+      m_com_handler->Release();
+      m_com_handler = nullptr;
+    }
     if (m_webview) {
       m_webview->Release();
       m_webview = nullptr;
@@ -1387,7 +1391,7 @@ private:
     wchar_t userDataFolder[MAX_PATH];
     PathCombineW(userDataFolder, dataPath, currentExeName);
 
-    auto handler = new webview2_com_handler(
+    m_com_handler = new webview2_com_handler(
         wnd, cb,
         [&](ICoreWebView2Controller *controller, ICoreWebView2 *webview) {
           controller->AddRef();
@@ -1397,7 +1401,7 @@ private:
           flag.clear();
         });
     HRESULT res = mswebview2::create_environment_with_options(
-        nullptr, userDataFolder, nullptr, handler);
+        nullptr, userDataFolder, nullptr, m_com_handler);
     if (res != S_OK) {
       return false;
     }
@@ -1420,13 +1424,6 @@ private:
   }
 
   virtual void on_message(const std::string &msg) = 0;
-
-  HWND m_window;
-  POINT m_minsz = POINT{0, 0};
-  POINT m_maxsz = POINT{0, 0};
-  DWORD m_main_thread = GetCurrentThreadId();
-  ICoreWebView2 *m_webview = nullptr;
-  ICoreWebView2Controller *m_controller = nullptr;
 
   class webview2_com_handler
       : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
@@ -1513,8 +1510,16 @@ private:
     HWND m_window;
     msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
-    std::atomic<ULONG> m_ref_count = 0;
+    std::atomic<ULONG> m_ref_count = 1;
   };
+
+  HWND m_window;
+  POINT m_minsz = POINT{0, 0};
+  POINT m_maxsz = POINT{0, 0};
+  DWORD m_main_thread = GetCurrentThreadId();
+  ICoreWebView2 *m_webview = nullptr;
+  ICoreWebView2Controller *m_controller = nullptr;
+  webview2_com_handler *m_com_handler = nullptr;
 };
 
 } // namespace detail
