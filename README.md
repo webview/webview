@@ -173,6 +173,8 @@ set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
 set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
+> Note: Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
+
 Save the basic Go example into your project directory:
 
 ```sh
