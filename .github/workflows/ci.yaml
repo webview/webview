@@ -22,8 +22,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Add MinGW-w64 to PATH
+        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
+        shell: cmd
       - name: Build and run tests
         run: ./script/build.bat
+        shell: cmd
 
   clang-format:
     runs-on: ubuntu-latest
