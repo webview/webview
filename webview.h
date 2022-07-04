@@ -2,6 +2,7 @@
  * MIT License
  *
  * Copyright (c) 2017 Serge Zaitsev
+ * Copyright (c) 2022 Steffen André Langnes
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -901,18 +902,19 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 //
 
 #define WIN32_LEAN_AND_MEAN
-#include <shellscalingapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
 #include <windows.h>
 
-#include "webview2.h"
+#include "WebView2.h"
 
+#ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "user32.lib")
+#endif
 
 namespace webview {
 namespace detail {
@@ -1014,17 +1016,22 @@ private:
 };
 
 struct user32_symbols {
+  using DPI_AWARENESS_CONTEXT = HANDLE;
+  using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+
   static constexpr auto SetProcessDpiAwarenessContext =
-      library_symbol<decltype(&SetProcessDpiAwarenessContext)>(
+      library_symbol<SetProcessDpiAwarenessContext_t>(
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
-      library_symbol<decltype(&SetProcessDPIAware)>("SetProcessDPIAware");
+      library_symbol<decltype(&::SetProcessDPIAware)>("SetProcessDPIAware");
 };
 
 struct shcore_symbols {
+  typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+  using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+
   static constexpr auto SetProcessDpiAwareness =
-      library_symbol<decltype(&SetProcessDpiAwareness)>(
-          "SetProcessDpiAwareness");
+      library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
 };
 
 bool enable_dpi_awareness() {
@@ -1037,7 +1044,7 @@ bool enable_dpi_awareness() {
   }
   if (auto shcore = native_library(L"shcore.dll")) {
     if (auto fn = shcore.get(shcore_symbols::SetProcessDpiAwareness)) {
-      auto result = fn(PROCESS_PER_MONITOR_DPI_AWARE);
+      auto result = fn(shcore_symbols::PROCESS_PER_MONITOR_DPI_AWARE);
       return result == S_OK || result == E_ACCESSDENIED;
     }
   }
@@ -1050,11 +1057,12 @@ bool enable_dpi_awareness() {
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
+    enable_dpi_awareness();
     if (window == nullptr) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
       HICON icon = (HICON)LoadImage(
-          hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
-          GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+          hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
+          GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
 
       WNDCLASSEXW wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -1062,7 +1070,6 @@ public:
       wc.hInstance = hInstance;
       wc.lpszClassName = L"webview";
       wc.hIcon = icon;
-      wc.hIconSm = icon;
       wc.lpfnWndProc =
           (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
             auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
@@ -1108,7 +1115,6 @@ public:
       m_window = *(static_cast<HWND *>(window));
     }
 
-    enable_dpi_awareness();
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
     SetFocus(m_window);
@@ -1122,6 +1128,10 @@ public:
   }
 
   virtual ~win32_edge_engine() {
+    if (m_com_handler) {
+      m_com_handler->Release();
+      m_com_handler = nullptr;
+    }
     if (m_webview) {
       m_webview->Release();
       m_webview = nullptr;
@@ -1236,7 +1246,7 @@ private:
     wchar_t userDataFolder[MAX_PATH];
     PathCombineW(userDataFolder, dataPath, currentExeName);
 
-    auto handler = new webview2_com_handler(
+    m_com_handler = new webview2_com_handler(
         wnd, cb,
         [this, wnd](ICoreWebView2Controller *controller,
                     ICoreWebView2 *webview) {
@@ -1247,7 +1257,7 @@ private:
           PostMessage(wnd, app_window_message::webview_ready, 0, 0);
         });
     HRESULT create_result = CreateCoreWebView2EnvironmentWithOptions(
-        nullptr, userDataFolder, nullptr, handler);
+        nullptr, userDataFolder, nullptr, m_com_handler);
     if (!SUCCEEDED(create_result)) {
       // See specific errors we could detect:
       // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1210.39
@@ -1291,13 +1301,6 @@ private:
 
   virtual void on_message(const std::string &msg) = 0;
 
-  HWND m_window;
-  POINT m_minsz = POINT{0, 0};
-  POINT m_maxsz = POINT{0, 0};
-  DWORD m_main_thread = GetCurrentThreadId();
-  ICoreWebView2 *m_webview = nullptr;
-  ICoreWebView2Controller *m_controller = nullptr;
-
   class webview2_com_handler
       : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
         public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
@@ -1326,7 +1329,11 @@ private:
       return 0;
     }
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
-      return S_OK;
+      if (!ppv) {
+        return E_POINTER;
+      }
+      *ppv = nullptr;
+      return E_NOINTERFACE;
     }
     HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                      ICoreWebView2Environment *env) {
@@ -1395,8 +1402,16 @@ private:
     HWND m_window;
     msg_cb_t m_msgCb;
     webview2_com_handler_cb_t m_cb;
-    std::atomic<ULONG> m_ref_count = 0;
+    std::atomic<ULONG> m_ref_count = 1;
   };
+
+  HWND m_window;
+  POINT m_minsz = POINT{0, 0};
+  POINT m_maxsz = POINT{0, 0};
+  DWORD m_main_thread = GetCurrentThreadId();
+  ICoreWebView2 *m_webview = nullptr;
+  ICoreWebView2Controller *m_controller = nullptr;
+  webview2_com_handler *m_com_handler = nullptr;
 };
 
 } // namespace detail
