@@ -158,6 +158,8 @@ Create a new Go module:
 go mod init example.com/m
 ```
 
+> Note: Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
+
 Save the basic Go example into your project directory:
 
 ```sh

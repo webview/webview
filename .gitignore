@@ -7,6 +7,7 @@
 webview
 webview_test
 webview-example
+*.exe
 *.o
 
 examples/scrape/scrape
