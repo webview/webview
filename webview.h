@@ -922,7 +922,7 @@ namespace detail {
 using msg_cb_t = std::function<void(const std::string)>;
 
 // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-std::wstring widen_string(const std::string &input) {
+inline std::wstring widen_string(const std::string &input) {
   if (input.empty()) {
     return std::wstring();
   }
@@ -944,7 +944,7 @@ std::wstring widen_string(const std::string &input) {
 }
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
-std::string narrow_string(const std::wstring &input) {
+inline std::string narrow_string(const std::wstring &input) {
   if (input.empty()) {
     return std::string();
   }
@@ -1034,7 +1034,7 @@ struct shcore_symbols {
       library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
 };
 
-bool enable_dpi_awareness() {
+inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
     if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
