@@ -7,39 +7,16 @@ package webview
 #cgo darwin CXXFLAGS: -DWEBVIEW_COCOA -std=c++11
 #cgo darwin LDFLAGS: -framework WebKit
 
-#cgo windows CXXFLAGS: -std=c++11
-#cgo windows,amd64 LDFLAGS: -L./dll/x64 -lwebview -lWebView2Loader
-#cgo windows,386 LDFLAGS: -L./dll/x86 -lwebview -lWebView2Loader
+#cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
+#cgo windows LDFLAGS: -static -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32
 
-#define WEBVIEW_HEADER
 #include "webview.h"
 
 #include <stdlib.h>
 #include <stdint.h>
 
-extern void _webviewDispatchGoCallback(void *);
-static inline void _webview_dispatch_cb(webview_t w, void *arg) {
-	_webviewDispatchGoCallback(arg);
-}
-static inline void CgoWebViewDispatch(webview_t w, uintptr_t arg) {
-	webview_dispatch(w, _webview_dispatch_cb, (void *)arg);
-}
-
-struct binding_context {
-	webview_t w;
-	uintptr_t index;
-};
-extern void _webviewBindingGoCallback(webview_t, char *, char *, uintptr_t);
-static inline void _webview_binding_cb(const char *id, const char *req, void *arg) {
-	struct binding_context *ctx = (struct binding_context *) arg;
-	_webviewBindingGoCallback(ctx->w, (char *)id, (char *)req, ctx->index);
-}
-static inline void CgoWebViewBind(webview_t w, const char *name, uintptr_t index) {
-	struct binding_context *ctx = calloc(1, sizeof(struct binding_context));
-	ctx->w = w;
-	ctx->index = index;
-	webview_bind(w, name, _webview_binding_cb, (void *)ctx);
-}
+void CgoWebViewDispatch(webview_t w, uintptr_t arg);
+void CgoWebViewBind(webview_t w, const char *name, uintptr_t index);
 */
 import "C"
 import (
