@@ -987,14 +987,7 @@ inline bool enable_dpi_awareness() {
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
-    // The app is expected to run CoInitializeEx before running CreateCoreWebView2EnvironmentWithOptions.
-    // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl?view=webview2-1.0.1150.38#createcorewebview2environmentwithoptions
-    if (!SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) {
-      return;
-    }
-
     enable_dpi_awareness();
-
     if (window == nullptr) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
       HICON icon = (HICON)LoadImage(
