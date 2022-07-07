@@ -6,7 +6,10 @@ int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
 #else
 int main() {
 #endif
-  webview::webview w(false, nullptr);
+  webview_create_options_t options{};
+  options.struct_size = sizeof(options);
+  options.api_version = webview::api_version;
+  webview::webview w(options);
   w.set_title("Basic Example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
   w.set_html("Thanks for using webview!");

@@ -30,9 +30,8 @@ static void cb_terminate(webview_t w, void *arg) {
   assert(arg == nullptr);
   webview_terminate(w);
 }
-static void test_c_api() {
-  webview_t w;
-  w = webview_create(false, nullptr);
+
+static void continue_c_api_test(webview_t w) {
   assert(w);
   webview_set_size(w, 480, 320, 0);
   webview_set_title(w, "Test");
@@ -41,6 +40,19 @@ static void test_c_api() {
   webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
   webview_destroy(w);
+}
+
+static void test_c_api_create() {
+  continue_c_api_test(webview_create(false, nullptr)); // NOLINT
+}
+
+static void test_c_api_create_with_options() {
+  webview_create_options_t options{};
+  options.struct_size = sizeof(options);
+  options.api_version = webview::api_version;
+  webview_t w = nullptr;
+  assert(webview_create_with_options(&w, &options) == webview_error_ok);
+  continue_c_api_test(w);
 }
 
 // =================================================================
@@ -52,18 +64,22 @@ static void test_c_api_error_codes() {
   ec = webview_create_with_options(nullptr, nullptr);
   assert(ec == webview_error_invalid_argument);
 
+  auto min_version = webview::detail::min_api_version;
   webview_t w;
   webview_create_options_t options{};
 
-  options.api_version = WEBVIEW_MIN_API_VERSION - 1;
+  options.struct_size = sizeof(options);
+  options.api_version = min_version;
+
+  options.api_version.major = min_version.major - 1;
   ec = webview_create_with_options(&w, &options);
   assert(ec == webview_error_api_version_too_old);
 
-  options.api_version = WEBVIEW_API_VERSION + 1;
+  options.api_version.major = WEBVIEW_API_MAJOR_VERSION + 1;
   ec = webview_create_with_options(&w, &options);
   assert(ec == webview_error_api_version_too_new);
 
-  options.api_version = WEBVIEW_API_VERSION;
+  options.api_version = min_version;
   ec = webview_create_with_options(&w, &options);
   assert(ec == webview_error_ok);
 
@@ -72,11 +88,36 @@ static void test_c_api_error_codes() {
 }
 
 // =================================================================
-// TEST: webview_api_version() should return WEBVIEW_API_VERSION.
+// TEST: webview_api_version().
 // =================================================================
 static void test_c_api_version() {
-  auto version = webview_api_version();
-  assert(version == WEBVIEW_API_VERSION);
+  using webview::api_version;
+  using webview::detail::compare_versions;
+  assert(compare_versions(webview_api_version(), api_version) == 0);
+}
+
+// =================================================================
+// TEST: webview_library_version().
+// =================================================================
+static void test_c_api_library_version() {
+  using webview::library_version;
+  using webview::detail::compare_versions;
+  assert(compare_versions(webview_library_version(), library_version) == 0);
+}
+
+// =================================================================
+// TEST: compare_versions().
+// =================================================================
+static void test_compare_versions() {
+  using webview::detail::compare_versions;
+  assert(compare_versions({0, 0, 0}, {0, 0, 0}) == 0);
+  assert(compare_versions({0, 0, 1}, {0, 0, 1}) == 0);
+  assert(compare_versions({0, 1, 0}, {0, 1, 0}) == 0);
+  assert(compare_versions({1, 0, 0}, {1, 0, 0}) == 0);
+  assert(compare_versions({1, 1, 1}, {1, 1, 1}) == 0);
+  assert(compare_versions({0, 0, 1}, {0, 0, 0}) > 0);
+  assert(compare_versions({0, 1, 0}, {0, 0, 1}) > 0);
+  assert(compare_versions({1, 0, 0}, {0, 1, 1}) > 0);
 }
 
 // =================================================================
@@ -84,10 +125,19 @@ static void test_c_api_version() {
 // =================================================================
 struct test_webview : webview::browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
-  test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
+  test_webview(cb_t cb) : webview::browser_engine(create_options()), m_cb(cb) {}
   void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;
+
+private:
+  static constexpr webview_create_options_t create_options() {
+    webview_create_options_t options{};
+    options.struct_size = sizeof(options);
+    options.api_version = webview::api_version;
+    options.debug = WEBVIEW_TRUE;
+    return options;
+  }
 };
 
 static void test_bidir_comms() {
@@ -226,9 +276,12 @@ static void test_win32_narrow_wide_string_conversion() {
 int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"terminate", test_terminate},
-      {"c_api", test_c_api},
+      {"c_api_create", test_c_api_create},
+      {"c_api_create_with_options", test_c_api_create_with_options},
       {"c_api_error_codes", test_c_api_error_codes},
       {"c_api_version", test_c_api_version},
+      {"c_api_library_version", test_c_api_library_version},
+      {"compare_versions", test_compare_versions},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json}};
 #if _WIN32

@@ -29,10 +29,29 @@
 #define WEBVIEW_API extern
 #endif
 
-// The minimum API version supported by the library.
-#define WEBVIEW_MIN_API_VERSION 1
-// The current library API version.
-#define WEBVIEW_API_VERSION 2
+// The current library major version.
+#define WEBVIEW_MAJOR_VERSION 1
+// The current library minor version.
+#define WEBVIEW_MINOR_VERSION 11
+// The current library patch version.
+#define WEBVIEW_PATCH_VERSION 0
+
+// The current library API major version.
+#define WEBVIEW_API_MAJOR_VERSION 1
+// The current library API minor version.
+#define WEBVIEW_API_MINOR_VERSION 0
+// The current library API patch version.
+#define WEBVIEW_API_PATCH_VERSION 0
+
+#ifndef WEBVIEW_DEPRECATED
+#if defined(__cplusplus) && __cplusplus >= 201402L
+#define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
+#elif defined(_MSC_VER)
+#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
+#else
+#define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
+#endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,14 +59,25 @@ extern "C" {
 
 typedef void *webview_t;
 
-#if WEBVIEW_API_VERSION >= 2
-// Options for webview_create_with_options
+// Boolean type where 1 is true and 0 is false. Non-zero shall be regarded as true.
+typedef enum { WEBVIEW_FALSE, WEBVIEW_TRUE } webview_bool_t;
+
+// Holds the MAJOR.MINOR.PATCH components of a version number.
 typedef struct {
-  // API version to use with the library. Must be set to WEBVIEW_API_VERSION.
-  int api_version;
-  // Enables debug/developer tools for supported browser engines if set to a
-  // non-zero value.
-  int debug;
+  unsigned short major;
+  unsigned short minor;
+  unsigned short patch;
+} webview_version_t;
+
+// Options for webview_create_with_options().
+typedef struct {
+  // Size of this struct.
+  unsigned int struct_size;
+  // Library API version.
+  webview_version_t api_version;
+  // Enables debug/developer tools for supported browser engines if set to
+  // WEBVIEW_TRUE.
+  webview_bool_t debug;
   // An optional native window handle of a window in which to embed the
   // underlying webview window. Depending on the platform it should be a
   // pointer to GtkWindow, NSWindow or HWND.
@@ -61,18 +91,15 @@ typedef enum {
   webview_error_ok = 0,
   // Internal error.
   webview_error_internal = 1000,
-  // Generic error.
-  webview_error_generic = 1001,
   // Invalid state.
-  webview_error_invalid_state = 1002,
+  webview_error_invalid_state = 1001,
   // Invalid argument.
-  webview_error_invalid_argument = 1003,
+  webview_error_invalid_argument = 1002,
   // API: The API version requested is newer than what's supported by the library.
   webview_error_api_version_too_new = 2000,
   // API: The API version requested is no longer supported by the library.
   webview_error_api_version_too_old = 2001
 } webview_error_code_t;
-#endif
 
 // Creates a new webview instance. If debug is non-zero - developer tools will
 // be enabled (if the platform supports them). Window parameter can be a
@@ -80,9 +107,11 @@ typedef enum {
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
 // passed here.
+// This function is kept for backward-compatibility and retains the behavior
+// of API version 1. New code should use webview_create_with_options() instead.
+WEBVIEW_DEPRECATED("Please use webview_create_with_options instead")
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
-#if WEBVIEW_API_VERSION >= 2
 // Creates a new webview instance with the specified options and returns the
 // new instance in the webview parameter.
 // Noteworthy error codes:
@@ -90,7 +119,6 @@ WEBVIEW_API webview_t webview_create(int debug, void *window);
 //  - webview_error_api_version_too_new
 WEBVIEW_API webview_error_code_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
-#endif
 
 // Destroys a webview and closes the native window.
 // Always returns webview_error_ok given correct input.
@@ -168,10 +196,11 @@ WEBVIEW_API webview_error_code_t webview_unbind(webview_t w, const char *name);
 WEBVIEW_API webview_error_code_t webview_return(webview_t w, const char *seq,
                                                 int status, const char *result);
 
-#if WEBVIEW_API_VERSION >= 2
+// Get the version of the library.
+WEBVIEW_API webview_version_t webview_library_version();
+
 // Get the API version compiled into the library.
-WEBVIEW_API int webview_api_version();
-#endif
+WEBVIEW_API webview_version_t webview_api_version();
 
 #ifdef __cplusplus
 }
@@ -187,16 +216,6 @@ WEBVIEW_API int webview_api_version();
 #define WEBVIEW_EDGE
 #else
 #error "please, specify webview backend"
-#endif
-#endif
-
-#ifndef WEBVIEW_DEPRECATED
-#if __cplusplus >= 201402L
-#define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
-#elif defined(_MSC_VER)
-#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
-#else
-#define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
 #endif
 #endif
 
@@ -218,6 +237,15 @@ WEBVIEW_API int webview_api_version();
 
 namespace webview {
 
+// The current library version.
+constexpr webview_version_t library_version{
+    WEBVIEW_MAJOR_VERSION, WEBVIEW_MINOR_VERSION, WEBVIEW_PATCH_VERSION};
+
+// The current library API version.
+constexpr webview_version_t api_version{WEBVIEW_API_MAJOR_VERSION,
+                                        WEBVIEW_API_MINOR_VERSION,
+                                        WEBVIEW_API_PATCH_VERSION};
+
 class webview_exception : public std::domain_error {
 public:
   webview_exception(webview_error_code_t code, const std::string &reason)
@@ -227,14 +255,38 @@ public:
   webview_exception() : domain_error(std::string()) {}
 
   webview_error_code_t code() const { return m_code; }
+  std::exception_ptr cause() const { return m_cause; }
 
 private:
   webview_error_code_t m_code = webview_error_internal;
+  std::exception_ptr m_cause;
 };
 
 using dispatch_fn_t = std::function<void()>;
 
 namespace detail {
+
+// The minimum API version supported by the library.
+constexpr webview_version_t min_api_version{1, 0, 0};
+
+// Compares two versions.
+// Returns:
+//   - 1 if the first version is greater than the second version.
+//   - 0 if the versions are equal.
+//   - -1 if the first version is less (lower) than the second version.
+inline int compare_versions(const webview_version_t &first,
+                            const webview_version_t &second) {
+  if (first.major != second.major) {
+    return first.major > second.major ? 1 : -1;
+  }
+  if (first.minor != second.minor) {
+    return first.minor > second.minor ? 1 : -1;
+  }
+  if (first.patch != second.patch) {
+    return first.patch > second.patch ? 1 : -1;
+  }
+  return 0;
+}
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -461,6 +513,15 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+inline webview_create_options_t migrate_webview_create_options(int debug,
+                                                               void *wnd) {
+  webview_create_options_t options{};
+  options.api_version = api_version;
+  options.debug = static_cast<webview_bool_t>(debug);
+  options.window = wnd;
+  return options;
+}
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -507,8 +568,8 @@ namespace detail {
 
 class gtk_webkit_engine {
 public:
-  gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)) {
+  explicit gtk_webkit_engine(const webview_create_options_t &options)
+      : m_window(static_cast<GtkWidget *>(options->window)) {
     if (gtk_init_check(0, NULL) == FALSE) {
       return;
     }
@@ -678,7 +739,7 @@ id operator"" _str(const char *s, std::size_t) {
 
 class cocoa_wkwebview_engine {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window) {
+  explicit cocoa_wkwebview_engine(const webview_create_options_t &options) {
     // Application
     id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                             "sharedApplication"_sel);
@@ -711,7 +772,7 @@ public:
                                           delegate);
 
     // Main window
-    if (window == nullptr) {
+    if (!options->window) {
       m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
       unsigned int style = NSWindowStyleMaskTitled;
       m_window =
@@ -719,7 +780,7 @@ public:
               m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
               CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
     } else {
-      m_window = (id)window;
+      m_window = (id)options->window;
     }
 
     // Webview
@@ -729,7 +790,7 @@ public:
         ((id(*)(id, SEL))objc_msgSend)(config, "userContentController"_sel);
     m_webview = ((id(*)(id, SEL))objc_msgSend)("WKWebView"_cls, "alloc"_sel);
 
-    if (debug) {
+    if (options->debug) {
       // Equivalent Obj-C:
       // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
       ((id(*)(id, SEL, id, id))objc_msgSend)(
@@ -1056,9 +1117,10 @@ inline bool enable_dpi_awareness() {
 
 class win32_edge_engine {
 public:
-  win32_edge_engine(bool debug, void *window) {
+  explicit win32_edge_engine(const webview_create_options_t &options) {
     enable_dpi_awareness();
-    if (window == nullptr) {
+
+    if (!options.window) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
@@ -1112,7 +1174,7 @@ public:
       }
       SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
     } else {
-      m_window = *(static_cast<HWND *>(window));
+      m_window = *(static_cast<HWND *>(options.window));
     }
 
     ShowWindow(m_window, SW_SHOW);
@@ -1122,7 +1184,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_window, debug, cb);
+    embed(m_window, options.debug, cb);
     resize(m_window);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
@@ -1260,7 +1322,7 @@ private:
         nullptr, userDataFolder, nullptr, m_com_handler);
     if (!SUCCEEDED(create_result)) {
       // See specific errors we could detect:
-      // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1210.39
+      // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment
       throw webview_exception();
     }
 
@@ -1280,7 +1342,7 @@ private:
         break;
       }
       case app_window_message::webview_initialization_failed:
-        throw webview_exception(webview_error_generic);
+        throw webview_exception();
       default:
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -1344,7 +1406,7 @@ private:
       }
       // Loop either until successful or while the error is ERROR_INVALID_STATE,
       // as suggested in the WebView2 docs:
-      // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1210.39
+      // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment
       // TODO: The docs also recommends starting over from creating the
       // environment.
       while (true) {
@@ -1426,8 +1488,13 @@ namespace webview {
 
 class webview : public browser_engine {
 public:
+  WEBVIEW_DEPRECATED(
+      "Please use the constructor that takes options as a struct")
   webview(bool debug = false, void *wnd = nullptr)
-      : browser_engine(debug, wnd) {}
+      : browser_engine(detail::migrate_webview_create_options(debug, wnd)) {}
+
+  explicit webview(const webview_create_options_t &options)
+      : browser_engine(options) {}
 
   void navigate(const std::string &url) {
     if (url == "") {
@@ -1517,10 +1584,7 @@ private:
 } // namespace webview
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
-  webview_create_options_t options{};
-  options.api_version = WEBVIEW_API_VERSION;
-  options.debug = debug;
-  options.window = wnd;
+  auto options = webview::detail::migrate_webview_create_options(debug, wnd);
   webview_t w = nullptr;
   if (webview_create_with_options(&w, &options) != webview_error_ok) {
     return nullptr;
@@ -1533,19 +1597,16 @@ WEBVIEW_API webview_error_code_t webview_create_with_options(
   if (!w || !options) {
     return webview_error_invalid_argument;
   }
-  if (options->api_version < WEBVIEW_MIN_API_VERSION) {
+  if (webview::detail::compare_versions(options->api_version,
+                                        webview::detail::min_api_version) < 0) {
     return webview_error_api_version_too_old;
   }
-  if (options->api_version > WEBVIEW_API_VERSION) {
+  if (webview::detail::compare_versions(options->api_version,
+                                        webview::api_version) > 0) {
     return webview_error_api_version_too_new;
   }
   try {
-    auto instance = new webview::webview(options->debug, options->window);
-    if (!instance->window()) {
-      delete instance;
-      return webview_error_internal;
-    }
-    *w = instance;
+    *w = new webview::webview(*options);
     return webview_error_ok;
   } catch (const webview::webview_exception &e) {
     return e.code();
@@ -1726,9 +1787,13 @@ WEBVIEW_API webview_error_code_t webview_return(webview_t w, const char *seq,
   }
 }
 
-#if WEBVIEW_API_VERSION >= 2
-WEBVIEW_API int webview_api_version() { return WEBVIEW_API_VERSION; }
-#endif
+WEBVIEW_API webview_version_t webview_library_version() {
+  return webview::library_version;
+}
+
+WEBVIEW_API webview_version_t webview_api_version() {
+  return webview::api_version;
+}
 
 #endif /* WEBVIEW_HEADER */
 #endif /* __cplusplus */
