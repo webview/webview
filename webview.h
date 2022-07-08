@@ -136,6 +136,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 
 #ifndef WEBVIEW_DEPRECATED
 #if __cplusplus >= 201402L
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
 #elif defined(_MSC_VER)
 #define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
