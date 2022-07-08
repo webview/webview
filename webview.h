@@ -101,6 +101,18 @@ typedef enum {
   webview_error_api_version_too_old = 2001
 } webview_error_code_t;
 
+// Window size hints.
+typedef enum {
+  // Width and height are default size.
+  WEBVIEW_HINT_NONE = 0,
+  // Width and height are minimum bounds.
+  WEBVIEW_HINT_MIN = 1,
+  // Width and height are maximum bounds.
+  WEBVIEW_HINT_MAX = 2,
+  // Window size can not be changed by a user.
+  WEBVIEW_HINT_FIXED = 3
+} webview_hint_t;
+
 // Creates a new webview instance. If debug is non-zero - developer tools will
 // be enabled (if the platform supports them). Window parameter can be a
 // pointer to the native window handle. If it's non-null - then child WebView
@@ -146,11 +158,6 @@ WEBVIEW_API void *webview_get_window(webview_t w);
 WEBVIEW_API webview_error_code_t webview_set_title(webview_t w,
                                                    const char *title);
 
-// Window size hints
-#define WEBVIEW_HINT_NONE 0  // Width and height are default size
-#define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
-#define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
-#define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
 // Updates native window size. See WEBVIEW_HINT constants.
 WEBVIEW_API webview_error_code_t webview_set_size(webview_t w, int width,
                                                   int height, int hints);
