@@ -1035,6 +1035,8 @@ inline std::string narrow_string(const std::wstring &input) {
 
 // A wrapper around COM library initialization. Calls CoInitializeEx in the
 // constructor and CoUninitialize in the destructor.
+// Throws an exception if CoInitializeEx has already been called with
+// a different concurrency model, or if it fails in other ways.
 class com_init_wrapper {
 public:
   com_init_wrapper(DWORD dwCoInit) {
@@ -1045,27 +1047,22 @@ public:
     switch (CoInitializeEx(nullptr, dwCoInit)) {
     case S_OK:
     case S_FALSE:
-      m_initialized = true;
-      break;
+      return;
+    case RPC_E_CHANGED_MODE:
+      throw webview_exception(
+          WEBVIEW_ERROR_INVALID_STATE,
+          "CoInitializeEx already called with a different concurrency model");
+    default:
+      throw webview_exception();
     }
   }
 
-  ~com_init_wrapper() {
-    if (m_initialized) {
-      CoUninitialize();
-      m_initialized = false;
-    }
-  }
+  ~com_init_wrapper() { CoUninitialize(); }
 
   com_init_wrapper(const com_init_wrapper &other) = delete;
   com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
   com_init_wrapper(com_init_wrapper &&other) = delete;
   com_init_wrapper &operator=(com_init_wrapper &&other) = delete;
-
-  bool is_initialized() const { return m_initialized; }
-
-private:
-  bool m_initialized = false;
 };
 
 // Holds a symbol name and associated type for code clarity.
@@ -1160,9 +1157,6 @@ inline bool enable_dpi_awareness() {
 class win32_edge_engine {
 public:
   explicit win32_edge_engine(const webview_create_options_t &options) {
-    if (!m_com_init.is_initialized()) {
-      return;
-    }
     enable_dpi_awareness();
     if (!options.window) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
