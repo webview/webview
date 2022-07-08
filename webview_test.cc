@@ -99,7 +99,7 @@ static void test_c_api_error_codes() {
 
   options.api_version.major = WEBVIEW_API_MAJOR_VERSION + 1;
   ec = webview_create_with_options(&w, &options);
-  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_NEW);
+  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_RECENT);
 
   options.api_version = min_version;
   ec = webview_create_with_options(&w, &options);

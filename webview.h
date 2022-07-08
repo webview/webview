@@ -92,7 +92,7 @@ typedef enum {
   // Invalid argument.
   WEBVIEW_ERROR_INVALID_ARGUMENT = 1002,
   // API: The API version requested is newer than what's supported by the library.
-  WEBVIEW_ERROR_API_VERSION_TOO_NEW = 2000,
+  WEBVIEW_ERROR_API_VERSION_TOO_RECENT = 2000,
   // API: The API version requested is no longer supported by the library.
   WEBVIEW_ERROR_API_VERSION_TOO_OLD = 2001
 } webview_error_t;
@@ -1550,8 +1550,8 @@ public:
                               "The specified API version is too old");
     }
     if (compare_versions(options.api_version, api_version) > 0) {
-      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_NEW,
-                              "The specified API version is too new");
+      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_RECENT,
+                              "The specified API version is too recent");
     }
   }
 
