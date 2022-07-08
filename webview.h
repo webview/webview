@@ -1539,7 +1539,21 @@ public:
       : browser_engine(detail::migrate_webview_create_options(debug, wnd)) {}
 
   explicit webview(const webview_create_options_t &options)
-      : browser_engine(options) {}
+      : browser_engine(options) {
+    using namespace detail;
+    if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
+      throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
+                              "Invalid struct size");
+    }
+    if (compare_versions(options.api_version, min_api_version) < 0) {
+      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_OLD,
+                              "The specified API version is too old");
+    }
+    if (compare_versions(options.api_version, api_version) > 0) {
+      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_NEW,
+                              "The specified API version is too new");
+    }
+  }
 
   void navigate(const std::string &url) {
     if (url == "") {
@@ -1650,15 +1664,6 @@ WEBVIEW_API webview_error_t webview_create_with_options(
   using namespace webview::detail;
   if (!w || !options) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
-  }
-  if (options->struct_size == 0 || options->struct_size > sizeof(*options)) {
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
-  }
-  if (compare_versions(options->api_version, min_api_version) < 0) {
-    return WEBVIEW_ERROR_API_VERSION_TOO_OLD;
-  }
-  if (compare_versions(options->api_version, webview::api_version) > 0) {
-    return WEBVIEW_ERROR_API_VERSION_TOO_NEW;
   }
   return try_catch([=] { *w = new webview::webview(*options); });
 }
