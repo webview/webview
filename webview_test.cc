@@ -14,7 +14,10 @@
 // TEST: start app loop and terminate it.
 // =================================================================
 static void test_terminate() {
-  webview::webview w(false, nullptr);
+  webview_create_options_t options{};
+  options.struct_size = sizeof(options);
+  options.api_version = webview::api_version;
+  webview::webview w(options);
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
