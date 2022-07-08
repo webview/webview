@@ -1651,6 +1651,9 @@ WEBVIEW_API webview_error_t webview_create_with_options(
   if (!w || !options) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
+  if (options->struct_size == 0 || options->struct_size > sizeof(*options)) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
   if (compare_versions(options->api_version, min_api_version) < 0) {
     return WEBVIEW_ERROR_API_VERSION_TOO_OLD;
   }
