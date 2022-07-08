@@ -1454,20 +1454,11 @@ private:
                     0, 0);
         return res;
       }
-      // Loop either until successful or while the error is ERROR_INVALID_STATE,
-      // as suggested in the WebView2 docs:
-      // https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment
-      // TODO: The docs also recommends starting over from creating the
-      // environment.
-      while (true) {
-        res = env->CreateCoreWebView2Controller(m_window, this);
-        if (SUCCEEDED(res)) {
-          break;
-        } else if (res != HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
-          PostMessage(m_window,
-                      app_window_message::webview_initialization_failed, 0, 0);
-          return res;
-        }
+      res = env->CreateCoreWebView2Controller(m_window, this);
+      if (!SUCCEEDED(res)) {
+        PostMessage(m_window, app_window_message::webview_initialization_failed,
+                    0, 0);
+        return res;
       }
       return S_OK;
     }
