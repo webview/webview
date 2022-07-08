@@ -529,6 +529,20 @@ inline webview_create_options_t migrate_webview_create_options(int debug,
   return options;
 }
 
+template <typename Callable>
+webview_error_t try_catch(Callable &&callable) noexcept {
+  try {
+    callable();
+    return WEBVIEW_ERROR_OK;
+  } catch (const webview_exception &e) {
+    return e.code();
+  } catch (const std::exception &e) {
+    return WEBVIEW_ERROR_INTERNAL;
+  } catch (...) {
+    return WEBVIEW_ERROR_INTERNAL;
+  }
+}
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -1636,23 +1650,17 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
 
 WEBVIEW_API webview_error_t webview_create_with_options(
     webview_t *w, const webview_create_options_t *options) {
+  using namespace webview::detail;
   if (!w || !options) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  if (webview::detail::compare_versions(options->api_version,
-                                        webview::detail::min_api_version) < 0) {
+  if (compare_versions(options->api_version, min_api_version) < 0) {
     return WEBVIEW_ERROR_API_VERSION_TOO_OLD;
   }
-  if (webview::detail::compare_versions(options->api_version,
-                                        webview::api_version) > 0) {
+  if (compare_versions(options->api_version, webview::api_version) > 0) {
     return WEBVIEW_ERROR_API_VERSION_TOO_NEW;
   }
-  try {
-    *w = new webview::webview(*options);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { *w = new webview::webview(*options); });
 }
 
 WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
@@ -1664,166 +1672,134 @@ WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
 }
 
 WEBVIEW_API webview_error_t webview_run(webview_t w) {
+  using namespace webview::detail;
   if (!w) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->run();
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->run(); });
 }
 
 WEBVIEW_API webview_error_t webview_terminate(webview_t w) {
+  using namespace webview::detail;
   if (!w) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->terminate();
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->terminate(); });
 }
 
 WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
                                              void (*fn)(webview_t, void *),
                                              void *arg) {
+  using namespace webview::detail;
   if (!w || !fn) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
+  return try_catch([=] {
     static_cast<webview::webview *>(w)->dispatch([=]() { fn(w, arg); });
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  });
 }
 
 WEBVIEW_API void *webview_get_window(webview_t w) {
+  using namespace webview::detail;
   if (!w) {
     return nullptr;
   }
-  return static_cast<webview::webview *>(w)->window();
+  void *window = nullptr;
+  auto err = try_catch(
+      [w, &window] { window = static_cast<webview::webview *>(w)->window(); });
+  if (err == WEBVIEW_ERROR_OK) {
+    return window;
+  }
+  return nullptr;
 }
 
 WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title) {
+  using namespace webview::detail;
   if (!w || !title) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->set_title(title);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch(
+      [=] { static_cast<webview::webview *>(w)->set_title(title); });
 }
 
 WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
                                              int hints) {
+  using namespace webview::detail;
   if (!w) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
+  return try_catch([=] {
     static_cast<webview::webview *>(w)->set_size(width, height, hints);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  });
 }
 
 WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {
+  using namespace webview::detail;
   if (!w || !url) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->navigate(url);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->navigate(url); });
 }
 
 WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html) {
+  using namespace webview::detail;
   if (!w || !html) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->set_html(html);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->set_html(html); });
 }
 
 WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js) {
+  using namespace webview::detail;
   if (!w || !js) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->init(js);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->init(js); });
 }
 
 WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js) {
+  using namespace webview::detail;
   if (!w || !js) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->eval(js);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->eval(js); });
 }
 
 WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
                                          void (*fn)(const char *seq,
                                                     const char *req, void *arg),
                                          void *arg) {
+  using namespace webview::detail;
   if (!w || !name || !fn) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
+  return try_catch([=] {
     static_cast<webview::webview *>(w)->bind(
         name,
         [=](const std::string &seq, const std::string &req, void *arg) {
           fn(seq.c_str(), req.c_str(), arg);
         },
         arg);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  });
 }
 
 WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name) {
+  using namespace webview::detail;
   if (!w || !name) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
-    static_cast<webview::webview *>(w)->unbind(name);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  return try_catch([=] { static_cast<webview::webview *>(w)->unbind(name); });
 }
 
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
                                            int status, const char *result) {
+  using namespace webview::detail;
   if (!w || !seq || !result) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  try {
+  return try_catch([=] {
     static_cast<webview::webview *>(w)->resolve(seq, status, result);
-    return WEBVIEW_ERROR_OK;
-  } catch (const webview::webview_exception &e) {
-    return e.code();
-  }
+  });
 }
 
 WEBVIEW_API webview_version_t webview_library_version() {
