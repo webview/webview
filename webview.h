@@ -53,10 +53,6 @@
 #endif
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef void *webview_t;
 
 // Boolean type where 1 is true and 0 is false. Non-zero shall be regarded as true.
@@ -112,6 +108,10 @@ typedef enum {
   // Window size can not be changed by a user.
   WEBVIEW_HINT_FIXED = 3
 } webview_hint_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Creates a new webview instance. If debug is non-zero - developer tools will
 // be enabled (if the platform supports them). Window parameter can be a
