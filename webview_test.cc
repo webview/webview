@@ -51,7 +51,7 @@ static void test_c_api_create_with_options() {
   options.struct_size = sizeof(options);
   options.api_version = webview::api_version;
   webview_t w = nullptr;
-  assert(webview_create_with_options(&w, &options) == webview_error_ok);
+  assert(webview_create_with_options(&w, &options) == WEBVIEW_ERROR_OK);
   continue_c_api_test(w);
 }
 
@@ -59,10 +59,10 @@ static void test_c_api_create_with_options() {
 // TEST: ensure that C API can return error codes.
 // =================================================================
 static void test_c_api_error_codes() {
-  webview_error_code_t ec;
+  webview_error_t ec;
 
   ec = webview_create_with_options(nullptr, nullptr);
-  assert(ec == webview_error_invalid_argument);
+  assert(ec == WEBVIEW_ERROR_INVALID_ARGUMENT);
 
   auto min_version = webview::detail::min_api_version;
   webview_t w;
@@ -73,18 +73,18 @@ static void test_c_api_error_codes() {
 
   options.api_version.major = min_version.major - 1;
   ec = webview_create_with_options(&w, &options);
-  assert(ec == webview_error_api_version_too_old);
+  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_OLD);
 
   options.api_version.major = WEBVIEW_API_MAJOR_VERSION + 1;
   ec = webview_create_with_options(&w, &options);
-  assert(ec == webview_error_api_version_too_new);
+  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_NEW);
 
   options.api_version = min_version;
   ec = webview_create_with_options(&w, &options);
-  assert(ec == webview_error_ok);
+  assert(ec == WEBVIEW_ERROR_OK);
 
   ec = webview_destroy(w);
-  assert(ec == webview_error_ok);
+  assert(ec == WEBVIEW_ERROR_OK);
 }
 
 // =================================================================
