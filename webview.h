@@ -536,8 +536,6 @@ webview_error_t try_catch(Callable &&callable) noexcept {
     return WEBVIEW_ERROR_OK;
   } catch (const webview_exception &e) {
     return e.code();
-  } catch (const std::exception &) {
-    return WEBVIEW_ERROR_INTERNAL;
   } catch (...) {
     return WEBVIEW_ERROR_INTERNAL;
   }
