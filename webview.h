@@ -576,11 +576,11 @@ namespace detail {
 class gtk_webkit_engine {
 public:
   explicit gtk_webkit_engine(const webview_create_options_t &options)
-      : m_window(static_cast<GtkWidget *>(options->window)) {
+      : m_window(static_cast<GtkWidget *>(options.window)) {
     if (gtk_init_check(0, NULL) == FALSE) {
       return;
     }
-    m_window = static_cast<GtkWidget *>(window);
+    m_window = static_cast<GtkWidget *>(options.window);
     if (m_window == nullptr) {
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     }
@@ -613,7 +613,7 @@ public:
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
     webkit_settings_set_javascript_can_access_clipboard(settings, true);
-    if (debug) {
+    if (options.debug) {
       webkit_settings_set_enable_write_console_messages_to_stdout(settings,
                                                                   true);
       webkit_settings_set_enable_developer_extras(settings, true);
@@ -779,7 +779,7 @@ public:
                                           delegate);
 
     // Main window
-    if (!options->window) {
+    if (!options.window) {
       m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
       unsigned int style = NSWindowStyleMaskTitled;
       m_window =
@@ -787,7 +787,7 @@ public:
               m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
               CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
     } else {
-      m_window = (id)options->window;
+      m_window = (id)options.window;
     }
 
     // Webview
@@ -797,7 +797,7 @@ public:
         ((id(*)(id, SEL))objc_msgSend)(config, "userContentController"_sel);
     m_webview = ((id(*)(id, SEL))objc_msgSend)("WKWebView"_cls, "alloc"_sel);
 
-    if (options->debug) {
+    if (options.debug) {
       // Equivalent Obj-C:
       // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
       ((id(*)(id, SEL, id, id))objc_msgSend)(
