@@ -153,7 +153,7 @@ struct test_webview : webview::browser_engine {
   cb_t m_cb;
 
 private:
-  static constexpr webview_create_options_t create_options() {
+  static webview_create_options_t create_options() {
     webview_create_options_t options{};
     options.struct_size = sizeof(options);
     options.api_version = webview::api_version;
