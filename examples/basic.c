@@ -1,5 +1,5 @@
 #include "webview.h"
-#include <stddef.h>
+#include <string.h>
 
 #ifdef WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
