@@ -271,6 +271,29 @@ private:
 
 using dispatch_fn_t = std::function<void()>;
 
+class create_options_builder {
+public:
+  create_options_builder() {
+    m_options.struct_size = sizeof(m_options);
+    m_options.api_version = api_version;
+  }
+
+  create_options_builder &debug() noexcept {
+    m_options.debug = WEBVIEW_TRUE;
+    return *this;
+  }
+
+  create_options_builder &window(void *w) noexcept {
+    m_options.window = w;
+    return *this;
+  }
+
+  webview_create_options_t build() const noexcept { return m_options; }
+
+private:
+  webview_create_options_t m_options{};
+};
+
 namespace detail {
 
 // The minimum API version supported by the library.
@@ -1552,13 +1575,18 @@ namespace webview {
 
 class webview : public browser_engine {
 public:
+  explicit webview(const webview_create_options_t &options)
+      : browser_engine(detail::validate_create_options(options)) {}
+
   WEBVIEW_DEPRECATED(
       "Please use the constructor that takes options as a struct")
   webview(bool debug = false, void *wnd = nullptr)
       : webview(detail::migrate_webview_create_options(debug, wnd)) {}
 
-  explicit webview(const webview_create_options_t &options)
-      : browser_engine(detail::validate_create_options(options)) {}
+  explicit webview(const create_options_builder &options)
+      : webview(options.build()) {}
+
+  webview() : webview(create_options_builder{}) {}
 
   void navigate(const std::string &url) {
     if (url == "") {
