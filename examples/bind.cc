@@ -22,7 +22,7 @@ int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
 int main() {
 #endif
   unsigned int count = 0;
-  webview::webview w;
+  webview::webview w(webview::create_options_builder{});
   w.set_title("Bind Example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
   w.bind("increment", [&](const std::string &s) -> std::string {

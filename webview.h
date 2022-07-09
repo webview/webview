@@ -1586,8 +1586,6 @@ public:
   explicit webview(const create_options_builder &options)
       : webview(options.build()) {}
 
-  webview() : webview(create_options_builder{}) {}
-
   void navigate(const std::string &url) {
     if (url == "") {
       browser_engine::navigate("about:blank");
