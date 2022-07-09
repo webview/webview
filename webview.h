@@ -1537,24 +1537,10 @@ public:
   WEBVIEW_DEPRECATED(
       "Please use the constructor that takes options as a struct")
   webview(bool debug = false, void *wnd = nullptr)
-      : browser_engine(detail::migrate_webview_create_options(debug, wnd)) {}
+      : webview(detail::migrate_webview_create_options(debug, wnd)) {}
 
   explicit webview(const webview_create_options_t &options)
-      : browser_engine(options) {
-    using namespace detail;
-    if (compare_versions(options.api_version, min_api_version) < 0) {
-      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_OLD,
-                              "The specified API version is too old");
-    }
-    if (compare_versions(options.api_version, api_version) > 0) {
-      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_RECENT,
-                              "The specified API version is too recent");
-    }
-    if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
-      throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
-                              "Invalid struct size");
-    }
-  }
+      : browser_engine(validate_create_options(options)) {}
 
   void navigate(const std::string &url) {
     if (url == "") {
@@ -1639,6 +1625,25 @@ private:
     auto fn = bindings[name];
     (*fn->first)(seq, args, fn->second);
   }
+
+  static webview_create_options_t
+  validate_create_options(const webview_create_options_t &options) {
+    using namespace detail;
+    if (compare_versions(options.api_version, min_api_version) < 0) {
+      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_OLD,
+                              "The specified API version is too old");
+    }
+    if (compare_versions(options.api_version, api_version) > 0) {
+      throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_RECENT,
+                              "The specified API version is too recent");
+    }
+    if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
+      throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
+                              "Invalid struct size");
+    }
+    return options;
+  }
+
   std::map<std::string, binding_ctx_t *> bindings;
 };
 
