@@ -523,6 +523,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 inline webview_create_options_t migrate_webview_create_options(int debug,
                                                                void *wnd) {
   webview_create_options_t options{};
+  options.struct_size = sizeof(options);
   options.api_version = api_version;
   options.debug = static_cast<webview_bool_t>(debug);
   options.window = wnd;
@@ -1541,10 +1542,6 @@ public:
   explicit webview(const webview_create_options_t &options)
       : browser_engine(options) {
     using namespace detail;
-    if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
-      throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
-                              "Invalid struct size");
-    }
     if (compare_versions(options.api_version, min_api_version) < 0) {
       throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_OLD,
                               "The specified API version is too old");
@@ -1552,6 +1549,10 @@ public:
     if (compare_versions(options.api_version, api_version) > 0) {
       throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_RECENT,
                               "The specified API version is too recent");
+    }
+    if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
+      throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
+                              "Invalid struct size");
     }
   }
 

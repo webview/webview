@@ -57,7 +57,7 @@ static void test_c_api_create() {
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-  continue_c_api_test(webview_create(false, nullptr)); // NOLINT
+  webview_t w = webview_create(false, nullptr); // NOLINT
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -66,6 +66,8 @@ static void test_c_api_create() {
 #elif defined(__clang__)
 #pragma clang diagnostic pop
 #endif
+
+  continue_c_api_test(w);
 }
 
 static void test_c_api_create_with_options() {
