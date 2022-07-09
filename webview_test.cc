@@ -36,13 +36,20 @@ static void cb_terminate(webview_t w, void *arg) {
 
 static void continue_c_api_test(webview_t w) {
   assert(w);
-  webview_set_size(w, 480, 320, 0);
-  webview_set_title(w, "Test");
-  webview_navigate(w, "https://github.com/zserge/webview");
-  webview_dispatch(w, cb_assert_arg, (void *)"arg");
-  webview_dispatch(w, cb_terminate, nullptr);
-  webview_run(w);
-  webview_destroy(w);
+  webview_error_t err = webview_set_size(w, 480, 320, 0);
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_set_title(w, "Test");
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_navigate(w, "https://github.com/zserge/webview");
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_dispatch(w, cb_assert_arg, (void *)"arg");
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_dispatch(w, cb_terminate, nullptr);
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_run(w);
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_destroy(w);
+  assert(err == WEBVIEW_ERROR_OK);
 }
 
 static void test_c_api_create() {
@@ -70,6 +77,9 @@ static void test_c_api_create() {
   continue_c_api_test(w);
 }
 
+// =================================================================
+// TEST: webview_create_with_options().
+// =================================================================
 static void test_c_api_create_with_options() {
   webview_create_options_t options{};
   options.struct_size = sizeof(options);
@@ -83,32 +93,8 @@ static void test_c_api_create_with_options() {
 // TEST: ensure that C API can return error codes.
 // =================================================================
 static void test_c_api_error_codes() {
-  webview_error_t ec;
-
-  ec = webview_create_with_options(nullptr, nullptr);
-  assert(ec == WEBVIEW_ERROR_INVALID_ARGUMENT);
-
-  auto min_version = webview::detail::min_api_version;
-  webview_t w;
-  webview_create_options_t options{};
-
-  options.struct_size = sizeof(options);
-  options.api_version = min_version;
-
-  options.api_version.major = min_version.major - 1;
-  ec = webview_create_with_options(&w, &options);
-  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_OLD);
-
-  options.api_version.major = WEBVIEW_API_MAJOR_VERSION + 1;
-  ec = webview_create_with_options(&w, &options);
-  assert(ec == WEBVIEW_ERROR_API_VERSION_TOO_RECENT);
-
-  options.api_version = min_version;
-  ec = webview_create_with_options(&w, &options);
-  assert(ec == WEBVIEW_ERROR_OK);
-
-  ec = webview_destroy(w);
-  assert(ec == WEBVIEW_ERROR_OK);
+  auto err = webview_create_with_options(nullptr, nullptr);
+  assert(err == WEBVIEW_ERROR_INVALID_ARGUMENT);
 }
 
 // =================================================================
@@ -228,6 +214,62 @@ static void test_json() {
   assert(J("bad", "foo", -1) == "");
 }
 
+// =================================================================
+// TEST: validate_create_options().
+// =================================================================
+static void test_validate_create_options() {
+  using namespace webview::detail;
+  {
+    webview_create_options_t options{};
+    options.struct_size = sizeof(options);
+    options.api_version = webview::api_version;
+    const auto &result = validate_create_options(options);
+    assert(options.struct_size == result.struct_size);
+    assert(compare_versions(options.api_version, result.api_version) == 0);
+  }
+  {
+    webview_create_options_t options{};
+    options.struct_size = sizeof(options);
+    options.api_version = min_api_version;
+    validate_create_options(options);
+  }
+  {
+    webview_create_options_t options{};
+    options.struct_size = 0;
+    options.api_version = webview::api_version;
+    try {
+      validate_create_options(options);
+      assert(false);
+    } catch (const webview::webview_exception &e) {
+      assert(e.code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+    }
+  }
+  {
+    webview_create_options_t options{};
+    options.struct_size = sizeof(options);
+    options.api_version = min_api_version;
+    options.api_version.major = min_api_version.major - 1;
+    try {
+      validate_create_options(options);
+      assert(false);
+    } catch (const webview::webview_exception &e) {
+      assert(e.code() == WEBVIEW_ERROR_API_VERSION_TOO_OLD);
+    }
+  }
+  {
+    webview_create_options_t options{};
+    options.struct_size = sizeof(options);
+    options.api_version = webview::api_version;
+    options.api_version.major = webview::api_version.major + 1;
+    try {
+      validate_create_options(options);
+      assert(false);
+    } catch (const webview::webview_exception &e) {
+      assert(e.code() == WEBVIEW_ERROR_API_VERSION_TOO_RECENT);
+    }
+  }
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -307,7 +349,8 @@ int main(int argc, char *argv[]) {
       {"c_api_library_version", test_c_api_library_version},
       {"compare_versions", test_compare_versions},
       {"bidir_comms", test_bidir_comms},
-      {"json", test_json}};
+      {"json", test_json},
+      {"validate_create_options", test_validate_create_options}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
