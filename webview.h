@@ -91,9 +91,10 @@ typedef enum {
   WEBVIEW_ERROR_INVALID_STATE = 1001,
   // Invalid argument.
   WEBVIEW_ERROR_INVALID_ARGUMENT = 1002,
-  // API: The API version requested is newer than what's supported by the library.
+  // API: The API version of the caller is newer than the one supported by
+  // the library.
   WEBVIEW_ERROR_API_VERSION_TOO_RECENT = 2000,
-  // API: The API version requested is no longer supported by the library.
+  // API: The API version of the caller is no longer supported by the library.
   WEBVIEW_ERROR_API_VERSION_TOO_OLD = 2001
 } webview_error_t;
 
@@ -113,8 +114,8 @@ typedef enum {
 extern "C" {
 #endif
 
-// Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). Window parameter can be a
+// Creates a new webview instance. If debug is WEBVIEW_TRUE, developer tools
+// will be enabled (if the platform supports them). Window parameter can be a
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
@@ -122,13 +123,13 @@ extern "C" {
 // This function is kept for backward-compatibility and retains the behavior
 // of API version 1. New code should use webview_create_with_options() instead.
 WEBVIEW_DEPRECATED("Please use webview_create_with_options instead")
-WEBVIEW_API webview_t webview_create(int debug, void *window);
+WEBVIEW_API webview_t webview_create(webview_bool_t debug, void *window);
 
 // Creates a new webview instance with the specified options and returns the
 // new instance in the webview parameter.
 // Noteworthy error codes:
-//  - webview_error_api_version_too_old
-//  - webview_error_api_version_too_new
+//  - WEBVIEW_ERROR_API_VERSION_TOO_OLD
+//  - WEBVIEW_ERROR_API_VERSION_TOO_RECENT
 WEBVIEW_API webview_error_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
 
@@ -1682,7 +1683,7 @@ constexpr webview *cast_to_webview(void *w) noexcept {
 } // namespace detail
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
+WEBVIEW_API webview_t webview_create(webview_bool_t debug, void *wnd) {
   auto options = webview::detail::migrate_webview_create_options(debug, wnd);
   webview_t w = nullptr;
   if (webview_create_with_options(&w, &options) != WEBVIEW_ERROR_OK) {
