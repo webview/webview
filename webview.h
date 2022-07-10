@@ -30,16 +30,16 @@
 #endif
 
 // The current library major version.
-#define WEBVIEW_MAJOR_VERSION 1
+#define WEBVIEW_MAJOR_VERSION 0
 // The current library minor version.
 #define WEBVIEW_MINOR_VERSION 11
 // The current library patch version.
 #define WEBVIEW_PATCH_VERSION 0
 
 // The current library API major version.
-#define WEBVIEW_API_MAJOR_VERSION 1
+#define WEBVIEW_API_MAJOR_VERSION 0
 // The current library API minor version.
-#define WEBVIEW_API_MINOR_VERSION 0
+#define WEBVIEW_API_MINOR_VERSION 1
 // The current library API patch version.
 #define WEBVIEW_API_PATCH_VERSION 0
 
