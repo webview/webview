@@ -676,7 +676,9 @@ public:
       webkit_settings_set_enable_developer_extras(settings, true);
     }
 
-    gtk_widget_show_all(m_window);
+    if (options.visible) {
+      set_visibility(true);
+    }
   }
   virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
@@ -735,7 +737,11 @@ public:
   }
 
   void set_visibility(bool visible) {
-    throw webview_exception(WEBVIEW_ERROR_INTERNAL, "Not yet implemented");
+    if (visible) {
+      gtk_widget_show_all(m_window);
+    } else {
+      gtk_widget_hide(m_window);
+    }
   }
 
 private:
