@@ -1355,7 +1355,8 @@ public:
   using binding_t = std::function<void(std::string, std::string, void *)>;
   class binding_ctx_t {
   public:
-    binding_ctx_t(binding_t *f, void *a, bool s = true) : callback(f), arg(a), sync(s) {}
+    binding_ctx_t(binding_t *f, void *a, bool s = true)
+        : callback(f), arg(a), sync(s) {}
     binding_t *callback;
     void *arg;
     bool sync;
@@ -1365,14 +1366,13 @@ public:
   using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
   void bind(const std::string &name, sync_binding_t fn) {
-    bindings[name] = new binding_ctx_t(
-      new binding_t([](const std::string &seq, const std::string &req, void *arg) {
-        auto pair = static_cast<sync_binding_ctx_t *>(arg);
-        pair->first->resolve(seq, 0, pair->second(req));
-      }),
-      new sync_binding_ctx_t(this, fn),
-      true
-    );
+    bindings[name] =
+        new binding_ctx_t(new binding_t([](const std::string &seq,
+                                           const std::string &req, void *arg) {
+                            auto pair = static_cast<sync_binding_ctx_t *>(arg);
+                            pair->first->resolve(seq, 0, pair->second(req));
+                          }),
+                          new sync_binding_ctx_t(this, fn), true);
 
     bind_js(name);
   }
@@ -1388,7 +1388,7 @@ public:
       init(js);
       eval(js);
       delete bindings[name]->callback;
-      if(bindings[name]->sync) {
+      if (bindings[name]->sync) {
         delete static_cast<sync_binding_ctx_t *>(bindings[name]->arg);
       }
       delete bindings[name];
