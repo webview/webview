@@ -198,12 +198,12 @@ static void test_validate_create_options() {
   }
   {
     webview_create_options_t options{};
-    options.minimum_required_version = webview::min_supported_version;
+    options.minimum_required_version = min_supported_version;
     validate_create_options(options);
   }
   {
     webview_create_options_t options{};
-    options.minimum_required_version = webview::min_supported_version - 1;
+    options.minimum_required_version = min_supported_version - 1;
     try {
       validate_create_options(options);
       assert(false);

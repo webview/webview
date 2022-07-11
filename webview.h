@@ -250,10 +250,13 @@ WEBVIEW_API webview_packed_version_t webview_version();
 #include <vector>
 
 namespace webview {
+namespace detail {
 
 // The minimum library version supported by the library.
 constexpr webview_packed_version_t min_supported_version =
     WEBVIEW_PACK_VERSION(0, 10, 0);
+
+} // namespace detail
 
 class webview_exception : public std::domain_error {
 public:
@@ -276,7 +279,7 @@ using dispatch_fn_t = std::function<void()>;
 class create_options_builder {
 public:
   create_options_builder() {
-    m_options.minimum_required_version = min_supported_version;
+    m_options.minimum_required_version = detail::min_supported_version;
   }
 
   create_options_builder &
@@ -531,7 +534,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 inline webview_create_options_t migrate_webview_create_options(bool debug,
                                                                void *wnd) {
   return create_options_builder{}
-      .minimum_required_version(min_supported_version)
+      .minimum_required_version(detail::min_supported_version)
       .debug(debug)
       .window(wnd)
       .build();
@@ -540,7 +543,7 @@ inline webview_create_options_t migrate_webview_create_options(bool debug,
 inline webview_create_options_t
 validate_create_options(const webview_create_options_t &options) {
   using namespace detail;
-  if (options.minimum_required_version < min_supported_version) {
+  if (options.minimum_required_version < detail::min_supported_version) {
     throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_OLD,
                             "The specified version is too old");
   }
