@@ -232,32 +232,41 @@ static void test_validate_create_options() {
 // TEST: ensure that version packing and unpacking works.
 // =================================================================
 static void test_packed_version() {
+  auto max_uint32 = 4294967295U;
   {
-    auto version = WEBVIEW_PACK_VERSION(1023, 1023, 1023);
-    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
-    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
-    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
-    assert(major == 1023);
-    assert(minor == 1023);
-    assert(patch == 1023);
+    // Packing numbers exceeding 10 bits should truncate.
+    // Unused bits should not be set.
+    auto version = WEBVIEW_PACK_VERSION(max_uint32, max_uint32, max_uint32);
+    assert(version == 1073741823);
   }
   {
-    auto version = WEBVIEW_PACK_VERSION(1, 2, 3);
-    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
-    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
-    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
-    assert(major == 1);
-    assert(minor == 2);
-    assert(patch == 3);
+    // Unpacking numbers exceeding 10 bits should truncate.
+    // All bits except unused bits should be set.
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(max_uint32) == 1023);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(max_uint32) == 1023);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(max_uint32) == 1023);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(1, 1, 1);
+    // The first bit of each version component should be set.
+    assert(version == 1049601);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 1);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 1);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 1);
   }
   {
     auto version = WEBVIEW_PACK_VERSION(0, 0, 0);
-    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
-    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
-    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
-    assert(major == 0);
-    assert(minor == 0);
-    assert(patch == 0);
+    assert(version == 0);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 0);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 0);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 0);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(3, 7, 15);
+    assert(version == 3152911);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 3);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 7);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 15);
   }
 }
 
