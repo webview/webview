@@ -88,6 +88,10 @@ typedef struct {
   // underlying webview window. Depending on the platform it should be a
   // pointer to GtkWindow, NSWindow or HWND.
   void *window;
+  // Make the window initially visible. Defaults to WEBVIEW_TRUE for versions
+  // earlier than 0.11.
+  // @since 0.11
+  webview_bool_t visible;
 } webview_create_options_t;
 
 // Error codes returned to callers of the API.
@@ -214,6 +218,10 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
                                            int status, const char *result);
 
+// Set the window visibility.
+WEBVIEW_API webview_error_t webview_set_visibility(webview_t w,
+                                                   webview_bool_t visible);
+
 // Get the version of the library.
 WEBVIEW_API webview_packed_version_t webview_version();
 
@@ -296,6 +304,11 @@ public:
 
   create_options_builder &window(void *w) noexcept {
     m_options.window = w;
+    return *this;
+  }
+
+  create_options_builder &visibility(bool visible = true) noexcept {
+    m_options.visible = visible ? WEBVIEW_TRUE : WEBVIEW_FALSE;
     return *this;
   }
 
@@ -537,8 +550,7 @@ inline webview_create_options_t migrate_webview_create_options(bool debug,
   return create_options_builder{}.debug(debug).window(wnd).build();
 }
 
-inline webview_create_options_t
-validate_create_options(const webview_create_options_t &options) {
+inline void validate_create_options(const webview_create_options_t &options) {
   using namespace detail;
   if (options.minimum_required_version < detail::min_supported_version) {
     throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_OLD,
@@ -547,6 +559,14 @@ validate_create_options(const webview_create_options_t &options) {
   if (options.minimum_required_version > WEBVIEW_VERSION) {
     throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_RECENT,
                             "The specified version is too recent");
+  }
+}
+
+inline webview_create_options_t
+apply_webview_create_options_compatibility(webview_create_options_t options) {
+  validate_create_options(options);
+  if (options.minimum_required_version < WEBVIEW_PACK_VERSION(0, 11, 0)) {
+    options.visible = WEBVIEW_TRUE;
   }
   return options;
 }
@@ -709,6 +729,10 @@ public:
   void eval(const std::string &js) {
     webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(), NULL,
                                    NULL, NULL);
+  }
+
+  void set_visibility(bool visible) {
+    throw webview_exception(WEBVIEW_ERROR_INTERNAL, "Not yet implemented");
   }
 
 private:
@@ -976,6 +1000,9 @@ public:
         ((id(*)(id, SEL, const char *))objc_msgSend)(
             "NSString"_cls, "stringWithUTF8String:"_sel, js.c_str()),
         nullptr);
+  }
+  void set_visibility(bool visible) {
+    throw webview_exception(WEBVIEW_ERROR_INTERNAL, "Not yet implemented");
   }
 
 private:
@@ -1249,16 +1276,21 @@ public:
       m_window = *(static_cast<HWND *>(options.window));
     }
 
-    ShowWindow(m_window, SW_SHOW);
-    UpdateWindow(m_window);
-    SetFocus(m_window);
+    if (options.visible) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
+    }
 
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_window, options.debug, cb);
-    resize(m_window);
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+
+    if (options.visible) {
+      resize(m_window);
+      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    }
   }
 
   virtual ~win32_edge_engine() {
@@ -1357,6 +1389,24 @@ public:
 
   void set_html(const std::string &html) {
     m_webview->NavigateToString(widen_string(html).c_str());
+  }
+
+  void set_visibility(bool visible) {
+    if (visible) {
+      resize(m_window);
+      if (m_controller) {
+        m_controller->put_IsVisible(TRUE);
+      }
+    }
+    ShowWindow(m_window, visible ? SW_SHOW : SW_HIDE);
+    if (!visible) {
+      return;
+    }
+    UpdateWindow(m_window);
+    SetFocus(m_window);
+    if (m_controller) {
+      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    }
   }
 
 private:
@@ -1556,7 +1606,8 @@ namespace webview {
 class webview : public browser_engine {
 public:
   explicit webview(const webview_create_options_t &options)
-      : browser_engine(detail::validate_create_options(options)) {}
+      : browser_engine(
+            detail::apply_webview_create_options_compatibility(options)) {}
 
   WEBVIEW_DEPRECATED(
       "Please use the constructor that takes options as a struct")
@@ -1810,6 +1861,15 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
   return try_catch([=] { cast_to_webview(w)->resolve(seq, status, result); });
+}
+
+WEBVIEW_API webview_error_t webview_set_visibility(webview_t w,
+                                                   webview_bool_t visible) {
+  using namespace webview::detail;
+  if (!w) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return try_catch([=] { cast_to_webview(w)->set_visibility(!!visible); });
 }
 
 WEBVIEW_API webview_packed_version_t webview_version() {

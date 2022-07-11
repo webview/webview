@@ -33,6 +33,7 @@ int main() {
     return "{\"count\": " + count_string + "}";
   });
   w.set_html(html);
+  w.set_visibility(true);
   w.run();
   return 0;
 }

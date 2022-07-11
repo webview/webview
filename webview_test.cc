@@ -194,13 +194,6 @@ static void test_json() {
 static void test_validate_create_options() {
   using namespace webview::detail;
   {
-    auto options = webview::create_options_builder{}
-                       .minimum_required_version(WEBVIEW_VERSION)
-                       .build();
-    auto result = validate_create_options(options);
-    assert(result.minimum_required_version == WEBVIEW_VERSION);
-  }
-  {
     auto options = webview::create_options_builder{}.build();
     validate_create_options(options);
   }
@@ -226,6 +219,17 @@ static void test_validate_create_options() {
       assert(e.code() == WEBVIEW_ERROR_VERSION_TOO_RECENT);
     }
   }
+}
+
+// =================================================================
+// TEST: apply_webview_create_options_compatibility().
+// =================================================================
+static void test_apply_webview_create_options_compatibility() {
+  using namespace webview::detail;
+  auto options = webview::create_options_builder{}.build();
+  assert(options.visible == WEBVIEW_FALSE);
+  apply_webview_create_options_compatibility(options);
+  assert(options.visible == WEBVIEW_TRUE);
 }
 
 // =================================================================
