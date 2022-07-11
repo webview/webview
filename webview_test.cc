@@ -15,8 +15,7 @@
 // =================================================================
 static void test_terminate() {
   webview_create_options_t options{};
-  options.struct_size = sizeof(options);
-  options.api_version = webview::api_version;
+  options.minimum_required_version = WEBVIEW_VERSION;
   webview::webview w(options);
   w.dispatch([&]() { w.terminate(); });
   w.run();
@@ -64,7 +63,7 @@ static void test_c_api_create() {
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-  webview_t w = webview_create(false, nullptr); // NOLINT
+  webview_t w = webview_create(WEBVIEW_FALSE, nullptr); // NOLINT
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
@@ -82,8 +81,7 @@ static void test_c_api_create() {
 // =================================================================
 static void test_c_api_create_with_options() {
   webview_create_options_t options{};
-  options.struct_size = sizeof(options);
-  options.api_version = webview::api_version;
+  options.minimum_required_version = WEBVIEW_VERSION;
   webview_t w = nullptr;
   assert(webview_create_with_options(&w, &options) == WEBVIEW_ERROR_OK);
   continue_c_api_test(w);
@@ -98,36 +96,10 @@ static void test_c_api_error_codes() {
 }
 
 // =================================================================
-// TEST: webview_api_version().
-// =================================================================
-static void test_c_api_version() {
-  using webview::api_version;
-  using webview::detail::compare_versions;
-  assert(compare_versions(webview_api_version(), api_version) == 0);
-}
-
-// =================================================================
 // TEST: webview_library_version().
 // =================================================================
 static void test_c_api_library_version() {
-  using webview::library_version;
-  using webview::detail::compare_versions;
-  assert(compare_versions(webview_library_version(), library_version) == 0);
-}
-
-// =================================================================
-// TEST: compare_versions().
-// =================================================================
-static void test_compare_versions() {
-  using webview::detail::compare_versions;
-  assert(compare_versions({0, 0, 0}, {0, 0, 0}) == 0);
-  assert(compare_versions({0, 0, 1}, {0, 0, 1}) == 0);
-  assert(compare_versions({0, 1, 0}, {0, 1, 0}) == 0);
-  assert(compare_versions({1, 0, 0}, {1, 0, 0}) == 0);
-  assert(compare_versions({1, 1, 1}, {1, 1, 1}) == 0);
-  assert(compare_versions({0, 0, 1}, {0, 0, 0}) > 0);
-  assert(compare_versions({0, 1, 0}, {0, 0, 1}) > 0);
-  assert(compare_versions({1, 0, 0}, {0, 1, 1}) > 0);
+  assert(webview_version() == WEBVIEW_VERSION);
 }
 
 // =================================================================
@@ -143,8 +115,7 @@ struct test_webview : webview::browser_engine {
 private:
   static webview_create_options_t create_options() {
     webview_create_options_t options{};
-    options.struct_size = sizeof(options);
-    options.api_version = webview::api_version;
+    options.minimum_required_version = WEBVIEW_VERSION;
     options.debug = WEBVIEW_TRUE;
     return options;
   }
@@ -221,52 +192,67 @@ static void test_validate_create_options() {
   using namespace webview::detail;
   {
     webview_create_options_t options{};
-    options.struct_size = sizeof(options);
-    options.api_version = webview::api_version;
-    const auto &result = validate_create_options(options);
-    assert(options.struct_size == result.struct_size);
-    assert(compare_versions(options.api_version, result.api_version) == 0);
+    options.minimum_required_version = WEBVIEW_VERSION;
+    auto result = validate_create_options(options);
+    assert(result.minimum_required_version == WEBVIEW_VERSION);
   }
   {
     webview_create_options_t options{};
-    options.struct_size = sizeof(options);
-    options.api_version = min_api_version;
+    options.minimum_required_version = webview::min_supported_version;
     validate_create_options(options);
   }
   {
     webview_create_options_t options{};
-    options.struct_size = 0;
-    options.api_version = webview::api_version;
+    options.minimum_required_version = webview::min_supported_version - 1;
     try {
       validate_create_options(options);
       assert(false);
     } catch (const webview::webview_exception &e) {
-      assert(e.code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+      assert(e.code() == WEBVIEW_ERROR_VERSION_TOO_OLD);
     }
   }
   {
     webview_create_options_t options{};
-    options.struct_size = sizeof(options);
-    options.api_version = min_api_version;
-    options.api_version.major = min_api_version.major - 1;
+    options.minimum_required_version = WEBVIEW_VERSION + 1;
     try {
       validate_create_options(options);
       assert(false);
     } catch (const webview::webview_exception &e) {
-      assert(e.code() == WEBVIEW_ERROR_API_VERSION_TOO_OLD);
+      assert(e.code() == WEBVIEW_ERROR_VERSION_TOO_RECENT);
     }
   }
+}
+
+// =================================================================
+// TEST: ensure that version packing and unpacking works.
+// =================================================================
+static void test_packed_version() {
   {
-    webview_create_options_t options{};
-    options.struct_size = sizeof(options);
-    options.api_version = webview::api_version;
-    options.api_version.major = webview::api_version.major + 1;
-    try {
-      validate_create_options(options);
-      assert(false);
-    } catch (const webview::webview_exception &e) {
-      assert(e.code() == WEBVIEW_ERROR_API_VERSION_TOO_RECENT);
-    }
+    auto version = WEBVIEW_PACK_VERSION(1023, 1023, 1023);
+    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
+    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
+    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
+    assert(major == 1023);
+    assert(minor == 1023);
+    assert(patch == 1023);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(1, 2, 3);
+    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
+    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
+    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
+    assert(major == 1);
+    assert(minor == 2);
+    assert(patch == 3);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(0, 0, 0);
+    auto major = WEBVIEW_UNPACK_MAJOR_VERSION(version);
+    auto minor = WEBVIEW_UNPACK_MINOR_VERSION(version);
+    auto patch = WEBVIEW_UNPACK_PATCH_VERSION(version);
+    assert(major == 0);
+    assert(minor == 0);
+    assert(patch == 0);
   }
 }
 
@@ -345,12 +331,11 @@ int main(int argc, char *argv[]) {
       {"c_api_create", test_c_api_create},
       {"c_api_create_with_options", test_c_api_create_with_options},
       {"c_api_error_codes", test_c_api_error_codes},
-      {"c_api_version", test_c_api_version},
       {"c_api_library_version", test_c_api_library_version},
-      {"compare_versions", test_compare_versions},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json},
-      {"validate_create_options", test_validate_create_options}};
+      {"validate_create_options", test_validate_create_options},
+      {"packed_version", test_packed_version}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);

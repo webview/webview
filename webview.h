@@ -36,12 +36,27 @@
 // The current library patch version.
 #define WEBVIEW_PATCH_VERSION 0
 
-// The current library API major version.
-#define WEBVIEW_API_MAJOR_VERSION 0
-// The current library API minor version.
-#define WEBVIEW_API_MINOR_VERSION 1
-// The current library API patch version.
-#define WEBVIEW_API_PATCH_VERSION 0
+// Packs a MAJOR.MINOR.PATCH version number format into a 30-bit number.
+#define WEBVIEW_PACK_VERSION(major, minor, patch)                              \
+  ((((major)&1023) << 20) | (((minor)&1023) << 10) | ((patch)&1023))
+
+// The current library version in packed form.
+#define WEBVIEW_VERSION                                                        \
+  WEBVIEW_PACK_VERSION(WEBVIEW_MAJOR_VERSION, WEBVIEW_MINOR_VERSION,           \
+                       WEBVIEW_PATCH_VERSION)
+
+// Extracts the major version component of a packed version number.
+#define WEBVIEW_UNPACK_MAJOR_VERSION(version) (((version) >> 20) & 1023)
+// Extracts the minor version component of a packed version number.
+#define WEBVIEW_UNPACK_MINOR_VERSION(version) (((version) >> 10) & 1023)
+// Extracts the patch version component of a packed version number.
+#define WEBVIEW_UNPACK_PATCH_VERSION(version) ((version)&1023)
+
+// Represents a MAJOR.MINOR.PATCH version number packed as a 30-bit number.
+// The least significant component of the version number (PATCH) starts with
+// the 10 least significant bits. The last two bits are unused for now and
+// must be zero.
+typedef unsigned int webview_packed_version_t;
 
 #ifndef WEBVIEW_DEPRECATED
 #if defined(__cplusplus) && __cplusplus >= 201402L
@@ -55,22 +70,16 @@
 
 typedef void *webview_t;
 
-// Boolean type where 1 is true and 0 is false. Non-zero shall be regarded as true.
+// Boolean type where 1 is true and 0 is false. Non-zero shall be regarded
+// as true.
 typedef enum { WEBVIEW_FALSE, WEBVIEW_TRUE } webview_bool_t;
-
-// Holds the MAJOR.MINOR.PATCH components of a version number.
-typedef struct {
-  unsigned short major;
-  unsigned short minor;
-  unsigned short patch;
-} webview_version_t;
 
 // Options for webview_create_with_options().
 typedef struct {
-  // Size of this struct.
-  unsigned int struct_size;
-  // Library API version.
-  webview_version_t api_version;
+  // Minimum required library version. Set this to WEBVIEW_VERSION to enable
+  // the latest features and behaviors provided by the library. Use a lower
+  // version if you need backward-compatibility.
+  webview_packed_version_t minimum_required_version;
   // Enables debug/developer tools for supported browser engines if set to
   // WEBVIEW_TRUE.
   webview_bool_t debug;
@@ -91,11 +100,10 @@ typedef enum {
   WEBVIEW_ERROR_INVALID_STATE = 1001,
   // Invalid argument.
   WEBVIEW_ERROR_INVALID_ARGUMENT = 1002,
-  // API: The API version of the caller is newer than the one supported by
-  // the library.
-  WEBVIEW_ERROR_API_VERSION_TOO_RECENT = 2000,
-  // API: The API version of the caller is no longer supported by the library.
-  WEBVIEW_ERROR_API_VERSION_TOO_OLD = 2001
+  // The specified version is too recent.
+  WEBVIEW_ERROR_VERSION_TOO_RECENT = 2000,
+  // The specified version is too old.
+  WEBVIEW_ERROR_VERSION_TOO_OLD = 2001
 } webview_error_t;
 
 // Window size hints.
@@ -114,22 +122,23 @@ typedef enum {
 extern "C" {
 #endif
 
-// Creates a new webview instance. If debug is WEBVIEW_TRUE, developer tools
-// will be enabled (if the platform supports them). Window parameter can be a
+// Creates a new webview instance. If debug is non-zero - developer tools will
+// be enabled (if the platform supports them). Window parameter can be a
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here.
-// This function is kept for backward-compatibility and retains the behavior
-// of API version 1. New code should use webview_create_with_options() instead.
+// passed here. This function is kept for backward-compatibility.
+// New code should use webview_create_with_options() instead.
 WEBVIEW_DEPRECATED("Please use webview_create_with_options instead")
-WEBVIEW_API webview_t webview_create(webview_bool_t debug, void *window);
+WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Creates a new webview instance with the specified options and returns the
 // new instance in the webview parameter.
 // Noteworthy error codes:
-//  - WEBVIEW_ERROR_API_VERSION_TOO_OLD
-//  - WEBVIEW_ERROR_API_VERSION_TOO_RECENT
+//  - WEBVIEW_ERROR_VERSION_TOO_OLD - The minimum version of the library
+//    required by the caller no longer supported by the library.
+//  - WEBVIEW_ERROR_VERSION_TOO_RECENT - The minimum version of the library
+//    required by the caller is newer than the one supported by the library.
 WEBVIEW_API webview_error_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
 
@@ -205,10 +214,7 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
                                            int status, const char *result);
 
 // Get the version of the library.
-WEBVIEW_API webview_version_t webview_library_version();
-
-// Get the API version compiled into the library.
-WEBVIEW_API webview_version_t webview_api_version();
+WEBVIEW_API webview_packed_version_t webview_version();
 
 #ifdef __cplusplus
 }
@@ -245,14 +251,9 @@ WEBVIEW_API webview_version_t webview_api_version();
 
 namespace webview {
 
-// The current library version.
-constexpr webview_version_t library_version{
-    WEBVIEW_MAJOR_VERSION, WEBVIEW_MINOR_VERSION, WEBVIEW_PATCH_VERSION};
-
-// The current library API version.
-constexpr webview_version_t api_version{WEBVIEW_API_MAJOR_VERSION,
-                                        WEBVIEW_API_MINOR_VERSION,
-                                        WEBVIEW_API_PATCH_VERSION};
+// The minimum library version supported by the library.
+constexpr webview_packed_version_t min_supported_version =
+    WEBVIEW_PACK_VERSION(0, 10, 0);
 
 class webview_exception : public std::domain_error {
 public:
@@ -275,12 +276,17 @@ using dispatch_fn_t = std::function<void()>;
 class create_options_builder {
 public:
   create_options_builder() {
-    m_options.struct_size = sizeof(m_options);
-    m_options.api_version = api_version;
+    m_options.minimum_required_version = min_supported_version;
   }
 
-  create_options_builder &debug() noexcept {
-    m_options.debug = WEBVIEW_TRUE;
+  create_options_builder &
+  minimum_required_version(webview_packed_version_t version) noexcept {
+    m_options.minimum_required_version = version;
+    return *this;
+  }
+
+  create_options_builder &debug(bool enable = true) noexcept {
+    m_options.debug = enable ? WEBVIEW_TRUE : WEBVIEW_FALSE;
     return *this;
   }
 
@@ -296,28 +302,6 @@ private:
 };
 
 namespace detail {
-
-// The minimum API version supported by the library.
-constexpr webview_version_t min_api_version{1, 0, 0};
-
-// Compares two versions.
-// Returns:
-//   - 1 if the first version is greater than the second version.
-//   - 0 if the versions are equal.
-//   - -1 if the first version is less (lower) than the second version.
-inline int compare_versions(const webview_version_t &first,
-                            const webview_version_t &second) {
-  if (first.major != second.major) {
-    return first.major > second.major ? 1 : -1;
-  }
-  if (first.minor != second.minor) {
-    return first.minor > second.minor ? 1 : -1;
-  }
-  if (first.patch != second.patch) {
-    return first.patch > second.patch ? 1 : -1;
-  }
-  return 0;
-}
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -544,30 +528,25 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
-inline webview_create_options_t migrate_webview_create_options(int debug,
+inline webview_create_options_t migrate_webview_create_options(bool debug,
                                                                void *wnd) {
-  webview_create_options_t options{};
-  options.struct_size = sizeof(options);
-  options.api_version = api_version;
-  options.debug = static_cast<webview_bool_t>(debug);
-  options.window = wnd;
-  return options;
+  return create_options_builder{}
+      .minimum_required_version(min_supported_version)
+      .debug(debug)
+      .window(wnd)
+      .build();
 }
 
 inline webview_create_options_t
 validate_create_options(const webview_create_options_t &options) {
   using namespace detail;
-  if (compare_versions(options.api_version, min_api_version) < 0) {
-    throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_OLD,
-                            "The specified API version is too old");
+  if (options.minimum_required_version < min_supported_version) {
+    throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_OLD,
+                            "The specified version is too old");
   }
-  if (compare_versions(options.api_version, api_version) > 0) {
-    throw webview_exception(WEBVIEW_ERROR_API_VERSION_TOO_RECENT,
-                            "The specified API version is too recent");
-  }
-  if (options.struct_size == 0 || options.struct_size > sizeof(options)) {
-    throw webview_exception(WEBVIEW_ERROR_INVALID_ARGUMENT,
-                            "Invalid struct size");
+  if (options.minimum_required_version > WEBVIEW_VERSION) {
+    throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_RECENT,
+                            "The specified version is too recent");
   }
   return options;
 }
@@ -1581,11 +1560,10 @@ public:
 
   WEBVIEW_DEPRECATED(
       "Please use the constructor that takes options as a struct")
-  webview(bool debug = false, void *wnd = nullptr)
+  webview(bool debug, void *wnd = nullptr)
       : webview(detail::migrate_webview_create_options(debug, wnd)) {}
 
-  explicit webview(const create_options_builder &options)
-      : webview(options.build()) {}
+  webview() : webview(create_options_builder{}.build()) {}
 
   void navigate(const std::string &url) {
     if (url == "") {
@@ -1683,8 +1661,9 @@ constexpr webview *cast_to_webview(void *w) noexcept {
 } // namespace detail
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(webview_bool_t debug, void *wnd) {
-  auto options = webview::detail::migrate_webview_create_options(debug, wnd);
+WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
+  bool debug_ = debug != 0;
+  auto options = webview::detail::migrate_webview_create_options(debug_, wnd);
   webview_t w = nullptr;
   if (webview_create_with_options(&w, &options) != WEBVIEW_ERROR_OK) {
     return nullptr;
@@ -1833,12 +1812,8 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
   return try_catch([=] { cast_to_webview(w)->resolve(seq, status, result); });
 }
 
-WEBVIEW_API webview_version_t webview_library_version() {
-  return webview::library_version;
-}
-
-WEBVIEW_API webview_version_t webview_api_version() {
-  return webview::api_version;
+WEBVIEW_API webview_packed_version_t webview_version() {
+  return WEBVIEW_VERSION;
 }
 
 #endif /* WEBVIEW_HEADER */
