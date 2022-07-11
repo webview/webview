@@ -219,10 +219,12 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
                                            int status, const char *result);
 
 // Set the window visibility.
+// @since 0.11
 WEBVIEW_API webview_error_t webview_set_visibility(webview_t w,
                                                    webview_bool_t visible);
 
 // Get the version of the library.
+// @since 0.11
 WEBVIEW_API webview_packed_version_t webview_version();
 
 #ifdef __cplusplus
