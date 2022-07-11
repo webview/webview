@@ -14,8 +14,9 @@
 // TEST: start app loop and terminate it.
 // =================================================================
 static void test_terminate() {
-  webview_create_options_t options{};
-  options.minimum_required_version = WEBVIEW_VERSION;
+  auto options = webview::create_options_builder{}
+                     .minimum_required_version(WEBVIEW_VERSION)
+                     .build();
   webview::webview w(options);
   w.dispatch([&]() { w.terminate(); });
   w.run();
@@ -80,8 +81,9 @@ static void test_c_api_create() {
 // TEST: webview_create_with_options().
 // =================================================================
 static void test_c_api_create_with_options() {
-  webview_create_options_t options{};
-  options.minimum_required_version = WEBVIEW_VERSION;
+  auto options = webview::create_options_builder{}
+                     .minimum_required_version(WEBVIEW_VERSION)
+                     .build();
   webview_t w = nullptr;
   assert(webview_create_with_options(&w, &options) == WEBVIEW_ERROR_OK);
   continue_c_api_test(w);
@@ -114,9 +116,10 @@ struct test_webview : webview::browser_engine {
 
 private:
   static webview_create_options_t create_options() {
-    webview_create_options_t options{};
-    options.minimum_required_version = WEBVIEW_VERSION;
-    options.debug = WEBVIEW_TRUE;
+    auto options = webview::create_options_builder{}
+                       .minimum_required_version(WEBVIEW_VERSION)
+                       .debug()
+                       .build();
     return options;
   }
 };
@@ -191,19 +194,20 @@ static void test_json() {
 static void test_validate_create_options() {
   using namespace webview::detail;
   {
-    webview_create_options_t options{};
-    options.minimum_required_version = WEBVIEW_VERSION;
+    auto options = webview::create_options_builder{}
+                       .minimum_required_version(WEBVIEW_VERSION)
+                       .build();
     auto result = validate_create_options(options);
     assert(result.minimum_required_version == WEBVIEW_VERSION);
   }
   {
-    webview_create_options_t options{};
-    options.minimum_required_version = min_supported_version;
+    auto options = webview::create_options_builder{}.build();
     validate_create_options(options);
   }
   {
-    webview_create_options_t options{};
-    options.minimum_required_version = min_supported_version - 1;
+    auto options = webview::create_options_builder{}
+                       .minimum_required_version(min_supported_version - 1)
+                       .build();
     try {
       validate_create_options(options);
       assert(false);
@@ -212,8 +216,9 @@ static void test_validate_create_options() {
     }
   }
   {
-    webview_create_options_t options{};
-    options.minimum_required_version = WEBVIEW_VERSION + 1;
+    auto options = webview::create_options_builder{}
+                       .minimum_required_version(WEBVIEW_VERSION + 1)
+                       .build();
     try {
       validate_create_options(options);
       assert(false);
