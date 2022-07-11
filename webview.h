@@ -534,11 +534,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 
 inline webview_create_options_t migrate_webview_create_options(bool debug,
                                                                void *wnd) {
-  return create_options_builder{}
-      .minimum_required_version(detail::min_supported_version)
-      .debug(debug)
-      .window(wnd)
-      .build();
+  return create_options_builder{}.debug(debug).window(wnd).build();
 }
 
 inline webview_create_options_t
