@@ -36,9 +36,16 @@
 // The current library patch version.
 #define WEBVIEW_PATCH_VERSION 0
 
+// Represents a MAJOR.MINOR.PATCH version number packed as a 30-bit number.
+// The least significant component of the version number (PATCH) starts with
+// the 10 least significant bits. The last two bits are unused for now and
+// must be zero.
+typedef unsigned int webview_packed_version_t;
+
 // Packs a MAJOR.MINOR.PATCH version number format into a 30-bit number.
 #define WEBVIEW_PACK_VERSION(major, minor, patch)                              \
-  ((((major)&1023) << 20) | (((minor)&1023) << 10) | ((patch)&1023))
+  (webview_packed_version_t)((((major)&1023) << 20) | (((minor)&1023) << 10) | \
+                             ((patch)&1023))
 
 // The current library version in packed form.
 #define WEBVIEW_VERSION                                                        \
@@ -51,12 +58,6 @@
 #define WEBVIEW_UNPACK_MINOR_VERSION(version) (((version) >> 10) & 1023)
 // Extracts the patch version component of a packed version number.
 #define WEBVIEW_UNPACK_PATCH_VERSION(version) ((version)&1023)
-
-// Represents a MAJOR.MINOR.PATCH version number packed as a 30-bit number.
-// The least significant component of the version number (PATCH) starts with
-// the 10 least significant bits. The last two bits are unused for now and
-// must be zero.
-typedef unsigned int webview_packed_version_t;
 
 #ifndef WEBVIEW_DEPRECATED
 #if defined(__cplusplus) && __cplusplus >= 201402L
