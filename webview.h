@@ -633,11 +633,12 @@ class gtk_webkit_engine {
 public:
   explicit gtk_webkit_engine(const webview_create_options_t &options)
       : m_window(static_cast<GtkWidget *>(options.window)) {
-    if (gtk_init_check(0, NULL) == FALSE) {
-      return;
+    if (!gtk_init_check(0, NULL)) {
+      throw webview_exception(WEBVIEW_ERROR_INTERNAL,
+                              "gtk_init_check() failed");
     }
     m_window = static_cast<GtkWidget *>(options.window);
-    if (m_window == nullptr) {
+    if (!m_window) {
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     }
     g_signal_connect(G_OBJECT(m_window), "destroy",
