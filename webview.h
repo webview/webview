@@ -1357,14 +1357,19 @@ public:
   public:
     binding_ctx_t(binding_t *f, void *a, bool s = true)
         : callback(f), arg(a), sync(s) {}
+    // This function is called upon execution of the bound JS function
     binding_t *callback;
+    // This user-supplied argument is passed to the callback
     void *arg;
+    // This boolean expresses whether or not this binding is synchronous or asynchronous
+    // Async bindings require the user to call the resolve function, sync bindings don't
     bool sync;
   };
 
   using sync_binding_t = std::function<std::string(std::string)>;
   using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
+  // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
     if(bindings.count(name) == 0) {
       bindings[name] =
@@ -1378,6 +1383,7 @@ public:
     }
   }
 
+  // Asynchronous bind
   void bind(const std::string &name, binding_t f, void *arg) {
     if(bindings.count(name) == 0) {
       bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
