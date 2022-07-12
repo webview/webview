@@ -1366,20 +1366,23 @@ public:
   using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
   void bind(const std::string &name, sync_binding_t fn) {
-    bindings[name] =
+    if(bindings.count(name) == 0) {
+      bindings[name] =
         new binding_ctx_t(new binding_t([](const std::string &seq,
                                            const std::string &req, void *arg) {
                             auto pair = static_cast<sync_binding_ctx_t *>(arg);
                             pair->first->resolve(seq, 0, pair->second(req));
                           }),
-                          new sync_binding_ctx_t(this, fn), true);
-
-    bind_js(name);
+                          new sync_binding_ctx_t(this, fn));
+      bind_js(name);
+    }
   }
 
   void bind(const std::string &name, binding_t f, void *arg) {
-    bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
-    bind_js(name);
+    if(bindings.count(name) == 0) {
+      bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
+      bind_js(name);
+    }
   }
 
   void unbind(const std::string &name) {
