@@ -1371,21 +1371,21 @@ public:
 
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
-    if(bindings.count(name) == 0) {
-      bindings[name] =
-        new binding_ctx_t(new binding_t([](const std::string &seq,
-                                           const std::string &req, void *arg) {
-                            auto pair = static_cast<sync_binding_ctx_t *>(arg);
-                            pair->first->resolve(seq, 0, pair->second(req));
-                          }),
-                          new sync_binding_ctx_t(this, fn));
+    if (bindings.count(name) == 0) {
+      bindings[name] = new binding_ctx_t(
+          new binding_t(
+              [](const std::string &seq, const std::string &req, void *arg) {
+                auto pair = static_cast<sync_binding_ctx_t *>(arg);
+                pair->first->resolve(seq, 0, pair->second(req));
+              }),
+          new sync_binding_ctx_t(this, fn));
       bind_js(name);
     }
   }
 
   // Asynchronous bind
   void bind(const std::string &name, binding_t f, void *arg) {
-    if(bindings.count(name) == 0) {
+    if (bindings.count(name) == 0) {
       bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
       bind_js(name);
     }
