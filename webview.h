@@ -218,10 +218,9 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
                                            int status, const char *result);
 
-// Set the window visibility.
+// Show the window.
 // @since 0.11
-WEBVIEW_API webview_error_t webview_set_visibility(webview_t w,
-                                                   webview_bool_t visible);
+WEBVIEW_API webview_error_t webview_show(webview_t w);
 
 // Get the version of the library.
 // @since 0.11
@@ -677,7 +676,7 @@ public:
     }
 
     if (options.visible) {
-      set_visibility(true);
+      show();
     }
   }
   virtual ~gtk_webkit_engine() = default;
@@ -736,13 +735,7 @@ public:
                                    NULL, NULL);
   }
 
-  void set_visibility(bool visible) {
-    if (visible) {
-      gtk_widget_show_all(m_window);
-    } else {
-      gtk_widget_hide(m_window);
-    }
-  }
+  void show() { gtk_widget_show_all(m_window); }
 
 private:
   virtual void on_message(const std::string &msg) = 0;
@@ -1010,7 +1003,7 @@ public:
             "NSString"_cls, "stringWithUTF8String:"_sel, js.c_str()),
         nullptr);
   }
-  void set_visibility(bool visible) {
+  void show() {
     throw webview_exception(WEBVIEW_ERROR_INTERNAL, "Not yet implemented");
   }
 
@@ -1285,10 +1278,11 @@ public:
       m_window = *(static_cast<HWND *>(options.window));
     }
 
-    if (options.visible) {
-      ShowWindow(m_window, SW_SHOW);
-      UpdateWindow(m_window);
-      SetFocus(m_window);
+    auto use_new_show_behavior =
+        options.minimum_required_version >= WEBVIEW_PACK_VERSION(1, 11, 0);
+
+    if (options.visible && !use_new_show_behavior) {
+      show_window();
     }
 
     auto cb =
@@ -1297,8 +1291,11 @@ public:
     embed(m_window, options.debug, cb);
 
     if (options.visible) {
-      resize(m_window);
-      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+      if (use_new_show_behavior) {
+        show();
+      } else {
+        show_embedded_webview();
+      }
     }
   }
 
@@ -1400,22 +1397,9 @@ public:
     m_webview->NavigateToString(widen_string(html).c_str());
   }
 
-  void set_visibility(bool visible) {
-    if (visible) {
-      resize(m_window);
-      if (m_controller) {
-        m_controller->put_IsVisible(TRUE);
-      }
-    }
-    ShowWindow(m_window, visible ? SW_SHOW : SW_HIDE);
-    if (!visible) {
-      return;
-    }
-    UpdateWindow(m_window);
-    SetFocus(m_window);
-    if (m_controller) {
-      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
-    }
+  void show() {
+    show_window();
+    show_embedded_webview();
   }
 
 private:
@@ -1426,6 +1410,24 @@ private:
       webview_initialization_failed = WM_APP + 2
     };
   };
+
+  void show_window() {
+    if (!m_window) {
+      return;
+    }
+    ShowWindow(m_window, SW_SHOW);
+    UpdateWindow(m_window);
+    SetFocus(m_window);
+  }
+
+  void show_embedded_webview() {
+    if (!m_controller) {
+      return;
+    }
+    resize(m_window);
+    m_controller->put_IsVisible(TRUE);
+    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+  }
 
   void embed(HWND wnd, bool debug, msg_cb_t cb) {
     wchar_t currentExePath[MAX_PATH];
@@ -1872,13 +1874,12 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
   return try_catch([=] { cast_to_webview(w)->resolve(seq, status, result); });
 }
 
-WEBVIEW_API webview_error_t webview_set_visibility(webview_t w,
-                                                   webview_bool_t visible) {
+WEBVIEW_API webview_error_t webview_show(webview_t w) {
   using namespace webview::detail;
   if (!w) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
-  return try_catch([=] { cast_to_webview(w)->set_visibility(!!visible); });
+  return try_catch([=] { cast_to_webview(w)->show(); });
 }
 
 WEBVIEW_API webview_packed_version_t webview_version() {
