@@ -696,7 +696,7 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
   }
-  virtual ~cocoa_wkwebview_engine() { close(); }
+  virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
   void terminate() {
     close();
