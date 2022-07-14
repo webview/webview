@@ -610,8 +610,7 @@ class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window) {
     // Application
-    id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
-                                            "sharedApplication"_sel);
+    auto app = get_shared_application();
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
     // Delegate
@@ -705,8 +704,7 @@ public:
                                           nullptr);
   }
   void run() {
-    id app = ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
-                                            "sharedApplication"_sel);
+    auto app = get_shared_application();
     dispatch([&]() {
       ((void (*)(id, SEL, BOOL))objc_msgSend)(
           app, "activateIgnoringOtherApps:"_sel, 1);
@@ -809,6 +807,10 @@ private:
                     "v@:@@");
     objc_registerClassPair(cls);
     return ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
+  }
+  static id get_shared_application() {
+    return ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
+                                          "sharedApplication"_sel);
   }
   id m_window;
   id m_webview;
