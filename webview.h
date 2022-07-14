@@ -614,27 +614,8 @@ public:
                                             "sharedApplication"_sel);
     ((void (*)(id, SEL, long))objc_msgSend)(
         app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
-
     // Delegate
-    auto cls =
-        objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
-    class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
-    class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
-                    (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
-    class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
-                    (IMP)(+[](id self, SEL, id, id msg) {
-                      auto w =
-                          (cocoa_wkwebview_engine *)objc_getAssociatedObject(
-                              self, "webview");
-                      assert(w);
-                      w->on_message(((const char *(*)(id, SEL))objc_msgSend)(
-                          ((id(*)(id, SEL))objc_msgSend)(msg, "body"_sel),
-                          "UTF8String"_sel));
-                    }),
-                    "v@:@@");
-    objc_registerClassPair(cls);
-
-    auto delegate = ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
+    auto delegate = create_app_delegate();
     objc_setAssociatedObject(delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
     ((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setDelegate:"),
@@ -809,6 +790,26 @@ public:
 private:
   virtual void on_message(const std::string &msg) = 0;
   void close() { ((void (*)(id, SEL))objc_msgSend)(m_window, "close"_sel); }
+  static id create_app_delegate() {
+    auto cls =
+        objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
+    class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
+    class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
+                    (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
+    class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
+                    (IMP)(+[](id self, SEL, id, id msg) {
+                      auto w =
+                          (cocoa_wkwebview_engine *)objc_getAssociatedObject(
+                              self, "webview");
+                      assert(w);
+                      w->on_message(((const char *(*)(id, SEL))objc_msgSend)(
+                          ((id(*)(id, SEL))objc_msgSend)(msg, "body"_sel),
+                          "UTF8String"_sel));
+                    }),
+                    "v@:@@");
+    objc_registerClassPair(cls);
+    return ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
+  }
   id m_window;
   id m_webview;
   id m_manager;
