@@ -796,10 +796,7 @@ private:
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
     class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
                     (IMP)(+[](id self, SEL, id, id msg) {
-                      auto w =
-                          (cocoa_wkwebview_engine *)objc_getAssociatedObject(
-                              self, "webview");
-                      assert(w);
+                      auto w = get_associated_webview(self);
                       w->on_message(((const char *(*)(id, SEL))objc_msgSend)(
                           ((id(*)(id, SEL))objc_msgSend)(msg, "body"_sel),
                           "UTF8String"_sel));
@@ -811,6 +808,12 @@ private:
   static id get_shared_application() {
     return ((id(*)(id, SEL))objc_msgSend)("NSApplication"_cls,
                                           "sharedApplication"_sel);
+  }
+  static cocoa_wkwebview_engine *get_associated_webview(id object) {
+    auto w =
+        (cocoa_wkwebview_engine *)objc_getAssociatedObject(object, "webview");
+    assert(w);
+    return w;
   }
   id m_window;
   id m_webview;
