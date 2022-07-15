@@ -1355,8 +1355,8 @@ public:
   using binding_t = std::function<void(std::string, std::string, void *)>;
   class binding_ctx_t {
   public:
-    binding_ctx_t(binding_t *f, void *a, bool s = true)
-        : callback(f), arg(a), sync(s) {}
+    binding_ctx_t(binding_t *callback, void *arg, bool sync = true)
+        : callback(callback), arg(arg), sync(sync) {}
     // This function is called upon execution of the bound JS function
     binding_t *callback;
     // This user-supplied argument is passed to the callback
