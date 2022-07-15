@@ -696,12 +696,11 @@ public:
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
                                           nullptr);
   }
-  virtual ~cocoa_wkwebview_engine() { close(); }
+  virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
   void terminate() {
-    close();
-    ((void (*)(id, SEL, id))objc_msgSend)("NSApp"_cls, "terminate:"_sel,
-                                          nullptr);
+    auto app = get_shared_application();
+    ((void (*)(id, SEL, id))objc_msgSend)(app, "terminate:"_sel, nullptr);
   }
   void run() {
     auto app = get_shared_application();
@@ -787,7 +786,6 @@ public:
 
 private:
   virtual void on_message(const std::string &msg) = 0;
-  void close() { ((void (*)(id, SEL))objc_msgSend)(m_window, "close"_sel); }
   static id create_app_delegate() {
     auto cls =
         objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
