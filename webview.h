@@ -1227,6 +1227,15 @@ private:
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
+    ICoreWebView2Settings *settings = nullptr;
+    res = m_webview->get_Settings(&settings);
+    if (res != S_OK) {
+      return false;
+    }
+    res = settings->put_AreDevToolsEnabled(debug ? TRUE : FALSE);
+    if (res != S_OK) {
+      return false;
+    }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
     return true;
   }
