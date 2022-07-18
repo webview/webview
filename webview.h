@@ -108,7 +108,7 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void *arg);
 
 // Removes a native C callback that was previously set by webview_bind.
-WEBVIEW_API void webview_unbind(webview_t w, const char *name);
+WEBVIEW_API void *webview_unbind(webview_t w, const char *name);
 
 // Allows to return a value from the native binding. Original request pointer
 // must be provided to help internal RPC engine match requests with responses.
@@ -1404,18 +1404,31 @@ public:
     }
   }
 
-  void unbind(const std::string &name) {
+  void *unbind(const std::string &name) {
     if (bindings.find(name) != bindings.end()) {
       auto js = "delete window['" + name + "'];";
       init(js);
       eval(js);
+
+      // save binding info
+      void *arg = bindings[name]->arg;
+      bool sync = bindings[name]->sync;
+
+      // free dynamically allocated variables
       delete bindings[name]->callback;
-      if (bindings[name]->sync) {
-        delete static_cast<sync_binding_ctx_t *>(bindings[name]->arg);
-      }
       delete bindings[name];
       bindings.erase(name);
+
+      // free arg if sync binding
+      if (sync) {
+        delete static_cast<sync_binding_ctx_t *>(arg);
+        return nullptr;
+      }
+
+      // caller is responsible for freeing arg in this case
+      return arg;
     }
+    return nullptr;
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
@@ -1536,7 +1549,7 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
       arg);
 }
 
-WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
+WEBVIEW_API void *webview_unbind(webview_t w, const char *name) {
   static_cast<webview::webview *>(w)->unbind(name);
 }
 
