@@ -1026,6 +1026,9 @@ inline bool enable_dpi_awareness() {
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
+    if (!is_webview2_available()) {
+      return;
+    }
     if (!m_com_init.is_initialized()) {
       return;
     }
@@ -1249,6 +1252,15 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
+  static bool is_webview2_available() noexcept {
+    LPWSTR version_info = nullptr;
+    auto res =
+        GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
+    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+    // if the WebView2 runtime is not installed.
+    return SUCCEEDED(res) && version_info;
+  }
+
   virtual void on_message(const std::string &msg) = 0;
 
   class webview2_com_handler
@@ -1333,7 +1345,7 @@ private:
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init{COINIT_APARTMENTTHREADED};
-  HWND m_window;
+  HWND m_window = NULL;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
