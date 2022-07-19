@@ -744,21 +744,35 @@ private:
     assert(w);
     return w;
   }
+  static id get_main_bundle() noexcept {
+    return ((id(*)(id, SEL))objc_msgSend)("NSBundle"_cls, "mainBundle"_sel);
+  }
+  static bool is_app_bundled() noexcept {
+    auto bundle = get_main_bundle();
+    if (!bundle) {
+      return false;
+    }
+    auto bundle_path = ((id(*)(id, SEL))objc_msgSend)(bundle, "bundlePath"_sel);
+    auto bundled = ((BOOL(*)(id, SEL, id))objc_msgSend)(
+        bundle_path, "hasSuffix:"_sel, ".app"_str);
+    return !!bundled;
+  }
   void on_application_did_finish_launching(id delegate, id app) {
     // Stop the main run loop so that we can return
     // from the constructor.
     ((void (*)(id, SEL, id))objc_msgSend)(app, "stop:"_sel, nullptr);
 
-    // Make this app the active app if it is not already active.
-    // Apps launched from Finder are activated automatically but otherwise not.
-    // Activating the app even when it has been launched from Finder does not
-    // seem to be harmful but calling this function is rarely needed as proper
-    // activation is normally taken care of for us. For this reason we do it
-    // only if the app is not active at this point.
-    auto is_active = ((BOOL(*)(id, SEL))objc_msgSend)(app, "isActive"_sel);
-    if (!is_active) {
-      // "setActivationPolicy:" must be sent before "activateIgnoringOtherApps:"
-      // to make the app active. Not doing so at all hides the app.
+    // Activate the app if it is not bundled.
+    // Bundled apps launched from Finder are activated automatically but
+    // otherwise not. Activating the app even when it has been launched from
+    // Finder does not seem to be harmful but calling this function is rarely
+    // needed as proper activation is normally taken care of for us.
+    // Bundled apps have a default activation policy of
+    // NSApplicationActivationPolicyRegular while non-bundled apps have a
+    // default activation policy of NSApplicationActivationPolicyProhibited.
+    if (!is_app_bundled()) {
+      // "setActivationPolicy:" must be invoked before
+      // "activateIgnoringOtherApps:" for activation to work.
       ((void (*)(id, SEL, long))objc_msgSend)(
           app, "setActivationPolicy:"_sel,
           NSApplicationActivationPolicyRegular);
