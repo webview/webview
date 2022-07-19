@@ -608,93 +608,20 @@ id operator"" _str(const char *s, std::size_t) {
 
 class cocoa_wkwebview_engine {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window) {
-    // Application
+  cocoa_wkwebview_engine(bool debug, void *window)
+      : m_debug{debug}, m_parent_window{window} {
     auto app = get_shared_application();
-    ((void (*)(id, SEL, long))objc_msgSend)(
-        app, "setActivationPolicy:"_sel, NSApplicationActivationPolicyRegular);
-    // Delegate
     auto delegate = create_app_delegate();
     objc_setAssociatedObject(delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    ((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setDelegate:"),
-                                          delegate);
+    ((void (*)(id, SEL, id))objc_msgSend)(app, "setDelegate:"_sel, delegate);
 
-    // Main window
-    if (window == nullptr) {
-      m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
-      unsigned int style = NSWindowStyleMaskTitled;
-      m_window =
-          ((id(*)(id, SEL, CGRect, int, unsigned long, int))objc_msgSend)(
-              m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
-              CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
-    } else {
-      m_window = (id)window;
-    }
-
-    // Webview
-    auto config =
-        ((id(*)(id, SEL))objc_msgSend)("WKWebViewConfiguration"_cls, "new"_sel);
-    m_manager =
-        ((id(*)(id, SEL))objc_msgSend)(config, "userContentController"_sel);
-    m_webview = ((id(*)(id, SEL))objc_msgSend)("WKWebView"_cls, "alloc"_sel);
-
-    if (debug) {
-      // Equivalent Obj-C:
-      // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
-      ((id(*)(id, SEL, id, id))objc_msgSend)(
-          ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
-          "setValue:forKey:"_sel,
-          ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
-                                               "numberWithBool:"_sel, 1),
-          "developerExtrasEnabled"_str);
-    }
-
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
-    ((id(*)(id, SEL, id, id))objc_msgSend)(
-        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
-        "setValue:forKey:"_sel,
-        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
-        "fullScreenEnabled"_str);
-
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
-    ((id(*)(id, SEL, id, id))objc_msgSend)(
-        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
-        "setValue:forKey:"_sel,
-        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
-        "javaScriptCanAccessClipboard"_str);
-
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
-    ((id(*)(id, SEL, id, id))objc_msgSend)(
-        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
-        "setValue:forKey:"_sel,
-        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
-        "DOMPasteAllowed"_str);
-
-    ((void (*)(id, SEL, CGRect, id))objc_msgSend)(
-        m_webview, "initWithFrame:configuration:"_sel, CGRectMake(0, 0, 0, 0),
-        config);
-    ((void (*)(id, SEL, id, id))objc_msgSend)(
-        m_manager, "addScriptMessageHandler:name:"_sel, delegate,
-        "external"_str);
-
-    init(R"script(
-                      window.external = {
-                        invoke: function(s) {
-                          window.webkit.messageHandlers.external.postMessage(s);
-                        },
-                      };
-                     )script");
-    ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setContentView:"_sel,
-                                          m_webview);
-    ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
-                                          nullptr);
+    // Start the main run loop so that the app delegate gets the
+    // NSApplicationDidFinishLaunchingNotification notification after the run
+    // loop has started in order to perform further initialization.
+    // We need to return from this constructor so this run loop is only
+    // temporary.
+    ((void (*)(id, SEL))objc_msgSend)(app, "run"_sel);
   }
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
@@ -704,10 +631,6 @@ public:
   }
   void run() {
     auto app = get_shared_application();
-    dispatch([&]() {
-      ((void (*)(id, SEL, BOOL))objc_msgSend)(
-          app, "activateIgnoringOtherApps:"_sel, 1);
-    });
     ((void (*)(id, SEL))objc_msgSend)(app, "run"_sel);
   }
   void dispatch(std::function<void()> f) {
@@ -800,6 +723,14 @@ private:
                           "UTF8String"_sel));
                     }),
                     "v@:@@");
+    class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+                    (IMP)(+[](id self, SEL, id notification) {
+                      auto app = ((id(*)(id, SEL))objc_msgSend)(notification,
+                                                                "object"_sel);
+                      auto w = get_associated_webview(self);
+                      w->on_application_did_finish_launching(self, app);
+                    }),
+                    "v@:@");
     objc_registerClassPair(cls);
     return ((id(*)(id, SEL))objc_msgSend)((id)cls, "new"_sel);
   }
@@ -813,6 +744,107 @@ private:
     assert(w);
     return w;
   }
+  void on_application_did_finish_launching(id delegate, id app) {
+    // Stop the main run loop so that we can return
+    // from the constructor.
+    ((void (*)(id, SEL, id))objc_msgSend)(app, "stop:"_sel, nullptr);
+
+    // Make this app the active app if it is not already active.
+    // Apps launched from Finder are activated automatically but otherwise not.
+    // Activating the app even when it has been launched from Finder does not
+    // seem to be harmful but calling this function is rarely needed as proper
+    // activation is normally taken care of for us. For this reason we do it
+    // only if the app is not active at this point.
+    auto is_active = ((BOOL(*)(id, SEL))objc_msgSend)(app, "isActive"_sel);
+    if (!is_active) {
+      // "setActivationPolicy:" must be sent before "activateIgnoringOtherApps:"
+      // to make the app active. Not doing so at all hides the app.
+      ((void (*)(id, SEL, long))objc_msgSend)(
+          app, "setActivationPolicy:"_sel,
+          NSApplicationActivationPolicyRegular);
+      // Activate the app regardless of other active apps.
+      ((void (*)(id, SEL, BOOL))objc_msgSend)(
+          app, "activateIgnoringOtherApps:"_sel, 1);
+    }
+
+    // Main window
+    if (!m_parent_window) {
+      m_window = ((id(*)(id, SEL))objc_msgSend)("NSWindow"_cls, "alloc"_sel);
+      unsigned int style = NSWindowStyleMaskTitled;
+      m_window =
+          ((id(*)(id, SEL, CGRect, int, unsigned long, int))objc_msgSend)(
+              m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
+              CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
+    } else {
+      m_window = (id)m_parent_window;
+    }
+
+    // Webview
+    auto config =
+        ((id(*)(id, SEL))objc_msgSend)("WKWebViewConfiguration"_cls, "new"_sel);
+    m_manager =
+        ((id(*)(id, SEL))objc_msgSend)(config, "userContentController"_sel);
+    m_webview = ((id(*)(id, SEL))objc_msgSend)("WKWebView"_cls, "alloc"_sel);
+
+    if (m_debug) {
+      // Equivalent Obj-C:
+      // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
+      ((id(*)(id, SEL, id, id))objc_msgSend)(
+          ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
+          "setValue:forKey:"_sel,
+          ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                               "numberWithBool:"_sel, 1),
+          "developerExtrasEnabled"_str);
+    }
+
+    // Equivalent Obj-C:
+    // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
+    ((id(*)(id, SEL, id, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
+        "setValue:forKey:"_sel,
+        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 1),
+        "fullScreenEnabled"_str);
+
+    // Equivalent Obj-C:
+    // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
+    ((id(*)(id, SEL, id, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
+        "setValue:forKey:"_sel,
+        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 1),
+        "javaScriptCanAccessClipboard"_str);
+
+    // Equivalent Obj-C:
+    // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
+    ((id(*)(id, SEL, id, id))objc_msgSend)(
+        ((id(*)(id, SEL))objc_msgSend)(config, "preferences"_sel),
+        "setValue:forKey:"_sel,
+        ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls,
+                                             "numberWithBool:"_sel, 1),
+        "DOMPasteAllowed"_str);
+
+    ((void (*)(id, SEL, CGRect, id))objc_msgSend)(
+        m_webview, "initWithFrame:configuration:"_sel, CGRectMake(0, 0, 0, 0),
+        config);
+    ((void (*)(id, SEL, id, id))objc_msgSend)(
+        m_manager, "addScriptMessageHandler:name:"_sel, delegate,
+        "external"_str);
+
+    init(R"script(
+      window.external = {
+        invoke: function(s) {
+          window.webkit.messageHandlers.external.postMessage(s);
+        },
+      };
+      )script");
+    ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setContentView:"_sel,
+                                          m_webview);
+    ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
+                                          nullptr);
+  }
+  bool m_debug;
+  void *m_parent_window;
   id m_window;
   id m_webview;
   id m_manager;
