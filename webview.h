@@ -777,6 +777,7 @@ private:
           app, "setActivationPolicy:"_sel,
           NSApplicationActivationPolicyRegular);
       // Activate the app regardless of other active apps.
+      // This can be obtrusive so we only do it when necessary.
       ((void (*)(id, SEL, BOOL))objc_msgSend)(
           app, "activateIgnoringOtherApps:"_sel, 1);
     }
