@@ -1550,7 +1550,7 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 }
 
 WEBVIEW_API void *webview_unbind(webview_t w, const char *name) {
-  static_cast<webview::webview *>(w)->unbind(name);
+  return static_cast<webview::webview *>(w)->unbind(name);
 }
 
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
