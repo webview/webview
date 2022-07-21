@@ -20,9 +20,7 @@ static webview_create_options_t get_create_options() {
 // TEST: start app loop and terminate it.
 // =================================================================
 static void test_terminate() {
-  auto options = webview::create_options_builder{}
-                     .minimum_required_version(WEBVIEW_VERSION)
-                     .build();
+  auto options = get_create_options();
   webview::webview w(options);
   w.dispatch([&]() { w.terminate(); });
   w.run();
@@ -87,9 +85,7 @@ static void test_c_api_create() {
 // TEST: webview_create_with_options().
 // =================================================================
 static void test_c_api_create_with_options() {
-  auto options = webview::create_options_builder{}
-                     .minimum_required_version(WEBVIEW_VERSION)
-                     .build();
+  auto options = get_create_options();
   webview_t w = nullptr;
   assert(webview_create_with_options(&w, &options) == WEBVIEW_ERROR_OK);
   continue_c_api_test(w);
