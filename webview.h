@@ -100,22 +100,27 @@ typedef struct {
 
 // Error codes returned to callers of the API.
 typedef enum {
-  // OK/Success. All functions that return an error code will return this if
-  // the operation succeeded.
+  // OK/Success. Functions that return errors code will typically return this
+  // to signify successful operations.
   WEBVIEW_ERROR_OK = 0,
-  // Internal error.
+  // An internal error occurred. This means that something unexpected
+  // happened and you should not expect the library to function normally.
+  // It is also possible that the error is less severe and that the library
+  // simply needs to report a more specific error to the caller.
   WEBVIEW_ERROR_INTERNAL = 1000,
-  // Invalid state.
+  // A severe error occurred resulting from invalid state. This could happen
+  // e.g. due a bug in the library or invalid API usage. You should not
+  // expect the library to function normally.
   WEBVIEW_ERROR_INVALID_STATE = 1001,
-  // Invalid argument.
+  // One or more invalid arguments have been specified e.g. in a function call.
   WEBVIEW_ERROR_INVALID_ARGUMENT = 1002,
-  // The specified version is too recent.
+  // Version is too recent.
   WEBVIEW_ERROR_VERSION_TOO_RECENT = 2000,
-  // The specified version is too old.
+  // Version is too old.
   WEBVIEW_ERROR_VERSION_TOO_OLD = 2001,
   // Signifies that something already exists.
   WEBVIEW_ERROR_DUPLICATE = 2002,
-  // Signifies non-existence.
+  // Signifies that something does not exist.
   WEBVIEW_ERROR_NOT_FOUND = 2003
 } webview_error_t;
 
