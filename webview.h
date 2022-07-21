@@ -207,12 +207,17 @@ WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js);
 // receives a request string and a user-provided argument pointer. Request
 // string is a JSON array of all the arguments passed to the JavaScript
 // function.
+// Noteworthy error codes:
+//  - WEBVIEW_ERROR_DUPLICATE - A binding already exists with the specified
+//    name.
 WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
                                          void (*fn)(const char *seq,
                                                     const char *req, void *arg),
                                          void *arg);
 
 // Removes a native C callback that was previously set by webview_bind.
+// Noteworthy error codes:
+//  - WEBVIEW_ERROR_NOT_FOUND - No binding exists with the specified name.
 WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 
 // Allows to return a value from the native binding. Original request pointer
