@@ -108,7 +108,11 @@ typedef enum {
   // The specified version is too recent.
   WEBVIEW_ERROR_VERSION_TOO_RECENT = 2000,
   // The specified version is too old.
-  WEBVIEW_ERROR_VERSION_TOO_OLD = 2001
+  WEBVIEW_ERROR_VERSION_TOO_OLD = 2001,
+  // Signifies that something already exists.
+  WEBVIEW_ERROR_DUPLICATE = 2002,
+  // Signifies non-existence.
+  WEBVIEW_ERROR_NOT_FOUND = 2003
 } webview_error_t;
 
 // Window size hints.
@@ -1733,38 +1737,41 @@ public:
 
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
-    if (bindings.count(name) == 0) {
-      bindings[name] = new binding_ctx_t(
-          new binding_t(
-              [](const std::string &seq, const std::string &req, void *arg) {
-                auto pair = static_cast<sync_binding_ctx_t *>(arg);
-                pair->first->resolve(seq, 0, pair->second(req));
-              }),
-          new sync_binding_ctx_t(this, fn));
-      bind_js(name);
+    if (bindings.count(name) > 0) {
+      throw webview_exception(WEBVIEW_ERROR_DUPLICATE);
     }
+    bindings[name] =
+        new binding_ctx_t(new binding_t([](const std::string &seq,
+                                           const std::string &req, void *arg) {
+                            auto pair = static_cast<sync_binding_ctx_t *>(arg);
+                            pair->first->resolve(seq, 0, pair->second(req));
+                          }),
+                          new sync_binding_ctx_t(this, fn));
+    bind_js(name);
   }
 
   // Asynchronous bind
   void bind(const std::string &name, binding_t f, void *arg) {
-    if (bindings.count(name) == 0) {
-      bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
-      bind_js(name);
+    if (bindings.count(name) > 0) {
+      throw webview_exception(WEBVIEW_ERROR_DUPLICATE);
     }
+    bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
+    bind_js(name);
   }
 
   void unbind(const std::string &name) {
-    if (bindings.find(name) != bindings.end()) {
-      auto js = "delete window['" + name + "'];";
-      init(js);
-      eval(js);
-      delete bindings[name]->callback;
-      if (bindings[name]->sync) {
-        delete static_cast<sync_binding_ctx_t *>(bindings[name]->arg);
-      }
-      delete bindings[name];
-      bindings.erase(name);
+    if (bindings.count(name) == 0) {
+      throw webview_exception(WEBVIEW_ERROR_NOT_FOUND);
     }
+    auto js = "delete window['" + name + "'];";
+    init(js);
+    eval(js);
+    delete bindings[name]->callback;
+    if (bindings[name]->sync) {
+      delete static_cast<sync_binding_ctx_t *>(bindings[name]->arg);
+    }
+    delete bindings[name];
+    bindings.erase(name);
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
