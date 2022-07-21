@@ -10,6 +10,12 @@
 #include <thread>
 #include <unordered_map>
 
+static webview_create_options_t get_create_options() {
+  return webview::create_options_builder{}
+      .minimum_required_version(WEBVIEW_VERSION)
+      .build();
+}
+
 // =================================================================
 // TEST: start app loop and terminate it.
 // =================================================================
@@ -151,12 +157,10 @@ static void test_bidir_comms() {
 }
 
 // =================================================================
-// TEST: bind/unbind errors.
+// TEST: unbind errors.
 // =================================================================
-static void test_bind_error() {
-  auto options = webview::create_options_builder{}
-                     .minimum_required_version(WEBVIEW_VERSION)
-                     .build();
+static void test_unbind_errors() {
+  auto options = get_create_options();
   webview::webview w(options);
   auto fn = [](const std::string &) -> std::string { return ""; };
   // Unbinding non-existing binding should throw.
@@ -168,6 +172,19 @@ static void test_bind_error() {
   }
   // Should be able to bind.
   w.bind("hello", fn);
+  // Should be able to unbind.
+  w.unbind("hello");
+}
+
+// =================================================================
+// TEST: async bind errors.
+// =================================================================
+static void test_async_bind_error() {
+  auto options = get_create_options();
+  webview::webview w(options);
+  auto fn = [](const std::string &) -> std::string { return ""; };
+  // Should be able to bind.
+  w.bind("hello", fn);
   // Binding again with the same name should throw.
   try {
     w.bind("hello", fn);
@@ -175,8 +192,24 @@ static void test_bind_error() {
   } catch (const webview::webview_exception &e) {
     assert(e.code() == WEBVIEW_ERROR_DUPLICATE);
   }
-  // Should be able to unbind.
-  w.unbind("hello");
+}
+
+// =================================================================
+// TEST: sync bind errors.
+// =================================================================
+static void test_sync_bind_error() {
+  auto options = get_create_options();
+  webview::webview w(options);
+  auto fn = [](std::string, std::string, void *) {};
+  // Should be able to bind.
+  w.bind("hello", fn, nullptr);
+  // Binding again with the same name should throw.
+  try {
+    w.bind("hello", fn, nullptr);
+    assert(false);
+  } catch (const webview::webview_exception &e) {
+    assert(e.code() == WEBVIEW_ERROR_DUPLICATE);
+  }
 }
 
 // =================================================================
@@ -382,10 +415,12 @@ int main(int argc, char *argv[]) {
       {"c_api_error_codes", test_c_api_error_codes},
       {"c_api_library_version", test_c_api_library_version},
       {"bidir_comms", test_bidir_comms},
-      {"bind_error", test_bind_error},
       {"json", test_json},
       {"validate_create_options", test_validate_create_options},
-      {"packed_version", test_packed_version}};
+      {"packed_version", test_packed_version},
+      {"unbind_errors", test_unbind_errors},
+      {"async_bind_error", test_async_bind_error},
+      {"sync_bind_error", test_sync_bind_error}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
