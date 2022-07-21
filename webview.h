@@ -589,9 +589,20 @@ namespace webview {
 namespace detail {
 namespace objc {
 
+// A convenient template function for unconditionally casting the specified
+// C-like function into a function that can be called with the given return
+// type and arguments. Caller takes full responsibility for ensuring that
+// the function call is valid. It is assumed that the function will not
+// throw exceptions.
+template <typename Result, typename Callable, typename... Args>
+Result invoke(Callable callable, Args... args) noexcept {
+  return reinterpret_cast<Result (*)(Args...)>(callable)(args...);
+}
+
+// Calls objc_msgSend.
 template <typename Result, typename... Args>
 Result msg_send(Args... args) noexcept {
-  return reinterpret_cast<Result (*)(Args...)>(objc_msgSend)(args...);
+  return invoke<Result>(objc_msgSend, args...);
 }
 
 } // namespace objc
