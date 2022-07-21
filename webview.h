@@ -589,10 +589,9 @@ namespace webview {
 namespace detail {
 namespace objc {
 
-template <typename Result, typename Receiver, typename... Args>
-Result msg_send(Receiver receiver, SEL selector, Args... args) noexcept {
-  return reinterpret_cast<Result (*)(Receiver, SEL, Args...)>(objc_msgSend)(
-      receiver, selector, args...);
+template <typename Result, typename... Args>
+Result msg_send(Args... args) noexcept {
+  return reinterpret_cast<Result (*)(Args...)>(objc_msgSend)(args...);
 }
 
 } // namespace objc
