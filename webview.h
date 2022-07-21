@@ -929,7 +929,7 @@ public:
                          nullptr);
   }
   void show() {
-    throw webview_exception(WEBVIEW_ERROR_INTERNAL, "Not yet implemented");
+    objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
 
 private:
@@ -1062,7 +1062,10 @@ private:
       };
       )script");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
-    objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+
+    if (m_options.visible) {
+      show();
+    }
   }
   webview_create_options_t m_options;
   id m_window;
