@@ -684,7 +684,7 @@ public:
     } else {
       objc::msg_send<void>(
           m_window, "setFrame:display:animate:"_sel,
-          CGRectMake(0, 0, width, height), 1, 0);
+          CGRectMake(0, 0, width, height), YES, NO);
     }
     objc::msg_send<void>(m_window, "center"_sel);
   }
@@ -716,7 +716,7 @@ public:
             "initWithSource:injectionTime:forMainFrameOnly:"_sel,
             objc::msg_send<id>(
                 "NSString"_cls, "stringWithUTF8String:"_sel, js.c_str()),
-            WKUserScriptInjectionTimeAtDocumentStart, 1));
+            WKUserScriptInjectionTimeAtDocumentStart, YES));
   }
   void eval(const std::string &js) {
     objc::msg_send<void>(
@@ -798,7 +798,7 @@ private:
       // Activate the app regardless of other active apps.
       // This can be obtrusive so we only do it when necessary.
       objc::msg_send<void>(
-          app, "activateIgnoringOtherApps:"_sel, 1);
+          app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
     // Main window
@@ -808,7 +808,7 @@ private:
       m_window =
           objc::msg_send<id>(
               m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
-              CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, 0);
+              CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
     } else {
       m_window = (id)m_parent_window;
     }
@@ -827,7 +827,7 @@ private:
           objc::msg_send<id>(config, "preferences"_sel),
           "setValue:forKey:"_sel,
           objc::msg_send<id>("NSNumber"_cls,
-                                               "numberWithBool:"_sel, 1),
+                                               "numberWithBool:"_sel, YES),
           "developerExtrasEnabled"_str);
     }
 
@@ -837,7 +837,7 @@ private:
         objc::msg_send<id>(config, "preferences"_sel),
         "setValue:forKey:"_sel,
         objc::msg_send<id>("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
+                                             "numberWithBool:"_sel, YES),
         "fullScreenEnabled"_str);
 
     // Equivalent Obj-C:
@@ -846,7 +846,7 @@ private:
         objc::msg_send<id>(config, "preferences"_sel),
         "setValue:forKey:"_sel,
         objc::msg_send<id>("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
+                                             "numberWithBool:"_sel, YES),
         "javaScriptCanAccessClipboard"_str);
 
     // Equivalent Obj-C:
@@ -855,7 +855,7 @@ private:
         objc::msg_send<id>(config, "preferences"_sel),
         "setValue:forKey:"_sel,
         objc::msg_send<id>("NSNumber"_cls,
-                                             "numberWithBool:"_sel, 1),
+                                             "numberWithBool:"_sel, YES),
         "DOMPasteAllowed"_str);
 
     objc::msg_send<void>(
