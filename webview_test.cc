@@ -405,18 +405,18 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"apply_webview_create_options_compatibility",
        test_apply_webview_create_options_compatibility},
-      {"terminate", test_terminate},
+      {"async_bind_error", test_async_bind_error},
+      {"bidir_comms", test_bidir_comms},
       {"c_api_create", test_c_api_create},
       {"c_api_create_with_options", test_c_api_create_with_options},
       {"c_api_error_codes", test_c_api_error_codes},
       {"c_api_library_version", test_c_api_library_version},
-      {"bidir_comms", test_bidir_comms},
       {"json", test_json},
-      {"validate_create_options", test_validate_create_options},
       {"packed_version", test_packed_version},
+      {"sync_bind_error", test_sync_bind_error},
+      {"terminate", test_terminate},
       {"unbind_errors", test_unbind_errors},
-      {"async_bind_error", test_async_bind_error},
-      {"sync_bind_error", test_sync_bind_error}};
+      {"validate_create_options", test_validate_create_options}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
