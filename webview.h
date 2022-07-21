@@ -40,6 +40,10 @@
 // The least significant component of the version number (PATCH) starts with
 // the 10 least significant bits. The last two bits are unused for now and
 // must be zero.
+// @see WEBVIEW_PACK_VERSION
+// @see WEBVIEW_UNPACK_MAJOR_VERSION
+// @see WEBVIEW_UNPACK_MINOR_VERSION
+// @see WEBVIEW_UNPACK_PATCH_VERSION
 typedef unsigned int webview_packed_version_t;
 
 // Packs a MAJOR.MINOR.PATCH version number format into a 30-bit number.
