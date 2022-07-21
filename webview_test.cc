@@ -257,7 +257,7 @@ static void test_apply_webview_create_options_compatibility() {
   using namespace webview::detail;
   auto options = webview::create_options_builder{}.build();
   assert(options.visible == WEBVIEW_FALSE);
-  apply_webview_create_options_compatibility(options);
+  options = apply_webview_create_options_compatibility(options);
   assert(options.visible == WEBVIEW_TRUE);
 }
 
@@ -374,6 +374,8 @@ static void test_win32_narrow_wide_string_conversion() {
 
 int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
+      {"apply_webview_create_options_compatibility",
+       test_apply_webview_create_options_compatibility},
       {"terminate", test_terminate},
       {"c_api_create", test_c_api_create},
       {"c_api_create_with_options", test_c_api_create_with_options},
