@@ -766,7 +766,7 @@ private:
     class_addMethod(
         cls,
         "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
-        (IMP)(+[](id self, SEL, id, id parameters, id, id completion_handler) {
+        (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
           auto allows_multiple_selection =
               objc::msg_send<BOOL>(parameters, "allowsMultipleSelection"_sel);
           auto allows_directories =
