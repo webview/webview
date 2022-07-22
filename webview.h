@@ -624,6 +624,8 @@ enum WKUserScriptInjectionTime : NSInteger {
   WKUserScriptInjectionTimeAtDocumentStart = 0
 };
 
+enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
+
 // Convenient conversion of string literals.
 id operator"" _cls(const char *s, std::size_t) { return (id)objc_getClass(s); }
 SEL operator"" _sel(const char *s, std::size_t) { return sel_registerName(s); }
@@ -757,6 +759,51 @@ private:
     objc_registerClassPair(cls);
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
+  static id create_webkit_ui_delegate() {
+    auto cls =
+        objc_allocateClassPair((Class) "NSObject"_cls, "WebkitUIDelegate", 0);
+    class_addProtocol(cls, objc_getProtocol("WKUIDelegate"));
+    class_addMethod(
+        cls,
+        "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
+        (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
+          auto allows_multiple_selection =
+              objc::msg_send<BOOL>(parameters, "allowsMultipleSelection"_sel);
+          auto allows_directories =
+              objc::msg_send<BOOL>(parameters, "allowsDirectories"_sel);
+
+          // Show a panel for selecting files.
+          auto panel = objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
+          objc::msg_send<void>(panel, "setCanChooseFiles:"_sel, YES);
+          objc::msg_send<void>(panel, "setCanChooseDirectories:"_sel,
+                               allows_directories);
+          objc::msg_send<void>(panel, "setAllowsMultipleSelection:"_sel,
+                               allows_multiple_selection);
+          auto modal_response =
+              objc::msg_send<NSModalResponse>(panel, "runModal"_sel);
+
+          // Get the URLs for the selected files. If the modal was canceled
+          // then we pass null to the completion handler to signify
+          // cancellation.
+          id urls = modal_response == NSModalResponseOK
+                        ? objc::msg_send<id>(panel, "URLs"_sel)
+                        : nullptr;
+
+          // Invoke the completion handler block.
+          auto sig = objc::msg_send<id>("NSMethodSignature"_cls,
+                                        "signatureWithObjCTypes:"_sel, "v@?@");
+          auto invocation = objc::msg_send<id>(
+              "NSInvocation"_cls, "invocationWithMethodSignature:"_sel, sig);
+          objc::msg_send<void>(invocation, "setTarget:"_sel,
+                               completion_handler);
+          objc::msg_send<void>(invocation, "setArgument:atIndex:"_sel, &urls,
+                               1);
+          objc::msg_send<void>(invocation, "invoke"_sel);
+        }),
+        "v@:@@@@");
+    objc_registerClassPair(cls);
+    return objc::msg_send<id>((id)cls, "new"_sel);
+  }
   static id get_shared_application() {
     return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
   }
@@ -848,8 +895,10 @@ private:
         objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
         "DOMPasteAllowed"_str);
 
+    auto ui_delegate = create_webkit_ui_delegate();
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
+    objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          delegate, "external"_str);
 
