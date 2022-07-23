@@ -1419,7 +1419,7 @@ private:
     client_dll_path += L"EBWebView\\";
 #if defined(_M_X64) || defined(_M_AMD64)
     client_dll_path += L"x64";
-#elif defined(_M_X86)
+#elif defined(_M_IX86)
     client_dll_path += L"x86";
 #else
 #error WebView2 integration for this platform is not yet supported.
