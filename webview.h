@@ -1396,13 +1396,13 @@ private:
   client_dll_info_t
   find_available_client_dll(PCWSTR browser_executable_folder) const noexcept {
     if (browser_executable_folder) {
-      return find_embedded_edge_webview_client_dll(api_version,
+      return find_embedded_client_dll(api_version,
                                                    browser_executable_folder);
     }
-    auto found_client_dll = find_installed_edge_webview_client_dll(
+    auto found_client_dll = find_installed_client_dll(
         api_version, true, default_release_channel_guid);
     if (!found_client_dll.found) {
-      found_client_dll = find_installed_edge_webview_client_dll(
+      found_client_dll = find_installed_client_dll(
           api_version, false, default_release_channel_guid);
     }
     return found_client_dll;
@@ -1429,7 +1429,7 @@ private:
     return client_dll_path;
   }
 
-  client_dll_info_t find_installed_edge_webview_client_dll(
+  client_dll_info_t find_installed_client_dll(
       unsigned int min_api_version, bool system,
       const std::wstring &release_channel_guid) const noexcept {
     std::wstring sub_key = client_state_reg_sub_key;
@@ -1453,7 +1453,7 @@ private:
     return {true, client_dll_path, client_version_string};
   }
 
-  client_dll_info_t find_embedded_edge_webview_client_dll(
+  client_dll_info_t find_embedded_client_dll(
       unsigned int min_api_version,
       const std::wstring &directory) const noexcept {
     auto client_dll_path = make_client_dll_path(directory);
