@@ -1290,9 +1290,8 @@ inline std::wstring find_edge_webview_client_dll(unsigned int min_api_version) {
   client_dll_path += L"x64";
 #elif defined(_M_X86)
   client_dll_path += L"x86";
-#elif defined(_M_ARM64)
-  // TODO: Check if this is actually possible
-  client_dll_path += L"arm64";
+#else
+#error WebView2 integration for this platform is not yet supported.
 #endif
   client_dll_path += L"\\EmbeddedBrowserWebView.dll";
   return client_dll_path;
