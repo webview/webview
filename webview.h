@@ -1306,7 +1306,7 @@ public:
       PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
       ICoreWebView2EnvironmentOptions *environmentOptions,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-          *environmentCreatedHandler) const noexcept {
+          *environmentCreatedHandler) const {
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
@@ -1321,7 +1321,7 @@ public:
 
   HRESULT
   get_available_browser_version_string(PCWSTR browserExecutableFolder,
-                                       LPWSTR *versionInfo) const noexcept {
+                                       LPWSTR *versionInfo) const {
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
@@ -1332,7 +1332,7 @@ public:
                                                      versionInfo);
   }
 
-  bool is_browser_available() const noexcept {
+  bool is_browser_available() const {
     LPWSTR version_info = nullptr;
     auto res = get_available_browser_version_string(nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
@@ -1341,7 +1341,7 @@ public:
   }
 
 private:
-  struct client_dll_info_t {
+  struct client_info_t {
     bool found = false;
     std::wstring client_dll_path;
     std::wstring version;
@@ -1351,7 +1351,7 @@ private:
       PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
       ICoreWebView2EnvironmentOptions *environmentOptions,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-          *environmentCreatedHandler) const noexcept {
+          *environmentCreatedHandler) const {
     auto found_client_dll = find_available_client_dll(browserExecutableFolder);
     if (!found_client_dll.found) {
       return -1;
@@ -1373,12 +1373,12 @@ private:
   }
 
   HRESULT
-  get_available_browser_version_string_impl(
-      PCWSTR browserExecutableFolder, LPWSTR *versionInfo) const noexcept {
-    if (!versionInfo) {
+  get_available_browser_version_string_impl(PCWSTR browser_dir,
+                                            LPWSTR *version) const {
+    if (!version) {
       return -1;
     }
-    auto found_client_dll = find_available_client_dll(browserExecutableFolder);
+    auto found_client_dll = find_available_client_dll(browser_dir);
     if (!found_client_dll.found) {
       return -1;
     }
@@ -1389,29 +1389,28 @@ private:
       return -1;
     }
     CopyMemory(info, found_client_dll.version.c_str(), info_length_bytes);
-    *versionInfo = info;
+    *version = info;
     return 0;
   }
 
-  client_dll_info_t
-  find_available_client_dll(PCWSTR browser_executable_folder) const noexcept {
+  client_info_t
+  find_available_client_dll(PCWSTR browser_executable_folder) const {
     if (browser_executable_folder) {
-      return find_embedded_client_dll(api_version, browser_executable_folder);
+      return find_embedded_client(api_version, browser_executable_folder);
     }
-    auto found_client_dll = find_installed_client_dll(
-        api_version, true, default_release_channel_guid);
+    auto found_client_dll =
+        find_installed_client(api_version, true, default_release_channel_guid);
     if (!found_client_dll.found) {
-      found_client_dll = find_installed_client_dll(
-          api_version, false, default_release_channel_guid);
+      found_client_dll = find_installed_client(api_version, false,
+                                               default_release_channel_guid);
     }
     return found_client_dll;
   }
 
-  std::wstring
-  make_client_dll_path(const std::wstring &directory) const noexcept {
-    auto client_dll_path = directory;
+  std::wstring make_client_dll_path(const std::wstring &dir) const {
+    auto client_dll_path = dir;
     if (!client_dll_path.empty()) {
-      auto last_char = directory[directory.size() - 1];
+      auto last_char = dir[dir.size() - 1];
       if (last_char != L'\\' && last_char != L'/') {
         client_dll_path += L'\\';
       }
@@ -1428,11 +1427,11 @@ private:
     return client_dll_path;
   }
 
-  client_dll_info_t find_installed_client_dll(
-      unsigned int min_api_version, bool system,
-      const std::wstring &release_channel_guid) const noexcept {
+  client_info_t
+  find_installed_client(unsigned int min_api_version, bool system,
+                        const std::wstring &release_channel) const {
     std::wstring sub_key = client_state_reg_sub_key;
-    sub_key += release_channel_guid;
+    sub_key += release_channel;
     auto root_key = system ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
     reg_key key(root_key, sub_key, 0, KEY_READ | KEY_WOW64_32KEY);
     if (!key.is_open()) {
@@ -1452,10 +1451,9 @@ private:
     return {true, client_dll_path, client_version_string};
   }
 
-  client_dll_info_t
-  find_embedded_client_dll(unsigned int min_api_version,
-                           const std::wstring &directory) const noexcept {
-    auto client_dll_path = make_client_dll_path(directory);
+  client_info_t find_embedded_client(unsigned int min_api_version,
+                                     const std::wstring &dir) const {
+    auto client_dll_path = make_client_dll_path(dir);
 
     auto client_version_string = get_file_version_string(client_dll_path);
     auto client_version = parse_version(client_version_string);
