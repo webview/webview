@@ -1395,8 +1395,15 @@ private:
 
   client_dll_info_t
   find_available_client_dll(PCWSTR browser_executable_folder) const noexcept {
-    return find_installed_edge_webview_client_dll(api_version,
-                                                  default_release_channel_guid);
+    client_dll_info_t found_client_dll;
+    if (browser_executable_folder) {
+      found_client_dll = find_embedded_edge_webview_client_dll(
+          api_version, browser_executable_folder);
+    } else {
+      found_client_dll = find_installed_edge_webview_client_dll(
+          api_version, default_release_channel_guid);
+    }
+    return found_client_dll;
   }
 
   std::wstring
@@ -1440,6 +1447,21 @@ private:
     }
 
     auto client_dll_path = make_client_dll_path(ebwebview_value);
+    return {true, client_dll_path, client_version_string};
+  }
+
+  client_dll_info_t find_embedded_edge_webview_client_dll(
+      unsigned int min_api_version,
+      const std::wstring &directory) const noexcept {
+    auto client_dll_path = make_client_dll_path(directory);
+
+    auto client_version_string = get_file_version_string(client_dll_path);
+    auto client_version = parse_version(client_version_string);
+    if (client_version[2] < min_api_version) {
+      // Our API version is greater than the runtime API version.
+      return {};
+    }
+
     return {true, client_dll_path, client_version_string};
   }
 
