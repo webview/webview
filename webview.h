@@ -1267,7 +1267,7 @@ get_last_native_path_component(const std::basic_string<T> &path) {
   return std::basic_string<T>();
 }
 
-std::wstring find_edge_webview_client_dll(unsigned int min_api_version) {
+inline std::wstring find_edge_webview_client_dll(unsigned int min_api_version) {
   std::wstring stable_release_guid = L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
   std::wstring sub_key =
       L"SOFTWARE\\Microsoft\\EdgeUpdate\\ClientState\\" + stable_release_guid;
@@ -1298,7 +1298,7 @@ std::wstring find_edge_webview_client_dll(unsigned int min_api_version) {
   return client_dll_path;
 }
 
-HRESULT create_environment_with_options_impl(
+inline HRESULT create_environment_with_options_impl(
     PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
@@ -1329,7 +1329,7 @@ HRESULT create_environment_with_options_impl(
   return ERROR_SUCCESS;
 }
 
-HRESULT create_environment_with_options(
+inline HRESULT create_environment_with_options(
     PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
     ICoreWebView2EnvironmentOptions *environmentOptions,
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
