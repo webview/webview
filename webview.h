@@ -1303,33 +1303,30 @@ struct webview2_symbols {
 class loader {
 public:
   HRESULT create_environment_with_options(
-      PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
-      ICoreWebView2EnvironmentOptions *environmentOptions,
+      PCWSTR browser_dir, PCWSTR user_data_dir,
+      ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-          *environmentCreatedHandler) const {
+          *created_handler) const {
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
-        return fn(browserExecutableFolder, userDataFolder, environmentOptions,
-                  environmentCreatedHandler);
+        return fn(browser_dir, user_data_dir, env_options, created_handler);
       }
     }
-    return create_environment_with_options_impl(
-        browserExecutableFolder, userDataFolder, environmentOptions,
-        environmentCreatedHandler);
+    return create_environment_with_options_impl(browser_dir, user_data_dir,
+                                                env_options, created_handler);
   }
 
   HRESULT
-  get_available_browser_version_string(PCWSTR browserExecutableFolder,
-                                       LPWSTR *versionInfo) const {
+  get_available_browser_version_string(PCWSTR browser_dir,
+                                       LPWSTR *version) const {
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
-        return fn(browserExecutableFolder, versionInfo);
+        return fn(browser_dir, version);
       }
     }
-    return get_available_browser_version_string_impl(browserExecutableFolder,
-                                                     versionInfo);
+    return get_available_browser_version_string_impl(browser_dir, version);
   }
 
   bool is_browser_available() const {
@@ -1348,11 +1345,11 @@ private:
   };
 
   HRESULT create_environment_with_options_impl(
-      PCWSTR browserExecutableFolder, PCWSTR userDataFolder,
-      ICoreWebView2EnvironmentOptions *environmentOptions,
+      PCWSTR browser_dir, PCWSTR user_data_dir,
+      ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
-          *environmentCreatedHandler) const {
-    auto found_client_dll = find_available_client_dll(browserExecutableFolder);
+          *created_handler) const {
+    auto found_client_dll = find_available_client_dll(browser_dir);
     if (!found_client_dll.found) {
       return -1;
     }
@@ -1361,8 +1358,7 @@ private:
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
       auto rtt = WebView2RunTimeType::installed;
-      return fn(true, rtt, userDataFolder, environmentOptions,
-                environmentCreatedHandler);
+      return fn(true, rtt, user_data_dir, env_options, created_handler);
     }
     if (auto fn = client_dll.get(webview2_symbols::DllCanUnloadNow)) {
       if (!fn()) {
@@ -1393,10 +1389,9 @@ private:
     return 0;
   }
 
-  client_info_t
-  find_available_client_dll(PCWSTR browser_executable_folder) const {
-    if (browser_executable_folder) {
-      return find_embedded_client(api_version, browser_executable_folder);
+  client_info_t find_available_client_dll(PCWSTR browser_dir) const {
+    if (browser_dir) {
+      return find_embedded_client(api_version, browser_dir);
     }
     auto found_client_dll =
         find_installed_client(api_version, true, default_release_channel_guid);
