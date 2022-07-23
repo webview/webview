@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 typedef struct {
   webview_t w;
   unsigned int count;
@@ -33,7 +37,7 @@ void increment(const char *seq, const char *req, void *arg) {
   webview_return(context->w, seq, 0, result);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
                    int nCmdShow) {
 #else

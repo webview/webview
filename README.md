@@ -223,7 +223,7 @@ Distribution of your app is outside the scope of this library but we can give so
 A minimalistic bundle typically has the following directory structure:
 
 ```
-example.app                 bundle (zip archive)
+example.app                 bundle
 └── Contents
     ├── Info.plist          information property list
     ├── MacOS
