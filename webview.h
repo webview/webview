@@ -1330,11 +1330,11 @@ public:
   }
 
   bool is_browser_available() const {
-    LPWSTR version_info = nullptr;
-    auto res = get_available_browser_version_string(nullptr, &version_info);
+    LPWSTR version = nullptr;
+    auto res = get_available_browser_version_string(nullptr, &version);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
-    return SUCCEEDED(res) && version_info;
+    return SUCCEEDED(res) && version;
   }
 
 private:
