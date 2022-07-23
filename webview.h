@@ -1396,8 +1396,7 @@ private:
   client_dll_info_t
   find_available_client_dll(PCWSTR browser_executable_folder) const noexcept {
     if (browser_executable_folder) {
-      return find_embedded_client_dll(api_version,
-                                                   browser_executable_folder);
+      return find_embedded_client_dll(api_version, browser_executable_folder);
     }
     auto found_client_dll = find_installed_client_dll(
         api_version, true, default_release_channel_guid);
@@ -1453,9 +1452,9 @@ private:
     return {true, client_dll_path, client_version_string};
   }
 
-  client_dll_info_t find_embedded_client_dll(
-      unsigned int min_api_version,
-      const std::wstring &directory) const noexcept {
+  client_dll_info_t
+  find_embedded_client_dll(unsigned int min_api_version,
+                           const std::wstring &directory) const noexcept {
     auto client_dll_path = make_client_dll_path(directory);
 
     auto client_version_string = get_file_version_string(client_dll_path);
