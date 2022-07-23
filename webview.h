@@ -1340,7 +1340,7 @@ public:
 private:
   struct client_info_t {
     bool found = false;
-    std::wstring client_dll_path;
+    std::wstring dll_path;
     std::wstring version;
   };
 
@@ -1349,12 +1349,12 @@ private:
       ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
           *created_handler) const {
-    auto found_client_dll = find_available_client_dll(browser_dir);
-    if (!found_client_dll.found) {
+    auto found_client = find_available_client(browser_dir);
+    if (!found_client.found) {
       return -1;
     }
-    auto client_dll = webview::detail::native_library(
-        found_client_dll.client_dll_path.c_str());
+    auto client_dll =
+        webview::detail::native_library(found_client.dll_path.c_str());
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
       auto rtt = WebView2RunTimeType::installed;
@@ -1374,52 +1374,52 @@ private:
     if (!version) {
       return -1;
     }
-    auto found_client_dll = find_available_client_dll(browser_dir);
-    if (!found_client_dll.found) {
+    auto found_client = find_available_client(browser_dir);
+    if (!found_client.found) {
       return -1;
     }
     auto info_length_bytes =
-        found_client_dll.version.size() * sizeof(found_client_dll.version[0]);
+        found_client.version.size() * sizeof(found_client.version[0]);
     auto info = static_cast<LPWSTR>(CoTaskMemAlloc(info_length_bytes));
     if (!info) {
       return -1;
     }
-    CopyMemory(info, found_client_dll.version.c_str(), info_length_bytes);
+    CopyMemory(info, found_client.version.c_str(), info_length_bytes);
     *version = info;
     return 0;
   }
 
-  client_info_t find_available_client_dll(PCWSTR browser_dir) const {
+  client_info_t find_available_client(PCWSTR browser_dir) const {
     if (browser_dir) {
       return find_embedded_client(api_version, browser_dir);
     }
-    auto found_client_dll =
+    auto found_client =
         find_installed_client(api_version, true, default_release_channel_guid);
-    if (!found_client_dll.found) {
-      found_client_dll = find_installed_client(api_version, false,
-                                               default_release_channel_guid);
+    if (!found_client.found) {
+      found_client = find_installed_client(api_version, false,
+                                           default_release_channel_guid);
     }
-    return found_client_dll;
+    return found_client;
   }
 
   std::wstring make_client_dll_path(const std::wstring &dir) const {
-    auto client_dll_path = dir;
-    if (!client_dll_path.empty()) {
+    auto dll_path = dir;
+    if (!dll_path.empty()) {
       auto last_char = dir[dir.size() - 1];
       if (last_char != L'\\' && last_char != L'/') {
-        client_dll_path += L'\\';
+        dll_path += L'\\';
       }
     }
-    client_dll_path += L"EBWebView\\";
+    dll_path += L"EBWebView\\";
 #if defined(_M_X64) || defined(_M_AMD64)
-    client_dll_path += L"x64";
+    dll_path += L"x64";
 #elif defined(_M_IX86)
-    client_dll_path += L"x86";
+    dll_path += L"x86";
 #else
 #error WebView2 integration for this platform is not yet supported.
 #endif
-    client_dll_path += L"\\EmbeddedBrowserWebView.dll";
-    return client_dll_path;
+    dll_path += L"\\EmbeddedBrowserWebView.dll";
+    return dll_path;
   }
 
   client_info_t
