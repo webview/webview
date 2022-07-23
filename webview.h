@@ -1395,13 +1395,15 @@ private:
 
   client_dll_info_t
   find_available_client_dll(PCWSTR browser_executable_folder) const noexcept {
-    client_dll_info_t found_client_dll;
     if (browser_executable_folder) {
-      found_client_dll = find_embedded_edge_webview_client_dll(
-          api_version, browser_executable_folder);
-    } else {
+      return find_embedded_edge_webview_client_dll(api_version,
+                                                   browser_executable_folder);
+    }
+    auto found_client_dll = find_installed_edge_webview_client_dll(
+        api_version, true, default_release_channel_guid);
+    if (!found_client_dll.found) {
       found_client_dll = find_installed_edge_webview_client_dll(
-          api_version, default_release_channel_guid);
+          api_version, false, default_release_channel_guid);
     }
     return found_client_dll;
   }
@@ -1428,11 +1430,12 @@ private:
   }
 
   client_dll_info_t find_installed_edge_webview_client_dll(
-      unsigned int min_api_version,
+      unsigned int min_api_version, bool system,
       const std::wstring &release_channel_guid) const noexcept {
     std::wstring sub_key = client_state_reg_sub_key;
     sub_key += release_channel_guid;
-    reg_key key(HKEY_LOCAL_MACHINE, sub_key, 0, KEY_READ | KEY_WOW64_32KEY);
+    auto root_key = system ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+    reg_key key(root_key, sub_key, 0, KEY_READ | KEY_WOW64_32KEY);
     if (!key.is_open()) {
       return {};
     }
