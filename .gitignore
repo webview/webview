@@ -3,7 +3,6 @@
 /dll
 /script/Microsoft*
 /script/nuget.exe
-/vendor
 webview
 webview_test
 webview-example

@@ -1,9 +1,6 @@
 package webview
 
 /*
-#cgo CFLAGS: -Ivendor/github.com/webview/webview -I../../../github.com/webview/webview
-#cgo CXXFLAGS: -Ivendor/github.com/webview/webview -Ivendor/github.com/SteffenL/mswebview2 -I../../../github.com/webview/webview -I../../../github.com/SteffenL/mswebview2
-
 #cgo linux openbsd freebsd netbsd CXXFLAGS: -DWEBVIEW_GTK -std=c++11
 #cgo linux openbsd freebsd netbsd pkg-config: gtk+-3.0 webkit2gtk-4.0
 
@@ -11,7 +8,7 @@ package webview
 #cgo darwin LDFLAGS: -framework WebKit
 
 #cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
-#cgo windows LDFLAGS: -static -lole32 -lshell32 -lshlwapi -luser32 -lversion
+#cgo windows LDFLAGS: -static -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion
 
 #include "webview.h"
 
@@ -25,7 +22,6 @@ import "C"
 import (
 	"encoding/json"
 	"errors"
-	_ "github.com/SteffenL/mswebview2"
 	"reflect"
 	"runtime"
 	"sync"

@@ -123,13 +123,10 @@ set "CGO_CXXFLAGS=-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\na
 set "CGO_LDFLAGS=-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
 set CGO_ENABLED=1
 
-echo Setting up Go vendoring...
-go mod vendor || exit /b
-
 echo Building Go examples
 mkdir build\examples\go
-go build -mod=vendor -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
-go build -mod=vendor -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
+go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
+go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
 
 echo Running tests
 "%build_dir%\webview_test.exe" || exit /b
@@ -137,4 +134,4 @@ echo Running tests
 echo Running Go tests
 cd /D %src_dir%
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
-go test -mod=vendor || exit /b
+go test || exit /b

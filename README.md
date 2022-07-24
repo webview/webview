@@ -65,6 +65,23 @@ mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
 ```
 
+### Windows Preperation
+
+The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
+
+```bat
+mkdir libs\webview2
+curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
+```
+
+If you wish to use the official WebView2 loader (`WebView2Loader.dll`) then grab a copy of the DLL (replace `x64` with your target architecture):
+
+```bat
+copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
+```
+
+> **Note:** See our [notes for the WebView2 loader](#ms-webview2-loader).
+
 ### C/C++ Preparation
 
 Fetch the webview library:
@@ -73,15 +90,6 @@ Fetch the webview library:
 curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
 curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
 ```
-
-If you are building on Windows then you need the [WebView2 SDK][ms-webview2-sdk]:
-
-```bat
-mkdir libs\webview2
-curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
-```
-
-> **Note:** See our [notes for the WebView2 loader](#ms-webview2-loader) if you wish to use the official loader (`WebView2Loader.dll`).
 
 ### Getting Started with C++
 
@@ -158,6 +166,12 @@ Create a new Go module:
 go mod init example.com/m
 ```
 
+On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preperation](#windows-preperation)):
+
+```bat
+set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
+```
+
 > Note: Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
 
 Save the basic Go example into your project directory:
@@ -170,19 +184,16 @@ Install dependencies:
 
 ```sh
 go get github.com/webview/webview
-go mod vendor
 ```
 
 Build and run the example:
 
 ```sh
 # Linux, macOS
-go build -mod=vendor -o build/basic basic.go && ./build/basic
+go build -o build/basic basic.go && ./build/basic
 # Windows
-go build -mod=vendor -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
+go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
-
-> **Note:** `-mod=vendor` is optional if you use Go 1.14 or later.
 
 > **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata.
 
