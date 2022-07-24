@@ -1359,7 +1359,11 @@ private:
         GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
-    return SUCCEEDED(res) && version_info;
+    auto ok = SUCCEEDED(res) && version_info;
+    if (version_info) {
+      CoTaskMemFree(version_info);
+    }
+    return ok;
   }
 
   virtual void on_message(const std::string &msg) = 0;
