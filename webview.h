@@ -1332,7 +1332,11 @@ public:
     auto res = get_available_browser_version_string(nullptr, &version);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
-    return SUCCEEDED(res) && version;
+    auto ok = SUCCEEDED(res) && version;
+    if (version) {
+      CoTaskMemFree(version);
+    }
+    return ok;
   }
 
 private:
