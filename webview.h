@@ -1267,9 +1267,7 @@ static constexpr IID
         0x4E8A3389, 0xC9D8, 0x4BD2, 0xB6, 0xB5, 0x12,
         0x4F,       0xEE,   0x6C,   0xC1, 0x4D};
 
-struct WebView2RunTimeType {
-  enum type { installed = 0 };
-};
+enum class webview2_runtime_type { installed = 0 };
 
 struct webview2_symbols {
   using CreateCoreWebView2EnvironmentWithOptions_t =
@@ -1278,7 +1276,7 @@ struct webview2_symbols {
           ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
   using CreateWebViewEnvironmentWithOptionsInternal_t =
       HRESULT(STDMETHODCALLTYPE *)(
-          bool, WebView2RunTimeType::type, PCWSTR, IUnknown *,
+          bool, webview2_runtime_type, PCWSTR, IUnknown *,
           ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
   using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
   using GetAvailableCoreWebView2BrowserVersionString_t =
@@ -1357,7 +1355,7 @@ private:
         webview::detail::native_library(found_client.dll_path.c_str());
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
-      auto rtt = WebView2RunTimeType::installed;
+      auto rtt = webview2_runtime_type::installed;
       return fn(true, rtt, user_data_dir, env_options, created_handler);
     }
     if (auto fn = client_dll.get(webview2_symbols::DllCanUnloadNow)) {
