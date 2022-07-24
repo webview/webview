@@ -1267,7 +1267,7 @@ static constexpr IID
         0x4E8A3389, 0xC9D8, 0x4BD2, 0xB6, 0xB5, 0x12,
         0x4F,       0xEE,   0x6C,   0xC1, 0x4D};
 
-enum class webview2_runtime_type { installed = 0 };
+enum class webview2_runtime_type { installed = 0, embedded = 1 };
 
 struct webview2_symbols {
   using CreateCoreWebView2EnvironmentWithOptions_t =
@@ -1340,6 +1340,7 @@ private:
     bool found = false;
     std::wstring dll_path;
     std::wstring version;
+    webview2_runtime_type runtime_type;
   };
 
   HRESULT create_environment_with_options_impl(
@@ -1355,8 +1356,8 @@ private:
         webview::detail::native_library(found_client.dll_path.c_str());
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
-      auto rtt = webview2_runtime_type::installed;
-      return fn(true, rtt, user_data_dir, env_options, created_handler);
+      return fn(true, found_client.runtime_type, user_data_dir, env_options,
+                created_handler);
     }
     if (auto fn = client_dll.get(webview2_symbols::DllCanUnloadNow)) {
       if (!fn()) {
@@ -1441,7 +1442,8 @@ private:
     }
 
     auto client_dll_path = make_client_dll_path(ebwebview_value);
-    return {true, client_dll_path, client_version_string};
+    return {true, client_dll_path, client_version_string,
+            webview2_runtime_type::installed};
   }
 
   client_info_t find_embedded_client(unsigned int min_api_version,
@@ -1455,7 +1457,8 @@ private:
       return {};
     }
 
-    return {true, client_dll_path, client_version_string};
+    return {true, client_dll_path, client_version_string,
+            webview2_runtime_type::embedded};
   }
 
   // The minimum WebView2 API version we need regardless of the SDK release
