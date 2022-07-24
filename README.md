@@ -215,6 +215,11 @@ If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executab
 
 Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
 
+Here are some of the noteworthy ways our implementation of the loader differs from the official implementation:
+
+* Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
+* Microsoft Edge Insider (preview) channels are not supported.
+
 ## MinGW-w64 Requirements
 
 In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
