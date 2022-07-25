@@ -195,8 +195,6 @@ go build -o build/basic basic.go && ./build/basic
 go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
 
-> **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata.
-
 ### More Examples
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
@@ -222,6 +220,8 @@ Distributions that are known to be compatible:
 Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
 
 ### macOS Application Bundle
+
+On macOS you would typically create a bundle for your app with an icon and proper metadata.
 
 A minimalistic bundle typically has the following directory structure:
 
