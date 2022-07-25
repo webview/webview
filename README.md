@@ -172,7 +172,7 @@ On Windows you will need to make the WebView2 headers discoverable by cgo (see [
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
 ```
 
-> Note: Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
+> **Note:** Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
 
 Save the basic Go example into your project directory:
 
@@ -195,46 +195,17 @@ go build -o build/basic basic.go && ./build/basic
 go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
 
-> **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata.
-
 ### More Examples
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
-
-## Development
-
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
-
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
-
-## MS WebView2 Loader
-
-Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing it with your app.
-
-If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
-
-Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
-
-Here are some of the noteworthy ways our implementation of the loader differs from the official implementation:
-
-* Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
-* Microsoft Edge Insider (preview) channels are not supported.
-
-## MinGW-w64 Requirements
-
-In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
-
-Distributions that are known to be compatible:
-
-* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
-* [MSYS2](https://www.msys2.org/)
-* [WinLibs](https://winlibs.com/)
 
 ## App Distribution
 
 Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
 
 ### macOS Application Bundle
+
+On macOS you would typically create a bundle for your app with an icon and proper metadata.
 
 A minimalistic bundle typically has the following directory structure:
 
@@ -273,7 +244,7 @@ my-project/
 32512 ICON "icons\\window.ico"
 ```
 
-> Note: The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
+> **Note:** The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
 
 Compile:
 ```sh
@@ -282,6 +253,35 @@ g++ basic.cc build/resources.o [...]
 ```
 
 Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64 and optionally `WebView2Loader.dll`.
+
+## MinGW-w64 Requirements
+
+In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
+
+Distributions that are known to be compatible:
+
+* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
+* [MSYS2](https://www.msys2.org/)
+* [WinLibs](https://winlibs.com/)
+
+## MS WebView2 Loader
+
+Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing it with your app.
+
+If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
+
+Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
+
+Here are some of the noteworthy ways our implementation of the loader differs from the official implementation:
+
+* Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
+* Microsoft Edge Insider (preview) channels are not supported.
+
+## Development
+
+To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+
+> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
 
 ## Limitations
 
