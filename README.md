@@ -199,22 +199,6 @@ go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.ex
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
 
-## Development
-
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
-
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
-
-## MinGW-w64 Requirements
-
-In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
-
-Distributions that are known to be compatible:
-
-* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
-* [MSYS2](https://www.msys2.org/)
-* [WinLibs](https://winlibs.com/)
-
 ## App Distribution
 
 Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
@@ -269,6 +253,22 @@ g++ basic.cc build/resources.o [...]
 ```
 
 Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
+
+## Development
+
+To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+
+> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
+
+## MinGW-w64 Requirements
+
+In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
+
+Distributions that are known to be compatible:
+
+* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
+* [MSYS2](https://www.msys2.org/)
+* [WinLibs](https://winlibs.com/)
 
 ## Limitations
 
