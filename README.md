@@ -67,7 +67,7 @@ mkdir build libs "libs/webview"
 
 ### Windows Preperation
 
-The [WebView2 library][ms-webview2-lib] is required when compiling programs:
+The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
 
 ```bat
 mkdir libs\webview2
@@ -152,18 +152,17 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o  -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
 
 See [Go package documentation][go-docs] for the Go API documentation, or simply read the source code.
 
-Create a new module and install the package:
+Create a new Go module:
 
 ```sh
 go mod init example.com/m
-go get github.com/webview/webview
 ```
 
 On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
@@ -179,6 +178,12 @@ Save the basic Go example into your project directory:
 
 ```sh
 curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/basic.go"
+```
+
+Install dependencies:
+
+```sh
+go get github.com/webview/webview
 ```
 
 Build and run the example:
@@ -283,7 +288,7 @@ Language    | Project
 ----------  | -------
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
-Go          | [webview/webview](https://github.com/webview/webview)
+Go          | [webview/webview][webview]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [shannah/webviewjar](https://github.com/shannah/webviewjar)
@@ -309,9 +314,10 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
 [webkitgtk]:         https://webkitgtk.org/
+[webview]:           https://github.com/webview/webview
 [webview.dev]:       https://webview.dev
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-[ms-webview2-lib]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
+[ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
 [win32-rc]:          https://docs.microsoft.com/en-us/windows/win32/menurc/resource-compiler
