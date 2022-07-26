@@ -1542,10 +1542,12 @@ public:
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                    ICoreWebView2Controller *controller) {
     if (FAILED(res)) {
-      // We should retry creating a WebView2 environment upon failure unless
-      // the error code is HRESULT_FROM_WIN32(ERROR_INVALID_STATE).
-      // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1150.38
-      if (res == HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
+      // See try_create_environment() regarding
+      // HRESULT_FROM_WIN32(ERROR_INVALID_STATE).
+      // The result is E_ABORT if the parent window has been destroyed already.
+      switch (res) {
+      case HRESULT_FROM_WIN32(ERROR_INVALID_STATE):
+      case E_ABORT:
         return S_OK;
       }
       try_create_environment();
@@ -1585,11 +1587,13 @@ public:
     m_attempt_handler = attempt_handler;
   }
 
+  // Retry creating a WebView2 environment.
+  // The initiating logic for creating the environment is defined by the
+  // caller of set_attempt_handler().
   void try_create_environment() noexcept {
-    // We should retry creating a WebView2 environment upon failure unless
-    // the error code is HRESULT_FROM_WIN32(ERROR_INVALID_STATE).
-    // Not entirely sure if this error code only applies to
-    // CreateCoreWebView2Controller so we check in both places.
+    // WebView creation fails with HRESULT_FROM_WIN32(ERROR_INVALID_STATE) if
+    // a running instance using the same user data folder exists, and the
+    // Environment objects have different EnvironmentOptions.
     // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1150.38
     if (m_tries < m_max_tries) {
       ++m_tries;
@@ -1597,6 +1601,8 @@ public:
       if (SUCCEEDED(res)) {
         return;
       }
+      // Not entirely sure if this error code only applies to
+      // CreateCoreWebView2Controller so we check here as well.
       if (res == HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
         return;
       }
