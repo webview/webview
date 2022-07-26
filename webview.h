@@ -1583,6 +1583,8 @@ public:
     return S_OK;
   }
 
+  // Set the function that will perform the initiating logic for creating
+  // the WebView2 environment.
   void set_attempt_handler(std::function<HRESULT()> attempt_handler) noexcept {
     m_attempt_handler = attempt_handler;
   }
