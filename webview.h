@@ -1265,9 +1265,17 @@ get_last_native_path_component(const std::basic_string<T> &path) {
 
 namespace mswebview2 {
 static constexpr IID
+    IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler{
+        0x6C4819F3, 0xC9B7, 0x4260, 0x81, 0x27, 0xC9,
+        0xF5,       0xBD,   0xE7,   0xF6, 0x8C};
+static constexpr IID
     IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler{
         0x4E8A3389, 0xC9D8, 0x4BD2, 0xB6, 0xB5, 0x12,
         0x4F,       0xEE,   0x6C,   0xC1, 0x4D};
+static constexpr IID IID_ICoreWebView2PermissionRequestedEventHandler{
+    0x15E1C6A3, 0xC72A, 0x4DF3, 0x91, 0xD7, 0xD0, 0x97, 0xFB, 0xEC, 0x6B, 0xFD};
+static constexpr IID IID_ICoreWebView2WebMessageReceivedEventHandler{
+    0x57213F19, 0x00E6, 0x49FA, 0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2};
 
 enum class webview2_runtime_type { installed = 0, embedded = 1 };
 
@@ -1518,19 +1526,59 @@ public:
     if (!ppv) {
       return E_POINTER;
     }
-    // Note: We should probably add all of the interfaces we implement here
-    // but for now this is all we need.
-    // This is necessary to use our custom WebView2 loader implementation.
-    auto CreateWebView2EnvironmentHandler =
-        IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
-    if (IsEqualIID(riid, CreateWebView2EnvironmentHandler)) {
-      auto ptr = static_cast<
-          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *>(this);
-      ptr->AddRef();
+
+    // All of the COM interfaces we implement should be added here regardless
+    // of whether we have observed them to be required.
+    // This is just to be on the safe side in case the WebView2 Runtime ever
+    // requests a pointer to an interface we implement.
+    // The WebView2 Runtime must at the very least be able to get a pointer to
+    // ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler when we use
+    // our custom WebView2 loader implementation.
+
+    using ICreateControllerHandler =
+        ICoreWebView2CreateCoreWebView2ControllerCompletedHandler;
+    constexpr auto IID_CreateControllerHandler = mswebview2::
+        IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler;
+
+    if (auto ptr = cast_if_equal<ICreateControllerHandler>(
+            riid, IID_CreateControllerHandler)) {
       *ppv = ptr;
       return S_OK;
     }
-    *ppv = nullptr;
+
+    using ICreateEnvironmentHandler =
+        ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
+    constexpr auto IID_CreateEnvironmentHandler = mswebview2::
+        IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
+
+    if (auto ptr = cast_if_equal<ICreateEnvironmentHandler>(
+            riid, IID_CreateEnvironmentHandler)) {
+      *ppv = ptr;
+      return S_OK;
+    }
+
+    using IWebMessageReceivedHandler =
+        ICoreWebView2WebMessageReceivedEventHandler;
+    constexpr auto IID_WebMessageReceivedHandler =
+        mswebview2::IID_ICoreWebView2WebMessageReceivedEventHandler;
+
+    if (auto ptr = cast_if_equal<IWebMessageReceivedHandler>(
+            riid, IID_WebMessageReceivedHandler)) {
+      *ppv = ptr;
+      return S_OK;
+    }
+
+    using IPermissionRequestedHandler =
+        ICoreWebView2PermissionRequestedEventHandler;
+    constexpr auto IID_PermissionRequestedHandler =
+        mswebview2::IID_ICoreWebView2PermissionRequestedEventHandler;
+
+    if (auto ptr = cast_if_equal<IPermissionRequestedHandler>(
+            riid, IID_PermissionRequestedHandler)) {
+      *ppv = ptr;
+      return S_OK;
+    }
+
     return E_NOINTERFACE;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
@@ -1585,6 +1633,17 @@ public:
       args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
     }
     return S_OK;
+  }
+
+  // Checks whether the specified IIDs are equal and if so casts the "this"
+  // pointer to T and returns it. Returns nullptr on mismatching IIDs.
+  template <typename T> T *cast_if_equal(REFIID riid1, REFIID riid2) noexcept {
+    if (IsEqualIID(riid1, riid2)) {
+      auto ptr = static_cast<T *>(this);
+      ptr->AddRef();
+      return ptr;
+    }
+    return nullptr;
   }
 
   // Set the function that will perform the initiating logic for creating
