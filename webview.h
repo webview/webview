@@ -1251,6 +1251,8 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+// Gets the last component of a Windows native file path.
+// For example, if the path is "C:\a\b" then the result is "b".
 template <typename T>
 std::basic_string<T>
 get_last_native_path_component(const std::basic_string<T> &path) {
@@ -1516,7 +1518,9 @@ public:
     if (!ppv) {
       return E_POINTER;
     }
-    // Note: We should probably add all of the interfaces we implement here.
+    // Note: We should probably add all of the interfaces we implement here
+    // but for now this is all we need.
+    // This is necessary to use our custom WebView2 loader implementation.
     auto CreateWebView2EnvironmentHandler =
         IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
     if (IsEqualIID(riid, CreateWebView2EnvironmentHandler)) {
