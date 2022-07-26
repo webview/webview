@@ -1263,6 +1263,11 @@ get_last_native_path_component(const std::basic_string<T> &path) {
   return std::basic_string<T>();
 }
 
+template <typename T> struct cast_info_t {
+  using type = T;
+  IID iid;
+};
+
 namespace mswebview2 {
 static constexpr IID
     IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler{
@@ -1494,6 +1499,23 @@ private:
   native_library m_lib{L"WebView2Loader.dll"};
 };
 
+namespace cast_info {
+static constexpr auto controller_completed =
+    cast_info_t<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>{
+        IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler};
+
+static constexpr auto environment_completed =
+    cast_info_t<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>{
+        IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler};
+
+static constexpr auto message_received =
+    cast_info_t<ICoreWebView2WebMessageReceivedEventHandler>{
+        IID_ICoreWebView2WebMessageReceivedEventHandler};
+
+static constexpr auto permission_requested =
+    cast_info_t<ICoreWebView2PermissionRequestedEventHandler>{
+        IID_ICoreWebView2PermissionRequestedEventHandler};
+} // namespace cast_info
 } // namespace mswebview2
 
 class webview2_com_handler
@@ -1523,63 +1545,35 @@ public:
     return 0;
   }
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+    using namespace mswebview2::cast_info;
+
     if (!ppv) {
       return E_POINTER;
     }
 
     // All of the COM interfaces we implement should be added here regardless
-    // of whether we have observed them to be required.
+    // of whether they are required.
     // This is just to be on the safe side in case the WebView2 Runtime ever
     // requests a pointer to an interface we implement.
     // The WebView2 Runtime must at the very least be able to get a pointer to
     // ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler when we use
-    // our custom WebView2 loader implementation.
+    // our custom WebView2 loader implementation, and observations have shown
+    // that it is the only interface requested in this case. None have been
+    // observed to be requested when using the official WebView2 loader.
 
-    using ICreateControllerHandler =
-        ICoreWebView2CreateCoreWebView2ControllerCompletedHandler;
-    constexpr auto IID_CreateControllerHandler = mswebview2::
-        IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler;
-
-    if (auto ptr = cast_if_equal<ICreateControllerHandler>(
-            riid, IID_CreateControllerHandler)) {
+    if (auto ptr = cast_if_equal_iid(riid, controller_completed)) {
       *ppv = ptr;
-      return S_OK;
+    } else if (auto ptr = cast_if_equal_iid(riid, environment_completed)) {
+      *ppv = ptr;
+    } else if (auto ptr = cast_if_equal_iid(riid, message_received)) {
+      *ppv = ptr;
+    } else if (auto ptr = cast_if_equal_iid(riid, permission_requested)) {
+      *ppv = ptr;
+    } else {
+      return E_NOINTERFACE;
     }
 
-    using ICreateEnvironmentHandler =
-        ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
-    constexpr auto IID_CreateEnvironmentHandler = mswebview2::
-        IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler;
-
-    if (auto ptr = cast_if_equal<ICreateEnvironmentHandler>(
-            riid, IID_CreateEnvironmentHandler)) {
-      *ppv = ptr;
-      return S_OK;
-    }
-
-    using IWebMessageReceivedHandler =
-        ICoreWebView2WebMessageReceivedEventHandler;
-    constexpr auto IID_WebMessageReceivedHandler =
-        mswebview2::IID_ICoreWebView2WebMessageReceivedEventHandler;
-
-    if (auto ptr = cast_if_equal<IWebMessageReceivedHandler>(
-            riid, IID_WebMessageReceivedHandler)) {
-      *ppv = ptr;
-      return S_OK;
-    }
-
-    using IPermissionRequestedHandler =
-        ICoreWebView2PermissionRequestedEventHandler;
-    constexpr auto IID_PermissionRequestedHandler =
-        mswebview2::IID_ICoreWebView2PermissionRequestedEventHandler;
-
-    if (auto ptr = cast_if_equal<IPermissionRequestedHandler>(
-            riid, IID_PermissionRequestedHandler)) {
-      *ppv = ptr;
-      return S_OK;
-    }
-
-    return E_NOINTERFACE;
+    return S_OK;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
     if (SUCCEEDED(res)) {
@@ -1635,10 +1629,12 @@ public:
     return S_OK;
   }
 
-  // Checks whether the specified IIDs are equal and if so casts the "this"
-  // pointer to T and returns it. Returns nullptr on mismatching IIDs.
-  template <typename T> T *cast_if_equal(REFIID riid1, REFIID riid2) noexcept {
-    if (IsEqualIID(riid1, riid2)) {
+  // Checks whether the specified IID equals the IID of the specified type and
+  // if so casts the "this" pointer to T and returns it. Returns nullptr on
+  // mismatching IIDs.
+  template <typename T>
+  T *cast_if_equal_iid(REFIID riid1, const cast_info_t<T> &info) noexcept {
+    if (IsEqualIID(riid1, info.iid)) {
       auto ptr = static_cast<T *>(this);
       ptr->AddRef();
       return ptr;
