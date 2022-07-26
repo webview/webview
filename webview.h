@@ -1561,19 +1561,14 @@ public:
     // that it is the only interface requested in this case. None have been
     // observed to be requested when using the official WebView2 loader.
 
-    if (auto ptr = cast_if_equal_iid(riid, controller_completed)) {
-      *ppv = ptr;
-    } else if (auto ptr = cast_if_equal_iid(riid, environment_completed)) {
-      *ppv = ptr;
-    } else if (auto ptr = cast_if_equal_iid(riid, message_received)) {
-      *ppv = ptr;
-    } else if (auto ptr = cast_if_equal_iid(riid, permission_requested)) {
-      *ppv = ptr;
-    } else {
-      return E_NOINTERFACE;
+    if (cast_if_equal_iid(riid, controller_completed, ppv) ||
+        cast_if_equal_iid(riid, environment_completed, ppv) ||
+        cast_if_equal_iid(riid, message_received, ppv) ||
+        cast_if_equal_iid(riid, permission_requested, ppv)) {
+      return S_OK;
     }
 
-    return S_OK;
+    return E_NOINTERFACE;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
     if (SUCCEEDED(res)) {
@@ -1632,14 +1627,19 @@ public:
   // Checks whether the specified IID equals the IID of the specified type and
   // if so casts the "this" pointer to T and returns it. Returns nullptr on
   // mismatching IIDs.
+  // If ppv is specified then the pointer will also be assigned to *ppv.
   template <typename T>
-  T *cast_if_equal_iid(REFIID riid1, const cast_info_t<T> &info) noexcept {
-    if (IsEqualIID(riid1, info.iid)) {
-      auto ptr = static_cast<T *>(this);
+  T *cast_if_equal_iid(REFIID riid, const cast_info_t<T> &info,
+                       LPVOID *ppv = nullptr) noexcept {
+    T *ptr = nullptr;
+    if (IsEqualIID(riid, info.iid)) {
+      ptr = static_cast<T *>(this);
       ptr->AddRef();
-      return ptr;
     }
-    return nullptr;
+    if (ppv) {
+      *ppv = ptr;
+    }
+    return ptr;
   }
 
   // Set the function that will perform the initiating logic for creating
