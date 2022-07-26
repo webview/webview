@@ -1597,8 +1597,8 @@ public:
     // a running instance using the same user data folder exists, and the
     // Environment objects have different EnvironmentOptions.
     // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1150.38
-    if (m_tries < m_max_tries) {
-      ++m_tries;
+    if (m_attempts < m_max_attempts) {
+      ++m_attempts;
       auto res = m_attempt_handler();
       if (SUCCEEDED(res)) {
         return;
@@ -1621,8 +1621,8 @@ private:
   webview2_com_handler_cb_t m_cb;
   std::atomic<ULONG> m_ref_count = 1;
   std::function<HRESULT()> m_attempt_handler;
-  unsigned int m_max_tries = 5;
-  unsigned int m_tries = 0;
+  unsigned int m_max_attempts = 5;
+  unsigned int m_attempts = 0;
 };
 
 class win32_edge_engine {
