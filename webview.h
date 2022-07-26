@@ -1530,11 +1530,28 @@ public:
     return E_NOINTERFACE;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
-    env->CreateCoreWebView2Controller(m_window, this);
+    if (SUCCEEDED(res)) {
+      res = env->CreateCoreWebView2Controller(m_window, this);
+      if (SUCCEEDED(res)) {
+        return S_OK;
+      }
+    }
+    try_create_environment();
     return S_OK;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                    ICoreWebView2Controller *controller) {
+    if (FAILED(res)) {
+      // We should retry creating a WebView2 environment upon failure unless
+      // the error code is HRESULT_FROM_WIN32(ERROR_INVALID_STATE).
+      // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1150.38
+      if (res == HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
+        return S_OK;
+      }
+      try_create_environment();
+      return S_OK;
+    }
+
     ICoreWebView2 *webview;
     ::EventRegistrationToken token;
     controller->get_CoreWebView2(&webview);
@@ -1564,11 +1581,40 @@ public:
     return S_OK;
   }
 
+  void set_attempt_handler(std::function<HRESULT()> attempt_handler) noexcept {
+    m_attempt_handler = attempt_handler;
+  }
+
+  void try_create_environment() noexcept {
+    // We should retry creating a WebView2 environment upon failure unless
+    // the error code is HRESULT_FROM_WIN32(ERROR_INVALID_STATE).
+    // Not entirely sure if this error code only applies to
+    // CreateCoreWebView2Controller so we check in both places.
+    // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/icorewebview2environment?view=webview2-1.0.1150.38
+    if (m_tries < m_max_tries) {
+      ++m_tries;
+      auto res = m_attempt_handler();
+      if (SUCCEEDED(res)) {
+        return;
+      }
+      if (res == HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
+        return;
+      }
+      try_create_environment();
+      return;
+    }
+    // Give up.
+    m_cb(nullptr, nullptr);
+  }
+
 private:
   HWND m_window;
   msg_cb_t m_msgCb;
   webview2_com_handler_cb_t m_cb;
   std::atomic<ULONG> m_ref_count = 1;
+  std::function<HRESULT()> m_attempt_handler;
+  unsigned int m_max_tries = 5;
+  unsigned int m_tries = 0;
 };
 
 class win32_edge_engine {
@@ -1764,24 +1810,33 @@ private:
     m_com_handler = new webview2_com_handler(
         wnd, cb,
         [&](ICoreWebView2Controller *controller, ICoreWebView2 *webview) {
+          if (!controller || !webview) {
+            flag.clear();
+            return;
+          }
           controller->AddRef();
           webview->AddRef();
           m_controller = controller;
           m_webview = webview;
           flag.clear();
         });
-    HRESULT res = webview2_loader.create_environment_with_options(
-        nullptr, userDataFolder, nullptr, m_com_handler);
-    if (res != S_OK) {
-      return false;
-    }
+
+    m_com_handler->set_attempt_handler([&] {
+      return webview2_loader.create_environment_with_options(
+          nullptr, userDataFolder, nullptr, m_com_handler);
+    });
+    m_com_handler->try_create_environment();
+
     MSG msg = {};
     while (flag.test_and_set() && GetMessage(&msg, NULL, 0, 0)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
+    if (!m_controller || !m_webview) {
+      return false;
+    }
     ICoreWebView2Settings *settings = nullptr;
-    res = m_webview->get_Settings(&settings);
+    auto res = m_webview->get_Settings(&settings);
     if (res != S_OK) {
       return false;
     }
