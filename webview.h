@@ -1125,6 +1125,81 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+class webview2_com_handler
+    : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
+      public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
+      public ICoreWebView2WebMessageReceivedEventHandler,
+      public ICoreWebView2PermissionRequestedEventHandler {
+  using webview2_com_handler_cb_t =
+      std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
+
+public:
+  webview2_com_handler(HWND hwnd, msg_cb_t msgCb, webview2_com_handler_cb_t cb)
+      : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
+
+  virtual ~webview2_com_handler() = default;
+  webview2_com_handler(const webview2_com_handler &other) = delete;
+  webview2_com_handler &operator=(const webview2_com_handler &other) = delete;
+  webview2_com_handler(webview2_com_handler &&other) = delete;
+  webview2_com_handler &operator=(webview2_com_handler &&other) = delete;
+
+  ULONG STDMETHODCALLTYPE AddRef() { return ++m_ref_count; }
+  ULONG STDMETHODCALLTYPE Release() {
+    if (m_ref_count > 1) {
+      return --m_ref_count;
+    }
+    delete this;
+    return 0;
+  }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+    if (!ppv) {
+      return E_POINTER;
+    }
+    *ppv = nullptr;
+    return E_NOINTERFACE;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
+    env->CreateCoreWebView2Controller(m_window, this);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
+                                   ICoreWebView2Controller *controller) {
+    ICoreWebView2 *webview;
+    ::EventRegistrationToken token;
+    controller->get_CoreWebView2(&webview);
+    webview->add_WebMessageReceived(this, &token);
+    webview->add_PermissionRequested(this, &token);
+
+    m_cb(controller, webview);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
+    LPWSTR message;
+    args->TryGetWebMessageAsString(&message);
+    m_msgCb(narrow_string(message));
+    sender->PostWebMessageAsString(message);
+
+    CoTaskMemFree(message);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2PermissionRequestedEventArgs *args) {
+    COREWEBVIEW2_PERMISSION_KIND kind;
+    args->get_PermissionKind(&kind);
+    if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
+      args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
+    }
+    return S_OK;
+  }
+
+private:
+  HWND m_window;
+  msg_cb_t m_msgCb;
+  webview2_com_handler_cb_t m_cb;
+  std::atomic<ULONG> m_ref_count = 1;
+};
+
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
@@ -1360,88 +1435,14 @@ private:
         GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
-    return SUCCEEDED(res) && version_info;
+    auto ok = SUCCEEDED(res) && version_info;
+    if (version_info) {
+      CoTaskMemFree(version_info);
+    }
+    return ok;
   }
 
   virtual void on_message(const std::string &msg) = 0;
-
-  class webview2_com_handler
-      : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
-        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
-        public ICoreWebView2WebMessageReceivedEventHandler,
-        public ICoreWebView2PermissionRequestedEventHandler {
-    using webview2_com_handler_cb_t =
-        std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
-
-  public:
-    webview2_com_handler(HWND hwnd, msg_cb_t msgCb,
-                         webview2_com_handler_cb_t cb)
-        : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
-
-    virtual ~webview2_com_handler() = default;
-    webview2_com_handler(const webview2_com_handler &other) = delete;
-    webview2_com_handler &operator=(const webview2_com_handler &other) = delete;
-    webview2_com_handler(webview2_com_handler &&other) = delete;
-    webview2_com_handler &operator=(webview2_com_handler &&other) = delete;
-
-    ULONG STDMETHODCALLTYPE AddRef() { return ++m_ref_count; }
-    ULONG STDMETHODCALLTYPE Release() {
-      if (m_ref_count > 1) {
-        return --m_ref_count;
-      }
-      delete this;
-      return 0;
-    }
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
-      if (!ppv) {
-        return E_POINTER;
-      }
-      *ppv = nullptr;
-      return E_NOINTERFACE;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
-                                     ICoreWebView2Environment *env) {
-      env->CreateCoreWebView2Controller(m_window, this);
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
-                                     ICoreWebView2Controller *controller) {
-      ICoreWebView2 *webview;
-      ::EventRegistrationToken token;
-      controller->get_CoreWebView2(&webview);
-      webview->add_WebMessageReceived(this, &token);
-      webview->add_PermissionRequested(this, &token);
-
-      m_cb(controller, webview);
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(
-        ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
-      LPWSTR message;
-      args->TryGetWebMessageAsString(&message);
-      m_msgCb(narrow_string(message));
-      sender->PostWebMessageAsString(message);
-
-      CoTaskMemFree(message);
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE
-    Invoke(ICoreWebView2 *sender,
-           ICoreWebView2PermissionRequestedEventArgs *args) {
-      COREWEBVIEW2_PERMISSION_KIND kind;
-      args->get_PermissionKind(&kind);
-      if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
-        args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
-      }
-      return S_OK;
-    }
-
-  private:
-    HWND m_window;
-    msg_cb_t m_msgCb;
-    webview2_com_handler_cb_t m_cb;
-    std::atomic<ULONG> m_ref_count = 1;
-  };
 
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
