@@ -840,6 +840,8 @@ enum WKUserScriptInjectionTime : NSInteger {
   WKUserScriptInjectionTimeAtDocumentStart = 0
 };
 
+enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
+
 // Convenient conversion of string literals.
 id operator"" _cls(const char *s, std::size_t) { return (id)objc_getClass(s); }
 SEL operator"" _sel(const char *s, std::size_t) { return sel_registerName(s); }
@@ -976,6 +978,51 @@ private:
     objc_registerClassPair(cls);
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
+  static id create_webkit_ui_delegate() {
+    auto cls =
+        objc_allocateClassPair((Class) "NSObject"_cls, "WebkitUIDelegate", 0);
+    class_addProtocol(cls, objc_getProtocol("WKUIDelegate"));
+    class_addMethod(
+        cls,
+        "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
+        (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
+          auto allows_multiple_selection =
+              objc::msg_send<BOOL>(parameters, "allowsMultipleSelection"_sel);
+          auto allows_directories =
+              objc::msg_send<BOOL>(parameters, "allowsDirectories"_sel);
+
+          // Show a panel for selecting files.
+          auto panel = objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
+          objc::msg_send<void>(panel, "setCanChooseFiles:"_sel, YES);
+          objc::msg_send<void>(panel, "setCanChooseDirectories:"_sel,
+                               allows_directories);
+          objc::msg_send<void>(panel, "setAllowsMultipleSelection:"_sel,
+                               allows_multiple_selection);
+          auto modal_response =
+              objc::msg_send<NSModalResponse>(panel, "runModal"_sel);
+
+          // Get the URLs for the selected files. If the modal was canceled
+          // then we pass null to the completion handler to signify
+          // cancellation.
+          id urls = modal_response == NSModalResponseOK
+                        ? objc::msg_send<id>(panel, "URLs"_sel)
+                        : nullptr;
+
+          // Invoke the completion handler block.
+          auto sig = objc::msg_send<id>("NSMethodSignature"_cls,
+                                        "signatureWithObjCTypes:"_sel, "v@?@");
+          auto invocation = objc::msg_send<id>(
+              "NSInvocation"_cls, "invocationWithMethodSignature:"_sel, sig);
+          objc::msg_send<void>(invocation, "setTarget:"_sel,
+                               completion_handler);
+          objc::msg_send<void>(invocation, "setArgument:atIndex:"_sel, &urls,
+                               1);
+          objc::msg_send<void>(invocation, "invoke"_sel);
+        }),
+        "v@:@@@@");
+    objc_registerClassPair(cls);
+    return objc::msg_send<id>((id)cls, "new"_sel);
+  }
   static id get_shared_application() {
     return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
   }
@@ -1067,8 +1114,10 @@ private:
         objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
         "DOMPasteAllowed"_str);
 
+    auto ui_delegate = create_webkit_ui_delegate();
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
+    objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          delegate, "external"_str);
 
@@ -1292,6 +1341,98 @@ inline bool enable_dpi_awareness() {
   }
   return true;
 }
+
+class webview2_com_handler
+    : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
+      public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
+      public ICoreWebView2WebMessageReceivedEventHandler,
+      public ICoreWebView2PermissionRequestedEventHandler {
+  using webview2_com_handler_cb_t =
+      std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
+
+public:
+  webview2_com_handler(HWND hwnd, msg_cb_t msgCb, webview2_com_handler_cb_t cb)
+      : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
+
+  virtual ~webview2_com_handler() = default;
+  webview2_com_handler(const webview2_com_handler &other) = delete;
+  webview2_com_handler &operator=(const webview2_com_handler &other) = delete;
+  webview2_com_handler(webview2_com_handler &&other) = delete;
+  webview2_com_handler &operator=(webview2_com_handler &&other) = delete;
+
+  ULONG STDMETHODCALLTYPE AddRef() { return ++m_ref_count; }
+  ULONG STDMETHODCALLTYPE Release() {
+    if (m_ref_count > 1) {
+      return --m_ref_count;
+    }
+    delete this;
+    return 0;
+  }
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+    if (!ppv) {
+      return E_POINTER;
+    }
+    *ppv = nullptr;
+    return E_NOINTERFACE;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
+    if (!SUCCEEDED(res)) {
+      PostMessage(m_window, app_window_message::webview_initialization_failed,
+                  0, 0);
+      return res;
+    }
+    res = env->CreateCoreWebView2Controller(m_window, this);
+    if (!SUCCEEDED(res)) {
+      PostMessage(m_window, app_window_message::webview_initialization_failed,
+                  0, 0);
+      return res;
+    }
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
+                                   ICoreWebView2Controller *controller) {
+    if (!SUCCEEDED(res)) {
+      PostMessage(m_window, app_window_message::webview_initialization_failed,
+                  0, 0);
+      return res;
+    }
+
+    ICoreWebView2 *webview;
+    ::EventRegistrationToken token;
+    controller->get_CoreWebView2(&webview);
+
+    webview->add_WebMessageReceived(this, &token);
+    webview->add_PermissionRequested(this, &token);
+
+    m_cb(controller, webview);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
+    LPWSTR message;
+    args->TryGetWebMessageAsString(&message);
+    m_msgCb(narrow_string(message));
+    sender->PostWebMessageAsString(message);
+
+    CoTaskMemFree(message);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2PermissionRequestedEventArgs *args) {
+    COREWEBVIEW2_PERMISSION_KIND kind;
+    args->get_PermissionKind(&kind);
+    if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
+      args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
+    }
+    return S_OK;
+  }
+
+private:
+  HWND m_window;
+  msg_cb_t m_msgCb;
+  webview2_com_handler_cb_t m_cb;
+  std::atomic<ULONG> m_ref_count{1};
+};
 
 class win32_edge_engine {
 public:
@@ -1588,105 +1729,14 @@ private:
         GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
-    return SUCCEEDED(res) && version_info;
+    auto ok = SUCCEEDED(res) && version_info;
+    if (version_info) {
+      CoTaskMemFree(version_info);
+    }
+    return ok;
   }
 
   virtual void on_message(const std::string &msg) = 0;
-
-  class webview2_com_handler
-      : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
-        public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
-        public ICoreWebView2WebMessageReceivedEventHandler,
-        public ICoreWebView2PermissionRequestedEventHandler {
-    using webview2_com_handler_cb_t =
-        std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
-
-  public:
-    webview2_com_handler(HWND hwnd, msg_cb_t msgCb,
-                         webview2_com_handler_cb_t cb)
-        : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
-
-    virtual ~webview2_com_handler() = default;
-    webview2_com_handler(const webview2_com_handler &other) = delete;
-    webview2_com_handler &operator=(const webview2_com_handler &other) = delete;
-    webview2_com_handler(webview2_com_handler &&other) = delete;
-    webview2_com_handler &operator=(webview2_com_handler &&other) = delete;
-
-    ULONG STDMETHODCALLTYPE AddRef() { return ++m_ref_count; }
-    ULONG STDMETHODCALLTYPE Release() {
-      if (m_ref_count > 1) {
-        return --m_ref_count;
-      }
-      delete this;
-      return 0;
-    }
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
-      if (!ppv) {
-        return E_POINTER;
-      }
-      *ppv = nullptr;
-      return E_NOINTERFACE;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
-                                     ICoreWebView2Environment *env) {
-      if (!SUCCEEDED(res)) {
-        PostMessage(m_window, app_window_message::webview_initialization_failed,
-                    0, 0);
-        return res;
-      }
-      res = env->CreateCoreWebView2Controller(m_window, this);
-      if (!SUCCEEDED(res)) {
-        PostMessage(m_window, app_window_message::webview_initialization_failed,
-                    0, 0);
-        return res;
-      }
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
-                                     ICoreWebView2Controller *controller) {
-      if (!SUCCEEDED(res)) {
-        PostMessage(m_window, app_window_message::webview_initialization_failed,
-                    0, 0);
-        return res;
-      }
-
-      ICoreWebView2 *webview;
-      ::EventRegistrationToken token;
-      controller->get_CoreWebView2(&webview);
-
-      webview->add_WebMessageReceived(this, &token);
-      webview->add_PermissionRequested(this, &token);
-
-      m_cb(controller, webview);
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE Invoke(
-        ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
-      LPWSTR message;
-      args->TryGetWebMessageAsString(&message);
-      m_msgCb(narrow_string(message));
-      sender->PostWebMessageAsString(message);
-
-      CoTaskMemFree(message);
-      return S_OK;
-    }
-    HRESULT STDMETHODCALLTYPE
-    Invoke(ICoreWebView2 *sender,
-           ICoreWebView2PermissionRequestedEventArgs *args) {
-      COREWEBVIEW2_PERMISSION_KIND kind;
-      args->get_PermissionKind(&kind);
-      if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
-        args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
-      }
-      return S_OK;
-    }
-
-  private:
-    HWND m_window;
-    msg_cb_t m_msgCb;
-    webview2_com_handler_cb_t m_cb;
-    std::atomic<ULONG> m_ref_count = 1;
-  };
 
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
