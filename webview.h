@@ -29,6 +29,40 @@
 #define WEBVIEW_API extern
 #endif
 
+// The current library major version.
+#define WEBVIEW_MAJOR_VERSION 0
+// The current library minor version.
+#define WEBVIEW_MINOR_VERSION 11
+// The current library patch version.
+#define WEBVIEW_PATCH_VERSION 0
+
+// Represents a MAJOR.MINOR.PATCH version number packed as a 30-bit number.
+// The least significant component of the version number (PATCH) starts with
+// the 10 least significant bits. The last two bits are unused for now and
+// must be zero.
+// @see WEBVIEW_PACK_VERSION
+// @see WEBVIEW_UNPACK_MAJOR_VERSION
+// @see WEBVIEW_UNPACK_MINOR_VERSION
+// @see WEBVIEW_UNPACK_PATCH_VERSION
+typedef unsigned int webview_packed_version_t;
+
+// Packs a MAJOR.MINOR.PATCH version number format into a 30-bit number.
+#define WEBVIEW_PACK_VERSION(major, minor, patch)                              \
+  (webview_packed_version_t)((((major)&1023) << 20) | (((minor)&1023) << 10) | \
+                             ((patch)&1023))
+
+// The current library version in packed form.
+#define WEBVIEW_VERSION                                                        \
+  WEBVIEW_PACK_VERSION(WEBVIEW_MAJOR_VERSION, WEBVIEW_MINOR_VERSION,           \
+                       WEBVIEW_PATCH_VERSION)
+
+// Extracts the major version component of a packed version number.
+#define WEBVIEW_UNPACK_MAJOR_VERSION(version) (((version) >> 20) & 1023)
+// Extracts the minor version component of a packed version number.
+#define WEBVIEW_UNPACK_MINOR_VERSION(version) (((version) >> 10) & 1023)
+// Extracts the patch version component of a packed version number.
+#define WEBVIEW_UNPACK_PATCH_VERSION(version) ((version)&1023)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -116,6 +150,10 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 // If status is not zero - result is an error JSON object.
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
+
+// Get the version of the library.
+// @since 0.11
+WEBVIEW_API webview_packed_version_t webview_version();
 
 #ifdef __cplusplus
 }
@@ -1657,6 +1695,10 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result) {
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
+}
+
+WEBVIEW_API webview_packed_version_t webview_version() {
+  return WEBVIEW_VERSION;
 }
 
 #endif /* WEBVIEW_HEADER */

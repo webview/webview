@@ -43,6 +43,13 @@ static void test_c_api() {
 }
 
 // =================================================================
+// TEST: webview_version().
+// =================================================================
+static void test_c_api_version() {
+  assert(webview_version() == WEBVIEW_VERSION);
+}
+
+// =================================================================
 // TEST: ensure that JS code can call native code and vice versa.
 // =================================================================
 struct test_webview : webview::browser_engine {
@@ -117,6 +124,48 @@ static void test_json() {
   assert(J("bad", "foo", -1) == "");
 }
 
+// =================================================================
+// TEST: ensure that version packing and unpacking works.
+// =================================================================
+static void test_packed_version() {
+  auto max_uint32 = 4294967295U;
+  {
+    // Packing numbers exceeding 10 bits should truncate.
+    // Unused bits should not be set.
+    auto version = WEBVIEW_PACK_VERSION(max_uint32, max_uint32, max_uint32);
+    assert(version == 1073741823);
+  }
+  {
+    // Unpacking numbers exceeding 10 bits should truncate.
+    // All bits except unused bits should be set.
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(max_uint32) == 1023);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(max_uint32) == 1023);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(max_uint32) == 1023);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(1, 1, 1);
+    // The first bit of each version component should be set.
+    assert(version == 1049601);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 1);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 1);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 1);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(0, 0, 0);
+    assert(version == 0);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 0);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 0);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 0);
+  }
+  {
+    auto version = WEBVIEW_PACK_VERSION(3, 7, 15);
+    assert(version == 3152911);
+    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 3);
+    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 7);
+    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 15);
+  }
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -178,8 +227,10 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
+      {"c_api_version", test_c_api_version},
       {"bidir_comms", test_bidir_comms},
-      {"json", test_json}};
+      {"json", test_json},
+      {"packed_version", test_packed_version}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
