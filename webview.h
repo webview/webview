@@ -1196,7 +1196,7 @@ private:
   HWND m_window;
   msg_cb_t m_msgCb;
   webview2_com_handler_cb_t m_cb;
-  std::atomic<ULONG> m_ref_count = 1;
+  std::atomic<ULONG> m_ref_count{1};
 };
 
 class win32_edge_engine {
