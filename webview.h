@@ -1499,7 +1499,7 @@ public:
     }
 
     auto use_new_show_behavior =
-        options.minimum_required_version >= WEBVIEW_PACK_VERSION(1, 11, 0);
+        options.minimum_required_version >= WEBVIEW_PACK_VERSION(0, 11, 0);
 
     if (options.visible && !use_new_show_behavior) {
       show_window();
