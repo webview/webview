@@ -137,19 +137,6 @@ static void test_json() {
   assert(J("bad", "foo", -1) == "");
 }
 
-// =================================================================
-// TEST: ensure that the WEBVIEW_VERSION_AT_LEAST macro works.
-// =================================================================
-static void test_version_at_least_macro() {
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 1));
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2));
-  assert(!WEBVIEW_VERSION_AT_LEAST(1, 3));
-
-  assert(WEBVIEW_VERSION_AT_LEAST(0, 2));
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2));
-  assert(!WEBVIEW_VERSION_AT_LEAST(2, 2));
-}
-
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -213,8 +200,7 @@ int main(int argc, char *argv[]) {
       {"c_api", test_c_api},
       {"c_api_version", test_c_api_version},
       {"bidir_comms", test_bidir_comms},
-      {"json", test_json},
-      {"version_at_least_macro", test_version_at_least_macro}};
+      {"json", test_json}};
 #if _WIN32
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
