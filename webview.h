@@ -29,39 +29,70 @@
 #define WEBVIEW_API extern
 #endif
 
+#ifndef WEBVIEW_VERSION_MAJOR
 // The current library major version.
-#define WEBVIEW_MAJOR_VERSION 0
+#define WEBVIEW_VERSION_MAJOR 0
+#endif
+
+#ifndef WEBVIEW_VERSION_MINOR
 // The current library minor version.
-#define WEBVIEW_MINOR_VERSION 11
+#define WEBVIEW_VERSION_MINOR 11
+#endif
+
+#ifndef WEBVIEW_VERSION_PATCH
 // The current library patch version.
-#define WEBVIEW_PATCH_VERSION 0
+#define WEBVIEW_VERSION_PATCH 0
+#endif
 
-// Represents a MAJOR.MINOR.PATCH version number packed as a 30-bit number.
-// The least significant component of the version number (PATCH) starts with
-// the 10 least significant bits. The last two bits are unused for now and
-// must be zero.
-// @see WEBVIEW_PACK_VERSION
-// @see WEBVIEW_UNPACK_MAJOR_VERSION
-// @see WEBVIEW_UNPACK_MINOR_VERSION
-// @see WEBVIEW_UNPACK_PATCH_VERSION
-typedef unsigned int webview_packed_version_t;
+// Utility macro for stringifying a macro argument.
+#define WEBVIEW_STRINGIFY(x) #x
 
-// Packs a MAJOR.MINOR.PATCH version number format into a 30-bit number.
-#define WEBVIEW_PACK_VERSION(major, minor, patch)                              \
-  (webview_packed_version_t)((((major)&1023) << 20) | (((minor)&1023) << 10) | \
-                             ((patch)&1023))
+// Utility macro for stringifying the result of a macro argument expansion.
+#define WEBVIEW_EXPAND_AND_STRINGIFY(x) WEBVIEW_STRINGIFY(x)
 
-// The current library version in packed form.
-#define WEBVIEW_VERSION                                                        \
-  WEBVIEW_PACK_VERSION(WEBVIEW_MAJOR_VERSION, WEBVIEW_MINOR_VERSION,           \
-                       WEBVIEW_PATCH_VERSION)
+#define WEBVIEW_VERSION_STRING                                                 \
+  WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
+  "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
+      WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-// Extracts the major version component of a packed version number.
-#define WEBVIEW_UNPACK_MAJOR_VERSION(version) (((version) >> 20) & 1023)
-// Extracts the minor version component of a packed version number.
-#define WEBVIEW_UNPACK_MINOR_VERSION(version) (((version) >> 10) & 1023)
-// Extracts the patch version component of a packed version number.
-#define WEBVIEW_UNPACK_PATCH_VERSION(version) ((version)&1023)
+#ifndef WEBVIEW_VERSION_PRE_RELEASE
+// SemVer 2.0.0 pre-release labels prefixed with "-".
+#define WEBVIEW_VERSION_PRE_RELEASE ""
+#endif
+
+#ifndef WEBVIEW_VERSION_BUILD_METADATA
+// SemVer 2.0.0 build metadata prefixed with "+".
+#define WEBVIEW_VERSION_BUILD_METADATA ""
+#endif
+
+#define WEBVIEW_FULL_VERSION_STRING                                            \
+  WEBVIEW_VERSION_STRING WEBVIEW_VERSION_PRE_RELEASE                           \
+      WEBVIEW_VERSION_BUILD_METADATA
+
+// Checks whether the MAJOR.MINOR.PATCH version number in the library's header
+// is greater or equal to the specified MAJOR.MINOR.PATCH version number.
+#define WEBVIEW_VERSION_AT_LEAST(major, minor, patch)                          \
+  ((WEBVIEW_VERSION_MAJOR == (major))                                          \
+       ? ((WEBVIEW_VERSION_MINOR == (minor))                                   \
+              ? (WEBVIEW_VERSION_PATCH >= (patch))                             \
+              : (WEBVIEW_VERSION_MINOR > (minor)))                             \
+       : (WEBVIEW_VERSION_MAJOR > (major)))
+
+// Holds the library's version information.
+typedef struct {
+  // Major version.
+  unsigned int major;
+  // Minor version.
+  unsigned int minor;
+  // Patch version.
+  unsigned int patch;
+  // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+  const char *version;
+  // SemVer 2.0.0 pre-release labels prefixed with "-".
+  const char *pre_release;
+  // SemVer 2.0.0 build metadata prefixed with "+".
+  const char *build_metadata;
+} webview_version_info_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,9 +182,8 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
-// Get the version of the library.
-// @since 0.11
-WEBVIEW_API webview_packed_version_t webview_version();
+// Get the version information of the library.
+WEBVIEW_API const webview_version_info_t *webview_version();
 
 #ifdef __cplusplus
 }
@@ -1697,8 +1727,12 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
-WEBVIEW_API webview_packed_version_t webview_version() {
-  return WEBVIEW_VERSION;
+WEBVIEW_API const webview_version_info_t *webview_version() {
+  static constexpr webview_version_info_t version_info{
+      WEBVIEW_VERSION_MAJOR,       WEBVIEW_VERSION_MINOR,
+      WEBVIEW_VERSION_PATCH,       WEBVIEW_VERSION_STRING,
+      WEBVIEW_VERSION_PRE_RELEASE, WEBVIEW_VERSION_BUILD_METADATA};
+  return &version_info;
 }
 
 #endif /* WEBVIEW_HEADER */
