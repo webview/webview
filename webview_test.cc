@@ -141,17 +141,13 @@ static void test_json() {
 // TEST: ensure that the WEBVIEW_VERSION_AT_LEAST macro works.
 // =================================================================
 static void test_version_at_least_macro() {
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2, 2));
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2, 3));
-  assert(!WEBVIEW_VERSION_AT_LEAST(1, 2, 4));
+  assert(WEBVIEW_VERSION_AT_LEAST(1, 1));
+  assert(WEBVIEW_VERSION_AT_LEAST(1, 2));
+  assert(!WEBVIEW_VERSION_AT_LEAST(1, 3));
 
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 1, 3));
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2, 3));
-  assert(!WEBVIEW_VERSION_AT_LEAST(1, 3, 3));
-
-  assert(WEBVIEW_VERSION_AT_LEAST(0, 2, 3));
-  assert(WEBVIEW_VERSION_AT_LEAST(1, 2, 3));
-  assert(!WEBVIEW_VERSION_AT_LEAST(2, 2, 3));
+  assert(WEBVIEW_VERSION_AT_LEAST(0, 2));
+  assert(WEBVIEW_VERSION_AT_LEAST(1, 2));
+  assert(!WEBVIEW_VERSION_AT_LEAST(2, 2));
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {

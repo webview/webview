@@ -69,14 +69,11 @@
   WEBVIEW_VERSION_STRING WEBVIEW_VERSION_PRE_RELEASE                           \
       WEBVIEW_VERSION_BUILD_METADATA
 
-// Checks whether the MAJOR.MINOR.PATCH version number in the library's header
-// is greater or equal to the specified MAJOR.MINOR.PATCH version number.
-#define WEBVIEW_VERSION_AT_LEAST(major, minor, patch)                          \
-  ((WEBVIEW_VERSION_MAJOR == (major))                                          \
-       ? ((WEBVIEW_VERSION_MINOR == (minor))                                   \
-              ? (WEBVIEW_VERSION_PATCH >= (patch))                             \
-              : (WEBVIEW_VERSION_MINOR > (minor)))                             \
-       : (WEBVIEW_VERSION_MAJOR > (major)))
+// Checks whether the MAJOR.MINOR version number in the library's header
+// is greater or equal to the specified MAJOR.MINOR version number.
+#define WEBVIEW_VERSION_AT_LEAST(major, minor)                                 \
+  ((WEBVIEW_VERSION_MAJOR == (major)) ? (WEBVIEW_VERSION_MINOR >= (minor))     \
+                                      : (WEBVIEW_VERSION_MAJOR > (major)))
 
 // Holds the library's version information.
 typedef struct {
