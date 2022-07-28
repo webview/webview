@@ -88,9 +88,10 @@ typedef struct {
   unsigned int patch;
   // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
   const char *version;
-  // SemVer 2.0.0 pre-release labels prefixed with "-".
+  // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
+  // an empty string.
   const char *pre_release;
-  // SemVer 2.0.0 build metadata prefixed with "+".
+  // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
   const char *build_metadata;
 } webview_version_info_t;
 
@@ -182,7 +183,7 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
-// Get the version information of the library.
+// Get the library's version information.
 WEBVIEW_API const webview_version_info_t *webview_version();
 
 #ifdef __cplusplus
