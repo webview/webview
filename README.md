@@ -288,6 +288,7 @@ Language    | Project
 ----------  | -------
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
+Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)
 Go          | [webview/webview][webview]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
