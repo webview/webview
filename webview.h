@@ -1342,6 +1342,14 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+struct app_window_message {
+  enum type : UINT {
+    dispatch = WM_APP,
+    webview_ready = WM_APP + 1,
+    webview_initialization_failed = WM_APP + 2
+  };
+};
+
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
@@ -1623,14 +1631,6 @@ public:
   }
 
 private:
-  struct app_window_message {
-    enum type : UINT {
-      dispatch = WM_APP,
-      webview_ready = WM_APP + 1,
-      webview_initialization_failed = WM_APP + 2
-    };
-  };
-
   void show_window() {
     if (!m_window) {
       return;
