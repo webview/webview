@@ -40,7 +40,9 @@ typedef void *webview_t;
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here.
+// passed here. Returns null on failure. Creation can fail for various reasons
+// such as when required runtime dependencies are missing or when window creation
+// fails.
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Destroys a webview and closes the native window.
