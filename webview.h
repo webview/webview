@@ -448,8 +448,7 @@ public:
     if (m_window == nullptr) {
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     }
-    g_signal_connect(G_OBJECT(m_window), "destroy",
-                     G_CALLBACK(gtk_main_quit),
+    g_signal_connect(G_OBJECT(m_window), "destroy", G_CALLBACK(gtk_main_quit),
                      this);
     // Initialize webview widget
     m_webview = webkit_web_view_new();
