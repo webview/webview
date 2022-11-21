@@ -743,14 +743,6 @@ private:
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
-    class_addMethod(
-        cls, "userContentController:didReceiveScriptMessage:"_sel,
-        (IMP)(+[](id self, SEL, id, id msg) {
-          auto w = get_associated_webview(self);
-          w->on_message(((const char *(*)(id, SEL))objc_msgSend)(
-              objc::msg_send<id>(msg, "body"_sel), "UTF8String"_sel));
-        }),
-        "v@:@@");
     class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
                     (IMP)(+[](id self, SEL, id notification) {
                       auto app = objc::msg_send<id>(notification, "object"_sel);
@@ -760,6 +752,24 @@ private:
                     "v@:@");
     objc_registerClassPair(cls);
     return objc::msg_send<id>((id)cls, "new"_sel);
+  }
+  id create_script_message_handler() {
+    auto cls = objc_allocateClassPair((Class) "NSResponder"_cls,
+                                      "WebkitScriptMessageHandler", 0);
+    class_addProtocol(cls, objc_getProtocol("WKScriptMessageHandler"));
+    class_addMethod(
+        cls, "userContentController:didReceiveScriptMessage:"_sel,
+        (IMP)(+[](id self, SEL, id, id msg) {
+          auto w = get_associated_webview(self);
+          w->on_message(objc::msg_send<const char *>(
+              objc::msg_send<id>(msg, "body"_sel), "UTF8String"_sel));
+        }),
+        "v@:@@");
+    objc_registerClassPair(cls);
+    auto instance = objc::msg_send<id>((id)cls, "new"_sel);
+    objc_setAssociatedObject(instance, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
+    return instance;
   }
   static id create_webkit_ui_delegate() {
     auto cls =
@@ -901,8 +911,9 @@ private:
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
+    auto script_message_handler = create_script_message_handler();
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
-                         delegate, "external"_str);
+                         script_message_handler, "external"_str);
 
     init(R"script(
       window.external = {
