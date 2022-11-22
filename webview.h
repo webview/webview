@@ -743,8 +743,11 @@ public:
 private:
   virtual void on_message(const std::string &msg) = 0;
   id create_app_delegate() {
-    auto cls =
-        objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
+    // Note: Avoid registering the class name "AppDelegate" as it is the
+    // default name in projects created with Xcode, and using the same name
+    // causes objc_registerClassPair to crash.
+    auto cls = objc_allocateClassPair((Class) "NSResponder"_cls,
+                                      "WebviewAppDelegate", 0);
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
