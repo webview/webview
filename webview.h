@@ -232,6 +232,13 @@ using dispatch_fn_t = std::function<void()>;
 
 namespace detail {
 
+// The library's version information.
+constexpr const webview_version_info_t library_version_info{
+    {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
+    WEBVIEW_VERSION_STRING,
+    WEBVIEW_VERSION_PRE_RELEASE,
+    WEBVIEW_VERSION_BUILD_METADATA};
+
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
   enum {
@@ -455,16 +462,6 @@ inline std::string json_parse(const std::string &s, const std::string &key,
     }
   }
   return "";
-}
-
-// Get the library's version information.
-inline const webview_version_info_t &get_version() {
-  static constexpr webview_version_info_t version_info{
-      {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
-      WEBVIEW_VERSION_STRING,
-      WEBVIEW_VERSION_PRE_RELEASE,
-      WEBVIEW_VERSION_BUILD_METADATA};
-  return version_info;
 }
 } // namespace detail
 
@@ -1764,7 +1761,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version() {
-  return &webview::detail::get_version();
+  return &webview::detail::library_version_info;
 }
 
 #endif /* WEBVIEW_HEADER */
