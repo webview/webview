@@ -463,6 +463,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   }
   return "";
 }
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
