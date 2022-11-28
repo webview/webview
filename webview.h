@@ -60,6 +60,7 @@
 // Utility macro for stringifying the result of a macro argument expansion.
 #define WEBVIEW_EXPAND_AND_STRINGIFY(x) WEBVIEW_STRINGIFY(x)
 
+// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
 #define WEBVIEW_VERSION_STRING                                                 \
   WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
@@ -177,6 +178,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
 // Get the library's version information.
+// @since 0.10
 WEBVIEW_API const webview_version_info_t *webview_version();
 
 #ifdef __cplusplus
