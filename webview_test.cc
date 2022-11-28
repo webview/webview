@@ -54,10 +54,10 @@ static void test_c_api() {
 static void test_c_api_version() {
   auto vi = webview_version();
   assert(vi);
-  assert(vi->elements.major == 1);
-  assert(vi->elements.minor == 2);
-  assert(vi->elements.patch == 3);
-  assert(std::string(vi->version) == "1.2.3");
+  assert(vi->version.major == 1);
+  assert(vi->version.minor == 2);
+  assert(vi->version.patch == 3);
+  assert(std::string(vi->version_number) == "1.2.3");
   assert(std::string(vi->pre_release) == "-test");
   assert(std::string(vi->build_metadata) == "+gaabbccd");
   // The function should return the same pointer when called again.
