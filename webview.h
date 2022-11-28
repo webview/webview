@@ -81,12 +81,12 @@ typedef struct {
   // The elements of the version number.
   webview_version_t elements;
   // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
-  const char *version;
+  const char version[32];
   // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
   // an empty string.
-  const char *pre_release;
+  const char pre_release[48];
   // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
-  const char *build_metadata;
+  const char build_metadata[48];
 } webview_version_info_t;
 
 #ifdef __cplusplus
@@ -457,15 +457,15 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
-inline const webview_version_info_t *get_version() {
+// Get the library's version information.
+inline const webview_version_info_t &get_version() {
   static constexpr webview_version_info_t version_info{
       {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
       WEBVIEW_VERSION_STRING,
       WEBVIEW_VERSION_PRE_RELEASE,
       WEBVIEW_VERSION_BUILD_METADATA};
-  return &version_info;
+  return version_info;
 }
-
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -1764,7 +1764,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version() {
-  return webview::detail::get_version();
+  return &webview::detail::get_version();
 }
 
 #endif /* WEBVIEW_HEADER */
