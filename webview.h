@@ -66,10 +66,6 @@
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-#define WEBVIEW_FULL_VERSION_STRING                                            \
-  WEBVIEW_VERSION_STRING WEBVIEW_VERSION_PRE_RELEASE                           \
-      WEBVIEW_VERSION_BUILD_METADATA
-
 // Holds the library's version information.
 typedef struct {
   // Major version.
