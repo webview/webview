@@ -44,6 +44,16 @@
 #define WEBVIEW_VERSION_PATCH 0
 #endif
 
+#ifndef WEBVIEW_VERSION_PRE_RELEASE
+// SemVer 2.0.0 pre-release labels prefixed with "-".
+#define WEBVIEW_VERSION_PRE_RELEASE ""
+#endif
+
+#ifndef WEBVIEW_VERSION_BUILD_METADATA
+// SemVer 2.0.0 build metadata prefixed with "+".
+#define WEBVIEW_VERSION_BUILD_METADATA ""
+#endif
+
 // Utility macro for stringifying a macro argument.
 #define WEBVIEW_STRINGIFY(x) #x
 
@@ -54,16 +64,6 @@
   WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
-
-#ifndef WEBVIEW_VERSION_PRE_RELEASE
-// SemVer 2.0.0 pre-release labels prefixed with "-".
-#define WEBVIEW_VERSION_PRE_RELEASE ""
-#endif
-
-#ifndef WEBVIEW_VERSION_BUILD_METADATA
-// SemVer 2.0.0 build metadata prefixed with "+".
-#define WEBVIEW_VERSION_BUILD_METADATA ""
-#endif
 
 #define WEBVIEW_FULL_VERSION_STRING                                            \
   WEBVIEW_VERSION_STRING WEBVIEW_VERSION_PRE_RELEASE                           \
