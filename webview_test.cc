@@ -60,6 +60,8 @@ static void test_c_api_version() {
   assert(std::string(vi->version) == "1.2.3");
   assert(std::string(vi->pre_release) == "-test");
   assert(std::string(vi->build_metadata) == "+gaabbccd");
+  // The function should return the same pointer when called again.
+  assert(webview_version() == vi);
 }
 
 // =================================================================
