@@ -54,9 +54,9 @@ static void test_c_api() {
 static void test_c_api_version() {
   auto vi = webview_version();
   assert(vi);
-  assert(vi->major == 1);
-  assert(vi->minor == 2);
-  assert(vi->patch == 3);
+  assert(vi->elements.major == 1);
+  assert(vi->elements.minor == 2);
+  assert(vi->elements.patch == 3);
   assert(std::string(vi->version) == "1.2.3");
   assert(std::string(vi->pre_release) == "-test");
   assert(std::string(vi->build_metadata) == "+gaabbccd");

@@ -66,7 +66,7 @@
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-// Holds the library's version information.
+// Holds the elements of a MAJOR.MINOR.PATCH version number.
 typedef struct {
   // Major version.
   unsigned int major;
@@ -74,6 +74,12 @@ typedef struct {
   unsigned int minor;
   // Patch version.
   unsigned int patch;
+} webview_version_t;
+
+// Holds the library's version information.
+typedef struct {
+  // The elements of the version number.
+  webview_version_t elements;
   // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
   const char *version;
   // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
@@ -453,9 +459,10 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 
 inline const webview_version_info_t *get_version() {
   static constexpr webview_version_info_t version_info{
-      WEBVIEW_VERSION_MAJOR,       WEBVIEW_VERSION_MINOR,
-      WEBVIEW_VERSION_PATCH,       WEBVIEW_VERSION_STRING,
-      WEBVIEW_VERSION_PRE_RELEASE, WEBVIEW_VERSION_BUILD_METADATA};
+      {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
+      WEBVIEW_VERSION_STRING,
+      WEBVIEW_VERSION_PRE_RELEASE,
+      WEBVIEW_VERSION_BUILD_METADATA};
   return &version_info;
 }
 
