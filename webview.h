@@ -451,6 +451,14 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+inline const webview_version_info_t *get_version() {
+  static constexpr webview_version_info_t version_info{
+      WEBVIEW_VERSION_MAJOR,       WEBVIEW_VERSION_MINOR,
+      WEBVIEW_VERSION_PATCH,       WEBVIEW_VERSION_STRING,
+      WEBVIEW_VERSION_PRE_RELEASE, WEBVIEW_VERSION_BUILD_METADATA};
+  return &version_info;
+}
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -1749,11 +1757,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version() {
-  static constexpr webview_version_info_t version_info{
-      WEBVIEW_VERSION_MAJOR,       WEBVIEW_VERSION_MINOR,
-      WEBVIEW_VERSION_PATCH,       WEBVIEW_VERSION_STRING,
-      WEBVIEW_VERSION_PRE_RELEASE, WEBVIEW_VERSION_BUILD_METADATA};
-  return &version_info;
+  return webview::detail::get_version();
 }
 
 #endif /* WEBVIEW_HEADER */
