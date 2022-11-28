@@ -57,9 +57,9 @@ static void test_c_api_version() {
   assert(vi->major == 1);
   assert(vi->minor == 2);
   assert(vi->patch == 3);
-  assert(std::string{vi->version} == "1.2.3");
-  assert(std::string{vi->pre_release} == "-test");
-  assert(std::string{vi->build_metadata} == "+gaabbccd");
+  assert(std::string(vi->version) == "1.2.3");
+  assert(std::string(vi->pre_release) == "-test");
+  assert(std::string(vi->build_metadata) == "+gaabbccd");
 }
 
 // =================================================================
