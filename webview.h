@@ -97,7 +97,9 @@ typedef void *webview_t;
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here.
+// passed here. Returns null on failure. Creation can fail for various reasons
+// such as when required runtime dependencies are missing or when window creation
+// fails.
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Destroys a webview and closes the native window.
@@ -703,12 +705,17 @@ public:
                              OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
 
-    // Start the main run loop so that the app delegate gets the
-    // NSApplicationDidFinishLaunchingNotification notification after the run
-    // loop has started in order to perform further initialization.
-    // We need to return from this constructor so this run loop is only
-    // temporary.
-    objc::msg_send<void>(app, "run"_sel);
+    // See comments related to application lifecycle in create_app_delegate().
+    if (window) {
+      on_application_did_finish_launching(delegate, app);
+    } else {
+      // Start the main run loop so that the app delegate gets the
+      // NSApplicationDidFinishLaunchingNotification notification after the run
+      // loop has started in order to perform further initialization.
+      // We need to return from this constructor so this run loop is only
+      // temporary.
+      objc::msg_send<void>(app, "run"_sel);
+    }
   }
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
@@ -795,29 +802,49 @@ public:
 
 private:
   virtual void on_message(const std::string &msg) = 0;
-  static id create_app_delegate() {
-    auto cls =
-        objc_allocateClassPair((Class) "NSResponder"_cls, "AppDelegate", 0);
+  id create_app_delegate() {
+    // Note: Avoid registering the class name "AppDelegate" as it is the
+    // default name in projects created with Xcode, and using the same name
+    // causes objc_registerClassPair to crash.
+    auto cls = objc_allocateClassPair((Class) "NSResponder"_cls,
+                                      "WebviewAppDelegate", 0);
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
                     (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
+    // If the library was not initialized with an existing window then the user
+    // is likely managing the application lifecycle and we would not get the
+    // "applicationDidFinishLaunching:" message and therefore do not need to
+    // add this method.
+    if (!m_parent_window) {
+      class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+                      (IMP)(+[](id self, SEL, id notification) {
+                        auto app =
+                            objc::msg_send<id>(notification, "object"_sel);
+                        auto w = get_associated_webview(self);
+                        w->on_application_did_finish_launching(self, app);
+                      }),
+                      "v@:@");
+    }
+    objc_registerClassPair(cls);
+    return objc::msg_send<id>((id)cls, "new"_sel);
+  }
+  id create_script_message_handler() {
+    auto cls = objc_allocateClassPair((Class) "NSResponder"_cls,
+                                      "WebkitScriptMessageHandler", 0);
+    class_addProtocol(cls, objc_getProtocol("WKScriptMessageHandler"));
     class_addMethod(
         cls, "userContentController:didReceiveScriptMessage:"_sel,
         (IMP)(+[](id self, SEL, id, id msg) {
           auto w = get_associated_webview(self);
-          w->on_message(((const char *(*)(id, SEL))objc_msgSend)(
+          w->on_message(objc::msg_send<const char *>(
               objc::msg_send<id>(msg, "body"_sel), "UTF8String"_sel));
         }),
         "v@:@@");
-    class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
-                    (IMP)(+[](id self, SEL, id notification) {
-                      auto app = objc::msg_send<id>(notification, "object"_sel);
-                      auto w = get_associated_webview(self);
-                      w->on_application_did_finish_launching(self, app);
-                    }),
-                    "v@:@");
     objc_registerClassPair(cls);
-    return objc::msg_send<id>((id)cls, "new"_sel);
+    auto instance = objc::msg_send<id>((id)cls, "new"_sel);
+    objc_setAssociatedObject(instance, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
+    return instance;
   }
   static id create_webkit_ui_delegate() {
     auto cls =
@@ -887,9 +914,12 @@ private:
     return !!bundled;
   }
   void on_application_did_finish_launching(id delegate, id app) {
-    // Stop the main run loop so that we can return
-    // from the constructor.
-    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    // See comments related to application lifecycle in create_app_delegate().
+    if (!m_parent_window) {
+      // Stop the main run loop so that we can return
+      // from the constructor.
+      objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    }
 
     // Activate the app if it is not bundled.
     // Bundled apps launched from Finder are activated automatically but
@@ -959,8 +989,9 @@ private:
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
+    auto script_message_handler = create_script_message_handler();
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
-                         delegate, "external"_str);
+                         script_message_handler, "external"_str);
 
     init(R"script(
       window.external = {
