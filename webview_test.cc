@@ -1,6 +1,12 @@
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
 // +build ignore
 
+#define WEBVIEW_VERSION_MAJOR 1
+#define WEBVIEW_VERSION_MINOR 2
+#define WEBVIEW_VERSION_PATCH 3
+#define WEBVIEW_VERSION_PRE_RELEASE "-test"
+#define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
+
 #include "webview.h"
 
 #include <cassert>
@@ -40,6 +46,22 @@ static void test_c_api() {
   webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
   webview_destroy(w);
+}
+
+// =================================================================
+// TEST: webview_version().
+// =================================================================
+static void test_c_api_version() {
+  auto vi = webview_version();
+  assert(vi);
+  assert(vi->version.major == 1);
+  assert(vi->version.minor == 2);
+  assert(vi->version.patch == 3);
+  assert(std::string(vi->version_number) == "1.2.3");
+  assert(std::string(vi->pre_release) == "-test");
+  assert(std::string(vi->build_metadata) == "+gaabbccd");
+  // The function should return the same pointer when called again.
+  assert(webview_version() == vi);
 }
 
 // =================================================================
@@ -178,6 +200,7 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
+      {"c_api_version", test_c_api_version},
       {"bidir_comms", test_bidir_comms},
       {"json", test_json}};
 #if _WIN32
