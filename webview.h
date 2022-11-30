@@ -29,6 +29,18 @@
 #define WEBVIEW_API extern
 #endif
 
+/* Feature requires C++17 and higher */
+#if defined __cplusplus && defined WIN32
+#if __has_include("resource.h")
+
+#include "resource.h"
+#ifdef IDI_ICON1
+#define WIN_CUSTOM_ICON_RESOURCE_H
+#endif
+
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1242,9 +1254,14 @@ public:
     enable_dpi_awareness();
     if (window == nullptr) {
       HINSTANCE hInstance = GetModuleHandle(nullptr);
+
+#ifdef WIN_CUSTOM_ICON_RESOURCE_H
+      HICON icon = (HICON)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+#else
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
           GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+#endif
 
       WNDCLASSEXW wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
