@@ -29,6 +29,66 @@
 #define WEBVIEW_API extern
 #endif
 
+#ifndef WEBVIEW_VERSION_MAJOR
+// The current library major version.
+#define WEBVIEW_VERSION_MAJOR 0
+#endif
+
+#ifndef WEBVIEW_VERSION_MINOR
+// The current library minor version.
+#define WEBVIEW_VERSION_MINOR 10
+#endif
+
+#ifndef WEBVIEW_VERSION_PATCH
+// The current library patch version.
+#define WEBVIEW_VERSION_PATCH 0
+#endif
+
+#ifndef WEBVIEW_VERSION_PRE_RELEASE
+// SemVer 2.0.0 pre-release labels prefixed with "-".
+#define WEBVIEW_VERSION_PRE_RELEASE ""
+#endif
+
+#ifndef WEBVIEW_VERSION_BUILD_METADATA
+// SemVer 2.0.0 build metadata prefixed with "+".
+#define WEBVIEW_VERSION_BUILD_METADATA ""
+#endif
+
+// Utility macro for stringifying a macro argument.
+#define WEBVIEW_STRINGIFY(x) #x
+
+// Utility macro for stringifying the result of a macro argument expansion.
+#define WEBVIEW_EXPAND_AND_STRINGIFY(x) WEBVIEW_STRINGIFY(x)
+
+// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+#define WEBVIEW_VERSION_NUMBER                                                 \
+  WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
+  "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
+      WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
+
+// Holds the elements of a MAJOR.MINOR.PATCH version number.
+typedef struct {
+  // Major version.
+  unsigned int major;
+  // Minor version.
+  unsigned int minor;
+  // Patch version.
+  unsigned int patch;
+} webview_version_t;
+
+// Holds the library's version information.
+typedef struct {
+  // The elements of the version number.
+  webview_version_t version;
+  // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+  const char version_number[32];
+  // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
+  // an empty string.
+  const char pre_release[48];
+  // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
+  const char build_metadata[48];
+} webview_version_info_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -119,6 +179,10 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
+// Get the library's version information.
+// @since 0.10
+WEBVIEW_API const webview_version_info_t *webview_version();
+
 #ifdef __cplusplus
 }
 
@@ -167,6 +231,13 @@ namespace webview {
 using dispatch_fn_t = std::function<void()>;
 
 namespace detail {
+
+// The library's version information.
+constexpr const webview_version_info_t library_version_info{
+    {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
+    WEBVIEW_VERSION_NUMBER,
+    WEBVIEW_VERSION_PRE_RELEASE,
+    WEBVIEW_VERSION_BUILD_METADATA};
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -1688,6 +1759,10 @@ WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result) {
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
+}
+
+WEBVIEW_API const webview_version_info_t *webview_version() {
+  return &webview::detail::library_version_info;
 }
 
 #endif /* WEBVIEW_HEADER */
