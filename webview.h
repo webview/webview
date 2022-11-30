@@ -1584,53 +1584,38 @@ public:
   using binding_t = std::function<void(std::string, std::string, void *)>;
   class binding_ctx_t {
   public:
-    binding_ctx_t(binding_t *callback, void *arg, bool sync = true)
-        : callback(callback), arg(arg), sync(sync) {}
+    binding_ctx_t(binding_t callback, void *arg)
+        : callback(callback), arg(arg) {}
     // This function is called upon execution of the bound JS function
-    binding_t *callback;
+    binding_t callback;
     // This user-supplied argument is passed to the callback
     void *arg;
-    // This boolean expresses whether or not this binding is synchronous or asynchronous
-    // Async bindings require the user to call the resolve function, sync bindings don't
-    bool sync;
   };
 
   using sync_binding_t = std::function<std::string(std::string)>;
-  using sync_binding_ctx_t = std::pair<webview *, sync_binding_t>;
 
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
-    if (bindings.count(name) == 0) {
-      bindings[name] = new binding_ctx_t(
-          new binding_t(
-              [](const std::string &seq, const std::string &req, void *arg) {
-                auto pair = static_cast<sync_binding_ctx_t *>(arg);
-                pair->first->resolve(seq, 0, pair->second(req));
-              }),
-          new sync_binding_ctx_t(this, fn));
-      bind_js(name);
-    }
+    auto wrapper = [this, fn](const std::string &seq, const std::string &req,
+                              void *arg) { resolve(seq, 0, fn(req)); };
+    bind(name, wrapper, nullptr);
   }
 
   // Asynchronous bind
-  void bind(const std::string &name, binding_t f, void *arg) {
+  void bind(const std::string &name, binding_t fn, void *arg) {
     if (bindings.count(name) == 0) {
-      bindings[name] = new binding_ctx_t(new binding_t(f), arg, false);
+      bindings.emplace(name, binding_ctx_t(fn, arg));
       bind_js(name);
     }
   }
 
   void unbind(const std::string &name) {
-    if (bindings.find(name) != bindings.end()) {
+    auto found = bindings.find(name);
+    if (found != bindings.end()) {
       auto js = "delete window['" + name + "'];";
       init(js);
       eval(js);
-      delete bindings[name]->callback;
-      if (bindings[name]->sync) {
-        delete static_cast<sync_binding_ctx_t *>(bindings[name]->arg);
-      }
-      delete bindings[name];
-      bindings.erase(name);
+      bindings.erase(found);
     }
   }
 
@@ -1674,14 +1659,15 @@ private:
     auto seq = detail::json_parse(msg, "id", 0);
     auto name = detail::json_parse(msg, "method", 0);
     auto args = detail::json_parse(msg, "params", 0);
-    if (bindings.find(name) == bindings.end()) {
+    auto found = bindings.find(name);
+    if (found == bindings.end()) {
       return;
     }
-    auto fn = bindings[name];
-    (*fn->callback)(seq, args, fn->arg);
+    const auto &context = found->second;
+    context.callback(seq, args, context.arg);
   }
 
-  std::map<std::string, binding_ctx_t *> bindings;
+  std::map<std::string, binding_ctx_t> bindings;
 };
 } // namespace webview
 
