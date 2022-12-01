@@ -1603,10 +1603,30 @@ public:
 
   // Asynchronous bind
   void bind(const std::string &name, binding_t fn, void *arg) {
-    if (bindings.count(name) == 0) {
-      bindings.emplace(name, binding_ctx_t(fn, arg));
-      bind_js(name);
+    if (bindings.count(name) > 0) {
+      return;
     }
+    bindings.emplace(name, binding_ctx_t(fn, arg));
+    auto js = "(function() { var name = '" + name + "';" + R"(
+      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
+      window[name] = function() {
+        var seq = RPC.nextSeq++;
+        var promise = new Promise(function(resolve, reject) {
+          RPC[seq] = {
+            resolve: resolve,
+            reject: reject,
+          };
+        });
+        window.external.invoke(JSON.stringify({
+          id: seq,
+          method: name,
+          params: Array.prototype.slice.call(arguments),
+        }));
+        return promise;
+      }
+    })())";
+    init(js);
+    eval(js);
   }
 
   void unbind(const std::string &name) {
@@ -1632,29 +1652,6 @@ public:
   }
 
 private:
-  void bind_js(const std::string &name) {
-    auto js = "(function() { var name = '" + name + "';" + R"(
-      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
-      window[name] = function() {
-        var seq = RPC.nextSeq++;
-        var promise = new Promise(function(resolve, reject) {
-          RPC[seq] = {
-            resolve: resolve,
-            reject: reject,
-          };
-        });
-        window.external.invoke(JSON.stringify({
-          id: seq,
-          method: name,
-          params: Array.prototype.slice.call(arguments),
-        }));
-        return promise;
-      }
-    })())";
-    init(js);
-    eval(js);
-  }
-
   void on_message(const std::string &msg) {
     auto seq = detail::json_parse(msg, "id", 0);
     auto name = detail::json_parse(msg, "method", 0);
