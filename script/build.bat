@@ -480,7 +480,6 @@ rem Attempt to find and activate the specified toolchain.
 
 rem Find and activate MinGW-w64.
 :activate_mingw arch
-    where c++.exe > nul 2>&1 && goto :eof || cmd /c exit /b 0
     setlocal
     set arch=%~1
     set mingw_path=
