@@ -390,6 +390,8 @@ rem Run Go tests.
     ) else if "!arch!" == "x86" (
         set GOARCH=386
     )
+    set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
+    set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!"
     set CGO_ENABLED=1
     set "PATH=!PATH!;!build_arch_dir!"
     go test || (endlocal & exit /b 1)
