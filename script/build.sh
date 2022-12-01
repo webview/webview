@@ -240,25 +240,26 @@ function build {
 
 # Build the library.
 function build_library {
-    compile library "${src_dir}/webview.cc" "library" || return
+    compile object "${src_dir}/webview.cc" "library" "${build_arch_dir}" || return
+    compile shared_library "${src_dir}/webview.cc" "shared library" "${build_arch_dir}" || return
 }
 
 # Build examples.
 function build_examples {
     while read file; do
-        compile exe "${file}" "example" || return
-    done <<< "$(find "${src_dir}" -type f \
-        -path "${examples_dir}/*.c" \
-        -or -path "${examples_dir}/*.cc")"
+        local link_params=("${link_params[@]}" "-L${build_arch_dir}" "-lwebview")
+        compile exe "${file}" "example" "${build_arch_dir}/examples/c" || return
+    done <<< "$(find "${src_dir}" -type f -path "${examples_dir}/*.c")"
+    while read file; do
+        compile exe "${file}" "example" "${build_arch_dir}/examples/cc" || return
+    done <<< "$(find "${src_dir}" -type f -path "${examples_dir}/*.cc")"
 }
 
 # Build tests.
 function build_tests {
     while read file; do
-        compile exe "${file}" "test" || return
-    done <<< "$(find "${src_dir}" -type f \
-        -path "${src_dir}/*_test.c" \
-        -or -path "${src_dir}/*_test.cc")"
+        compile exe "${file}" "test" "${build_arch_dir}" || return
+    done <<< "$(find "${src_dir}" -type f -path "${src_dir}/*_test.cc")"
 }
 
 # Run tests.
@@ -292,43 +293,59 @@ function go_run_tests {
     GOARCH=${GOARCH} CGO_ENABLED=1 go test || return
 }
 
-# Compile a C/C++ file into an executable or library.
+# Compile a C/C++ file into an object file, executable or shared library.
 function compile {
     local type=${1}
-    if [[ "${type}" != "exe" && "${type}" != "library" ]]; then
+    if [[ "${type}" != "exe" && "${type}" != "object" && "${type}" != "shared_library" ]]; then
         echo "Error: Invalid type: ${type}." >&2
         return 1
     fi
     local file=${2}
     local description=${3}
+    local output_dir=${4}
     local name=$(basename "-s.${file##*.}" "${file}")
     local ext=${file##*.}
-    local output_path_excl_ext=${build_arch_dir}/${name}
     local message="Building ${description} ${name} (${arch})..."
     echo "${message}"
+    if [[ ! -d "${output_dir}" ]]; then
+        mkdir -p ${output_dir} || return
+    fi
     "compile_${type}_${ext}" || return
 }
 
-function compile_library_c {
+function compile_object_c {
+    cc -c "${file}" "${common_params[@]}" "${cc_params[@]}" \
+        -o "${output_dir}/${name}.o" || return
+}
+
+function compile_object_cc {
+    c++ -c "${file}" "${common_params[@]}" "${cxx_params[@]}" \
+        -o "${output_dir}/${name}.o" || return
+}
+
+function compile_shared_library_c {
     echo "Error: Invalid combination (${type}, ${ext})." >&2
     return 1
 }
 
-function compile_library_cc {
-    c++ -c "${file}" "${common_params[@]}" "${cxx_params[@]}" \
-        -o "${output_path_excl_ext}.o" || return
+function compile_shared_library_cc {
+    if [[ "$(uname)" = "Darwin" ]]; then
+        local output_name_ext=.dylib
+    else
+        local output_name_ext=.so
+    fi
+    c++ -fPIC --shared "${file}" "${common_params[@]}" "${cxx_params[@]}" "${link_params[@]}" \
+        -o "${output_dir}/lib${name}${output_name_ext}" || return
 }
 
 function compile_exe_c {
-    cc -c "${file}" "${common_params[@]}" -o "${output_path_excl_ext}.o"|| return
-    c++ "${output_path_excl_ext}.o" "${build_arch_dir}/webview.o" \
-        "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
-        -o "${output_path_excl_ext}"|| return
+    cc "${file}" "${common_params[@]}" "${link_params[@]}" "${cc_params[@]}" \
+        -o "${output_dir}/${name}"|| return
 }
 
 function compile_exe_cc {
     c++ "${file}" "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
-        -o "${output_path_excl_ext}" || return
+        -o "${output_dir}/${name}" || return
 }
 
 # Parses a command line option prefixed with "--".
