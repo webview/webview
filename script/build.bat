@@ -420,10 +420,21 @@ rem Run Go tests.
     ) else if "!arch!" == "x86" (
         set GOARCH=386
     )
-    rem Note: Arguments are not quoted here in order to be compatible with versions
-    rem of Go earlier than 1.18. Make sure that paths do not contain spaces.
-    set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
-    set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!"
+    rem Argument quoting only works for Go 1.18 and later.
+    rem We therefore conditionally quote arguments in CGO_CXXFLAGS and CGO_LDFLAGS
+    rem based on the version of Go.
+    call :get_go_version go_version || (endlocal & exit /b 1)
+    call :parse_version "!go_version!" go_version_major go_version_minor || (endlocal & exit /b 1)
+    set use_quoted_args=false
+    if "!go_version_major!" gtr "1" set use_quoted_args=true
+    if "!go_version_major!" == "1" if "!go_version_minor!" geq "18" set use_quoted_args=true
+    if "!use_quoted_args!" == "true" (
+        set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
+        set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!"
+    ) else (
+        set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
+        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!"
+    )
     set CGO_ENABLED=1
     set "PATH=!PATH!;!build_arch_dir!"
     go test || (endlocal & exit /b 1)
@@ -738,3 +749,37 @@ rem Get the host machine/CPU architecture.
     )
     endlocal & set __result__=%__result__%
     goto :eof
+
+rem Extract the MAJOR.MINOR.PATCH version number of Go from the output of the "go version" command.
+:get_go_version version
+    setlocal
+    for /f "usebackq tokens=1-4" %%a in (`go version`) do (
+        rem Example output: go version go1.19.3 windows/amd64
+        if "%%a" == "go" if "%%b" == "version" (
+            set version=%%c
+            set version=!version:go=!
+        )
+    )
+    if "!version!" == "" (endlocal & goto :eof)
+    endlocal & set "%~1=%version%"
+    goto :eof
+
+rem Parses a MAJOR.MINOR.PATCH version number and returns each element in the specified variables.
+:parse_version version major minor patch
+    setlocal
+    if "%~1" == "" (endlocal & exit /b 1)
+    for /f "tokens=1-3 delims=." %%a in ("%~1") do (
+        set major=%%a
+        set minor=%%b
+        set patch=%%c
+    )
+    if "!major!" == "" (endlocal & exit /b 1)
+    if "!minor!" == "" (endlocal & exit /b 1)
+    if "!patch!" == "" (endlocal & exit /b 1)
+    endlocal & (
+        if not "%~2" == ""  set "%~2=%major%"
+        if not "%~3" == ""  set "%~3=%minor%"
+        if not "%~4" == ""  set "%~4=%patch%"
+    )
+    goto :eof
+
