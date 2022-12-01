@@ -305,12 +305,20 @@ rem All tasks related to building and testing are to be invoked here.
         )
     )
 
+    rem We should copy runtime dependencies to the build directory if we are building or running tests.
+    set copy_deps_to_build_dir=false
+    call :is_true_string "!option_build!"
+    if "!__result__!" == "true" set copy_deps_to_build_dir=true
+    call :is_true_string "!option_test!"
+    if "!__result__!" == "true" set copy_deps_to_build_dir=true
+    call :is_true_string "!option_go_test!"
+    if "!__result__!" == "true" set copy_deps_to_build_dir=true
+
     call :is_false_string "!option_lint!"
     if not "!__result__!" == "true" call :lint || goto :eof
 
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
-        call :copy_deps || goto :eof
         if not exist "!build_arch_dir!" mkdir "!build_arch_dir!" || goto :eof
         call :build_shared_library || goto :eof
     )
@@ -323,6 +331,9 @@ rem All tasks related to building and testing are to be invoked here.
 
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" call :run_tests || goto :eof
+
+    call :is_true_string "!copy_deps_to_build_dir!"
+    if "!__result__!" == "true" call :copy_deps || goto :eof
 
     call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" call :go_run_tests || goto :eof
