@@ -76,6 +76,7 @@ goto :eof
     echo     program [--clean] [--build] [--build-examples] [--build-tests]
     echo             [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]
     echo             [--webview2-version=VERSION] [--toolchain=TOOLCHAIN]
+    echo             [--fetch-deps]
     echo.
     echo Options:
     echo     --help                      Display this help text.
@@ -89,7 +90,7 @@ goto :eof
     echo     --reformat                  Reformat code (requires clang-format).
     echo     --lint                      Run lint checks (requires clang-tidy).
     echo     --lint=lax                  Run lint checks in lax mode.
-    echo     --go-test                   Run Go tests (implies --build).
+    echo     --go-test                   Run Go tests (implies --fetch-deps).
     echo     --webview2-version=VERSION  WebView2 version to use.
     echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
     echo                                 Choices: msvc, mingw.
@@ -143,12 +144,12 @@ rem Make sure to allow the user to override options that are being set here.
         )
     )
 
-    rem Running Go tests requires building library.
+    rem Running Go tests requires fetching dependencies.
     call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly build
+        call :is_option_set_explicitly fetch_deps
         if not "!__result__!" == "true" (
-            set option_build=true
+            set option_fetch_deps=true
         )
     )
 
