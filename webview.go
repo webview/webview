@@ -8,7 +8,7 @@ package webview
 #cgo darwin LDFLAGS: -framework WebKit
 
 #cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
-#cgo windows LDFLAGS: -lWebView2Loader -lole32 -lshell32 -lshlwapi -luser32
+#cgo windows LDFLAGS: -static -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32
 
 #include "webview.h"
 
@@ -139,11 +139,14 @@ func New(debug bool) WebView { return NewWindow(debug, nil) }
 // a pointer to the native window handle. If it's non-null - then child WebView is
 // embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be passed
-// here.
+// here. Returns nil on failure. Creation can fail for various reasons such as when
+// required runtime dependencies are missing or when window creation fails.
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
-	w := &webview{}
-	w.w = C.webview_create(boolToInt(debug), window)
-	return w
+	res := C.webview_create(boolToInt(debug), window)
+	if res == nil {
+		return nil
+	}
+	return &webview{w: res}
 }
 
 func (w *webview) Destroy() {

@@ -54,7 +54,7 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. Use the Command shell on Windows with these instructions rather than PowerShell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
 You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
 
@@ -63,13 +63,11 @@ Start with creating a new directory structure for your project:
 ```sh
 mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
 ```
 
 ### Windows Preperation
 
-The [WebView2 library][ms-webview2-lib] is required when compiling programs:
+The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
 
 ```bat
 mkdir libs\webview2
@@ -80,6 +78,15 @@ copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 > **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
 
 > **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
+
+### C/C++ Preparation
+
+Fetch the webview library:
+
+```sh
+curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
+curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+```
 
 ### Getting Started with C++
 
@@ -97,7 +104,7 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 #### Bonus for Visual C++
@@ -145,31 +152,38 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
 
 See [Go package documentation][go-docs] for the Go API documentation, or simply read the source code.
 
-Create a new module and install the package:
+Create a new Go module:
 
 ```sh
 go mod init example.com/m
-go get github.com/webview/webview
 ```
 
 On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
 
 ```bat
-set CGO_CPPFLAGS="-I%cd%\libs\webview2\build\native\include"
+set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
 set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
+
+> **Note:** Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
 
 Save the basic Go example into your project directory:
 
 ```sh
 curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/basic.go"
+```
+
+Install dependencies:
+
+```sh
+go get github.com/webview/webview
 ```
 
 Build and run the example:
@@ -181,27 +195,9 @@ go build -o build/basic basic.go && ./build/basic
 go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
 ```
 
-> **Note:** On macOS you would typically [create a bundle](#macos-application-bundle) for your app with an icon and proper metadata.
-
 ### More Examples
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
-
-## Development
-
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
-
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
-
-## MinGW-w64 Requirements
-
-In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
-
-Distributions that are known to be compatible:
-
-* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
-* [MSYS2](https://www.msys2.org/)
-* [WinLibs](https://winlibs.com/)
 
 ## App Distribution
 
@@ -209,10 +205,12 @@ Distribution of your app is outside the scope of this library but we can give so
 
 ### macOS Application Bundle
 
+On macOS you would typically create a bundle for your app with an icon and proper metadata.
+
 A minimalistic bundle typically has the following directory structure:
 
 ```
-example.app                 bundle (zip archive)
+example.app                 bundle
 └── Contents
     ├── Info.plist          information property list
     ├── MacOS
@@ -229,7 +227,48 @@ Read more about the [structure of bundles][macos-app-bundle] at the Apple Develo
 
 You would typically create a resource script file (`*.rc`) with information about the app as well as an icon. Since you should have MinGW-w64 readily available then you can compile the file using `windres` and link it into your program. If you instead use Visual C++ then look into the [Windows Resource Compiler][win32-rc].
 
-Remember to bundle `WebView2Loader.dll` unless you linked it statically.
+The directory structure could look like this:
+
+```
+my-project/
+├── icons/
+|   ├── application.ico
+|   └── window.ico
+├── basic.cc
+└── resources.rc
+```
+
+`resources.rc`:
+```
+100 ICON "icons\\application.ico"
+32512 ICON "icons\\window.ico"
+```
+
+> **Note:** The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
+
+Compile:
+```sh
+windres -o build/resources.o resources.rc
+g++ basic.cc build/resources.o [...]
+```
+
+Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
+
+## MinGW-w64 Requirements
+
+In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
+
+Distributions that are known to be compatible:
+
+* [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
+* [MSYS2](https://www.msys2.org/)
+* [WinLibs](https://winlibs.com/)
+
+## Development
+
+To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+
+> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
 
 ## Limitations
 
@@ -249,15 +288,18 @@ Language    | Project
 ----------  | -------
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
-Go          | [webview/webview](https://github.com/webview/webview)
+Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)
+Go          | [webview/webview][webview]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [shannah/webviewjar](https://github.com/shannah/webviewjar)
+Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/webviewko)
 Nim         | [oskca/webview](https://github.com/oskca/webview)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
+V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 
@@ -274,9 +316,10 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
 [webkitgtk]:         https://webkitgtk.org/
+[webview]:           https://github.com/webview/webview
 [webview.dev]:       https://webview.dev
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-[ms-webview2-lib]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
+[ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
 [win32-rc]:          https://docs.microsoft.com/en-us/windows/win32/menurc/resource-compiler
