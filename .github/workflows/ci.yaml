@@ -48,15 +48,41 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x86, x64]
+        toolchain: [mingw, msvc]
+        include:
+          - arch: x64
+            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-x86_64-posix-seh-gcc-12.2.0-mingw-w64msvcrt-10.0.0-r2.zip
+            mingw_hash: 06be414c7d2e4b91bcfd089d693d942d824e686d244a25709e72a78d30b82ea4
+          - arch: x86
+            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-12.2.0-mingw-w64msvcrt-10.0.0-r2.zip
+            mingw_hash: 03fc9f818f7691b43bfcd12b6c631e0ba662d1a82bde62718e6aa32d07a251f1
     steps:
       - uses: actions/checkout@v3
+      # Replace the existing MinGW-w64 installation so that we have more control over the versions
+      # we use, and this also allows us to have 64-bit and 32-bit versions side by side.
+      # The MinGW-w64 distribution from https://winlibs.com/ is known to have good compatibility
+      # with the webview library.
+      # Distribution: GCC 12.2.0 + MinGW-w64 10.0.0 (MSVCRT) - release 2
+      # The MSVCRT runtime was chosen over UCRT because MSVCRT is available on old versions of Windows
+      # while UCRT has only been shipped with Windows since Windows 10.
+      - name: Uninstall MinGW-w64
+        if: matrix.toolchain == 'mingw'
+        run: choco uninstall mingw
+      - name: Install MinGW-w64
+        if: matrix.toolchain == 'mingw'
+        run: |
+          $ProgressPreference = "SilentlyContinue"
+          $temp_dir = [System.IO.Path]::GetTempPath()
+          $zip_path = Join-Path $temp_dir ([System.IO.Path]::GetRandomFileName() + ".zip")
+          Invoke-WebRequest -Uri "${{ matrix.mingw_url }}" -OutFile $zip_path
+          Expand-Archive -LiteralPath $zip_path -DestinationPath "${env:SystemDrive}\"
       - name: Build and run tests
-        run: script\build.bat --target-arch=${{ matrix.arch }} --build-examples --test
+        run: script\build.bat --target-arch=${{ matrix.arch }} --toolchain=${{ matrix.toolchain }} --build-examples --test
         shell: cmd
       - name: Run Go tests
-        if: matrix.arch == 'x64'
-        run: script\build.bat --build=false --go-test
+        if: matrix.toolchain == 'mingw'
+        run: script\build.bat --target-arch=${{ matrix.arch }} --build=false --go-test
         shell: cmd
 
   clang-format:
