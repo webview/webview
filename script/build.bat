@@ -282,8 +282,9 @@ rem All tasks related to building and testing are to be invoked here.
     if "!option_toolchain!" == "msvc" (
         rem 4100: unreferenced formal parameter
         set warning_params=/W4 /wd4100
-        set common_params=/nologo /utf-8 !warning_params! "/Fo!build_arch_dir!"\ ^
-            "/I!src_dir!" "!webview2_dir!\build\native\!arch!\WebView2Loader.dll.lib"
+        set common_params=/nologo /utf-8 !warning_params! ^
+            "/I!src_dir!"
+        set link_params="!webview2_dir!\build\native\!arch!\WebView2Loader.dll.lib"
         set cc_params=/std:c11
         set cxx_params=/std:c++17 /EHsc /DWEBVIEW_EDGE ^
             "/I!webview2_dir!\build\native\include"
@@ -321,7 +322,7 @@ rem All tasks related to building and testing are to be invoked here.
     call :is_true_string "!option_build!"
     if "!__result__!" == "true" (
         if not exist "!build_arch_dir!" mkdir "!build_arch_dir!" || goto :eof
-        call :build_shared_library || goto :eof
+        call :build_library || goto :eof
     )
 
     call :is_true_string "!option_build_examples!"
@@ -330,11 +331,11 @@ rem All tasks related to building and testing are to be invoked here.
     call :is_true_string "!option_build_tests!"
     if "!__result__!" == "true" call :build_tests || goto :eof
 
-    call :is_true_string "!option_test!"
-    if "!__result__!" == "true" call :run_tests || goto :eof
-
     call :is_true_string "!copy_deps_to_build_dir!"
     if "!__result__!" == "true" call :copy_deps || goto :eof
+
+    call :is_true_string "!option_test!"
+    if "!__result__!" == "true" call :run_tests || goto :eof
 
     call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" call :go_run_tests || goto :eof
@@ -345,29 +346,46 @@ rem Copy external dependencies into the build directory.
 :copy_deps
     echo Copying dependencies (!arch!)...
     rem Copy only if needed
-    robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "WebView2Loader.dll" > nul
+    call :is_true_string "!option_build_examples!"
+    if "!__result__!" == "true" (
+        robocopy "!build_arch_dir!" "!build_arch_dir!\examples\c" "*.dll" > nul
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\c" "*.dll" > nul
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\cc" "*.dll" > nul
+    )
+    robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "*.dll" > nul
     exit /b 0
 
 rem Build the library.
-:build_shared_library
+:build_library
     call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
-    call :compile shared_library "!src_dir!\webview.cc" "shared library" || goto :eof
+    call :compile shared_library "!src_dir!\webview.cc" "shared library" "!build_arch_dir!" || goto :eof
     goto :eof
 
 rem Build examples.
 :build_examples
     call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
-    for %%f in ("!examples_dir!\*.c" "!examples_dir!\*.cc") do (
-        call :compile exe "%%f" "example" || goto :build_examples_loop_end
+    setlocal
+    if "!option_toolchain!" == "msvc" (
+        set link_params=!link_params! "!build_arch_dir!\webview.lib"
+    ) else if "!option_toolchain!" == "mingw" (
+        set link_params=!link_params! "-L!build_arch_dir!" -lwebview
+    )
+    for %%f in ("!examples_dir!\*.c") do (
+        call :compile exe "%%f" "C example" "!build_arch_dir!/examples/c" || goto :build_examples_loop_end
+    )
+    endlocal
+    for %%f in ("!examples_dir!\*.cc") do (
+        call :compile exe "%%f" "C++ example" "!build_arch_dir!/examples/cc" || goto :build_examples_loop_end
     )
 :build_examples_loop_end
+    endlocal
     goto :eof
 
 rem Build tests.
 :build_tests
     call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
-    for %%f in ("!src_dir!\*_test.c" "!src_dir!\*_test.cc") do (
-        call :compile exe "%%f" "test" || goto :build_tests_loop_end
+    for %%f in ("!src_dir!\*_test.cc") do (
+        call :compile exe "%%f" "test" "!build_arch_dir!" || goto :build_tests_loop_end
     )
 :build_tests_loop_end
     goto :eof
@@ -402,15 +420,17 @@ rem Run Go tests.
     ) else if "!arch!" == "x86" (
         set GOARCH=386
     )
-    set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
-    set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!"
+    rem Note: Arguments are not quoted here in order to be compatible with versions
+    rem of Go earlier than 1.18. Make sure that paths do not contain spaces.
+    set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
+    set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!"
     set CGO_ENABLED=1
     set "PATH=!PATH!;!build_arch_dir!"
     go test || (endlocal & exit /b 1)
     endlocal
     goto :eof
 
-rem Compile a C/C++ file into an executable or library.
+rem Compile a C/C++ file into an executable or shared library.
 :compile type file description
     if not "%~1" == "exe" if not "%~1" == "shared_library" (
         echo Error: Invalid type : %~1>&2
@@ -423,48 +443,54 @@ rem Compile a C/C++ file into an executable or library.
     set ext=%~x2
     set ext=!ext:~1!
     set description=%~3
-    set output_path_excl_ext=!build_arch_dir!\!name!
+    set output_dir=%~4
     set message=Building !description! !name! (!arch!)...
     echo !message!
+    if not exist "!output_dir!" mkdir "!output_dir!" || (endlocal & exit /b 1)
     call :compile_!type!_!option_toolchain!_!ext! || (endlocal & exit /b 1)
     endlocal
     goto :eof
 
-:compile_shared_library_mingw_c
 :compile_shared_library_msvc_c
+:compile_shared_library_mingw_c
     echo Error: Invalid combination (!type!, !option_toolchain!, !ext!).>&2
     exit /b 1
 
 :compile_shared_library_msvc_cc
-    cl !common_params! !cxx_params! "/DWEBVIEW_API=__declspec(dllexport)" "!file!" ^
-        /link /DLL "/OUT:!output_path_excl_ext!.dll"
+    cl !common_params! !cxx_params! !link_params! ^
+        "/DWEBVIEW_API=__declspec(dllexport)" ^
+        "!file!" ^
+        "/Fo:!output_dir!\\" ^
+        /link /DLL "/OUT:!output_dir!/!name!.dll"
     goto :eof
 
 :compile_shared_library_mingw_cc
     g++ -fPIC --shared "!file!" !common_params! !cxx_params! !link_params! ^
-        -o "!output_path_excl_ext!.dll"
+        -o "!output_dir!/!name!.dll"
     goto :eof
 
 :compile_exe_msvc_c
-    cl !common_params! !cc_params! "!build_arch_dir!\webview.lib" "!file!" ^
-        /link "/OUT:!output_path_excl_ext!.exe"
+    cl !common_params! !cc_params! !link_params! "!file!" ^
+         "/Fo:!output_dir!\\" ^
+        /link "/OUT:!output_dir!/!name!.exe"
     goto :eof
 
 :compile_exe_msvc_cc
-    cl !common_params! !cxx_params! "!build_arch_dir!\webview.lib" "!file!" ^
-        /link "/OUT:!output_path_excl_ext!.exe"
+    cl !common_params! !cxx_params! !link_params! "!file!" ^
+         "/Fo:!output_dir!\\" ^
+        /link "/OUT:!output_dir!/!name!.exe"
     goto :eof
 
 :compile_exe_mingw_c
     gcc "!file!" !common_params! !cc_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
-        -o "!output_path_excl_ext!.exe"
+        -o "!output_dir!/!name!.exe"
     goto :eof
 
 :compile_exe_mingw_cc
     g++ "!file!" !common_params! !cxx_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
-        -o "!output_path_excl_ext!.exe"
+        -o "!output_dir!/!name!.exe"
     goto :eof
 
 rem Fetch dependencies.
