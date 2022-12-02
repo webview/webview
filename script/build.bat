@@ -372,7 +372,7 @@ rem All tasks related to building and testing are to be invoked here.
 
     goto :eof
 
-rem Copy external dependencies into the build directory.
+rem Copy dependencies into the build directory.
 :copy_deps
     echo Copying dependencies (!arch!)...
     rem Copy only if needed
