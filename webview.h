@@ -170,7 +170,8 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void *arg);
 
 // Removes a native C callback that was previously set by webview_bind.
-WEBVIEW_API void webview_unbind_return(webview_t w, const char *name, void *&arg);
+WEBVIEW_API void webview_unbind_return(webview_t w, const char *name,
+                                       void *&arg);
 
 // Unbind, but without passing a void * argument by reference
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
@@ -1646,7 +1647,7 @@ public:
 
   // overload if the user does not need the bound argument
   void unbind(const std::string &name) {
-    void* ptr;
+    void *ptr;
     unbind(name, ptr);
   }
 
@@ -1746,7 +1747,8 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
       arg);
 }
 
-WEBVIEW_API void webview_unbind_return(webview_t w, const char *name, void *&arg) {
+WEBVIEW_API void webview_unbind_return(webview_t w, const char *name,
+                                       void *&arg) {
   static_cast<webview::webview *>(w)->unbind(name, arg);
 }
 
