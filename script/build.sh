@@ -274,6 +274,12 @@ function build_library {
 
 # Build examples.
 function build_examples {
+    if [[ "$(uname)" = "Darwin" ]]; then
+        # Bundled
+        link_params+=(-rpath @executable_path/../Frameworks)
+        # Non-bundled
+        link_params+=(-rpath @executable_path)
+    fi
     while read file; do
         local link_params=("${link_params[@]}" "-L${build_arch_dir}" "-lwebview")
         compile exe "${file}" "C example" "${build_arch_dir}/examples/c" || return
@@ -374,6 +380,7 @@ function compile_shared_library_c {
 function compile_shared_library_cc {
     if [[ "$(uname)" = "Darwin" ]]; then
         local output_name_ext=.dylib
+        link_params+=(-Wl,-install_name,'@rpath/libwebview.dylib')
     else
         local output_name_ext=.so
     fi
