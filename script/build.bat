@@ -11,6 +11,7 @@ set option_test=false
 set option_target_arch=
 set option_reformat=false
 set option_lint=false
+set option_go_build_examples=false
 set option_go_test=false
 set option_webview2_version=1.0.1150.38
 set option_toolchain=msvc
@@ -77,8 +78,8 @@ goto :eof
     echo     program --help
     echo     program [--clean] [--build] [--build-examples] [--build-tests]
     echo             [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]
-    echo             [--cc=PATH] [--cxx=PATH] [--go-test] [--fetch-deps]
-    echo             [--toolchain=TOOLCHAIN] [--webview2-version=VERSION]
+    echo             [--cc=PATH] [--cxx=PATH] [--go-build-examples] [--go-test]
+    echo             [--fetch-deps] [--toolchain=TOOLCHAIN] [--webview2-version=VERSION]
     echo.
     echo Options:
     echo     --help                      Display this help text.
@@ -98,6 +99,7 @@ goto :eof
     echo     --cxx                       C++ compiler binary, e.g. c++, g++ or clang++.
     echo                                 Currently only supported with MinGW.
     echo                                 Can be set by the CXX environment variable.
+    echo     --go-build-examples         Build Go examples.
     echo     --go-test                   Run Go tests (implies --fetch-deps).
     echo     --fetch-deps                Fetch library dependencies.
     echo                                 Implied when building and linting.
@@ -129,6 +131,7 @@ rem Print option and their current values in a human-readable way.
     echo   Run lint checks: !option_lint!
     echo   C compiler: !option_cc!
     echo   C++ compiler: !option_cxx!
+    echo   Build Go examples: !option_go_build_examples!
     echo   Run Go tests: !option_go_test!
     echo   Fetch dependencies: !option_fetch_deps!
     echo   Toolchain: !option_toolchain!
@@ -335,6 +338,8 @@ rem All tasks related to building and testing are to be invoked here.
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
+    call :is_true_string "!option_go_build_examples!"
+    if "!__result__!" == "true" set copy_deps_to_build_dir=true
     call :is_true_string "!option_go_test!"
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
 
@@ -349,6 +354,9 @@ rem All tasks related to building and testing are to be invoked here.
 
     call :is_true_string "!option_build_examples!"
     if "!__result__!" == "true" call :build_examples || goto :eof
+
+    call :is_true_string "!option_go_build_examples!"
+    if "!__result__!" == "true" call :go_build_examples || goto :eof
 
     call :is_true_string "!option_build_tests!"
     if "!__result__!" == "true" call :build_tests || goto :eof
@@ -373,6 +381,10 @@ rem Copy external dependencies into the build directory.
         robocopy "!build_arch_dir!" "!build_arch_dir!\examples\c" "*.dll" > nul
         robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\c" "*.dll" > nul
         robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\cc" "*.dll" > nul
+    )
+    call :is_true_string "!option_go_build_examples!"
+    if "!__result__!" == "true" (
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\go" "*.dll" > nul
     )
     robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "*.dll" > nul
     exit /b 0
@@ -438,6 +450,42 @@ rem Run tests.
     endlocal
     goto :eof
 
+rem Build Go examples.
+:go_build_examples
+    call :activate_toolchain mingw "!arch!" || goto :eof
+    setlocal
+    if "!arch!" == "x64" (
+        set GOARCH=amd64
+    ) else if "!arch!" == "x86" (
+        set GOARCH=386
+    )
+    rem Argument quoting only works for Go 1.18 and later.
+    rem We therefore conditionally quote arguments in CGO_CXXFLAGS and CGO_LDFLAGS
+    rem based on the version of Go.
+    call :get_go_version go_version || (endlocal & exit /b 1)
+    call :parse_version "!go_version!" go_version_major go_version_minor || (endlocal & exit /b 1)
+    set use_quoted_args=false
+    if "!go_version_major!" gtr "1" set use_quoted_args=true
+    if "!go_version_major!" == "1" if "!go_version_minor!" geq "18" set use_quoted_args=true
+    rem Linking pthread fixes error when using Clang
+    if "!use_quoted_args!" == "true" (
+        set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
+        set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!" -pthread
+    ) else (
+        set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
+        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!" -pthread
+    )
+    set "CC=!option_cc!"
+    set "CXX=!option_cxx!"
+    set CGO_ENABLED=1
+    for %%f in ("!examples_dir!\*.go") do (
+        echo Building Go example %%~nf ^(!arch!^)...
+        go build -o "!build_arch_dir!/examples/go/%%~nf.exe" "%%~f" || goto :go_build_examples_loop_end
+    )
+:go_build_examples_loop_end
+    endlocal
+    goto :eof
+
 rem Run Go tests.
 :go_run_tests
     call :activate_toolchain mingw "!arch!" || goto :eof
@@ -462,7 +510,7 @@ rem Run Go tests.
         set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!" -pthread
     ) else (
         set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
-        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!" -pthread
+        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch! -pthread"
     )
     set "CC=!option_cc!"
     set "CXX=!option_cxx!"
