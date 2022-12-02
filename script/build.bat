@@ -19,6 +19,9 @@ set option_fetch_deps=false
 set option_cc=
 set option_cxx=
 
+rem Support options not meant to be specified on the command line.
+set option_go_build=false
+
 call :main %*
 goto :eof
 
@@ -157,8 +160,20 @@ rem Make sure to allow the user to override options that are being set here.
         )
     )
 
-    rem Running Go tests requires fetching dependencies.
+    rem Building Go examples requires building.
+    call :is_true_string "!option_go_build_examples!" || goto :eof
+    if "!__result__!" == "true" (
+        set option_go_build=true
+    )
+
+    rem Running Go tests requires building.
     call :is_true_string "!option_go_test!" || goto :eof
+    if "!__result__!" == "true" (
+        set option_go_build=true
+    )
+
+    rem Building with Go requires fetching dependencies.
+    call :is_true_string "!option_go_build!" || goto :eof
     if "!__result__!" == "true" (
         call :is_option_set_explicitly fetch_deps || goto :eof
         if not "!__result__!" == "true" (
@@ -299,7 +314,16 @@ rem All tasks related to building and testing are to be invoked here.
     set arch=%~1
     set build_arch_dir=!build_dir!\!arch!
 
-    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
+    rem Toolchain activation.
+    call :is_true_string "!option_build!"
+    if "!__result__!" == "true" (
+        call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
+    )
+    rem Go needs MinGW regardless of the toolchain option.
+    call :is_true_string "!option_go_build!"
+    if "!__result__!" == "true" if not "!option_toolchain!" == "mingw" (
+        call :activate_toolchain mingw "!arch!" || goto :eof
+    )
     call :detect_compiler || goto :eof
 
     call :is_true_string "!option_clean!"
@@ -342,9 +366,7 @@ rem All tasks related to building and testing are to be invoked here.
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
     call :is_true_string "!option_test!"
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
-    call :is_true_string "!option_go_build_examples!"
-    if "!__result__!" == "true" set copy_deps_to_build_dir=true
-    call :is_true_string "!option_go_test!"
+    call :is_true_string "!option_go_build!"
     if "!__result__!" == "true" set copy_deps_to_build_dir=true
 
     call :is_false_string "!option_lint!"
@@ -454,7 +476,6 @@ rem Run tests.
 rem Build Go examples.
 :go_build_examples
     setlocal
-    call :activate_toolchain mingw "!arch!" || goto :eof
     if "!arch!" == "x64" (
         set GOARCH=amd64
     ) else if "!arch!" == "x86" (
@@ -490,7 +511,6 @@ rem Build Go examples.
 rem Run Go tests.
 :go_run_tests
     setlocal
-    call :activate_toolchain mingw "!arch!" || goto :eof
     echo Running Go tests (!arch!)...
     if "!arch!" == "x64" (
         set GOARCH=amd64
@@ -662,31 +682,31 @@ rem Set up a MSVC (VC++) environment if needed.
 :activate_msvc arch
     where cl.exe > nul 2>&1 && goto :eof || cmd /c exit /b 0
     call :find_msvc || goto :eof
-    echo Setting up VS environment ^(%~1^)...
+    echo Setting up MSVC environment ^(%~1^)...
     call :get_host_arch || goto :eof
     call "!vc_dir!\Common7\Tools\vsdevcmd.bat" -no_logo -arch=%~1 -host_arch=!__result__! || goto :eof
     goto :eof
 
 rem Find the latest installed MSVC (VC++).
 :find_msvc
-    echo Looking for vswhere.exe...
+    setlocal
+    rem Find vswhere.exe
     set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
     if not exist "!vswhere!" set "vswhere=!ProgramFiles!\Microsoft Visual Studio\Installer\vswhere.exe"
     if not exist "!vswhere!" (
         echo Error: Failed to find vswhere.exe>&2
-        exit /b 1
+        endlocal & exit /b 1
     )
-    echo Found !vswhere!.
-
-    echo Looking for VC...
+    rem Find VC tools
     for /f "usebackq tokens=*" %%i in (`"!vswhere!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
         set vc_dir=%%i
     )
     if not exist "!vc_dir!\Common7\Tools\vsdevcmd.bat" (
-        echo Error: Failed to find VC tools.>&2
-        exit /b 1
+        echo Error: Failed to find MSVC.>&2
+        endlocal & exit /b 1
     )
-    echo Found !vc_dir!.
+    echo MSVC found: !vc_dir!
+    endlocal & set vc_dir=%vc_dir%
     goto :eof
 
 rem Parses a command line option prefixed with "--".
@@ -832,6 +852,7 @@ rem Get the host machine/CPU architecture.
 
 rem Try to detect compiler
 :detect_compiler
+    if not "!option_cc!" == "" if not "!option_cxx!" == "" goto :eof
     rem Detection is currently only supported with MinGW-w64.
     if not "!option_toolchain!" == "mingw" goto :eof
     setlocal
@@ -842,7 +863,7 @@ rem Try to detect compiler
     rem Detect C compiler
     if "!option_cc!" == "" (
         for %%a in (!cc_compilers!) do (
-            where "%%a.exe" > nul 2> nul && (
+            where "%%a.exe" > nul 2>&1 && (
                 set option_cc=%%a
                 echo Detected C compiler: %%a
                 goto :detect_compiler_c_end
@@ -857,7 +878,7 @@ rem Try to detect compiler
     rem Detect C++ compiler
     if "!option_cxx!" == "" (
         for %%a in (!cxx_compilers!) do (
-            where "%%a.exe" > nul 2> nul && (
+            where "%%a.exe" > nul 2>&1 && (
                 set option_cxx=%%a
                 echo Detected C++ compiler: %%a
                 goto :detect_compiler_cxx_end

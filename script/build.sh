@@ -15,6 +15,9 @@ option_go_test=false
 option_cc=
 option_cxx=
 
+# Support options not meant to be specified on the command line.
+option_go_build=false
+
 function main {
     if [[ "${#@}" == "0" ]]; then
         print_help
@@ -128,6 +131,16 @@ function on_post_parse_options {
         option_build_tests=true
     fi
 
+    # Building Go examples requires building.
+    if [[ "$(is_true_string "${option_go_build_examples}")" == "true" ]]; then
+        option_go_build=true
+    fi
+
+    # Running Go tests requires building.
+    if [[ "$(is_true_string "${option_go_test}")" == "true" ]]; then
+        option_go_build=true
+    fi
+
     # Building examples requires building library.
     if [[ "$(is_true_string "${option_build_examples}")" == "true" && "$(is_option_set_explicitly build)" != "true" ]]; then
         option_build=true
@@ -238,8 +251,7 @@ function build {
     local copy_deps_to_build_dir=false
     if [[ "$(is_true_string "${option_build}")" == "true" \
         || "$(is_true_string "${option_test}")" == "true" \
-        || "$(is_true_string "${option_go_build_examples}")" == "true" \
-        || "$(is_true_string "${option_go_test}")" == "true" ]]; then
+        || "$(is_true_string "${option_go_build}")" == "true" ]]; then
         copy_deps_to_build_dir=true
     fi
 
@@ -510,6 +522,9 @@ function get_host_arch {
 
 # Try to detect compiler
 function detect_compiler {
+    if [[ ! -z "${option_cc}" && ! -z "${option_cxx}" ]]; then
+        return
+    fi
     local fallback_cc_compiler=cc
     local fallback_cxx_compiler=c++
     if [[ "$(uname)" = "Darwin" ]]; then
