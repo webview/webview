@@ -137,7 +137,7 @@ rem Print option and their current values in a human-readable way.
 
 rem Stores the option as a variable.
 :on_option_parsed name value
-    call :sanetize_option_name "%~1"
+    call :sanetize_option_name "%~1" || goto :eof
     set "option_!__result__!=%~2"
     set "_option_set_explicitly_!__result__!=true"
     goto :eof
@@ -146,59 +146,59 @@ rem Overrides and validates options after being parsed.
 rem Make sure to allow the user to override options that are being set here.
 :on_post_parse_options
     rem Running tests requires building tests.
-    call :is_true_string "!option_test!"
+    call :is_true_string "!option_test!" || goto :eof
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly build_tests
+        call :is_option_set_explicitly build_tests || goto :eof
         if not "!__result__!" == "true" (
             set option_build_tests=true
         )
     )
 
     rem Running Go tests requires fetching dependencies.
-    call :is_true_string "!option_go_test!"
+    call :is_true_string "!option_go_test!" || goto :eof
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly fetch_deps
+        call :is_option_set_explicitly fetch_deps || goto :eof
         if not "!__result__!" == "true" (
             set option_fetch_deps=true
         )
     )
 
     rem Building examples requires building library.
-    call :is_true_string "!option_build_examples!"
+    call :is_true_string "!option_build_examples!" || goto :eof
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly build
+        call :is_option_set_explicitly build || goto :eof
         if not "!__result__!" == "true" (
             set option_build=true
         )
     )
 
     rem Building tests requires building library.
-    call :is_true_string "!option_build_tests!"
+    call :is_true_string "!option_build_tests!" || goto :eof
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly build
+        call :is_option_set_explicitly build || goto :eof
         if not "!__result__!" == "true" (
             set option_build=true
         )
     )
 
     rem Building the requires fetching dependencies.
-    call :is_true_string "!option_build!"
+    call :is_true_string "!option_build!" || goto :eof
     if "!__result__!" == "true" (
-        call :is_option_set_explicitly fetch_deps
+        call :is_option_set_explicitly fetch_deps || goto :eof
         if not "!__result__!" == "true" (
             set option_fetch_deps=true
         )
     )
 
     rem Lint check with clang-tidy requires fetching dependencies.
-    call :is_false_string "!option_lint!"
+    call :is_false_string "!option_lint!" || goto :eof
     if not "!__result__!" == "true" (
-        call :is_true_string "!option_lint!"
+        call :is_true_string "!option_lint!" || goto :eof
         if not "!__result__!" == "true" if not "!option_lint!" == "lax" (
             echo Error: Invalid lint option: !option_lint!>&2
             exit /b 1
         )
-        call :is_option_set_explicitly fetch_deps
+        call :is_option_set_explicitly fetch_deps || goto :eof
         if not "!__result__!" == "true" (
             set option_fetch_deps=true
         )
@@ -206,7 +206,7 @@ rem Make sure to allow the user to override options that are being set here.
 
     rem Set the target architecture based on the machine's architecture.
     if "!option_target_arch!" == "" (
-        call :is_option_set_explicitly target_arch
+        call :is_option_set_explicitly target_arch || goto :eof
         if not "!__result__!" == "true" (
             call :get_host_arch || goto :eof
             set option_target_arch=!__result__!
