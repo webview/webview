@@ -534,7 +534,7 @@ function detect_compiler {
         echo "Warning: No C compiler detected, falling back to ${fallback_cc_compiler}."
         option_cc=${fallback_cc_compiler}
     fi
-    # Detect C compiler
+    # Detect C++ compiler
     if [[ -z "${option_cxx}" ]]; then
         for compiler in ${cxx_compilers[@]}; do
             if which "${compiler}" > /dev/null; then
