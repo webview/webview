@@ -170,6 +170,9 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void *arg);
 
 // Removes a native C callback that was previously set by webview_bind.
+WEBVIEW_API void webview_unbind_return(webview_t w, const char *name, void *&arg);
+
+// Unbind, but without passing a void * argument by reference
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 
 // Allows to return a value from the native binding. Original request pointer
@@ -1629,14 +1632,22 @@ public:
     eval(js);
   }
 
-  void unbind(const std::string &name) {
+  // unbind and return the bound argument via the arg param
+  void unbind(const std::string &name, void *&arg) {
     auto found = bindings.find(name);
     if (found != bindings.end()) {
       auto js = "delete window['" + name + "'];";
       init(js);
       eval(js);
+      arg = found->second.arg;
       bindings.erase(found);
     }
+  }
+
+  // overload if the user does not need the bound argument
+  void unbind(const std::string &name) {
+    void* ptr;
+    unbind(name, ptr);
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
@@ -1733,6 +1744,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
         fn(seq.c_str(), req.c_str(), arg);
       },
       arg);
+}
+
+WEBVIEW_API void webview_unbind_return(webview_t w, const char *name, void *&arg) {
+  static_cast<webview::webview *>(w)->unbind(name, arg);
 }
 
 WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
