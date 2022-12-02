@@ -266,9 +266,7 @@ Distributions that are known to be compatible:
 
 ## Development
 
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
-
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
+To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows with the options `--build-examples --test`. Add `--go-test` to run Go tests as well. Specify `--help` to see more options.
 
 ## Limitations
 
