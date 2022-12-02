@@ -15,6 +15,8 @@ set option_go_test=false
 set option_webview2_version=1.0.1150.38
 set option_toolchain=msvc
 set option_fetch_deps=false
+set option_cc=gcc
+set option_cxx=g++
 
 call :main %*
 goto :eof
@@ -75,8 +77,8 @@ goto :eof
     echo     program --help
     echo     program [--clean] [--build] [--build-examples] [--build-tests]
     echo             [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]
-    echo             [--webview2-version=VERSION] [--toolchain=TOOLCHAIN]
-    echo             [--fetch-deps]
+    echo             [--cc=PATH] [--cxx=PATH] [--go-test] [--fetch-deps]
+    echo             [--toolchain=TOOLCHAIN] [--webview2-version=VERSION]
     echo.
     echo Options:
     echo     --help                      Display this help text.
@@ -90,12 +92,18 @@ goto :eof
     echo     --reformat                  Reformat code (requires clang-format).
     echo     --lint                      Run lint checks (requires clang-tidy).
     echo     --lint=lax                  Run lint checks in lax mode.
+    echo     --cc                        C compiler binary, e.g. cc, gcc or clang.
+    echo                                 Can be set by the CC environment variable.
+    echo                                 Currently only supported with MinGW.
+    echo     --cxx                       C++ compiler binary, e.g. c++, g++ or clang++.
+    echo                                 Currently only supported with MinGW.
+    echo                                 Can be set by the CXX environment variable.
     echo     --go-test                   Run Go tests (implies --fetch-deps).
-    echo     --webview2-version=VERSION  WebView2 version to use.
-    echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
-    echo                                 Choices: msvc, mingw.
     echo     --fetch-deps                Fetch library dependencies.
     echo                                 Implied when building and linting.
+    echo     --toolchain=TOOLCHAIN       C/C++ toolchain.
+    echo                                 Choices: msvc, mingw.
+    echo     --webview2-version=VERSION  WebView2 version to use.
     echo.
     echo Compilation with MinGW-w64
     echo ==========================
@@ -119,10 +127,12 @@ rem Print option and their current values in a human-readable way.
     echo   Target architecture: !option_target_arch!
     echo   Reformat code: !option_reformat!
     echo   Run lint checks: !option_lint!
+    echo   C compiler: !option_cc!
+    echo   C++ compiler: !option_cxx!
     echo   Run Go tests: !option_go_test!
-    echo   WebView2 version: !option_webview2_version!
-    echo   Toolchain: !option_toolchain!
     echo   Fetch dependencies: !option_fetch_deps!
+    echo   Toolchain: !option_toolchain!
+    echo   WebView2 version: !option_webview2_version!
     goto :eof
 
 rem Stores the option as a variable.
@@ -201,6 +211,18 @@ rem Make sure to allow the user to override options that are being set here.
             call :get_host_arch || goto :eof
             set option_target_arch=!__result__!
         )
+    )
+
+    rem Set the C compiler binary based on the environment.
+    call :is_option_set_explicitly cc || goto :eof
+    if not "!__result__!" == "true" if not "!CC!" == "" (
+        set option_cc=!CC!
+    )
+
+    rem Set the C++ compiler binary based on the environment.
+    call :is_option_set_explicitly cxx || goto :eof
+    if not "!__result__!" == "true" if not "!CXX!" == "" (
+        set option_cxx=!CXX!
     )
 
     rem Validate toolchain.
@@ -368,7 +390,7 @@ rem Build examples.
     if "!option_toolchain!" == "msvc" (
         set link_params=!link_params! "!build_arch_dir!\webview.lib"
     ) else if "!option_toolchain!" == "mingw" (
-        set link_params=!link_params! "-L!build_arch_dir!" -lwebview
+        set link_params=!link_params! "!build_arch_dir!\webview.dll"
     )
     for %%f in ("!examples_dir!\*.c") do (
         call :compile exe "%%f" "C example" "!build_arch_dir!/examples/c" || goto :build_examples_loop_end
@@ -435,6 +457,8 @@ rem Run Go tests.
         set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
         set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!"
     )
+    set "CC=!option_cc!"
+    set "CXX=!option_cxx!"
     set CGO_ENABLED=1
     set "PATH=!PATH!;!build_arch_dir!"
     go test || (endlocal & exit /b 1)
@@ -476,7 +500,7 @@ rem Compile a C/C++ file into an executable or shared library.
     goto :eof
 
 :compile_shared_library_mingw_cc
-    g++ -fPIC --shared "!file!" !common_params! !cxx_params! !link_params! ^
+    "!option_cxx!" -fPIC --shared "!file!" !common_params! !cxx_params! !link_params! ^
         -o "!output_dir!/!name!.dll"
     goto :eof
 
@@ -493,13 +517,13 @@ rem Compile a C/C++ file into an executable or shared library.
     goto :eof
 
 :compile_exe_mingw_c
-    gcc "!file!" !common_params! !cc_params! !link_params! ^
+    "!option_cc!" "!file!" !common_params! !cc_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
         -o "!output_dir!/!name!.exe"
     goto :eof
 
 :compile_exe_mingw_cc
-    g++ "!file!" !common_params! !cxx_params! !link_params! ^
+    "!option_cxx!" "!file!" !common_params! !cxx_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
         -o "!output_dir!/!name!.exe"
     goto :eof

@@ -11,6 +11,8 @@ option_target_arch=
 option_reformat=false
 option_lint=false
 option_go_test=false
+option_cc=gcc
+option_cxx=g++
 
 function main {
     if [[ "${#@}" == "0" ]]; then
@@ -65,6 +67,7 @@ function print_help {
     echo "    program --help"
     echo "    program [--clean] [--build] [--build-examples] [--build-tests]"
     echo "            [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]"
+    echo "            [--cc=PATH] [--cxx=PATH] [--go-test]"
     echo
     echo "Options:"
     echo "    --help                      Display this help text."
@@ -78,6 +81,10 @@ function print_help {
     echo "    --reformat                  Reformat code (requires clang-format)."
     echo "    --lint                      Run lint checks (requires clang-tidy)."
     echo "    --lint=lax                  Run lint checks in lax mode."
+    echo "    --cc                        C compiler binary, e.g. cc, gcc or clang."
+    echo "                                Can be set by the CC environment variable."
+    echo "    --cxx                       C++ compiler binary, e.g. c++, g++ or clang++."
+    echo "                                Can be set by the CXX environment variable."
     echo "    --go-test                   Run Go tests."
     echo
     echo "Cross-compilation"
@@ -98,6 +105,8 @@ function print_current_options {
     echo "  Target architecture: ${option_target_arch}"
     echo "  Reformat code: ${option_reformat}"
     echo "  Run lint checks: ${option_lint}"
+    echo "  C compiler: ${option_cc}"
+    echo "  C++ compiler: ${option_cxx}"
     echo "  Run Go tests: ${option_go_test}"
 }
 
@@ -129,6 +138,16 @@ function on_post_parse_options {
     # Set the target architecture based on the machine's architecture.
     if [[ -z "${option_target_arch}" && "$(is_option_set_explicitly target_arch)" != "true" ]]; then
         option_target_arch=$(get_host_arch)
+    fi
+
+    # Set the C compiler binary based on the environment.
+    if [[ "$(is_option_set_explicitly cc)" != "true" && ! -z "${CC}" ]]; then
+        option_cc=${CC}
+    fi
+
+    # Set the C++ compiler binary based on the environment.
+    if [[ "$(is_option_set_explicitly cxx)" != "true" && ! -z "${CXX}" ]]; then
+        option_cxx=${CXX}
     fi
 }
 
@@ -290,7 +309,7 @@ function go_run_tests {
     elif [[ "${arch}" == "x86" ]]; then
         local GOARCH=386
     fi
-    GOARCH=${GOARCH} CGO_ENABLED=1 go test || return
+    CC="${option_cc}" CXX="${option_cxx}" GOARCH="${GOARCH}" CGO_ENABLED=1 go test || return
 }
 
 # Compile a C/C++ file into an object file, executable or shared library.
@@ -314,12 +333,12 @@ function compile {
 }
 
 function compile_object_c {
-    cc -c "${file}" "${common_params[@]}" "${cc_params[@]}" \
+    "${option_cc}" -c "${file}" "${common_params[@]}" "${cc_params[@]}" \
         -o "${output_dir}/${name}.o" || return
 }
 
 function compile_object_cc {
-    c++ -c "${file}" "${common_params[@]}" "${cxx_params[@]}" \
+    "${option_cxx}" -c "${file}" "${common_params[@]}" "${cxx_params[@]}" \
         -o "${output_dir}/${name}.o" || return
 }
 
@@ -334,17 +353,18 @@ function compile_shared_library_cc {
     else
         local output_name_ext=.so
     fi
-    c++ -fPIC --shared "${file}" "${common_params[@]}" "${cxx_params[@]}" "${link_params[@]}" \
+    "${option_cxx}" -fPIC --shared "${file}" \
+        "${common_params[@]}" "${cxx_params[@]}" "${link_params[@]}" \
         -o "${output_dir}/lib${name}${output_name_ext}" || return
 }
 
 function compile_exe_c {
-    cc "${file}" "${common_params[@]}" "${link_params[@]}" "${cc_params[@]}" \
+    "${option_cc}" "${file}" "${common_params[@]}" "${link_params[@]}" "${cc_params[@]}" \
         -o "${output_dir}/${name}"|| return
 }
 
 function compile_exe_cc {
-    c++ "${file}" "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
+    "${option_cxx}" "${file}" "${common_params[@]}" "${link_params[@]}" "${cxx_params[@]}" \
         -o "${output_dir}/${name}" || return
 }
 
