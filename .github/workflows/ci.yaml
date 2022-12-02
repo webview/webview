@@ -72,16 +72,11 @@ jobs:
             mingw_hash: 187b68dd034a74a951b110f7d0253a3667cf191a4fb2e79bcacf856ae09aa75e
     steps:
       - uses: actions/checkout@v3
-      # Replace the existing MinGW-w64 installation so that we have more control over the versions
-      # we use, and this also allows us to have 64-bit and 32-bit versions side by side.
       # The MinGW-w64 distribution from https://winlibs.com/ is known to have good compatibility
       # with the webview library.
       # Distribution: GCC 12.2.0 + MinGW-w64 10.0.0 (MSVCRT) - release 2
       # The MSVCRT runtime was chosen over UCRT because MSVCRT is available on old versions of Windows
       # while UCRT has only been shipped with Windows since Windows 10.
-      - name: Uninstall MinGW-w64
-        if: matrix.compiler.toolchain == 'mingw'
-        run: choco uninstall mingw
       - name: Install MinGW-w64
         if: matrix.compiler.toolchain == 'mingw'
         run: |
