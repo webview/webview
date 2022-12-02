@@ -378,15 +378,15 @@ rem Copy external dependencies into the build directory.
     rem Copy only if needed
     call :is_true_string "!option_build_examples!"
     if "!__result__!" == "true" (
-        robocopy "!build_arch_dir!" "!build_arch_dir!\examples\c" "*.dll" > nul
-        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\c" "*.dll" > nul
-        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\cc" "*.dll" > nul
+        robocopy "!build_arch_dir!" "!build_arch_dir!\examples\c" "*.dll" > nul || goto :eof
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\c" "*.dll" > nul || goto :eof
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\cc" "*.dll" > nul || goto :eof
     )
     call :is_true_string "!option_go_build_examples!"
     if "!__result__!" == "true" (
-        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\go" "*.dll" > nul
+        robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!\examples\go" "*.dll" > nul || goto :eof
     )
-    robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "*.dll" > nul
+    robocopy "!webview2_dir!\build\native\!arch!" "!build_arch_dir!" "*.dll" > nul || goto :eof
     exit /b 0
 
 rem Build the library.
