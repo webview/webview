@@ -29,6 +29,7 @@ jobs:
         run: script/build.sh --lint=lax "--target-arch=${{ matrix.arch }}"
 
   build-linux:
+    name: build (linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -38,6 +39,7 @@ jobs:
         run: xvfb-run ./script/build.sh --build-examples --test --go-test
 
   build-macos:
+    name: build (macos)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -45,18 +47,24 @@ jobs:
         run: ./script/build.sh --build-examples --test --go-test
 
   build-windows:
+    name: build (windows, ${{ matrix.arch }}, ${{ matrix.compiler.id }})
     runs-on: windows-latest
     strategy:
       matrix:
         arch: [x86, x64]
-        toolchain: [mingw, msvc]
+        compiler:
+          - { id: msvc, toolchain: msvc, cc: unused, cxx: unused }
+          - { id: mingw-gcc, toolchain: mingw, cc: gcc, cxx: g++ }
+          - { id: mingw-clang, toolchain: mingw, cc: clang, cxx: clang++ }
         include:
           - arch: x64
-            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-x86_64-posix-seh-gcc-12.2.0-mingw-w64msvcrt-10.0.0-r2.zip
-            mingw_hash: 06be414c7d2e4b91bcfd089d693d942d824e686d244a25709e72a78d30b82ea4
+            compiler: { toolchain: mingw }
+            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-x86_64-posix-seh-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.zip
+            mingw_hash: 290fc7b0d531eb4ea54640007f3e20b360580b6d2189d08d39907cb9a3df114a
           - arch: x86
-            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-12.2.0-mingw-w64msvcrt-10.0.0-r2.zip
-            mingw_hash: 03fc9f818f7691b43bfcd12b6c631e0ba662d1a82bde62718e6aa32d07a251f1
+            compiler: { toolchain: mingw }
+            mingw_url: https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.zip
+            mingw_hash: 187b68dd034a74a951b110f7d0253a3667cf191a4fb2e79bcacf856ae09aa75e
     steps:
       - uses: actions/checkout@v3
       # Replace the existing MinGW-w64 installation so that we have more control over the versions
@@ -67,10 +75,10 @@ jobs:
       # The MSVCRT runtime was chosen over UCRT because MSVCRT is available on old versions of Windows
       # while UCRT has only been shipped with Windows since Windows 10.
       - name: Uninstall MinGW-w64
-        if: matrix.toolchain == 'mingw'
+        if: matrix.compiler.toolchain == 'mingw'
         run: choco uninstall mingw
       - name: Install MinGW-w64
-        if: matrix.toolchain == 'mingw'
+        if: matrix.compiler.toolchain == 'mingw'
         run: |
           $ProgressPreference = "SilentlyContinue"
           $temp_dir = [System.IO.Path]::GetTempPath()
@@ -78,11 +86,11 @@ jobs:
           Invoke-WebRequest -Uri "${{ matrix.mingw_url }}" -OutFile $zip_path
           Expand-Archive -LiteralPath $zip_path -DestinationPath "${env:SystemDrive}\"
       - name: Build and run tests
-        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--toolchain=${{ matrix.toolchain }}" --build-examples --test
+        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--toolchain=${{ matrix.compiler.toolchain }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build-examples --test
         shell: cmd
       - name: Run Go tests
-        if: matrix.toolchain == 'mingw'
-        run: script\build.bat "--target-arch=${{ matrix.arch }}" --build=false --go-test
+        if: matrix.compiler.toolchain == 'mingw'
+        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build=false --go-test
         shell: cmd
 
   clang-format:
