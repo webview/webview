@@ -12,8 +12,8 @@ option_reformat=false
 option_lint=false
 option_go_build_examples=false
 option_go_test=false
-option_cc=gcc
-option_cxx=g++
+option_cc=
+option_cxx=
 
 function main {
     if [[ "${#@}" == "0" ]]; then
@@ -152,6 +152,8 @@ function on_post_parse_options {
     if [[ "$(is_option_set_explicitly cxx)" != "true" && ! -z "${CXX}" ]]; then
         option_cxx=${CXX}
     fi
+
+    detect_compiler || return
 }
 
 # Reformat code.
@@ -473,6 +475,47 @@ function get_host_arch {
         return 1
     fi
     return 0
+}
+
+# Try to detect compiler
+function detect_compiler {
+    local fallback_cc_compiler=cc
+    local fallback_cxx_compiler=c++
+    if [[ "$(uname)" = "Darwin" ]]; then
+        # Clang is default on macOS, and may be used even when attempting to invoke GCC.
+        local cc_compilers=(clang gcc)
+        local cxx_compilers=(clang++ g++)
+    else
+        # GCC is more likely to be default on Linux.
+        local cc_compilers=(gcc clang)
+        local cxx_compilers=(g++ clang++)
+    fi
+    # Detect C compiler
+    if [[ -z "${option_cc}" ]]; then
+        for compiler in ${cc_compilers[@]}; do
+            if which "${compiler}" > /dev/null; then
+                option_cc=${compiler}
+                break
+            fi
+        done
+    fi
+    if [[ -z "${option_cc}" ]]; then
+        echo "Warning: No C compiler detected, falling back to ${fallback_cc_compiler}."
+        option_cc=${fallback_cc_compiler}
+    fi
+    # Detect C compiler
+    if [[ -z "${option_cxx}" ]]; then
+        for compiler in ${cxx_compilers[@]}; do
+            if which "${compiler}" > /dev/null; then
+                option_cxx=${compiler}
+                break
+            fi
+        done
+    fi
+    if [[ -z "${option_cxx}" ]]; then
+        echo "Warning: No C++ compiler detected, falling back to ${fallback_cxx_compiler}."
+        option_cxx=${fallback_cxx_compiler}
+    fi
 }
 
 (main $@) || exit 1
