@@ -234,6 +234,15 @@ function build {
         fi
     fi
 
+    # We should copy runtime dependencies to the build directory if we are building or running tests.
+    local copy_deps_to_build_dir=false
+    if [[ "$(is_true_string "${option_build}")" == "true" \
+        || "$(is_true_string "${option_test}")" == "true" \
+        || "$(is_true_string "${option_go_build_examples}")" == "true" \
+        || "$(is_true_string "${option_go_test}")" == "true" ]]; then
+        copy_deps_to_build_dir=true
+    fi
+
     if [[ "$(is_true_string "${option_lint}")" == "true" || "${option_lint}" == "lax" ]]; then
         lint || return
     fi
@@ -257,12 +266,27 @@ function build {
         build_tests || return
     fi
 
+    if [[ "$(is_true_string "${copy_deps_to_build_dir}")" == "true" ]]; then
+        copy_deps || return
+    fi
+
     if [[ "$(is_true_string "${option_test}")" == "true" ]]; then
         run_tests || return
     fi
 
     if [[ "$(is_true_string "${option_go_test}")" == "true" ]]; then
         go_run_tests || return
+    fi
+}
+
+# Copy dependencies into the build directory.
+function copy_deps {
+    echo "Copying dependencies (${arch})..."
+    # Copy only if needed
+    if [[ "$(is_true_string "${option_build_examples}")" == "true" ]]; then
+        while read file; do
+            cp -f "${file}" "${build_arch_dir}/examples/c" || return
+        done <<< "$(find "${src_dir}" -type f -path "${build_arch_dir}/*.so" -or -path "${build_arch_dir}/*.dylib")"
     fi
 }
 
