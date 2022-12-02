@@ -406,10 +406,16 @@ rem Build examples.
 rem Build tests.
 :build_tests
     call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
+    setlocal
+    if "!option_toolchain!" == "mingw" (
+        rem Linking pthread fixes error when using Clang
+        set link_params=!link_params! -pthread
+    )
     for %%f in ("!src_dir!\*_test.cc") do (
         call :compile exe "%%f" "test" "!build_arch_dir!" || goto :build_tests_loop_end
     )
 :build_tests_loop_end
+    endlocal
     goto :eof
 
 rem Run tests.
@@ -450,12 +456,13 @@ rem Run Go tests.
     set use_quoted_args=false
     if "!go_version_major!" gtr "1" set use_quoted_args=true
     if "!go_version_major!" == "1" if "!go_version_minor!" geq "18" set use_quoted_args=true
+    rem Linking pthread fixes error when using Clang
     if "!use_quoted_args!" == "true" (
         set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
-        set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!"
+        set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!" -pthread
     ) else (
         set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
-        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!"
+        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!" -pthread
     )
     set "CC=!option_cc!"
     set "CXX=!option_cxx!"
