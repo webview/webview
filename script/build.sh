@@ -10,6 +10,7 @@ option_test=false
 option_target_arch=
 option_reformat=false
 option_lint=false
+option_go_build_examples=false
 option_go_test=false
 option_cc=gcc
 option_cxx=g++
@@ -67,7 +68,7 @@ function print_help {
     echo "    program --help"
     echo "    program [--clean] [--build] [--build-examples] [--build-tests]"
     echo "            [--test] [--target-arch=ARCH] [--reformat] [--lint[=lax]]"
-    echo "            [--cc=PATH] [--cxx=PATH] [--go-test]"
+    echo "            [--cc=PATH] [--cxx=PATH] [--go-build-examples] [--go-test]"
     echo
     echo "Options:"
     echo "    --help                      Display this help text."
@@ -85,6 +86,7 @@ function print_help {
     echo "                                Can be set by the CC environment variable."
     echo "    --cxx                       C++ compiler binary, e.g. c++, g++ or clang++."
     echo "                                Can be set by the CXX environment variable."
+    echo "    --go-build-examples         Build Go examples."
     echo "    --go-test                   Run Go tests."
     echo
     echo "Cross-compilation"
@@ -107,6 +109,7 @@ function print_current_options {
     echo "  Run lint checks: ${option_lint}"
     echo "  C compiler: ${option_cc}"
     echo "  C++ compiler: ${option_cxx}"
+    echo "  Build Go examples: ${option_go_build_examples}"
     echo "  Run Go tests: ${option_go_test}"
 }
 
@@ -244,6 +247,10 @@ function build {
         build_examples || return
     fi
 
+    if [[ "$(is_true_string "${option_go_build_examples}")" == "true" ]]; then
+        go_build_examples || return
+    fi
+
     if [[ "$(is_true_string "${option_build_tests}")" == "true" ]]; then
         build_tests || return
     fi
@@ -299,6 +306,21 @@ function run_tests {
         return 1
     fi
     return 0
+}
+
+# Build Go examples.
+function go_build_examples {
+    if [[ "${arch}" == "x64" ]]; then
+        local GOARCH=amd64
+    elif [[ "${arch}" == "x86" ]]; then
+        local GOARCH=386
+    fi
+    while read file; do
+        local name=$(basename "-s.${file##*.}" "${file}")
+        echo "Building Go example ${name} (${arch})..."
+        CC="${option_cc}" CXX="${option_cxx}" GOARCH="${GOARCH}" CGO_ENABLED=1 \
+            go build -o "${build_arch_dir}/examples/go/${name}" "${file}" || return
+    done <<< "$(find "${src_dir}" -type f -path "${examples_dir}/*.go")"
 }
 
 # Run Go tests.
