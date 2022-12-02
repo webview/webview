@@ -3,18 +3,22 @@ on: [push, pull_request]
 
 jobs:
   lint:
-    runs-on: ${{ matrix.os }}
+    name: lint (${{ matrix.os }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.image }}
     strategy:
       fail-fast: false
       matrix:
         # macOS was excluded because clang-tidy is not installed.
         include:
-          - arch: x64
-            os: ubuntu-latest
-          - arch: x64
-            os: windows-latest
-          - arch: x86
-            os: windows-latest
+          - os: linux
+            image: ubuntu-latest
+            arch: x64
+          - os: windows
+            image: windows-latest
+            arch: x64
+          - os: windows
+            image: windows-latest
+            arch: x86
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
