@@ -22,11 +22,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Run lint checks
         if: runner.os == 'Windows'
-        run: script\build.bat --lint=lax --target-arch=${{ matrix.arch }}
+        run: script\build.bat --lint=lax "--target-arch=${{ matrix.arch }}"
         shell: cmd
       - name: Run lint checks
         if: runner.os != 'Windows'
-        run: script/build.sh --lint=lax --target-arch=${{ matrix.arch }}
+        run: script/build.sh --lint=lax "--target-arch=${{ matrix.arch }}"
 
   build-linux:
     runs-on: ubuntu-latest
@@ -78,11 +78,11 @@ jobs:
           Invoke-WebRequest -Uri "${{ matrix.mingw_url }}" -OutFile $zip_path
           Expand-Archive -LiteralPath $zip_path -DestinationPath "${env:SystemDrive}\"
       - name: Build and run tests
-        run: script\build.bat --target-arch=${{ matrix.arch }} --toolchain=${{ matrix.toolchain }} --build-examples --test
+        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--toolchain=${{ matrix.toolchain }}" --build-examples --test
         shell: cmd
       - name: Run Go tests
         if: matrix.toolchain == 'mingw'
-        run: script\build.bat --target-arch=${{ matrix.arch }} --build=false --go-test
+        run: script\build.bat "--target-arch=${{ matrix.arch }}" --build=false --go-test
         shell: cmd
 
   clang-format:
