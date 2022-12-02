@@ -16,8 +16,8 @@ set option_go_test=false
 set option_webview2_version=1.0.1150.38
 set option_toolchain=msvc
 set option_fetch_deps=false
-set option_cc=gcc
-set option_cxx=g++
+set option_cc=
+set option_cxx=
 
 call :main %*
 goto :eof
@@ -233,6 +233,7 @@ rem Make sure to allow the user to override options that are being set here.
         echo Error: Invalid toolchain: !option_toolchain!>&2
         exit /b 1
     )
+
     goto :eof
 
 rem Reformat code.
@@ -297,6 +298,9 @@ rem All tasks related to building and testing are to be invoked here.
 :build arch
     set arch=%~1
     set build_arch_dir=!build_dir!\!arch!
+
+    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
+    call :detect_compiler || goto :eof
 
     call :is_true_string "!option_clean!"
     if "!__result__!" == "true" (
@@ -391,13 +395,11 @@ rem Copy dependencies into the build directory.
 
 rem Build the library.
 :build_library
-    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
     call :compile shared_library "!src_dir!\webview.cc" "shared library" "!build_arch_dir!" || goto :eof
     goto :eof
 
 rem Build examples.
 :build_examples
-    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
     setlocal
     if "!option_toolchain!" == "msvc" (
         set link_params=!link_params! "!build_arch_dir!\webview.lib"
@@ -417,7 +419,6 @@ rem Build examples.
 
 rem Build tests.
 :build_tests
-    call :activate_toolchain "!option_toolchain!" "!arch!" || goto :eof
     setlocal
     if "!option_toolchain!" == "mingw" (
         rem Linking pthread fixes error when using Clang
@@ -452,8 +453,8 @@ rem Run tests.
 
 rem Build Go examples.
 :go_build_examples
-    call :activate_toolchain mingw "!arch!" || goto :eof
     setlocal
+    call :activate_toolchain mingw "!arch!" || goto :eof
     if "!arch!" == "x64" (
         set GOARCH=amd64
     ) else if "!arch!" == "x86" (
@@ -488,8 +489,8 @@ rem Build Go examples.
 
 rem Run Go tests.
 :go_run_tests
-    call :activate_toolchain mingw "!arch!" || goto :eof
     setlocal
+    call :activate_toolchain mingw "!arch!" || goto :eof
     echo Running Go tests (!arch!)...
     if "!arch!" == "x64" (
         set GOARCH=amd64
@@ -827,6 +828,48 @@ rem Get the host machine/CPU architecture.
         exit /b 1
     )
     endlocal & set __result__=%__result__%
+    goto :eof
+
+rem Try to detect compiler
+:detect_compiler
+    rem Detection is currently only supported with MinGW-w64.
+    if not "!option_toolchain!" == "mingw" goto :eof
+    setlocal
+    set fallback_cc_compiler=cc
+    set fallback_cxx_compiler=c++
+    set cc_compilers=gcc clang
+    set cxx_compilers=g++ clang++
+    rem Detect C compiler
+    if "!option_cc!" == "" (
+        for %%a in (!cc_compilers!) do (
+            where "%%a.exe" > nul 2> nul && (
+                set option_cc=%%a
+                echo Detected C compiler: %%a
+                goto :detect_compiler_c_end
+            ) || cmd /c exit 0
+        )
+    )
+:detect_compiler_c_end
+    if "!option_cc!" == "" (
+        echo Warning: No C compiler detected, falling back to !fallback_cc_compiler!.
+        set option_cc=!fallback_cc_compiler!
+    )
+    rem Detect C++ compiler
+    if "!option_cxx!" == "" (
+        for %%a in (!cxx_compilers!) do (
+            where "%%a.exe" > nul 2> nul && (
+                set option_cxx=%%a
+                echo Detected C++ compiler: %%a
+                goto :detect_compiler_cxx_end
+            ) || cmd /c exit 0
+        )
+    )
+    if "!option_cxx!" == "" (
+        echo Warning: No C++ compiler detected, falling back to !fallback_cxx_compiler!.
+        set option_cxx=!fallback_cxx_compiler!
+    )
+:detect_compiler_cxx_end
+    endlocal & set "option_cc=%option_cc%" & set "option_cxx=%option_cxx%"
     goto :eof
 
 rem Extract the MAJOR.MINOR.PATCH version number of Go from the output of the "go version" command.
