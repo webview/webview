@@ -267,10 +267,10 @@ function build_library {
 function build_examples {
     while read file; do
         local link_params=("${link_params[@]}" "-L${build_arch_dir}" "-lwebview")
-        compile exe "${file}" "example" "${build_arch_dir}/examples/c" || return
+        compile exe "${file}" "C example" "${build_arch_dir}/examples/c" || return
     done <<< "$(find "${src_dir}" -type f -path "${examples_dir}/*.c")"
     while read file; do
-        compile exe "${file}" "example" "${build_arch_dir}/examples/cc" || return
+        compile exe "${file}" "C++ example" "${build_arch_dir}/examples/cc" || return
     done <<< "$(find "${src_dir}" -type f -path "${examples_dir}/*.cc")"
 }
 
