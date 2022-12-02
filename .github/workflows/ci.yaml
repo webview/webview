@@ -54,6 +54,7 @@ jobs:
     name: build (windows, ${{ matrix.arch }}, ${{ matrix.compiler.id }})
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         arch: [x86, x64]
         compiler:
