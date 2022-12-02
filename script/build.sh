@@ -526,6 +526,7 @@ function detect_compiler {
         for compiler in ${cc_compilers[@]}; do
             if which "${compiler}" > /dev/null; then
                 option_cc=${compiler}
+                echo "Detected C compiler: ${compiler}"
                 break
             fi
         done
@@ -539,6 +540,7 @@ function detect_compiler {
         for compiler in ${cxx_compilers[@]}; do
             if which "${compiler}" > /dev/null; then
                 option_cxx=${compiler}
+                echo "Detected C++ compiler: ${compiler}"
                 break
             fi
         done
