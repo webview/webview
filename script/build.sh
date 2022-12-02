@@ -152,8 +152,6 @@ function on_post_parse_options {
     if [[ "$(is_option_set_explicitly cxx)" != "true" && ! -z "${CXX}" ]]; then
         option_cxx=${CXX}
     fi
-
-    detect_compiler || return
 }
 
 # Reformat code.
@@ -201,6 +199,8 @@ function lint {
 function build {
     local arch=${1}
     local build_arch_dir=${build_dir}/${arch}
+
+    detect_compiler || return
 
     if [[ "$(is_true_string "${option_clean}")" == "true" ]]; then
         echo "Cleaning build directory (${arch})..."
