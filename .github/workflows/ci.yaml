@@ -80,6 +80,11 @@ jobs:
             mingw_hash: 187b68dd034a74a951b110f7d0253a3667cf191a4fb2e79bcacf856ae09aa75e
     steps:
       - uses: actions/checkout@v3
+      - name: Disable existing MinGW-w64 (Chocolatey)
+        run: |
+          if (Test-Path -Path "${env:ProgramData}\chocolatey\lib\mingw") {
+            Rename-Item -Path "${env:ProgramData}\chocolatey\lib\mingw" -NewName "mingw.disabled" -Force
+          }
       # The MinGW-w64 distribution from https://winlibs.com/ is known to have good compatibility
       # with the webview library.
       # Distribution: GCC 12.2.0 + MinGW-w64 10.0.0 (MSVCRT) - release 2
