@@ -434,11 +434,11 @@ rem Build examples.
         set link_params=!link_params! "!build_arch_dir!\webview.dll"
     )
     for %%f in ("!examples_dir!\*.c") do (
-        call :compile exe "%%f" "C example" "!build_arch_dir!/examples/c" || goto :build_examples_loop_end
+        call :compile exe "%%f" "C example" "!build_arch_dir!/examples/c" gui || goto :build_examples_loop_end
     )
     endlocal
     for %%f in ("!examples_dir!\*.cc") do (
-        call :compile exe "%%f" "C++ example" "!build_arch_dir!/examples/cc" || goto :build_examples_loop_end
+        call :compile exe "%%f" "C++ example" "!build_arch_dir!/examples/cc" gui || goto :build_examples_loop_end
     )
 :build_examples_loop_end
     endlocal
@@ -484,7 +484,7 @@ rem Build Go examples.
     call :go_prolog || (endlocal & exit /b 1)
     for %%f in ("!examples_dir!\*.go") do (
         echo Building Go example %%~nf ^(!arch!^)...
-        go build -o "!build_arch_dir!/examples/go/%%~nf.exe" "%%~f" || goto :go_build_examples_loop_end
+        go build -ldflags="-H windowsgui" -o "!build_arch_dir!/examples/go/%%~nf.exe" "%%~f" || goto :go_build_examples_loop_end
     )
 :go_build_examples_loop_end
     endlocal
@@ -528,7 +528,7 @@ rem Prolog be called before building or running tests with Go.
     goto :eof
 
 rem Compile a C/C++ file into an executable or shared library.
-:compile type file description
+:compile type file description gui
     if not "%~1" == "exe" if not "%~1" == "shared_library" (
         echo Error: Invalid type : %~1>&2
         exit /b 1
@@ -541,6 +541,7 @@ rem Compile a C/C++ file into an executable or shared library.
     set ext=!ext:~1!
     set description=%~3
     set output_dir=%~4
+    set gui=%~5
     set message=Building !description! !name! (!arch!)...
     echo !message!
     if not exist "!output_dir!" mkdir "!output_dir!" || (endlocal & exit /b 1)
@@ -579,12 +580,22 @@ rem Compile a C/C++ file into an executable or shared library.
     goto :eof
 
 :compile_exe_mingw_c
+    if "!gui!" == "gui" (
+        set common_params=!common_params! -mwindows
+    ) else (
+        set common_params=!common_params! -mconsole
+    )
     "!option_cc!" "!file!" !common_params! !cc_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
         -o "!output_dir!/!name!.exe"
     goto :eof
 
 :compile_exe_mingw_cc
+    if "!gui!" == "gui" (
+        set common_params=!common_params! -mwindows
+    ) else (
+        set common_params=!common_params! -mconsole
+    )
     "!option_cxx!" "!file!" !common_params! !cxx_params! !link_params! ^
         "-L!build_arch_dir!" -lwebview ^
         -o "!output_dir!/!name!.exe"
