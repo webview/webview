@@ -481,30 +481,7 @@ rem Run tests.
 rem Build Go examples.
 :go_build_examples
     setlocal
-    if "!arch!" == "x64" (
-        set GOARCH=amd64
-    ) else if "!arch!" == "x86" (
-        set GOARCH=386
-    )
-    rem Argument quoting only works for Go 1.18 and later.
-    rem We therefore conditionally quote arguments in CGO_CXXFLAGS and CGO_LDFLAGS
-    rem based on the version of Go.
-    call :get_go_version go_version || (endlocal & exit /b 1)
-    call :parse_version "!go_version!" go_version_major go_version_minor || (endlocal & exit /b 1)
-    set use_quoted_args=false
-    if "!go_version_major!" gtr "1" set use_quoted_args=true
-    if "!go_version_major!" == "1" if "!go_version_minor!" geq "18" set use_quoted_args=true
-    rem Linking pthread fixes error when using Clang
-    if "!use_quoted_args!" == "true" (
-        set CGO_CXXFLAGS="-I!webview2_dir!\build\native\include"
-        set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!" -pthread
-    ) else (
-        set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
-        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch! -pthread"
-    )
-    set "CC=!option_cc!"
-    set "CXX=!option_cxx!"
-    set CGO_ENABLED=1
+    call :go_prolog || (endlocal & exit /b 1)
     for %%f in ("!examples_dir!\*.go") do (
         echo Building Go example %%~nf ^(!arch!^)...
         go build -o "!build_arch_dir!/examples/go/%%~nf.exe" "%%~f" || goto :go_build_examples_loop_end
@@ -516,7 +493,14 @@ rem Build Go examples.
 rem Run Go tests.
 :go_run_tests
     setlocal
-    echo Running Go tests (!arch!)...
+    call :go_prolog || (endlocal & exit /b 1)
+    set "PATH=!PATH!;!build_arch_dir!"
+    go test || (endlocal & exit /b 1)
+    endlocal
+    goto :eof
+
+rem Prolog be called before building or running tests with Go.
+:go_prolog
     if "!arch!" == "x64" (
         set GOARCH=amd64
     ) else if "!arch!" == "x86" (
@@ -525,8 +509,8 @@ rem Run Go tests.
     rem Argument quoting only works for Go 1.18 and later.
     rem We therefore conditionally quote arguments in CGO_CXXFLAGS and CGO_LDFLAGS
     rem based on the version of Go.
-    call :get_go_version go_version || (endlocal & exit /b 1)
-    call :parse_version "!go_version!" go_version_major go_version_minor || (endlocal & exit /b 1)
+    call :get_go_version go_version || goto :eof
+    call :parse_version "!go_version!" go_version_major go_version_minor || goto :eof
     set use_quoted_args=false
     if "!go_version_major!" gtr "1" set use_quoted_args=true
     if "!go_version_major!" == "1" if "!go_version_minor!" geq "18" set use_quoted_args=true
@@ -541,9 +525,6 @@ rem Run Go tests.
     set "CC=!option_cc!"
     set "CXX=!option_cxx!"
     set CGO_ENABLED=1
-    set "PATH=!PATH!;!build_arch_dir!"
-    go test || (endlocal & exit /b 1)
-    endlocal
     goto :eof
 
 rem Compile a C/C++ file into an executable or shared library.
