@@ -500,7 +500,7 @@ rem Build Go examples.
         set CGO_LDFLAGS="-L!webview2_dir!\build\native\!arch!" -pthread
     ) else (
         set "CGO_CXXFLAGS=-I!webview2_dir!\build\native\include"
-        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch!" -pthread
+        set "CGO_LDFLAGS=-L!webview2_dir!\build\native\!arch! -pthread"
     )
     set "CC=!option_cc!"
     set "CXX=!option_cxx!"
