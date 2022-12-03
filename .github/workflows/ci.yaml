@@ -33,14 +33,22 @@ jobs:
         run: script/build.sh --lint=lax "--target-arch=${{ matrix.arch }}"
 
   build-linux:
-    name: build (linux)
+    name: build (linux, ${{ matrix.arch }}, ${{ matrix.compiler.id }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - { id: gcc, cc: gcc, cxx: g++ }
+          - { id: clang, cc: clang, cxx: clang++ }
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
-        run: xvfb-run ./script/build.sh --build-examples --test --go-test
+        run: xvfb-run ./script/build.sh "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build-examples --test
+      - name: Build Go example sand run Go tests
+        run: xvfb-run ./script/build.sh "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --go-build-examples --go-test
 
   build-macos:
     name: build (macos)
