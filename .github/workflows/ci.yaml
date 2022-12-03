@@ -47,7 +47,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
         run: xvfb-run ./script/build.sh "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build-examples --test
-      - name: Build Go example sand run Go tests
+      - name: Build Go examples and run Go tests
         run: xvfb-run ./script/build.sh "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --go-build-examples --go-test
 
   build-macos:
@@ -101,7 +101,7 @@ jobs:
       - name: Build and run tests
         run: script\build.bat "--target-arch=${{ matrix.arch }}" "--toolchain=${{ matrix.compiler.toolchain }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build-examples --test
         shell: cmd
-      - name: Build Go example sand run Go tests
+      - name: Build Go examples and run Go tests
         if: matrix.compiler.toolchain == 'mingw'
         run: script\build.bat "--target-arch=${{ matrix.arch }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --go-build-examples --go-test
         shell: cmd
