@@ -88,9 +88,9 @@ jobs:
       - name: Build and run tests
         run: script\build.bat "--target-arch=${{ matrix.arch }}" "--toolchain=${{ matrix.compiler.toolchain }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build-examples --test
         shell: cmd
-      - name: Run Go tests
+      - name: Build Go example sand run Go tests
         if: matrix.compiler.toolchain == 'mingw'
-        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --build=false --go-test
+        run: script\build.bat "--target-arch=${{ matrix.arch }}" "--cc=${{ matrix.compiler.cc }}" "--cxx=${{ matrix.compiler.cxx }}" --go-build-examples --go-test
         shell: cmd
 
   clang-format:
