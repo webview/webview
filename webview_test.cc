@@ -171,10 +171,10 @@ static void test_c_api_bind() {
   auto w = webview_create(false, nullptr);
   context.w = w;
   // Attempting to remove non-existing binding is OK
-  webview_unbind(w, "test");
+  assert(webview_unbind(w, "test") == WEBVIEW_ERROR_NOT_FOUND);
   webview_bind(w, "test", test, &context);
   // Attempting to bind multiple times only binds once
-  webview_bind(w, "test", test, &context);
+  assert(webview_bind(w, "test", test, &context) == WEBVIEW_ERROR_DUPLICATE);
   webview_set_html(w, html);
   webview_run(w);
 }
@@ -184,6 +184,7 @@ static void test_c_api_bind() {
 // =================================================================
 
 static void test_sync_bind() {
+  using namespace webview::detail;
   unsigned int number = 0;
   webview::webview w(false, nullptr);
   auto test = [&](const std::string &req) -> std::string {
@@ -220,11 +221,11 @@ static void test_sync_bind() {
   auto html = "<script>\n"
               "  window.test(0);\n"
               "</script>";
-  // Attempting to remove non-existing binding is OK
-  w.unbind("test");
+  // Attempting to remove non-existing binding throws
+  assert(try_catch([&] { w.unbind("test"); }) == WEBVIEW_ERROR_NOT_FOUND);
   w.bind("test", test);
   // Attempting to bind multiple times only binds once
-  w.bind("test", test);
+  assert(try_catch([&] { w.bind("test", test); }) == WEBVIEW_ERROR_DUPLICATE);
   w.set_html(html);
   w.run();
 }
