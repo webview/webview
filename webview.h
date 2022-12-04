@@ -1602,7 +1602,7 @@ public:
     }
 
     auto use_new_show_behavior =
-        compare_version(options.minimum_required_version, {0, 11, 0}) >= 0;
+        compare_versions(options.minimum_required_version, {0, 11, 0}) >= 0;
 
     if (options.visible && !use_new_show_behavior) {
       show_window();
