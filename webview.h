@@ -926,7 +926,7 @@ public:
     objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
 
     // See comments related to application lifecycle in create_app_delegate().
-    if (window) {
+    if (options.window) {
       on_application_did_finish_launching(delegate, app);
     } else {
       // Start the main run loop so that the app delegate gets the
@@ -1038,7 +1038,7 @@ private:
     // is likely managing the application lifecycle and we would not get the
     // "applicationDidFinishLaunching:" message and therefore do not need to
     // add this method.
-    if (!m_parent_window) {
+    if (!m_options.window) {
       class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
                       (IMP)(+[](id self, SEL, id notification) {
                         auto app =
@@ -1138,7 +1138,7 @@ private:
   }
   void on_application_did_finish_launching(id delegate, id app) {
     // See comments related to application lifecycle in create_app_delegate().
-    if (!m_parent_window) {
+    if (!m_options.window) {
       // Stop the main run loop so that we can return
       // from the constructor.
       objc::msg_send<void>(app, "stop:"_sel, nullptr);
