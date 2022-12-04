@@ -66,7 +66,19 @@
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
+// This macro can be used as an initializer list for webview_version_t.
+#define WEBVIEW_VERSION                                                        \
+  { WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH }
+
+// This macro can be used as an initializer list for webview_version_info_t.
+#define WEBVIEW_VERSION_INFO                                                   \
+  {                                                                            \
+    WEBVIEW_VERSION, WEBVIEW_VERSION_NUMBER, WEBVIEW_VERSION_PRE_RELEASE,      \
+        WEBVIEW_VERSION_BUILD_METADATA                                         \
+  }
+
 // Holds the elements of a MAJOR.MINOR.PATCH version number.
+// The WEBVIEW_VERSION macro can be used to initialize this struct.
 typedef struct {
   // Major version.
   unsigned int major;
@@ -77,6 +89,7 @@ typedef struct {
 } webview_version_t;
 
 // Holds the library's version information.
+// The WEBVIEW_VERSION_INFO macro can be used to initialize this struct.
 typedef struct {
   // The elements of the version number.
   webview_version_t version;
@@ -110,7 +123,7 @@ typedef struct {
   // Minimum required library version. Set this to WEBVIEW_VERSION to enable
   // the latest features and behaviors provided by the library. Use a lower
   // version if you need backward-compatibility.
-  webview_packed_version_t minimum_required_version;
+  webview_version_t minimum_required_version;
   // Enables debug/developer tools for supported browser engines if set to
   // WEBVIEW_TRUE.
   webview_bool_t debug;
@@ -266,10 +279,6 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
 // @since 0.11
 WEBVIEW_API webview_error_t webview_show(webview_t w);
 
-// Get the version of the library.
-// @since 0.11
-WEBVIEW_API webview_packed_version_t webview_version();
-
 // Get the library's version information.
 // @since 0.10
 WEBVIEW_API const webview_version_info_t *webview_version();
@@ -311,8 +320,7 @@ namespace webview {
 namespace detail {
 
 // The minimum library version supported by the library.
-constexpr webview_packed_version_t min_supported_version =
-    WEBVIEW_PACK_VERSION(0, 10, 0);
+constexpr webview_version_t min_supported_version{0, 10, 0};
 
 } // namespace detail
 
@@ -341,7 +349,7 @@ public:
   }
 
   create_options_builder &
-  minimum_required_version(webview_packed_version_t version) noexcept {
+  minimum_required_version(const webview_version_t &version) noexcept {
     m_options.minimum_required_version = version;
     return *this;
   }
@@ -370,11 +378,30 @@ private:
 namespace detail {
 
 // The library's version information.
-constexpr const webview_version_info_t library_version_info{
-    {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
-    WEBVIEW_VERSION_NUMBER,
-    WEBVIEW_VERSION_PRE_RELEASE,
-    WEBVIEW_VERSION_BUILD_METADATA};
+constexpr const webview_version_info_t library_version_info =
+    WEBVIEW_VERSION_INFO;
+
+// Compares the first specified version number against the second.
+// Returns 0 if both versions are equal, less than 0 if first is less than
+// second; greater than 0 if first is greater than second.
+inline int compare_versions(const webview_version_t &first,
+                            const webview_version_t &second) {
+  if (first.major == second.major) {
+    if (first.minor == second.minor) {
+      return first.patch - second.patch;
+    }
+    return first.minor - second.minor;
+  }
+  return first.major - second.major;
+}
+
+// Checks whether the MAJOR.MINOR.PATCH version number in the library
+// is greater or equal to the specified MAJOR.MINOR.PATCH version number.
+inline bool library_version_is_at_least(unsigned int major, unsigned int minor,
+                                        unsigned int patch) {
+  return compare_versions(library_version_info.version,
+                          {major, minor, patch}) >= 0;
+}
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -608,11 +635,13 @@ inline webview_create_options_t migrate_webview_create_options(bool debug,
 
 inline void validate_create_options(const webview_create_options_t &options) {
   using namespace detail;
-  if (options.minimum_required_version < detail::min_supported_version) {
+  if (compare_versions(options.minimum_required_version,
+                       min_supported_version) < 0) {
     throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_OLD,
                             "The specified version is too old");
   }
-  if (options.minimum_required_version > WEBVIEW_VERSION) {
+  if (compare_versions(options.minimum_required_version,
+                       library_version_info.version) > 0) {
     throw webview_exception(WEBVIEW_ERROR_VERSION_TOO_RECENT,
                             "The specified version is too recent");
   }
@@ -621,7 +650,7 @@ inline void validate_create_options(const webview_create_options_t &options) {
 inline webview_create_options_t
 apply_webview_create_options_compatibility(webview_create_options_t options) {
   validate_create_options(options);
-  if (options.minimum_required_version < WEBVIEW_PACK_VERSION(0, 11, 0)) {
+  if (compare_versions(options.minimum_required_version, {0, 11, 0}) < 0) {
     options.visible = WEBVIEW_TRUE;
   }
   return options;
@@ -1573,7 +1602,7 @@ public:
     }
 
     auto use_new_show_behavior =
-        options.minimum_required_version >= WEBVIEW_PACK_VERSION(0, 11, 0);
+        compare_version(options.minimum_required_version, {0, 11, 0}) >= 0;
 
     if (options.visible && !use_new_show_behavior) {
       show_window();
@@ -2101,10 +2130,6 @@ WEBVIEW_API webview_error_t webview_show(webview_t w) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
   return try_catch([=] { cast_to_webview(w)->show(); });
-}
-
-WEBVIEW_API webview_packed_version_t webview_version() {
-  return WEBVIEW_VERSION;
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version() {

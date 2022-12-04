@@ -109,7 +109,10 @@ static void test_c_api_error_codes() {
 // TEST: webview_library_version().
 // =================================================================
 static void test_c_api_library_version() {
-  assert(webview_version() == WEBVIEW_VERSION);
+  using namespace webview::detail;
+  auto vi = webview_version();
+  assert(vi);
+  assert(compare_versions(vi->version, WEBVIEW_VERSION) == 0);
 }
 
 // =================================================================
@@ -392,8 +395,10 @@ static void test_validate_create_options() {
     validate_create_options(options);
   }
   {
+    webview_version_t older_version{min_supported_version};
+    --older_version.minor;
     auto options = webview::create_options_builder{}
-                       .minimum_required_version(min_supported_version - 1)
+                       .minimum_required_version(older_version)
                        .build();
     try {
       validate_create_options(options);
@@ -403,8 +408,10 @@ static void test_validate_create_options() {
     }
   }
   {
+    webview_version_t newer_version = WEBVIEW_VERSION;
+    ++newer_version.minor;
     auto options = webview::create_options_builder{}
-                       .minimum_required_version(WEBVIEW_VERSION + 1)
+                       .minimum_required_version(newer_version)
                        .build();
     try {
       validate_create_options(options);
@@ -424,48 +431,6 @@ static void test_apply_webview_create_options_compatibility() {
   assert(options.visible == WEBVIEW_FALSE);
   options = apply_webview_create_options_compatibility(options);
   assert(options.visible == WEBVIEW_TRUE);
-}
-
-// =================================================================
-// TEST: ensure that version packing and unpacking works.
-// =================================================================
-static void test_packed_version() {
-  auto max_uint32 = 4294967295U;
-  {
-    // Packing numbers exceeding 10 bits should truncate.
-    // Unused bits should not be set.
-    auto version = WEBVIEW_PACK_VERSION(max_uint32, max_uint32, max_uint32);
-    assert(version == 1073741823);
-  }
-  {
-    // Unpacking numbers exceeding 10 bits should truncate.
-    // All bits except unused bits should be set.
-    assert(WEBVIEW_UNPACK_MAJOR_VERSION(max_uint32) == 1023);
-    assert(WEBVIEW_UNPACK_MINOR_VERSION(max_uint32) == 1023);
-    assert(WEBVIEW_UNPACK_PATCH_VERSION(max_uint32) == 1023);
-  }
-  {
-    auto version = WEBVIEW_PACK_VERSION(1, 1, 1);
-    // The first bit of each version component should be set.
-    assert(version == 1049601);
-    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 1);
-    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 1);
-    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 1);
-  }
-  {
-    auto version = WEBVIEW_PACK_VERSION(0, 0, 0);
-    assert(version == 0);
-    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 0);
-    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 0);
-    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 0);
-  }
-  {
-    auto version = WEBVIEW_PACK_VERSION(3, 7, 15);
-    assert(version == 3152911);
-    assert(WEBVIEW_UNPACK_MAJOR_VERSION(version) == 3);
-    assert(WEBVIEW_UNPACK_MINOR_VERSION(version) == 7);
-    assert(WEBVIEW_UNPACK_PATCH_VERSION(version) == 15);
-  }
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
@@ -550,7 +515,6 @@ int main(int argc, char *argv[]) {
       {"c_api_library_version", test_c_api_library_version},
       {"c_api_version", test_c_api_version},
       {"json", test_json},
-      {"packed_version", test_packed_version},
       {"sync_bind", test_sync_bind},
       {"sync_bind_error", test_sync_bind_error},
       {"terminate", test_terminate},
