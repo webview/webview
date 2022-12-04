@@ -1,6 +1,12 @@
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
 // +build ignore
 
+#define WEBVIEW_VERSION_MAJOR 1
+#define WEBVIEW_VERSION_MINOR 2
+#define WEBVIEW_VERSION_PATCH 3
+#define WEBVIEW_VERSION_PRE_RELEASE "-test"
+#define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
+
 #include "webview.h"
 
 #include <cassert>
@@ -104,6 +110,136 @@ static void test_c_api_error_codes() {
 // =================================================================
 static void test_c_api_library_version() {
   assert(webview_version() == WEBVIEW_VERSION);
+}
+
+// =================================================================
+// TEST: use C API to test binding and unbinding.
+// =================================================================
+
+static void test_c_api_bind() {
+  struct context_t {
+    webview_t w;
+    unsigned int number;
+  } context{};
+  auto test = +[](const char *seq, const char *req, void *arg) {
+    auto increment = +[](const char *seq, const char *req, void *arg) {
+      ++static_cast<context_t *>(arg)->number;
+    };
+    auto context = static_cast<context_t *>(arg);
+    std::string req_(req);
+    // Bind and increment number.
+    if (req_ == "[0]") {
+      assert(context->number == 0);
+      webview_bind(context->w, "increment", increment, context);
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(1)})()");
+      return;
+    }
+    // Unbind and make sure that we cannot increment even if we try.
+    if (req_ == "[1]") {
+      assert(context->number == 1);
+      webview_unbind(context->w, "increment");
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(2)})()");
+      return;
+    }
+    // Number should not have changed but we can bind again and change the number.
+    if (req_ == "[2]") {
+      assert(context->number == 1);
+      webview_bind(context->w, "increment", increment, context);
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(3)})()");
+      return;
+    }
+    // Finish test.
+    if (req_ == "[3]") {
+      assert(context->number == 2);
+      webview_terminate(context->w);
+      return;
+    }
+    assert(!"Should not reach here");
+  };
+  auto html = "<script>\n"
+              "  window.test(0);\n"
+              "</script>";
+  auto w = webview_create(false, nullptr);
+  context.w = w;
+  // Attempting to remove non-existing binding is OK
+  webview_unbind(w, "test");
+  webview_bind(w, "test", test, &context);
+  // Attempting to bind multiple times only binds once
+  webview_bind(w, "test", test, &context);
+  webview_set_html(w, html);
+  webview_run(w);
+}
+
+// =================================================================
+// TEST: test synchronous binding and unbinding.
+// =================================================================
+
+static void test_sync_bind() {
+  unsigned int number = 0;
+  webview::webview w(false, nullptr);
+  auto test = [&](const std::string &req) -> std::string {
+    auto increment = [&](const std::string &req) -> std::string {
+      ++number;
+      return "";
+    };
+    // Bind and increment number.
+    if (req == "[0]") {
+      assert(number == 0);
+      w.bind("increment", increment);
+      return "(() => {try{window.increment()}catch{}window.test(1)})()";
+    }
+    // Unbind and make sure that we cannot increment even if we try.
+    if (req == "[1]") {
+      assert(number == 1);
+      w.unbind("increment");
+      return "(() => {try{window.increment()}catch{}window.test(2)})()";
+    }
+    // Number should not have changed but we can bind again and change the number.
+    if (req == "[2]") {
+      assert(number == 1);
+      w.bind("increment", increment);
+      return "(() => {try{window.increment()}catch{}window.test(3)})()";
+    }
+    // Finish test.
+    if (req == "[3]") {
+      assert(number == 2);
+      w.terminate();
+      return "";
+    }
+    assert(!"Should not reach here");
+  };
+  auto html = "<script>\n"
+              "  window.test(0);\n"
+              "</script>";
+  // Attempting to remove non-existing binding is OK
+  w.unbind("test");
+  w.bind("test", test);
+  // Attempting to bind multiple times only binds once
+  w.bind("test", test);
+  w.set_html(html);
+  w.run();
+}
+
+// =================================================================
+// TEST: webview_version().
+// =================================================================
+static void test_c_api_version() {
+  auto vi = webview_version();
+  assert(vi);
+  assert(vi->version.major == 1);
+  assert(vi->version.minor == 2);
+  assert(vi->version.patch == 3);
+  assert(std::string(vi->version_number) == "1.2.3");
+  assert(std::string(vi->pre_release) == "-test");
+  assert(std::string(vi->build_metadata) == "+gaabbccd");
+  // The function should return the same pointer when called again.
+  assert(webview_version() == vi);
 }
 
 // =================================================================
@@ -407,12 +543,15 @@ int main(int argc, char *argv[]) {
        test_apply_webview_create_options_compatibility},
       {"async_bind_error", test_async_bind_error},
       {"bidir_comms", test_bidir_comms},
+      {"c_api_bind", test_c_api_bind},
       {"c_api_create", test_c_api_create},
       {"c_api_create_with_options", test_c_api_create_with_options},
       {"c_api_error_codes", test_c_api_error_codes},
       {"c_api_library_version", test_c_api_library_version},
+      {"c_api_version", test_c_api_version},
       {"json", test_json},
       {"packed_version", test_packed_version},
+      {"sync_bind", test_sync_bind},
       {"sync_bind_error", test_sync_bind_error},
       {"terminate", test_terminate},
       {"unbind_errors", test_unbind_errors},
