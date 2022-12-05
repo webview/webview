@@ -66,11 +66,11 @@
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-// This macro can be used as an initializer list for webview_version_t.
+// This macro can be used as an initializer for webview_version_t.
 #define WEBVIEW_VERSION                                                        \
   { WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH }
 
-// This macro can be used as an initializer list for webview_version_info_t.
+// This macro can be used as an initializer for webview_version_info_t.
 #define WEBVIEW_VERSION_INFO                                                   \
   {                                                                            \
     WEBVIEW_VERSION, WEBVIEW_VERSION_NUMBER, WEBVIEW_VERSION_PRE_RELEASE,      \
