@@ -427,13 +427,45 @@ static void test_validate_create_options() {
 }
 
 // =================================================================
+// TEST: Options builder for creating a webview instance.
+// =================================================================
+static void test_create_options_builder() {
+  using namespace webview::detail;
+  {
+    auto options = webview::create_options_builder{}.build();
+    assert(compare_versions(options.minimum_required_version, min_supported_version) == 0);
+    assert(options.debug == WEBVIEW_FALSE);
+    assert(options.window == nullptr);
+    assert(options.visible == WEBVIEW_FALSE);
+  }
+  {
+    auto options = webview::create_options_builder{}
+      .minimum_required_version({1, 2, 3})
+      .debug()
+      .window(reinterpret_cast<void *>(123))
+      .visibility()
+      .build();
+    assert(compare_versions(options.minimum_required_version, {1, 2, 3}) == 0);
+    assert(options.debug == WEBVIEW_TRUE);
+    assert(options.window == reinterpret_cast<void*>(123));
+    assert(options.visible == WEBVIEW_TRUE);
+  }
+}
+
+// =================================================================
 // TEST: apply_webview_create_options_compatibility().
 // =================================================================
 static void test_apply_webview_create_options_compatibility() {
   using namespace webview::detail;
-  auto options = webview::create_options_builder{}.build();
+  webview_create_options_t options{};
+  assert(compare_versions(options.minimum_required_version, {0, 0, 0}) == 0);
+  assert(options.debug == WEBVIEW_FALSE);
+  assert(options.window == nullptr);
   assert(options.visible == WEBVIEW_FALSE);
   options = apply_webview_create_options_compatibility(options);
+  assert(compare_versions(options.minimum_required_version, min_supported_version) == 0);
+  assert(options.debug == WEBVIEW_FALSE);
+  assert(options.window == nullptr);
   assert(options.visible == WEBVIEW_TRUE);
 }
 
@@ -518,6 +550,7 @@ int main(int argc, char *argv[]) {
       {"c_api_error_codes", test_c_api_error_codes},
       {"c_api_library_version", test_c_api_library_version},
       {"c_api_version", test_c_api_version},
+      {"create_options_builder", test_create_options_builder},
       {"json", test_json},
       {"sync_bind", test_sync_bind},
       {"sync_bind_error", test_sync_bind_error},
