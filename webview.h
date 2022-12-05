@@ -1005,13 +1005,13 @@ private:
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
 
-    init(R"script(
+    init(R""(
       window.external = {
         invoke: function(s) {
           window.webkit.messageHandlers.external.postMessage(s);
         },
       };
-      )script");
+      )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
@@ -1608,7 +1608,7 @@ public:
       return;
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
-    auto js = "(function() { var name = '" + name + "';" + R"(
+    auto js = "(function() { var name = '" + name + "';" + R""(
       var RPC = window._rpc = (window._rpc || {nextSeq: 1});
       window[name] = function() {
         var seq = RPC.nextSeq++;
@@ -1625,7 +1625,7 @@ public:
         }));
         return promise;
       }
-    })())";
+    })())"";
     init(js);
     eval(js);
   }
