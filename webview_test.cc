@@ -150,6 +150,7 @@ static void test_sync_bind() {
       return "";
     }
     assert(!"Should not reach here");
+    return "";
   };
   auto html = "<script>\n"
               "  window.test(0);\n"
