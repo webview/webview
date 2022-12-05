@@ -120,9 +120,13 @@ typedef enum { WEBVIEW_FALSE, WEBVIEW_TRUE } webview_bool_t;
 
 // Options for webview_create_with_options().
 typedef struct {
-  // Minimum required library version. Set this to WEBVIEW_VERSION to enable
-  // the latest features and behaviors provided by the library. Use a lower
-  // version if you need backward-compatibility.
+  // Minimum required library version. This can be used to change the available
+  // features and behaviors within the library. Set this to either
+  // WEBVIEW_VERSION to use the latest features and behaviors provided by the
+  // library, an older version for selective backward-compatibility, or zero
+  // ({0, 0, 0}) to use the library's minimum supported version.
+  // Note that the minimum supported version will be bumped when old and
+  // deprecated features eventually are removed from the library.
   webview_version_t minimum_required_version;
   // Enables debug/developer tools for supported browser engines if set to
   // WEBVIEW_TRUE.
@@ -649,6 +653,11 @@ inline void validate_create_options(const webview_create_options_t &options) {
 
 inline webview_create_options_t
 apply_webview_create_options_compatibility(webview_create_options_t options) {
+  // If the minimum required version specified by the caller is zero (0.0.0)
+  // then change it to the library's minimum supported version.
+  if (compare_versions(options.minimum_required_version, {0, 0, 0}) == 0) {
+    options.minimum_required_version = min_supported_version;
+  }
   validate_create_options(options);
   if (compare_versions(options.minimum_required_version, {0, 11, 0}) < 0) {
     options.visible = WEBVIEW_TRUE;
