@@ -6,6 +6,9 @@
 #include <Windows.h>
 #endif
 
+// Only used to suppress warnings caused by unused parameters.
+#define UNUSED(x) ((void)x)
+
 typedef struct {
   webview_t w;
   unsigned int count;
@@ -27,6 +30,7 @@ static const char html[] =
     "</script>";
 
 void increment(const char *seq, const char *req, void *arg) {
+  UNUSED(req);
   context_t *context = (context_t *)arg;
   char count_string[10] = {0};
   sprintf(count_string, "%u", ++context->count);

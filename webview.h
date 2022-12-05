@@ -925,7 +925,7 @@ private:
         objc::msg_send<BOOL>(bundle_path, "hasSuffix:"_sel, ".app"_str);
     return !!bundled;
   }
-  void on_application_did_finish_launching(id delegate, id app) {
+  void on_application_did_finish_launching(id /*delegate*/, id app) {
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_parent_window) {
       // Stop the main run loop so that we can return
@@ -1598,7 +1598,7 @@ public:
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
     auto wrapper = [this, fn](const std::string &seq, const std::string &req,
-                              void *arg) { resolve(seq, 0, fn(req)); };
+                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
     bind(name, wrapper, nullptr);
   }
 

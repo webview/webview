@@ -58,9 +58,10 @@ static void test_c_api_bind() {
     unsigned int number;
   } context{};
   auto test = +[](const char *seq, const char *req, void *arg) {
-    auto increment = +[](const char *seq, const char *req, void *arg) {
-      ++static_cast<context_t *>(arg)->number;
-    };
+    auto increment =
+        +[](const char * /*seq*/, const char * /*req*/, void *arg) {
+          ++static_cast<context_t *>(arg)->number;
+        };
     auto context = static_cast<context_t *>(arg);
     std::string req_(req);
     // Bind and increment number.
@@ -120,7 +121,7 @@ static void test_sync_bind() {
   unsigned int number = 0;
   webview::webview w(false, nullptr);
   auto test = [&](const std::string &req) -> std::string {
-    auto increment = [&](const std::string &req) -> std::string {
+    auto increment = [&](const std::string & /*req*/) -> std::string {
       ++number;
       return "";
     };
