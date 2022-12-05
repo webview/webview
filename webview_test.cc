@@ -168,7 +168,9 @@ static void test_c_api_bind() {
   auto html = "<script>\n"
               "  window.test(0);\n"
               "</script>";
-  auto w = webview_create(false, nullptr);
+  webview_t w{};
+  auto options = get_create_options();
+  assert(webview_create_with_options(&w, &options) == WEBVIEW_ERROR_OK);
   context.w = w;
   // Attempting to remove non-existing binding is OK
   assert(webview_unbind(w, "test") == WEBVIEW_ERROR_NOT_FOUND);
@@ -185,8 +187,9 @@ static void test_c_api_bind() {
 
 static void test_sync_bind() {
   using namespace webview::detail;
+  auto options = get_create_options();
   unsigned int number = 0;
-  webview::webview w(false, nullptr);
+  webview::webview w(options);
   auto test = [&](const std::string &req) -> std::string {
     auto increment = [&](const std::string &req) -> std::string {
       ++number;
