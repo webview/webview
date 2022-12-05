@@ -15,6 +15,7 @@ Checks: >
     -clang-diagnostic-unused-parameter,
     -cppcoreguidelines-avoid-magic-numbers,
     -cppcoreguidelines-init-variables,
+    -cppcoreguidelines-macro-usage,
     -cppcoreguidelines-pro-bounds-pointer-arithmetic,
     -hicpp-explicit-conversions,
     -hicpp-no-array-decay,
