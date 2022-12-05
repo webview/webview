@@ -23,6 +23,7 @@ Checks: >
     -modernize-use-trailing-return-type,
     -performance-unnecessary-value-param,
     -readability-container-size-empty,
+    -readability-qualified-auto,
     -readability-function-cognitive-complexity,
     -readability-implicit-bool-conversion,
     -readability-inconsistent-declaration-parameter-name,
