@@ -924,7 +924,7 @@ private:
         objc::msg_send<BOOL>(bundle_path, "hasSuffix:"_sel, ".app"_str);
     return !!bundled;
   }
-  void on_application_did_finish_launching(id delegate, id app) {
+  void on_application_did_finish_launching(id /*delegate*/, id app) {
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_parent_window) {
       // Stop the main run loop so that we can return
@@ -1004,13 +1004,13 @@ private:
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
 
-    init(R"script(
+    init(R""(
       window.external = {
         invoke: function(s) {
           window.webkit.messageHandlers.external.postMessage(s);
         },
       };
-      )script");
+      )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
@@ -1597,7 +1597,7 @@ public:
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
     auto wrapper = [this, fn](const std::string &seq, const std::string &req,
-                              void *arg) { resolve(seq, 0, fn(req)); };
+                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
     bind(name, wrapper, nullptr);
   }
 
@@ -1607,7 +1607,7 @@ public:
       return;
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
-    auto js = "(function() { var name = '" + name + "';" + R"(
+    auto js = "(function() { var name = '" + name + "';" + R""(
       var RPC = window._rpc = (window._rpc || {nextSeq: 1});
       window[name] = function() {
         var seq = RPC.nextSeq++;
@@ -1624,7 +1624,7 @@ public:
         }));
         return promise;
       }
-    })())";
+    })())"";
     init(js);
     eval(js);
   }
