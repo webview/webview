@@ -302,6 +302,19 @@ Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 
+## SWIG
+
+Swig bindings are included if you wish to generate bindings yourself.  Examples of how to generate bindings are below.
+
+```
+swig -c++ -python -outdir bindings/python -o bindings/python/python_wrap.cpp webview.i
+swig -c++ -csharp -outdir bindings/csharp -o bindings/csharp/csharp_wrap.cpp webview.i
+swig -c++ -java -outdir bindings/java -o bindings/java/java_wrap.cpp webview.i
+swig -c++ -ruby -outdir bindings/ruby -o bindings/ruby/ruby_wrap.cpp webview.i
+```
+
+This generates bindings in the `bindings/<lang>` folders (must be made first with `mkdir`) using the provided swig interface `webview.i`
+
 ## License
 
 Code is distributed under MIT license, feel free to use it in your proprietary projects as well.

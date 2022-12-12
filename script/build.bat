@@ -142,14 +142,3 @@ echo Running Go tests
 cd /D %src_dir%
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
 go test || exit /b
-
-echo Generating Bindings
-mkdir bindings\python
-mkdir bindings\csharp
-mkdir bindings\java
-mkdir bindings\ruby
-
-swig -c++ -python -outdir bindings\python -o bindings\python\python_wrap.cpp webview.i
-swig -c++ -csharp -outdir bindings\csharp -o bindings\csharp\csharp_wrap.cpp webview.i
-swig -c++ -java -outdir bindings\java -o bindings\java\java_wrap.cpp webview.i
-swig -c++ -ruby -outdir bindings\ruby -o bindings\ruby\ruby_wrap.cpp webview.i

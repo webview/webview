@@ -61,14 +61,3 @@ if command -v go >/dev/null 2>&1 ; then
 else
 	echo "SKIP: Go tests"
 fi
-
-echo "Generating Bindings"
-mkdir -p bindings/python
-mkdir -p bindings/csharp
-mkdir -p bindings/java
-mkdir -p bindings/ruby
-
-swig -c++ -python -outdir bindings/python -o bindings/python/python_wrap.cpp webview.i
-swig -c++ -csharp -outdir bindings/csharp -o bindings/csharp/csharp_wrap.cpp webview.i
-swig -c++ -java -outdir bindings/java -o bindings/java/java_wrap.cpp webview.i
-swig -c++ -ruby -outdir bindings/ruby -o bindings/ruby/ruby_wrap.cpp webview.i
