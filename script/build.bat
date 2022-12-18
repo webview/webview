@@ -78,7 +78,7 @@ if not exist "%build_dir%\WebView2Loader.dll" (
 call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 
 echo Building C++ examples (x64)
-mkdir build\examples\cpp
+mkdir "%build_dir%\examples\cpp"
 cl %warning_params% ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
@@ -95,7 +95,7 @@ cl %warning_params% ^
 	"%src_dir%\examples\bind.cc" /link "/OUT:%build_dir%\examples\cpp\bind.exe" || exit /b
 
 echo Building C examples (x64)
-mkdir build\examples\c
+mkdir "%build_dir%\examples\c"
 cl %warning_params% ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
@@ -130,15 +130,22 @@ set "CGO_CXXFLAGS=-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\na
 set "CGO_LDFLAGS=-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
 set CGO_ENABLED=1
 
+rem Go needs go.mod to be in the working directory.
+pushd "%src_dir%" || exit /b
+
 echo Building Go examples
-mkdir build\examples\go
-go build -ldflags="-H windowsgui" -o build\examples\go\basic.exe examples\basic.go || exit /b
-go build -ldflags="-H windowsgui" -o build\examples\go\bind.exe examples\bind.go || exit /b
+mkdir "%build_dir%\examples\go"
+go build -ldflags="-H windowsgui" -o "%build_dir%\examples\go\basic.exe" examples\basic.go || goto :go_end
+go build -ldflags="-H windowsgui" -o "%build_dir%\examples\go\bind.exe" examples\bind.go || goto :go_end
 
 echo Running tests
-"%build_dir%\webview_test.exe" || exit /b
+"%build_dir%\webview_test.exe" || goto :go_end
 
 echo Running Go tests
-cd /D %src_dir%
 set "PATH=%PATH%;%src_dir%\dll\x64;%src_dir%\dll\x86"
-go test || exit /b
+go test || goto :go_end
+
+:go_end
+set go_error=%errorlevel%
+popd
+if not "%go_error%" == "0" exit /b "%go_error%"
