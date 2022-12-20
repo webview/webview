@@ -2,10 +2,12 @@
 # We should aim to fix the code and re-enable most of the rules here.
 Checks: >
     bugprone-*,
+    cert-*,
     clang-analyzer-*,
     clang-diagnostic-*,
     cppcoreguidelines-*,
     hicpp-*,
+    misc-*,
     modernize-*,
     performance-*,
     portability-*,
@@ -35,6 +37,8 @@ Checks: >
     -hicpp-use-nullptr,
     -hicpp-use-override,
     -hicpp-vararg,
+    -misc-definitions-in-headers,
+    -misc-non-private-member-variables-in-classes,
     -modernize-avoid-c-arrays,
     -modernize-pass-by-value,
     -modernize-use-override,
