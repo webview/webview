@@ -46,7 +46,6 @@ Checks: >
     -modernize-use-nullptr,
     -modernize-use-using,
     -performance-unnecessary-value-param,
-    -readability-container-size-empty,
     -readability-convert-member-functions-to-static,
     -readability-else-after-return,
     -readability-qualified-auto,

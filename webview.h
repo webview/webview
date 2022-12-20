@@ -442,7 +442,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
                               const int index) {
   const char *value;
   size_t value_sz;
-  if (key == "") {
+  if (key.empty()) {
     json_parse_c(s.c_str(), s.length(), nullptr, index, &value, &value_sz);
   } else {
     json_parse_c(s.c_str(), s.length(), key.c_str(), key.length(), &value,
@@ -1574,7 +1574,7 @@ public:
       : browser_engine(debug, wnd) {}
 
   void navigate(const std::string &url) {
-    if (url == "") {
+    if (url.empty()) {
       browser_engine::navigate("about:blank");
       return;
     }
