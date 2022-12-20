@@ -81,12 +81,12 @@ typedef struct {
   // The elements of the version number.
   webview_version_t version;
   // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
-  const char version_number[32];
+  char version_number[32];
   // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
   // an empty string.
-  const char pre_release[48];
+  char pre_release[48];
   // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
-  const char build_metadata[48];
+  char build_metadata[48];
 } webview_version_info_t;
 
 #ifdef __cplusplus
