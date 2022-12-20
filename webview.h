@@ -248,17 +248,17 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
     JSON_STATE_ESCAPE,
     JSON_STATE_UTF8
   } state = JSON_STATE_VALUE;
-  const char *k = NULL;
+  const char *k = nullptr;
   int index = 1;
   int depth = 0;
   int utf8_bytes = 0;
 
-  if (key == NULL) {
+  if (key == nullptr) {
     index = keysz;
     keysz = 0;
   }
 
-  *value = NULL;
+  *value = nullptr;
   *valuesz = 0;
 
   for (; sz > 0; s++, sz--) {
@@ -357,16 +357,16 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
         }
       } else if (action == JSON_ACTION_END ||
                  action == JSON_ACTION_END_STRUCT) {
-        if (*value != NULL && index == 0) {
+        if (*value != nullptr && index == 0) {
           *valuesz = (size_t)(s + 1 - *value);
           return 0;
-        } else if (keysz > 0 && k != NULL) {
+        } else if (keysz > 0 && k != nullptr) {
           if (keysz == (size_t)(s - k - 1) && memcmp(key, k + 1, keysz) == 0) {
             index = 0;
           } else {
             index = 2;
           }
-          k = NULL;
+          k = nullptr;
         }
       }
     }
@@ -422,7 +422,7 @@ inline int json_unescape(const char *s, size_t n, char *out) {
         return -1;
       }
     }
-    if (out != NULL) {
+    if (out != nullptr) {
       *out++ = c;
     }
     s++;
@@ -432,7 +432,7 @@ inline int json_unescape(const char *s, size_t n, char *out) {
   if (*s != '"') {
     return -1;
   }
-  if (out != NULL) {
+  if (out != nullptr) {
     *out = '\0';
   }
   return r;
@@ -442,7 +442,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
                               const int index) {
   const char *value;
   size_t value_sz;
-  if (key == "") {
+  if (key.empty()) {
     json_parse_c(s.c_str(), s.length(), nullptr, index, &value, &value_sz);
   } else {
     json_parse_c(s.c_str(), s.length(), key.c_str(), key.length(), &value,
@@ -512,7 +512,7 @@ class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)) {
-    if (gtk_init_check(0, NULL) == FALSE) {
+    if (gtk_init_check(nullptr, nullptr) == FALSE) {
       return;
     }
     m_window = static_cast<GtkWidget *>(window);
@@ -595,21 +595,23 @@ public:
   }
 
   void set_html(const std::string &html) {
-    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(), NULL);
+    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
+                              nullptr);
   }
 
   void init(const std::string &js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkit_user_content_manager_add_script(
-        manager, webkit_user_script_new(
-                     js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-                     WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
+        manager,
+        webkit_user_script_new(js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+                               WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+                               nullptr, nullptr));
   }
 
   void eval(const std::string &js) {
-    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(), NULL,
-                                   NULL, NULL);
+    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                   nullptr, nullptr, nullptr);
   }
 
 private:
@@ -623,7 +625,7 @@ private:
 #else
     JSGlobalContextRef ctx = webkit_javascript_result_get_global_context(r);
     JSValueRef value = webkit_javascript_result_get_value(r);
-    JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
+    JSStringRef js = JSValueToStringCopy(ctx, value, nullptr);
     size_t n = JSStringGetMaximumUTF8CStringSize(js);
     s = g_new(char, n);
     JSStringGetUTF8CString(js, s, n);
@@ -1448,7 +1450,7 @@ public:
       r.bottom = height;
       AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
       SetWindowPos(
-          m_window, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top,
+          m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
           SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
       resize(m_window);
     }
@@ -1479,11 +1481,12 @@ private:
     flag.test_and_set();
 
     wchar_t currentExePath[MAX_PATH];
-    GetModuleFileNameW(NULL, currentExePath, MAX_PATH);
+    GetModuleFileNameW(nullptr, currentExePath, MAX_PATH);
     wchar_t *currentExeName = PathFindFileNameW(currentExePath);
 
     wchar_t dataPath[MAX_PATH];
-    if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, dataPath))) {
+    if (!SUCCEEDED(
+            SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
       return false;
     }
     wchar_t userDataFolder[MAX_PATH];
@@ -1504,7 +1507,7 @@ private:
       return false;
     }
     MSG msg = {};
-    while (flag.test_and_set() && GetMessage(&msg, NULL, 0, 0)) {
+    while (flag.test_and_set() && GetMessage(&msg, nullptr, 0, 0)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
@@ -1549,7 +1552,7 @@ private:
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init{COINIT_APARTMENTTHREADED};
-  HWND m_window = NULL;
+  HWND m_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
@@ -1574,7 +1577,7 @@ public:
       : browser_engine(debug, wnd) {}
 
   void navigate(const std::string &url) {
-    if (url == "") {
+    if (url.empty()) {
       browser_engine::navigate("about:blank");
       return;
     }
