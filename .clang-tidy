@@ -15,6 +15,7 @@ Checks: >
     -bugprone-easily-swappable-parameters,
     -bugprone-branch-clone,
     -bugprone-narrowing-conversions,
+    -cert-env33-c,
     -clang-analyzer-core.CallAndMessage,
     -clang-analyzer-optin.cplusplus.UninitializedObject,
     -clang-analyzer-security.insecureAPI.strcpy,
