@@ -595,21 +595,23 @@ public:
   }
 
   void set_html(const std::string &html) {
-    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(), nullptr);
+    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
+                              nullptr);
   }
 
   void init(const std::string &js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkit_user_content_manager_add_script(
-        manager, webkit_user_script_new(
-                     js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-                     WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, nullptr, nullptr));
+        manager,
+        webkit_user_script_new(js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+                               WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+                               nullptr, nullptr));
   }
 
   void eval(const std::string &js) {
-    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(), nullptr,
-                                   nullptr, nullptr);
+    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                   nullptr, nullptr, nullptr);
   }
 
 private:
@@ -1483,7 +1485,8 @@ private:
     wchar_t *currentExeName = PathFindFileNameW(currentExePath);
 
     wchar_t dataPath[MAX_PATH];
-    if (!SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
+    if (!SUCCEEDED(
+            SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
       return false;
     }
     wchar_t userDataFolder[MAX_PATH];
