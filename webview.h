@@ -94,12 +94,12 @@ typedef struct {
   // The elements of the version number.
   webview_version_t version;
   // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
-  const char version_number[32];
+  char version_number[32];
   // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
   // an empty string.
-  const char pre_release[48];
+  char pre_release[48];
   // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
-  const char build_metadata[48];
+  char build_metadata[48];
 } webview_version_info_t;
 
 #ifndef WEBVIEW_DEPRECATED
@@ -416,17 +416,17 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
     JSON_STATE_ESCAPE,
     JSON_STATE_UTF8
   } state = JSON_STATE_VALUE;
-  const char *k = NULL;
+  const char *k = nullptr;
   int index = 1;
   int depth = 0;
   int utf8_bytes = 0;
 
-  if (key == NULL) {
+  if (key == nullptr) {
     index = keysz;
     keysz = 0;
   }
 
-  *value = NULL;
+  *value = nullptr;
   *valuesz = 0;
 
   for (; sz > 0; s++, sz--) {
@@ -525,16 +525,16 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
         }
       } else if (action == JSON_ACTION_END ||
                  action == JSON_ACTION_END_STRUCT) {
-        if (*value != NULL && index == 0) {
+        if (*value != nullptr && index == 0) {
           *valuesz = (size_t)(s + 1 - *value);
           return 0;
-        } else if (keysz > 0 && k != NULL) {
+        } else if (keysz > 0 && k != nullptr) {
           if (keysz == (size_t)(s - k - 1) && memcmp(key, k + 1, keysz) == 0) {
             index = 0;
           } else {
             index = 2;
           }
-          k = NULL;
+          k = nullptr;
         }
       }
     }
@@ -590,7 +590,7 @@ inline int json_unescape(const char *s, size_t n, char *out) {
         return -1;
       }
     }
-    if (out != NULL) {
+    if (out != nullptr) {
       *out++ = c;
     }
     s++;
@@ -600,7 +600,7 @@ inline int json_unescape(const char *s, size_t n, char *out) {
   if (*s != '"') {
     return -1;
   }
-  if (out != NULL) {
+  if (out != nullptr) {
     *out = '\0';
   }
   return r;
@@ -610,7 +610,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
                               const int index) {
   const char *value;
   size_t value_sz;
-  if (key == "") {
+  if (key.empty()) {
     json_parse_c(s.c_str(), s.length(), nullptr, index, &value, &value_sz);
   } else {
     json_parse_c(s.c_str(), s.length(), key.c_str(), key.length(), &value,
@@ -725,7 +725,7 @@ class gtk_webkit_engine {
 public:
   explicit gtk_webkit_engine(const webview_create_options_t &options)
       : m_window(static_cast<GtkWidget *>(options.window)) {
-    if (!gtk_init_check(0, NULL)) {
+    if (!gtk_init_check(nullptr, nullptr)) {
       throw webview_exception(WEBVIEW_ERROR_INTERNAL,
                               "gtk_init_check() failed");
     }
@@ -811,21 +811,23 @@ public:
   }
 
   void set_html(const std::string &html) {
-    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(), NULL);
+    webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
+                              nullptr);
   }
 
   void init(const std::string &js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkit_user_content_manager_add_script(
-        manager, webkit_user_script_new(
-                     js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-                     WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, NULL, NULL));
+        manager,
+        webkit_user_script_new(js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+                               WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
+                               nullptr, nullptr));
   }
 
   void eval(const std::string &js) {
-    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(), NULL,
-                                   NULL, NULL);
+    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                   nullptr, nullptr, nullptr);
   }
 
   void show() { gtk_widget_show_all(m_window); }
@@ -841,7 +843,7 @@ private:
 #else
     JSGlobalContextRef ctx = webkit_javascript_result_get_global_context(r);
     JSValueRef value = webkit_javascript_result_get_value(r);
-    JSStringRef js = JSValueToStringCopy(ctx, value, NULL);
+    JSStringRef js = JSValueToStringCopy(ctx, value, nullptr);
     size_t n = JSStringGetMaximumUTF8CStringSize(js);
     s = g_new(char, n);
     JSStringGetUTF8CString(js, s, n);
@@ -1145,7 +1147,7 @@ private:
         objc::msg_send<BOOL>(bundle_path, "hasSuffix:"_sel, ".app"_str);
     return !!bundled;
   }
-  void on_application_did_finish_launching(id delegate, id app) {
+  void on_application_did_finish_launching(id /*delegate*/, id app) {
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_options.window) {
       // Stop the main run loop so that we can return
@@ -1225,13 +1227,13 @@ private:
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
 
-    init(R"script(
+    init(R""(
       window.external = {
         invoke: function(s) {
           window.webkit.messageHandlers.external.postMessage(s);
         },
       };
-      )script");
+      )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
 
     if (m_options.visible) {
@@ -1704,7 +1706,7 @@ public:
       r.bottom = height;
       AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
       SetWindowPos(
-          m_window, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top,
+          m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
           SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
       resize(m_window);
     }
@@ -1755,11 +1757,12 @@ private:
 
   void embed(HWND wnd, bool debug, msg_cb_t cb) {
     wchar_t currentExePath[MAX_PATH];
-    GetModuleFileNameW(NULL, currentExePath, MAX_PATH);
+    GetModuleFileNameW(nullptr, currentExePath, MAX_PATH);
     wchar_t *currentExeName = PathFindFileNameW(currentExePath);
 
     wchar_t dataPath[MAX_PATH];
-    if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, dataPath))) {
+    if (!SUCCEEDED(
+            SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
       throw webview_exception();
     }
     wchar_t userDataFolder[MAX_PATH];
@@ -1846,7 +1849,7 @@ private:
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init{COINIT_APARTMENTTHREADED};
-  HWND m_window = NULL;
+  HWND m_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
@@ -1879,7 +1882,7 @@ public:
   webview() : webview(create_options_builder{}.build()) {}
 
   void navigate(const std::string &url) {
-    if (url == "") {
+    if (url.empty()) {
       browser_engine::navigate("about:blank");
       return;
     }
@@ -1902,7 +1905,7 @@ public:
   // Synchronous bind
   void bind(const std::string &name, sync_binding_t fn) {
     auto wrapper = [this, fn](const std::string &seq, const std::string &req,
-                              void *arg) { resolve(seq, 0, fn(req)); };
+                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
     bind(name, wrapper, nullptr);
   }
 
@@ -1912,7 +1915,7 @@ public:
       throw webview_exception(WEBVIEW_ERROR_DUPLICATE);
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
-    auto js = "(function() { var name = '" + name + "';" + R"(
+    auto js = "(function() { var name = '" + name + "';" + R""(
       var RPC = window._rpc = (window._rpc || {nextSeq: 1});
       window[name] = function() {
         var seq = RPC.nextSeq++;
@@ -1929,7 +1932,7 @@ public:
         }));
         return promise;
       }
-    })())";
+    })())"";
     init(js);
     eval(js);
   }
