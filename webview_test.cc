@@ -435,21 +435,22 @@ static void test_create_options_builder() {
   using namespace webview::detail;
   {
     auto options = webview::create_options_builder{}.build();
-    assert(compare_versions(options.minimum_required_version, min_supported_version) == 0);
+    assert(compare_versions(options.minimum_required_version,
+                            min_supported_version) == 0);
     assert(options.debug == WEBVIEW_FALSE);
     assert(options.window == nullptr);
     assert(options.visible == WEBVIEW_FALSE);
   }
   {
     auto options = webview::create_options_builder{}
-      .minimum_required_version({1, 2, 3})
-      .debug()
-      .window(reinterpret_cast<void *>(123))
-      .visibility()
-      .build();
+                       .minimum_required_version({1, 2, 3})
+                       .debug()
+                       .window(reinterpret_cast<void *>(123))
+                       .visibility()
+                       .build();
     assert(compare_versions(options.minimum_required_version, {1, 2, 3}) == 0);
     assert(options.debug == WEBVIEW_TRUE);
-    assert(options.window == reinterpret_cast<void*>(123));
+    assert(options.window == reinterpret_cast<void *>(123));
     assert(options.visible == WEBVIEW_TRUE);
   }
 }
@@ -465,7 +466,8 @@ static void test_apply_webview_create_options_compatibility() {
   assert(options.window == nullptr);
   assert(options.visible == WEBVIEW_FALSE);
   options = apply_webview_create_options_compatibility(options);
-  assert(compare_versions(options.minimum_required_version, min_supported_version) == 0);
+  assert(compare_versions(options.minimum_required_version,
+                          min_supported_version) == 0);
   assert(options.debug == WEBVIEW_FALSE);
   assert(options.window == nullptr);
   assert(options.visible == WEBVIEW_TRUE);
