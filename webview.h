@@ -253,13 +253,16 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   int depth = 0;
   int utf8_bytes = 0;
 
-  if (key == nullptr) {
-    index = keysz;
-    keysz = 0;
-  }
-
   *value = nullptr;
   *valuesz = 0;
+
+  if (key == nullptr) {
+    index = static_cast<decltype(index)>(keysz);
+    if (index < 0) {
+      return -1;
+    }
+    keysz = 0;
+  }
 
   for (; sz > 0; s++, sz--) {
     enum {
@@ -269,7 +272,7 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
       JSON_ACTION_START_STRUCT,
       JSON_ACTION_END_STRUCT
     } action = JSON_ACTION_NONE;
-    unsigned char c = *s;
+    auto c = static_cast<unsigned char>(*s);
     switch (state) {
     case JSON_STATE_VALUE:
       if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' ||
@@ -450,7 +453,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   }
   if (value != nullptr) {
     if (value[0] != '"') {
-      return std::string(value, value_sz);
+      return {value, value_sz};
     }
     int n = json_unescape(value, value_sz, nullptr);
     if (n > 0) {
