@@ -1195,12 +1195,13 @@ private:
 struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+  using SetProcessDPIAware_t = BOOL(WINAPI *)();
 
   static constexpr auto SetProcessDpiAwarenessContext =
       library_symbol<SetProcessDpiAwarenessContext_t>(
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
-      library_symbol<decltype(&::SetProcessDPIAware)>("SetProcessDPIAware");
+      library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
 };
 
 struct shcore_symbols {
