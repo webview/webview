@@ -58,9 +58,10 @@ static void test_c_api_bind() {
     unsigned int number;
   } context{};
   auto test = +[](const char *seq, const char *req, void *arg) {
-    auto increment = +[](const char *seq, const char *req, void *arg) {
-      ++static_cast<context_t *>(arg)->number;
-    };
+    auto increment =
+        +[](const char * /*seq*/, const char * /*req*/, void *arg) {
+          ++static_cast<context_t *>(arg)->number;
+        };
     auto context = static_cast<context_t *>(arg);
     std::string req_(req);
     // Bind and increment number.
@@ -120,7 +121,7 @@ static void test_sync_bind() {
   unsigned int number = 0;
   webview::webview w(false, nullptr);
   auto test = [&](const std::string &req) -> std::string {
-    auto increment = [&](const std::string &req) -> std::string {
+    auto increment = [&](const std::string & /*req*/) -> std::string {
       ++number;
       return "";
     };
@@ -149,6 +150,7 @@ static void test_sync_bind() {
       return "";
     }
     assert(!"Should not reach here");
+    return "";
   };
   auto html = "<script>\n"
               "  window.test(0);\n"
@@ -222,7 +224,7 @@ static void test_json() {
   auto J = webview::detail::json_parse;
   // Valid input with expected output
   assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
-  assert(J(R"({"foo":""})", "foo", -1) == "");
+  assert(J(R"({"foo":""})", "foo", -1).empty());
   assert(J(R"({"foo":{}")", "foo", -1) == "{}");
   assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
   assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
@@ -233,24 +235,24 @@ static void test_json() {
   // Invalid input with valid output - should probably fail
   assert(J(R"({"foo":"bar")", "foo", -1) == "bar");
   // Valid input with other invalid parameters - should fail
-  assert(J(R"([])", "", 0) == "");
-  assert(J(R"({})", "foo", -1) == "");
-  assert(J(R"(["foo", "bar", "baz"])", "", -1) == "");
-  assert(J(R"(["foo"])", "", 1234) == "");
-  assert(J(R"(["foo"])", "", -1234) == "");
+  assert(J(R"([])", "", 0).empty());
+  assert(J(R"({})", "foo", -1).empty());
+  assert(J(R"(["foo", "bar", "baz"])", "", -1).empty());
+  assert(J(R"(["foo"])", "", 1234).empty());
+  assert(J(R"(["foo"])", "", -1234).empty());
   // Invalid input - should fail
-  assert(J("", "", 0) == "");
-  assert(J("", "foo", -1) == "");
-  assert(J(R"({"foo":")", "foo", -1) == "");
-  assert(J(R"({"foo":{)", "foo", -1) == "");
-  assert(J(R"({"foo":{")", "foo", -1) == "");
-  assert(J(R"(}")", "foo", -1) == "");
-  assert(J(R"({}}")", "foo", -1) == "");
-  assert(J(R"("foo)", "foo", -1) == "");
-  assert(J(R"(foo)", "foo", -1) == "");
-  assert(J(R"({{[[""foo""]]}})", "", 1234) == "");
-  assert(J("bad", "", 0) == "");
-  assert(J("bad", "foo", -1) == "");
+  assert(J("", "", 0).empty());
+  assert(J("", "foo", -1).empty());
+  assert(J(R"({"foo":")", "foo", -1).empty());
+  assert(J(R"({"foo":{)", "foo", -1).empty());
+  assert(J(R"({"foo":{")", "foo", -1).empty());
+  assert(J(R"(}")", "foo", -1).empty());
+  assert(J(R"({}}")", "foo", -1).empty());
+  assert(J(R"("foo)", "foo", -1).empty());
+  assert(J(R"(foo)", "foo", -1).empty());
+  assert(J(R"({{[[""foo""]]}})", "", 1234).empty());
+  assert(J("bad", "", 0).empty());
+  assert(J("bad", "foo", -1).empty());
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
@@ -277,8 +279,8 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 // =================================================================
 static void test_win32_narrow_wide_string_conversion() {
   using namespace webview::detail;
-  assert(widen_string("") == L"");
-  assert(narrow_string(L"") == "");
+  assert(widen_string("").empty());
+  assert(narrow_string(L"").empty());
   assert(widen_string("foo") == L"foo");
   assert(narrow_string(L"foo") == "foo");
   assert(widen_string("フー") == L"フー");
