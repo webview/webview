@@ -37,6 +37,12 @@ Debian-based systems:
   * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
   * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
 
+Fedora-based systems:
+
+* Packages:
+  * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
+  * Production: `dnf install gtk3 webkit2gtk4.0`
+
 BSD-based systems:
 
 * FreeBSD packages: `pkg install webkit2-gtk3`
