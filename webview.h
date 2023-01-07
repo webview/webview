@@ -1345,16 +1345,11 @@ public:
     return E_NOINTERFACE;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
-    if (SUCCEEDED(res)) {
-      env->CreateCoreWebView2Controller(m_window, this);
-    }
+    env->CreateCoreWebView2Controller(m_window, this);
     return S_OK;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                    ICoreWebView2Controller *controller) {
-    if (FAILED(res)) {
-      return S_OK;
-    }
     ICoreWebView2 *webview;
     ::EventRegistrationToken token;
     controller->get_CoreWebView2(&webview);
@@ -1583,10 +1578,6 @@ private:
     m_com_handler = new webview2_com_handler(
         wnd, cb,
         [&](ICoreWebView2Controller *controller, ICoreWebView2 *webview) {
-          if (!controller || !webview) {
-            flag.clear();
-            return;
-          }
           controller->AddRef();
           webview->AddRef();
           m_controller = controller;
@@ -1595,7 +1586,7 @@ private:
         });
     auto res = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
-    if (FAILED(res)) {
+    if (res != S_OK) {
       return false;
     }
     MSG msg = {};
@@ -1603,16 +1594,13 @@ private:
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
-    if (!m_controller || !m_webview) {
-      return false;
-    }
     ICoreWebView2Settings *settings = nullptr;
     res = m_webview->get_Settings(&settings);
-    if (FAILED(res)) {
+    if (res != S_OK) {
       return false;
     }
     res = settings->put_AreDevToolsEnabled(debug ? TRUE : FALSE);
-    if (FAILED(res)) {
+    if (res != S_OK) {
       return false;
     }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
