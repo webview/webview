@@ -1232,6 +1232,81 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+struct webview2_symbols {
+  using CreateCoreWebView2EnvironmentWithOptions_t =
+      HRESULT(STDMETHODCALLTYPE *)(
+          PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+  using CreateWebViewEnvironmentWithOptionsInternal_t =
+      HRESULT(STDMETHODCALLTYPE *)(
+          bool, webview2_runtime_type, PCWSTR, IUnknown *,
+          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+  using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
+  using GetAvailableCoreWebView2BrowserVersionString_t =
+      HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+
+  static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
+      webview::detail::library_symbol<
+          CreateCoreWebView2EnvironmentWithOptions_t>(
+          "CreateCoreWebView2EnvironmentWithOptions");
+  static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
+      webview::detail::library_symbol<
+          CreateWebViewEnvironmentWithOptionsInternal_t>(
+          "CreateWebViewEnvironmentWithOptionsInternal");
+  static constexpr auto DllCanUnloadNow =
+      webview::detail::library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
+  static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
+      webview::detail::library_symbol<
+          GetAvailableCoreWebView2BrowserVersionString_t>(
+          "GetAvailableCoreWebView2BrowserVersionString");
+};
+
+class loader {
+public:
+  HRESULT create_environment_with_options(
+      PCWSTR browser_dir, PCWSTR user_data_dir,
+      ICoreWebView2EnvironmentOptions *env_options,
+      ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+          *created_handler) const {
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
+        return fn(browser_dir, user_data_dir, env_options, created_handler);
+      }
+    }
+    return S_FALSE;
+  }
+
+  HRESULT
+  get_available_browser_version_string(PCWSTR browser_dir,
+                                       LPWSTR *version) const {
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
+        return fn(browser_dir, version);
+      }
+    }
+    return S_FALSE;
+  }
+
+  bool is_browser_available() const {
+    LPWSTR version = nullptr;
+    auto res = get_available_browser_version_string(nullptr, &version);
+    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+    // if the WebView2 runtime is not installed.
+    auto ok = SUCCEEDED(res) && version;
+    if (version) {
+      CoTaskMemFree(version);
+    }
+    return ok;
+  }
+
+private:
+  native_library m_lib{L"WebView2Loader.dll"};
+};
+
+} // namespace mswebview2
+
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
@@ -1266,11 +1341,16 @@ public:
     return E_NOINTERFACE;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, ICoreWebView2Environment *env) {
-    env->CreateCoreWebView2Controller(m_window, this);
+    if (SUCCEEDED(res)) {
+      env->CreateCoreWebView2Controller(m_window, this);
+    }
     return S_OK;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                    ICoreWebView2Controller *controller) {
+    if (FAILED(res)) {
+      return S_OK;
+    }
     ICoreWebView2 *webview;
     ::EventRegistrationToken token;
     controller->get_CoreWebView2(&webview);
@@ -1310,7 +1390,7 @@ private:
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
-    if (!is_webview2_available()) {
+    if (!m_webview2_loader.is_browser_available()) {
       return;
     }
     if (!m_com_init.is_initialized()) {
@@ -1499,15 +1579,20 @@ private:
     m_com_handler = new webview2_com_handler(
         wnd, cb,
         [&](ICoreWebView2Controller *controller, ICoreWebView2 *webview) {
+          if (!controller || !webview) {
+            flag.clear();
+            return;
+          }
           controller->AddRef();
           webview->AddRef();
           m_controller = controller;
           m_webview = webview;
           flag.clear();
         });
-    HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
+    auto res = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
-    if (res != S_OK) {
+    });
+    if (FAILED(res)) {
       return false;
     }
     MSG msg = {};
@@ -1515,13 +1600,16 @@ private:
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
+    if (!m_controller || !m_webview) {
+      return false;
+    }
     ICoreWebView2Settings *settings = nullptr;
     res = m_webview->get_Settings(&settings);
-    if (res != S_OK) {
+    if (FAILED(res)) {
       return false;
     }
     res = settings->put_AreDevToolsEnabled(debug ? TRUE : FALSE);
-    if (res != S_OK) {
+    if (FAILED(res)) {
       return false;
     }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
@@ -1537,19 +1625,6 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
-  static bool is_webview2_available() noexcept {
-    LPWSTR version_info = nullptr;
-    auto res =
-        GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
-    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
-    // if the WebView2 runtime is not installed.
-    auto ok = SUCCEEDED(res) && version_info;
-    if (version_info) {
-      CoTaskMemFree(version_info);
-    }
-    return ok;
-  }
-
   virtual void on_message(const std::string &msg) = 0;
 
   // The app is expected to call CoInitializeEx before
@@ -1563,6 +1638,7 @@ private:
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
+  mswebview2::loader m_webview2_loader;
 };
 
 } // namespace detail
