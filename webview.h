@@ -1237,11 +1237,6 @@ struct webview2_symbols {
       HRESULT(STDMETHODCALLTYPE *)(
           PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
           ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
-  using CreateWebViewEnvironmentWithOptionsInternal_t =
-      HRESULT(STDMETHODCALLTYPE *)(
-          bool, webview2_runtime_type, PCWSTR, IUnknown *,
-          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
-  using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
   using GetAvailableCoreWebView2BrowserVersionString_t =
       HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
 
@@ -1249,12 +1244,6 @@ struct webview2_symbols {
       webview::detail::library_symbol<
           CreateCoreWebView2EnvironmentWithOptions_t>(
           "CreateCoreWebView2EnvironmentWithOptions");
-  static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
-      webview::detail::library_symbol<
-          CreateWebViewEnvironmentWithOptionsInternal_t>(
-          "CreateWebViewEnvironmentWithOptionsInternal");
-  static constexpr auto DllCanUnloadNow =
-      webview::detail::library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
   static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
       webview::detail::library_symbol<
           GetAvailableCoreWebView2BrowserVersionString_t>(
