@@ -177,7 +177,6 @@ On Windows you will need to make the WebView2 loader discoverable by cgo (see [W
 
 ```bat
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
-set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
 > **Note:** Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
