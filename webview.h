@@ -1232,6 +1232,8 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+namespace mswebview2 {
+
 struct webview2_symbols {
   using CreateCoreWebView2EnvironmentWithOptions_t =
       HRESULT(STDMETHODCALLTYPE *)(
