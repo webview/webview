@@ -1244,12 +1244,10 @@ struct webview2_symbols {
       HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
 
   static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
-      webview::detail::library_symbol<
-          CreateCoreWebView2EnvironmentWithOptions_t>(
+      library_symbol<CreateCoreWebView2EnvironmentWithOptions_t>(
           "CreateCoreWebView2EnvironmentWithOptions");
   static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
-      webview::detail::library_symbol<
-          GetAvailableCoreWebView2BrowserVersionString_t>(
+      library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
           "GetAvailableCoreWebView2BrowserVersionString");
 };
 #endif
