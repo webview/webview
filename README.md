@@ -110,8 +110,10 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
+
+> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined and avoids the need for `WebView2Loader.dll.lib`.
 
 #### Bonus for Visual C++
 
@@ -120,7 +122,6 @@ Build a shared library with WebView2 linked statically:
 ```bat
 cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
     /D "WEBVIEW_API=__declspec(dllexport)" ^
-    /D WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
@@ -131,7 +132,6 @@ Build the example with WebView2 linked statically:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
-    /D WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
@@ -160,7 +160,7 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
