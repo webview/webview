@@ -1582,7 +1582,6 @@ private:
         });
     auto res = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
-    });
     if (FAILED(res)) {
       return false;
     }
