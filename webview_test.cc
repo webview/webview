@@ -1,6 +1,12 @@
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
 // +build ignore
 
+#define WEBVIEW_VERSION_MAJOR 1
+#define WEBVIEW_VERSION_MINOR 2
+#define WEBVIEW_VERSION_PATCH 3
+#define WEBVIEW_VERSION_PRE_RELEASE "-test"
+#define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
+
 #include "webview.h"
 
 #include <cassert>
@@ -40,6 +46,138 @@ static void test_c_api() {
   webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
   webview_destroy(w);
+}
+
+// =================================================================
+// TEST: use C API to test binding and unbinding.
+// =================================================================
+
+static void test_c_api_bind() {
+  struct context_t {
+    webview_t w;
+    unsigned int number;
+  } context{};
+  auto test = +[](const char *seq, const char *req, void *arg) {
+    auto increment =
+        +[](const char * /*seq*/, const char * /*req*/, void *arg) {
+          ++static_cast<context_t *>(arg)->number;
+        };
+    auto context = static_cast<context_t *>(arg);
+    std::string req_(req);
+    // Bind and increment number.
+    if (req_ == "[0]") {
+      assert(context->number == 0);
+      webview_bind(context->w, "increment", increment, context);
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(1)})()");
+      return;
+    }
+    // Unbind and make sure that we cannot increment even if we try.
+    if (req_ == "[1]") {
+      assert(context->number == 1);
+      webview_unbind(context->w, "increment");
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(2)})()");
+      return;
+    }
+    // Number should not have changed but we can bind again and change the number.
+    if (req_ == "[2]") {
+      assert(context->number == 1);
+      webview_bind(context->w, "increment", increment, context);
+      webview_return(
+          context->w, seq, 0,
+          "(() => {try{window.increment()}catch{}window.test(3)})()");
+      return;
+    }
+    // Finish test.
+    if (req_ == "[3]") {
+      assert(context->number == 2);
+      webview_terminate(context->w);
+      return;
+    }
+    assert(!"Should not reach here");
+  };
+  auto html = "<script>\n"
+              "  window.test(0);\n"
+              "</script>";
+  auto w = webview_create(false, nullptr);
+  context.w = w;
+  // Attempting to remove non-existing binding is OK
+  webview_unbind(w, "test");
+  webview_bind(w, "test", test, &context);
+  // Attempting to bind multiple times only binds once
+  webview_bind(w, "test", test, &context);
+  webview_set_html(w, html);
+  webview_run(w);
+}
+
+// =================================================================
+// TEST: test synchronous binding and unbinding.
+// =================================================================
+
+static void test_sync_bind() {
+  unsigned int number = 0;
+  webview::webview w(false, nullptr);
+  auto test = [&](const std::string &req) -> std::string {
+    auto increment = [&](const std::string & /*req*/) -> std::string {
+      ++number;
+      return "";
+    };
+    // Bind and increment number.
+    if (req == "[0]") {
+      assert(number == 0);
+      w.bind("increment", increment);
+      return "(() => {try{window.increment()}catch{}window.test(1)})()";
+    }
+    // Unbind and make sure that we cannot increment even if we try.
+    if (req == "[1]") {
+      assert(number == 1);
+      w.unbind("increment");
+      return "(() => {try{window.increment()}catch{}window.test(2)})()";
+    }
+    // Number should not have changed but we can bind again and change the number.
+    if (req == "[2]") {
+      assert(number == 1);
+      w.bind("increment", increment);
+      return "(() => {try{window.increment()}catch{}window.test(3)})()";
+    }
+    // Finish test.
+    if (req == "[3]") {
+      assert(number == 2);
+      w.terminate();
+      return "";
+    }
+    assert(!"Should not reach here");
+    return "";
+  };
+  auto html = "<script>\n"
+              "  window.test(0);\n"
+              "</script>";
+  // Attempting to remove non-existing binding is OK
+  w.unbind("test");
+  w.bind("test", test);
+  // Attempting to bind multiple times only binds once
+  w.bind("test", test);
+  w.set_html(html);
+  w.run();
+}
+
+// =================================================================
+// TEST: webview_version().
+// =================================================================
+static void test_c_api_version() {
+  auto vi = webview_version();
+  assert(vi);
+  assert(vi->version.major == 1);
+  assert(vi->version.minor == 2);
+  assert(vi->version.patch == 3);
+  assert(std::string(vi->version_number) == "1.2.3");
+  assert(std::string(vi->pre_release) == "-test");
+  assert(std::string(vi->build_metadata) == "+gaabbccd");
+  // The function should return the same pointer when called again.
+  assert(webview_version() == vi);
 }
 
 // =================================================================
@@ -86,7 +224,7 @@ static void test_json() {
   auto J = webview::detail::json_parse;
   // Valid input with expected output
   assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
-  assert(J(R"({"foo":""})", "foo", -1) == "");
+  assert(J(R"({"foo":""})", "foo", -1).empty());
   assert(J(R"({"foo":{}")", "foo", -1) == "{}");
   assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
   assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
@@ -97,24 +235,24 @@ static void test_json() {
   // Invalid input with valid output - should probably fail
   assert(J(R"({"foo":"bar")", "foo", -1) == "bar");
   // Valid input with other invalid parameters - should fail
-  assert(J(R"([])", "", 0) == "");
-  assert(J(R"({})", "foo", -1) == "");
-  assert(J(R"(["foo", "bar", "baz"])", "", -1) == "");
-  assert(J(R"(["foo"])", "", 1234) == "");
-  assert(J(R"(["foo"])", "", -1234) == "");
+  assert(J(R"([])", "", 0).empty());
+  assert(J(R"({})", "foo", -1).empty());
+  assert(J(R"(["foo", "bar", "baz"])", "", -1).empty());
+  assert(J(R"(["foo"])", "", 1234).empty());
+  assert(J(R"(["foo"])", "", -1234).empty());
   // Invalid input - should fail
-  assert(J("", "", 0) == "");
-  assert(J("", "foo", -1) == "");
-  assert(J(R"({"foo":")", "foo", -1) == "");
-  assert(J(R"({"foo":{)", "foo", -1) == "");
-  assert(J(R"({"foo":{")", "foo", -1) == "");
-  assert(J(R"(}")", "foo", -1) == "");
-  assert(J(R"({}}")", "foo", -1) == "");
-  assert(J(R"("foo)", "foo", -1) == "");
-  assert(J(R"(foo)", "foo", -1) == "");
-  assert(J(R"({{[[""foo""]]}})", "", 1234) == "");
-  assert(J("bad", "", 0) == "");
-  assert(J("bad", "foo", -1) == "");
+  assert(J("", "", 0).empty());
+  assert(J("", "foo", -1).empty());
+  assert(J(R"({"foo":")", "foo", -1).empty());
+  assert(J(R"({"foo":{)", "foo", -1).empty());
+  assert(J(R"({"foo":{")", "foo", -1).empty());
+  assert(J(R"(}")", "foo", -1).empty());
+  assert(J(R"({}}")", "foo", -1).empty());
+  assert(J(R"("foo)", "foo", -1).empty());
+  assert(J(R"(foo)", "foo", -1).empty());
+  assert(J(R"({{[[""foo""]]}})", "", 1234).empty());
+  assert(J("bad", "", 0).empty());
+  assert(J("bad", "foo", -1).empty());
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
@@ -174,8 +312,8 @@ static void test_parse_version() {
 // =================================================================
 static void test_win32_narrow_wide_string_conversion() {
   using namespace webview::detail;
-  assert(widen_string("") == L"");
-  assert(narrow_string(L"") == "");
+  assert(widen_string("").empty());
+  assert(narrow_string(L"").empty());
   assert(widen_string("foo") == L"foo");
   assert(narrow_string(L"foo") == "foo");
   assert(widen_string("フー") == L"フー");
@@ -209,10 +347,10 @@ static void test_win32_narrow_wide_string_conversion() {
 
 int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
-      {"terminate", test_terminate},
-      {"c_api", test_c_api},
-      {"bidir_comms", test_bidir_comms},
-      {"json", test_json}};
+      {"terminate", test_terminate},     {"c_api", test_c_api},
+      {"c_api_bind", test_c_api_bind},   {"c_api_version", test_c_api_version},
+      {"bidir_comms", test_bidir_comms}, {"json", test_json},
+      {"sync_bind", test_sync_bind}};
 #if _WIN32
   all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",

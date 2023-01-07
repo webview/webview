@@ -37,6 +37,12 @@ Debian-based systems:
   * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
   * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
 
+Fedora-based systems:
+
+* Packages:
+  * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
+  * Production: `dnf install gtk3 webkit2gtk4.0`
+
 BSD-based systems:
 
 * FreeBSD packages: `pkg install webkit2-gtk3`
@@ -54,7 +60,7 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. Use the Command shell on Windows with these instructions rather than PowerShell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that multiple commands are executed in the same shell session. Command lines for Windows use syntax specific to the Command shell but you can use any shell such as PowerShell as long as you adapt the commands accordingly. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
 You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
 
@@ -301,16 +307,18 @@ Language    | Project
 ----------  | -------
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
+Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)
 Go          | [webview/webview][webview]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
-Java        | [shannah/webviewjar](https://github.com/shannah/webviewjar)
+Java        | [webview/webview_java](https://github.com/webview/webview_java)
 Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/webviewko)
 Nim         | [oskca/webview](https://github.com/oskca/webview)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
+V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 
