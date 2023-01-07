@@ -1232,6 +1232,71 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+namespace mswebview2 {
+
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+struct webview2_symbols {
+  using CreateCoreWebView2EnvironmentWithOptions_t =
+      HRESULT(STDMETHODCALLTYPE *)(
+          PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+  using GetAvailableCoreWebView2BrowserVersionString_t =
+      HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+
+  static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
+      library_symbol<CreateCoreWebView2EnvironmentWithOptions_t>(
+          "CreateCoreWebView2EnvironmentWithOptions");
+  static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
+      library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
+          "GetAvailableCoreWebView2BrowserVersionString");
+};
+#endif
+
+class loader {
+public:
+  HRESULT create_environment_with_options(
+      PCWSTR browser_dir, PCWSTR user_data_dir,
+      ICoreWebView2EnvironmentOptions *env_options,
+      ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+          *created_handler) const {
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
+        return fn(browser_dir, user_data_dir, env_options, created_handler);
+      }
+    }
+    return S_FALSE;
+#else
+    return ::CreateCoreWebView2EnvironmentWithOptions(
+        browser_dir, user_data_dir, env_options, created_handler);
+#endif
+  }
+
+  HRESULT
+  get_available_browser_version_string(PCWSTR browser_dir,
+                                       LPWSTR *version) const {
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
+        return fn(browser_dir, version);
+      }
+    }
+    return S_FALSE;
+#else
+    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+#endif
+  }
+
+private:
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+  native_library m_lib{L"WebView2Loader.dll"};
+#endif
+};
+
+} // namespace mswebview2
+
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
@@ -1505,7 +1570,7 @@ private:
           m_webview = webview;
           flag.clear();
         });
-    HRESULT res = CreateCoreWebView2EnvironmentWithOptions(
+    HRESULT res = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
     if (res != S_OK) {
       return false;
@@ -1537,10 +1602,10 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
-  static bool is_webview2_available() noexcept {
+  bool is_webview2_available() const noexcept {
     LPWSTR version_info = nullptr;
-    auto res =
-        GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
+    auto res = m_webview2_loader.get_available_browser_version_string(
+        nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
     auto ok = SUCCEEDED(res) && version_info;
@@ -1563,6 +1628,7 @@ private:
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
+  mswebview2::loader m_webview2_loader;
 };
 
 } // namespace detail
