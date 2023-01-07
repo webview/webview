@@ -1353,19 +1353,11 @@ public:
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
                                    ICoreWebView2Controller *controller) {
     if (FAILED(res)) {
-      m_cb(controller, nullptr);
       return S_OK;
     }
-
     ICoreWebView2 *webview;
-    res = controller->get_CoreWebView2(&webview);
-
-    if (FAILED(res)) {
-      m_cb(controller, nullptr);
-      return S_OK;
-    }
-
     ::EventRegistrationToken token;
+    controller->get_CoreWebView2(&webview);
     webview->add_WebMessageReceived(this, &token);
     webview->add_PermissionRequested(this, &token);
 
