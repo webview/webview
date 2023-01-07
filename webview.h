@@ -1234,6 +1234,7 @@ inline bool enable_dpi_awareness() {
 
 namespace mswebview2 {
 
+#ifndef WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK
 struct webview2_symbols {
   using CreateCoreWebView2EnvironmentWithOptions_t =
       HRESULT(STDMETHODCALLTYPE *)(
@@ -1251,6 +1252,7 @@ struct webview2_symbols {
           GetAvailableCoreWebView2BrowserVersionString_t>(
           "GetAvailableCoreWebView2BrowserVersionString");
 };
+#endif
 
 class loader {
 public:
@@ -1259,6 +1261,10 @@ public:
       ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
           *created_handler) const {
+#ifdef WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK
+    return ::CreateCoreWebView2EnvironmentWithOptions(
+        browser_dir, user_data_dir, env_options, created_handler);
+#else
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
@@ -1266,11 +1272,15 @@ public:
       }
     }
     return S_FALSE;
+#endif
   }
 
   HRESULT
   get_available_browser_version_string(PCWSTR browser_dir,
                                        LPWSTR *version) const {
+#ifdef WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK
+    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+#else
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
@@ -1278,6 +1288,7 @@ public:
       }
     }
     return S_FALSE;
+#endif
   }
 
   bool is_browser_available() const {
@@ -1293,7 +1304,9 @@ public:
   }
 
 private:
+#ifndef WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK
   native_library m_lib{L"WebView2Loader.dll"};
+#endif
 };
 
 } // namespace mswebview2

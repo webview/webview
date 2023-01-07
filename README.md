@@ -120,6 +120,7 @@ Build a shared library with WebView2 linked statically:
 ```bat
 cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
     /D "WEBVIEW_API=__declspec(dllexport)" ^
+    /D WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
@@ -130,6 +131,7 @@ Build the example with WebView2 linked statically:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
+    /D WEBVIEW_MSWEBVIEW2_IMPLICIT_LINK ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
