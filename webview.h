@@ -1291,18 +1291,6 @@ public:
 #endif
   }
 
-  bool is_browser_available() const {
-    LPWSTR version = nullptr;
-    auto res = get_available_browser_version_string(nullptr, &version);
-    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
-    // if the WebView2 runtime is not installed.
-    auto ok = SUCCEEDED(res) && version;
-    if (version) {
-      CoTaskMemFree(version);
-    }
-    return ok;
-  }
-
 private:
 #ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
   native_library m_lib{L"WebView2Loader.dll"};
@@ -1389,7 +1377,7 @@ private:
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
-    if (!m_webview2_loader.is_browser_available()) {
+    if (!is_webview2_available()) {
       return;
     }
     if (!m_com_init.is_initialized()) {
@@ -1584,7 +1572,7 @@ private:
           m_webview = webview;
           flag.clear();
         });
-    auto res = m_webview2_loader.create_environment_with_options(
+    HRESULT res = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
     if (res != S_OK) {
       return false;
@@ -1614,6 +1602,19 @@ private:
     RECT bounds;
     GetClientRect(wnd, &bounds);
     m_controller->put_Bounds(bounds);
+  }
+
+  bool is_webview2_available() const noexcept {
+    LPWSTR version_info = nullptr;
+    auto res = m_webview2_loader.get_available_browser_version_string(
+        nullptr, &version_info);
+    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+    // if the WebView2 runtime is not installed.
+    auto ok = SUCCEEDED(res) && version_info;
+    if (version_info) {
+      CoTaskMemFree(version_info);
+    }
+    return ok;
   }
 
   virtual void on_message(const std::string &msg) = 0;
