@@ -37,6 +37,12 @@ Debian-based systems:
   * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
   * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
 
+Fedora-based systems:
+
+* Packages:
+  * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
+  * Production: `dnf install gtk3 webkit2gtk4.0`
+
 BSD-based systems:
 
 * FreeBSD packages: `pkg install webkit2-gtk3`
@@ -54,7 +60,7 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that you run multiple commands in the same shell. Use the Command shell on Windows with these instructions rather than PowerShell. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that multiple commands are executed in the same shell session. Command lines for Windows use syntax specific to the Command shell but you can use any shell such as PowerShell as long as you adapt the commands accordingly. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
 You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
 
@@ -106,6 +112,8 @@ g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./bui
 # Windows/MinGW
 g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
 ```
+
+> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined, avoiding the need for `WebView2Loader.dll.lib`.
 
 #### Bonus for Visual C++
 
@@ -169,7 +177,6 @@ On Windows you will need to make the WebView2 loader discoverable by cgo (see [W
 
 ```bat
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
-set CGO_LDFLAGS="-L%cd%\libs\webview2\build\native\x64"
 ```
 
 > **Note:** Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.

@@ -127,7 +127,6 @@ rem Argument quoting works for Go 1.18 and later but as of 2022-06-26 GitHub Act
 rem See https://go-review.googlesource.com/c/go/+/334732/
 rem TODO: Use proper quoting when GHA has Go 1.18 or later.
 set "CGO_CXXFLAGS=-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
-set "CGO_LDFLAGS=-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
 set CGO_ENABLED=1
 
 rem Go needs go.mod to be in the working directory.

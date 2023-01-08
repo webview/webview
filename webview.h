@@ -421,13 +421,16 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   int depth = 0;
   int utf8_bytes = 0;
 
-  if (key == nullptr) {
-    index = keysz;
-    keysz = 0;
-  }
-
   *value = nullptr;
   *valuesz = 0;
+
+  if (key == nullptr) {
+    index = static_cast<decltype(index)>(keysz);
+    if (index < 0) {
+      return -1;
+    }
+    keysz = 0;
+  }
 
   for (; sz > 0; s++, sz--) {
     enum {
@@ -437,7 +440,7 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
       JSON_ACTION_START_STRUCT,
       JSON_ACTION_END_STRUCT
     } action = JSON_ACTION_NONE;
-    unsigned char c = *s;
+    auto c = static_cast<unsigned char>(*s);
     switch (state) {
     case JSON_STATE_VALUE:
       if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' ||
@@ -618,7 +621,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   }
   if (value != nullptr) {
     if (value[0] != '"') {
-      return std::string(value, value_sz);
+      return {value, value_sz};
     }
     int n = json_unescape(value, value_sz, nullptr);
     if (n > 0) {
@@ -1412,12 +1415,13 @@ private:
 struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+  using SetProcessDPIAware_t = BOOL(WINAPI *)();
 
   static constexpr auto SetProcessDpiAwarenessContext =
       library_symbol<SetProcessDpiAwarenessContext_t>(
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
-      library_symbol<decltype(&::SetProcessDPIAware)>("SetProcessDPIAware");
+      library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
 };
 
 struct shcore_symbols {
@@ -1455,6 +1459,71 @@ struct app_window_message {
     webview_initialization_failed = WM_APP + 2
   };
 };
+
+namespace mswebview2 {
+
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+struct webview2_symbols {
+  using CreateCoreWebView2EnvironmentWithOptions_t =
+      HRESULT(STDMETHODCALLTYPE *)(
+          PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+  using GetAvailableCoreWebView2BrowserVersionString_t =
+      HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+
+  static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
+      library_symbol<CreateCoreWebView2EnvironmentWithOptions_t>(
+          "CreateCoreWebView2EnvironmentWithOptions");
+  static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
+      library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
+          "GetAvailableCoreWebView2BrowserVersionString");
+};
+#endif
+
+class loader {
+public:
+  HRESULT create_environment_with_options(
+      PCWSTR browser_dir, PCWSTR user_data_dir,
+      ICoreWebView2EnvironmentOptions *env_options,
+      ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
+          *created_handler) const {
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
+        return fn(browser_dir, user_data_dir, env_options, created_handler);
+      }
+    }
+    return S_FALSE;
+#else
+    return ::CreateCoreWebView2EnvironmentWithOptions(
+        browser_dir, user_data_dir, env_options, created_handler);
+#endif
+  }
+
+  HRESULT
+  get_available_browser_version_string(PCWSTR browser_dir,
+                                       LPWSTR *version) const {
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+    if (m_lib.is_loaded()) {
+      if (auto fn = m_lib.get(
+              webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
+        return fn(browser_dir, version);
+      }
+    }
+    return S_FALSE;
+#else
+    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+#endif
+  }
+
+private:
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+  native_library m_lib{L"WebView2Loader.dll"};
+#endif
+};
+
+} // namespace mswebview2
 
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
@@ -1778,7 +1847,7 @@ private:
           m_webview = webview;
           PostMessage(wnd, app_window_message::webview_ready, 0, 0);
         });
-    HRESULT create_result = CreateCoreWebView2EnvironmentWithOptions(
+    HRESULT create_result = m_webview2_loader.create_environment_with_options(
         nullptr, userDataFolder, nullptr, m_com_handler);
     if (!SUCCEEDED(create_result)) {
       // See specific errors we could detect:
@@ -1830,10 +1899,10 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
-  static bool is_webview2_available() noexcept {
+  bool is_webview2_available() const noexcept {
     LPWSTR version_info = nullptr;
-    auto res =
-        GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
+    auto res = m_webview2_loader.get_available_browser_version_string(
+        nullptr, &version_info);
     // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
     // if the WebView2 runtime is not installed.
     auto ok = SUCCEEDED(res) && version_info;
@@ -1856,6 +1925,7 @@ private:
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
+  mswebview2::loader m_webview2_loader;
 };
 
 } // namespace detail
