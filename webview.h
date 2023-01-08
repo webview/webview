@@ -1359,6 +1359,7 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 // Gets the last component of a Windows native file path.
 // For example, if the path is "C:\a\b" then the result is "b".
 template <typename T>
@@ -1370,6 +1371,7 @@ get_last_native_path_component(const std::basic_string<T> &path) {
   }
   return std::basic_string<T>();
 }
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
 template <typename T> struct cast_info_t {
   using type = T;
@@ -1390,36 +1392,41 @@ static constexpr IID IID_ICoreWebView2PermissionRequestedEventHandler{
 static constexpr IID IID_ICoreWebView2WebMessageReceivedEventHandler{
     0x57213F19, 0x00E6, 0x49FA, 0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2};
 
+#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 enum class webview2_runtime_type { installed = 0, embedded = 1 };
 
-struct webview2_symbols {
-  using CreateCoreWebView2EnvironmentWithOptions_t =
-      HRESULT(STDMETHODCALLTYPE *)(
-          PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
-          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
-  using CreateWebViewEnvironmentWithOptionsInternal_t =
-      HRESULT(STDMETHODCALLTYPE *)(
-          bool, webview2_runtime_type, PCWSTR, IUnknown *,
-          ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
-  using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
-  using GetAvailableCoreWebView2BrowserVersionString_t =
-      HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+namespace webview2_symbols {
+using CreateWebViewEnvironmentWithOptionsInternal_t =
+    HRESULT(STDMETHODCALLTYPE *)(
+        bool, webview2_runtime_type, PCWSTR, IUnknown *,
+        ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
 
-  static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
-      webview::detail::library_symbol<
-          CreateCoreWebView2EnvironmentWithOptions_t>(
-          "CreateCoreWebView2EnvironmentWithOptions");
-  static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
-      webview::detail::library_symbol<
-          CreateWebViewEnvironmentWithOptionsInternal_t>(
-          "CreateWebViewEnvironmentWithOptionsInternal");
-  static constexpr auto DllCanUnloadNow =
-      webview::detail::library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
-  static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
-      webview::detail::library_symbol<
-          GetAvailableCoreWebView2BrowserVersionString_t>(
-          "GetAvailableCoreWebView2BrowserVersionString");
-};
+static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
+    library_symbol<CreateWebViewEnvironmentWithOptionsInternal_t>(
+        "CreateWebViewEnvironmentWithOptionsInternal");
+static constexpr auto DllCanUnloadNow =
+    library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
+} // namespace webview2_symbols
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+
+#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK) ||                               \
+    defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
+namespace webview2_symbols {
+using CreateCoreWebView2EnvironmentWithOptions_t = HRESULT(STDMETHODCALLTYPE *)(
+    PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+    ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+using GetAvailableCoreWebView2BrowserVersionString_t =
+    HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+
+static constexpr auto CreateCoreWebView2EnvironmentWithOptions =
+    library_symbol<CreateCoreWebView2EnvironmentWithOptions_t>(
+        "CreateCoreWebView2EnvironmentWithOptions");
+static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
+    library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
+        "GetAvailableCoreWebView2BrowserVersionString");
+} // namespace webview2_symbols
+#endif // WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK, WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
 class loader {
 public:
@@ -1428,41 +1435,43 @@ public:
       ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
           *created_handler) const {
+#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
         return fn(browser_dir, user_data_dir, env_options, created_handler);
       }
     }
+    return S_FALSE;
+#elif defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
     return create_environment_with_options_impl(browser_dir, user_data_dir,
                                                 env_options, created_handler);
+#else
+    return ::CreateCoreWebView2EnvironmentWithOptions(
+        browser_dir, user_data_dir, env_options, created_handler);
+#endif
   }
 
   HRESULT
   get_available_browser_version_string(PCWSTR browser_dir,
                                        LPWSTR *version) const {
+#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
         return fn(browser_dir, version);
       }
     }
+    return S_FALSE;
+#elif defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
     return get_available_browser_version_string_impl(browser_dir, version);
-  }
-
-  bool is_browser_available() const {
-    LPWSTR version = nullptr;
-    auto res = get_available_browser_version_string(nullptr, &version);
-    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
-    // if the WebView2 runtime is not installed.
-    auto ok = SUCCEEDED(res) && version;
-    if (version) {
-      CoTaskMemFree(version);
-    }
-    return ok;
+#else
+    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+#endif
   }
 
 private:
+#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
   struct client_info_t {
     bool found = false;
     std::wstring dll_path;
@@ -1479,8 +1488,7 @@ private:
     if (!found_client.found) {
       return -1;
     }
-    auto client_dll =
-        webview::detail::native_library(found_client.dll_path.c_str());
+    auto client_dll = native_library(found_client.dll_path.c_str());
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
       return fn(true, found_client.runtime_type, user_data_dir, env_options,
@@ -1603,8 +1611,12 @@ private:
       L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
 
   static constexpr auto default_release_channel_guid = stable_release_guid;
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
+#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK) ||                               \
+    defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
   native_library m_lib{L"WebView2Loader.dll"};
+#endif
 };
 
 namespace cast_info {
@@ -1795,8 +1807,7 @@ private:
 class win32_edge_engine {
 public:
   win32_edge_engine(bool debug, void *window) {
-    mswebview2::loader webview2_loader;
-    if (!webview2_loader.is_browser_available()) {
+    if (!is_webview2_available()) {
       return;
     }
     if (!m_com_init.is_initialized()) {
@@ -1865,7 +1876,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_window, debug, cb, webview2_loader);
+    embed(m_window, debug, cb);
     resize(m_window);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
@@ -1966,8 +1977,7 @@ public:
   }
 
 private:
-  bool embed(HWND wnd, bool debug, msg_cb_t cb,
-             const mswebview2::loader &webview2_loader) {
+  bool embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -1998,7 +2008,7 @@ private:
         });
 
     m_com_handler->set_attempt_handler([&] {
-      return webview2_loader.create_environment_with_options(
+      return m_webview2_loader.create_environment_with_options(
           nullptr, userDataFolder, nullptr, m_com_handler);
     });
     m_com_handler->try_create_environment();
@@ -2033,6 +2043,19 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
+  bool is_webview2_available() const noexcept {
+    LPWSTR version_info = nullptr;
+    auto res = m_webview2_loader.get_available_browser_version_string(
+        nullptr, &version_info);
+    // The result will be equal to HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+    // if the WebView2 runtime is not installed.
+    auto ok = SUCCEEDED(res) && version_info;
+    if (version_info) {
+      CoTaskMemFree(version_info);
+    }
+    return ok;
+  }
+
   virtual void on_message(const std::string &msg) = 0;
 
   // The app is expected to call CoInitializeEx before
@@ -2046,6 +2069,7 @@ private:
   ICoreWebView2 *m_webview = nullptr;
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
+  mswebview2::loader m_webview2_loader;
 };
 
 } // namespace detail

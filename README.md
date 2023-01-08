@@ -116,6 +116,8 @@ g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./bui
 g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
 
+> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined, avoiding the need for `WebView2Loader.dll.lib`.
+
 #### Bonus for Visual C++
 
 Build a shared library:

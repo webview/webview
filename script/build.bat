@@ -54,6 +54,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo Building webview.dll ^(x86^)
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
+		/D WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x86\webview.dll" || exit /b
@@ -62,6 +63,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	echo Building webview.dll ^(x64^)
 	cl %warning_params% ^
 		/D "WEBVIEW_API=__declspec(dllexport)" ^
+		/D WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
 		"%src_dir%\webview.cc" /link /DLL "/OUT:%src_dir%\dll\x64\webview.dll" || exit /b
@@ -78,12 +80,14 @@ call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 echo Building C++ examples (x64)
 mkdir "%build_dir%\examples\cpp"
 cl %warning_params% ^
+	/D WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	/std:c++17 /EHsc "/Fo%build_dir%\examples\cpp"\ ^
 	"%src_dir%\examples\basic.cc" /link "/OUT:%build_dir%\examples\cpp\basic.exe" || exit /b
 cl %warning_params% ^
+	/D WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%src_dir%\dll\x64\webview.lib" ^
@@ -110,6 +114,7 @@ cl %warning_params% ^
 echo Building webview_test.exe (x64)
 cl %warning_params% ^
 	/utf-8 ^
+	/D WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -120,7 +125,6 @@ rem Argument quoting works for Go 1.18 and later but as of 2022-06-26 GitHub Act
 rem See https://go-review.googlesource.com/c/go/+/334732/
 rem TODO: Use proper quoting when GHA has Go 1.18 or later.
 set "CGO_CXXFLAGS=-I%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include"
-set "CGO_LDFLAGS=-L%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64"
 set CGO_ENABLED=1
 
 rem Go needs go.mod to be in the working directory.
