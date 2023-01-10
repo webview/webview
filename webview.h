@@ -705,9 +705,13 @@ enum WKUserScriptInjectionTime : NSInteger {
 enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 // Convenient conversion of string literals.
-id operator"" _cls(const char *s, std::size_t) { return (id)objc_getClass(s); }
-SEL operator"" _sel(const char *s, std::size_t) { return sel_registerName(s); }
-id operator"" _str(const char *s, std::size_t) {
+inline id operator"" _cls(const char *s, std::size_t) {
+  return (id)objc_getClass(s);
+}
+inline SEL operator"" _sel(const char *s, std::size_t) {
+  return sel_registerName(s);
+}
+inline id operator"" _str(const char *s, std::size_t) {
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
 }
 
