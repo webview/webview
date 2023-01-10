@@ -318,10 +318,10 @@ Here are some examples to get you started. Unix-style command lines are used for
 
 ```sh
 mkdir -p build/bindings/{python,csharp,java,ruby}
-swig -Wall -Werror -c++ -python -outdir build/bindings/python -o build/bindings/python/python_wrap.cpp webview.i
-swig -Wall -Werror -c++ -csharp -outdir build/bindings/csharp -o build/bindings/csharp/csharp_wrap.cpp webview.i
-swig -Wall -Werror -c++ -java -outdir build/bindings/java -o build/bindings/java/java_wrap.cpp webview.i
-swig -Wall -Werror -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp webview.i
+swig -c++ -python -outdir build/bindings/python -o build/bindings/python/python_wrap.cpp webview.i
+swig -c++ -csharp -outdir build/bindings/csharp -o build/bindings/csharp/csharp_wrap.cpp webview.i
+swig -c++ -java -outdir build/bindings/java -o build/bindings/java/java_wrap.cpp webview.i
+swig -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp webview.i
 ```
 
 ## License
