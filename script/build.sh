@@ -39,7 +39,7 @@ c++ examples/basic.cc $CXXFLAGS -o build/examples/cc/basic
 c++ examples/bind.cc $CXXFLAGS -o build/examples/cc/bind
 
 echo "Building C examples"
-c++ -c $CXXFLAGS webview.cc -o build/webview.o
+c++ -c $CXXFLAGS -DWEBVIEW_STATIC webview.cc -o build/webview.o
 cc -c examples/basic.c $CFLAGS -o build/examples/c/basic.o
 cc -c examples/bind.c $CFLAGS -o build/examples/c/bind.o
 c++ build/examples/c/basic.o build/webview.o $CXXFLAGS -o build/examples/c/basic

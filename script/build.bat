@@ -53,7 +53,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 
 	echo Building webview.dll ^(x86^)
 	cl %warning_params% ^
-		/D "WEBVIEW_API=__declspec(dllexport)" ^
+		/D WEBVIEW_BUILD_SHARED ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x86\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -62,7 +62,7 @@ if not exist "%src_dir%\dll\x64\webview.dll" (
 	call "%vc_dir%\Common7\Tools\vsdevcmd.bat" -arch=x64 -host_arch=x64
 	echo Building webview.dll ^(x64^)
 	cl %warning_params% ^
-		/D "WEBVIEW_API=__declspec(dllexport)" ^
+		/D WEBVIEW_BUILD_SHARED ^
 		/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 		"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
 		/std:c++17 /EHsc "/Fo%build_dir%"\ ^
@@ -97,6 +97,7 @@ cl %warning_params% ^
 echo Building C examples (x64)
 mkdir "%build_dir%\examples\c"
 cl %warning_params% ^
+	/D WEBVIEW_SHARED ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
@@ -105,6 +106,7 @@ cl %warning_params% ^
 	"%src_dir%\dll\x64\webview.lib" ^
 	"%src_dir%\examples\basic.c" /link "/OUT:%build_dir%\examples\c\basic.exe" || exit /b
 cl %warning_params% ^
+	/D WEBVIEW_SHARED ^
 	/I "%src_dir%" ^
 	/I "%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\include" ^
 	"%script_dir%\microsoft.web.webview2.%nuget_version%\build\native\x64\WebView2Loader.dll.lib" ^
