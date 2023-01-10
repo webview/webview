@@ -310,18 +310,19 @@ V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 
-## SWIG
+## Generating Bindings
 
-Swig bindings are included if you wish to generate bindings yourself.  Examples of how to generate bindings are below.
+You can generate bindings for the library by yourself using the included SWIG interface (`webview.i`).
 
+Here are some examples to get you started. Unix-style command lines are used for conciseness.
+
+```sh
+mkdir -p build/bindings/{python,csharp,java,ruby}
+swig -c++ -python -outdir build/bindings/python -o build/bindings/python/python_wrap.cpp webview.i
+swig -c++ -csharp -outdir build/bindings/csharp -o build/bindings/csharp/csharp_wrap.cpp webview.i
+swig -c++ -java -outdir build/bindings/java -o build/bindings/java/java_wrap.cpp webview.i
+swig -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp webview.i
 ```
-swig -c++ -python -outdir bindings/python -o bindings/python/python_wrap.cpp webview.i
-swig -c++ -csharp -outdir bindings/csharp -o bindings/csharp/csharp_wrap.cpp webview.i
-swig -c++ -java -outdir bindings/java -o bindings/java/java_wrap.cpp webview.i
-swig -c++ -ruby -outdir bindings/ruby -o bindings/ruby/ruby_wrap.cpp webview.i
-```
-
-This generates bindings in the `bindings/<lang>` folders (must be made first with `mkdir`) using the provided swig interface `webview.i`
 
 ## License
 
