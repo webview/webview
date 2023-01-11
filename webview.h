@@ -1562,6 +1562,8 @@ private:
     dll_path += L"x64";
 #elif defined(_M_IX86)
     dll_path += L"x86";
+#elif defined(_M_ARM64)
+    dll_path += L"arm64";
 #else
 #error WebView2 integration for this platform is not yet supported.
 #endif
