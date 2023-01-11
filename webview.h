@@ -1363,6 +1363,12 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
+// WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL implies WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK.
+#if defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL) &&                                \
+    !defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
+#define WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#endif
+
 #ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 // Gets the last component of a Windows native file path.
 // For example, if the path is "C:\a\b" then the result is "b".
@@ -1414,8 +1420,7 @@ static constexpr auto DllCanUnloadNow =
 } // namespace webview2_symbols
 #endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
 
-#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK) ||                               \
-    defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
 namespace webview2_symbols {
 using CreateCoreWebView2EnvironmentWithOptions_t = HRESULT(STDMETHODCALLTYPE *)(
     PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
@@ -1430,7 +1435,7 @@ static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
     library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
         "GetAvailableCoreWebView2BrowserVersionString");
 } // namespace webview2_symbols
-#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK, WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
+#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
 
 class loader {
 public:
@@ -1439,39 +1444,43 @@ public:
       ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
           *created_handler) const {
-#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
         return fn(browser_dir, user_data_dir, env_options, created_handler);
       }
     }
-    return S_FALSE;
-#elif defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
+#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
     return create_environment_with_options_impl(browser_dir, user_data_dir,
                                                 env_options, created_handler);
 #else
+    return S_FALSE;
+#endif
+#else
     return ::CreateCoreWebView2EnvironmentWithOptions(
         browser_dir, user_data_dir, env_options, created_handler);
-#endif
+#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
   }
 
   HRESULT
   get_available_browser_version_string(PCWSTR browser_dir,
                                        LPWSTR *version) const {
-#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
         return fn(browser_dir, version);
       }
     }
-    return S_FALSE;
-#elif defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
+#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
     return get_available_browser_version_string_impl(browser_dir, version);
 #else
-    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+    return S_FALSE;
 #endif
+#else
+    return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
+#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
   }
 
 private:
@@ -1617,8 +1626,7 @@ private:
   static constexpr auto default_release_channel_guid = stable_release_guid;
 #endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
 
-#if defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK) ||                               \
-    defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL)
+#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
   native_library m_lib{L"WebView2Loader.dll"};
 #endif
 };
