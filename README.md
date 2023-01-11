@@ -86,7 +86,7 @@ If you wish to use the official WebView2 loader (`WebView2Loader.dll`) then grab
 copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
 
-> **Note:** See our [notes for the WebView2 loader](#ms-webview2-loader).
+> **Note:** See the [WebView2 loader section](#ms-webview2-loader) for more options.
 
 ### C/C++ Preparation
 
@@ -115,8 +115,6 @@ g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./bui
 # Windows/MinGW
 g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
-
-> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined, avoiding the need for `WebView2Loader.dll.lib`.
 
 #### Bonus for Visual C++
 
@@ -274,7 +272,7 @@ Distributions that are known to be compatible:
 
 ## MS WebView2 Loader
 
-Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing it with your app.
+Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing `WebView2Loader.dll` with your app.
 
 If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
 
@@ -284,6 +282,11 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 
 * Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
 * Microsoft Edge Insider (preview) channels are not supported.
+
+The following compile-time options can be used to change how the library integrates the WebView2 loader:
+
+* `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` - The library supports linking `WebView2Loader.dll` explicitly, avoiding the need for import libraries (`*.lib`).
+* `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` - Enables the built-in implementation of the WebView2 loader. Implies `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` to maximize compatibility.
 
 ## Development
 
