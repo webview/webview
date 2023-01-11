@@ -1558,7 +1558,7 @@ private:
       }
     }
     dll_path += L"EBWebView\\";
-#if defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64__)
+#if defined(_M_X64) || defined(__x86_64__)
     dll_path += L"x64";
 #elif defined(_M_IX86) || defined(__i386__)
     dll_path += L"x86";
