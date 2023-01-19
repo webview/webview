@@ -78,12 +78,15 @@ The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
 ```bat
 mkdir libs\webview2
 curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
+```
+
+If you wish to use the official WebView2 loader (`WebView2Loader.dll`) then grab a copy of the DLL (replace `x64` with your target architecture):
+
+```bat
 copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
 
-> **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
-
-> **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
+> **Note:** See the [WebView2 loader section](#ms-webview2-loader) for more options.
 
 ### C/C++ Preparation
 
@@ -110,32 +113,28 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
-
-> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined, avoiding the need for `WebView2Loader.dll.lib`.
 
 #### Bonus for Visual C++
 
-Build a shared library with WebView2 linked statically:
+Build a shared library:
 
 ```bat
 cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
     /D "WEBVIEW_API=__declspec(dllexport)" ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link /DLL advapi32.lib /OUT:build\webview.dll
+    /link /DLL /OUT:build\webview.dll
 ```
 
-Build the example with WebView2 linked statically:
+Build an example:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link advapi32.lib /OUT:build\basic.exe
+    /link /OUT:build\basic.exe
 ```
 
 ### Getting Started with C
@@ -160,7 +159,7 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
 
 ### Getting Started with Go
@@ -173,7 +172,7 @@ Create a new Go module:
 go mod init example.com/m
 ```
 
-On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
+On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preperation](#windows-preperation)):
 
 ```bat
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
@@ -259,7 +258,7 @@ windres -o build/resources.o resources.rc
 g++ basic.cc build/resources.o [...]
 ```
 
-Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
+Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64 and optionally `WebView2Loader.dll`.
 
 ## MinGW-w64 Requirements
 
@@ -270,6 +269,24 @@ Distributions that are known to be compatible:
 * [LLVM MinGW](https://github.com/mstorsjo/llvm-mingw)
 * [MSYS2](https://www.msys2.org/)
 * [WinLibs](https://winlibs.com/)
+
+## MS WebView2 Loader
+
+Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing `WebView2Loader.dll` with your app.
+
+If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
+
+Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
+
+Here are some of the noteworthy ways our implementation of the loader differs from the official implementation:
+
+* Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
+* Microsoft Edge Insider (preview) channels are not supported.
+
+The following compile-time options can be used to change how the library integrates the WebView2 loader:
+
+* `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=<1|0>` - Enables or disables the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
+* `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=<1|0>` - Enables or disables explicit linking of `WebView2Loader.dll`. Enabling this avoiding the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
 
 ## Development
 

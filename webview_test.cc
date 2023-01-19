@@ -275,6 +275,39 @@ static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
 
 #if _WIN32
 // =================================================================
+// TEST: ensure that version number parsing works on Windows.
+// =================================================================
+static void test_parse_version() {
+  using namespace webview::detail;
+  auto v = parse_version("");
+  assert(v.size() == 4);
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  v = parse_version("1");
+  assert(v[0] == 1 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  v = parse_version("0.2");
+  assert(v[0] == 0 && v[1] == 2 && v[2] == 0 && v[3] == 0);
+  v = parse_version("0.0.3");
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 3 && v[3] == 0);
+  v = parse_version("0.0.0.4");
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 4);
+  v = parse_version("1.2.3.4.5");
+  assert(v.size() == 4);
+  assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+  v = parse_version("1.2.3.4.5.6");
+  assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+  v = parse_version("11.22.33.44");
+  assert(v[0] == 11 && v[1] == 22 && v[2] == 33 && v[3] == 44);
+  v = parse_version("0.0.0.0");
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  v = parse_version("-1.-2.-3.-4");
+  assert(v[0] == -1 && v[1] == -2 && v[2] == -3 && v[3] == -4);
+  v = parse_version("a.b.c.d");
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  v = parse_version("...");
+  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+}
+
+// =================================================================
 // TEST: ensure that narrow/wide string conversion works on Windows.
 // =================================================================
 static void test_win32_narrow_wide_string_conversion() {
@@ -319,6 +352,7 @@ int main(int argc, char *argv[]) {
       {"bidir_comms", test_bidir_comms}, {"json", test_json},
       {"sync_bind", test_sync_bind}};
 #if _WIN32
+  all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",
                     test_win32_narrow_wide_string_conversion);
 #endif
