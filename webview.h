@@ -1363,13 +1363,26 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
-// WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL implies WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK.
-#if defined(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL) &&                                \
-    !defined(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK)
-#define WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+// Enable built-in WebView2Loader implementation by default.
+#ifndef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#define WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL 1
 #endif
 
-#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+// Link WebView2Loader.dll explicitly by default only if the built-in
+// implementation is enabled.
+#ifndef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#define WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#endif
+
+// Explicit linking of WebView2Loader.dll should be used along with
+// the built-in implementation.
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1 &&                                    \
+    WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK != 1
+#undef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#error Please set WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=1.
+#endif
+
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
 // Gets the last component of a Windows native file path.
 // For example, if the path is "C:\a\b" then the result is "b".
 template <typename T>
@@ -1402,7 +1415,7 @@ static constexpr IID IID_ICoreWebView2PermissionRequestedEventHandler{
 static constexpr IID IID_ICoreWebView2WebMessageReceivedEventHandler{
     0x57213F19, 0x00E6, 0x49FA, 0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2};
 
-#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
 enum class webview2_runtime_type { installed = 0, embedded = 1 };
 
 namespace webview2_symbols {
@@ -1420,7 +1433,7 @@ static constexpr auto DllCanUnloadNow =
 } // namespace webview2_symbols
 #endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
 
-#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
 namespace webview2_symbols {
 using CreateCoreWebView2EnvironmentWithOptions_t = HRESULT(STDMETHODCALLTYPE *)(
     PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
@@ -1444,14 +1457,14 @@ public:
       ICoreWebView2EnvironmentOptions *env_options,
       ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler
           *created_handler) const {
-#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::CreateCoreWebView2EnvironmentWithOptions)) {
         return fn(browser_dir, user_data_dir, env_options, created_handler);
       }
     }
-#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
     return create_environment_with_options_impl(browser_dir, user_data_dir,
                                                 env_options, created_handler);
 #else
@@ -1466,14 +1479,14 @@ public:
   HRESULT
   get_available_browser_version_string(PCWSTR browser_dir,
                                        LPWSTR *version) const {
-#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
     if (m_lib.is_loaded()) {
       if (auto fn = m_lib.get(
               webview2_symbols::GetAvailableCoreWebView2BrowserVersionString)) {
         return fn(browser_dir, version);
       }
     }
-#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
     return get_available_browser_version_string_impl(browser_dir, version);
 #else
     return S_FALSE;
@@ -1484,7 +1497,7 @@ public:
   }
 
 private:
-#ifdef WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
+#if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
   struct client_info_t {
     bool found = false;
     std::wstring dll_path;
@@ -1628,7 +1641,7 @@ private:
   static constexpr auto default_release_channel_guid = stable_release_guid;
 #endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
 
-#ifdef WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
+#if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
   native_library m_lib{L"WebView2Loader.dll"};
 #endif
 };
