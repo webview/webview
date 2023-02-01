@@ -1120,7 +1120,8 @@ std::array<unsigned int, 4>
 parse_version(const std::basic_string<T> &version) noexcept {
   auto parse_component = [](auto sb, auto se) -> unsigned int {
     try {
-      return std::stoul(std::basic_string<T>(sb, se));
+      auto n = std::stol(std::basic_string<T>(sb, se));
+      return n < 0 ? 0 : n;
     } catch (std::exception &) {
       return 0;
     }
