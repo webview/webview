@@ -71,7 +71,7 @@ mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
 ```
 
-### Windows Preperation
+### Windows Preparation
 
 The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
 
