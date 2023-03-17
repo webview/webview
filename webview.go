@@ -80,6 +80,9 @@ type WebView interface {
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
 
+	// Move update native window potision
+	Move(x int, y int)
+
 	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
 	// URI. Examples:
 	// w.Navigate("https://github.com/webview/webview")
@@ -185,6 +188,10 @@ func (w *webview) SetTitle(title string) {
 
 func (w *webview) SetSize(width int, height int, hint Hint) {
 	C.webview_set_size(w.w, C.int(width), C.int(height), C.int(hint))
+}
+
+func (w *webview) Move(x int, y int) {
+	C.webview_move(w.w, C.int(x), C.int(y))
 }
 
 func (w *webview) Init(js string) {

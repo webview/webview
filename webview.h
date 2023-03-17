@@ -138,6 +138,9 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
+// Move webview to the given point.
+WEBVIEW_API void webview_move(webview_t w, int x, int y);
+
 // Navigates webview to the given URL. URL may be a properly encoded data URI.
 // Examples:
 // webview_navigate(w, "https://github.com/webview/webview");
@@ -591,6 +594,10 @@ public:
       // This defines either MIN_SIZE, or MAX_SIZE, but not both:
       gtk_window_set_geometry_hints(GTK_WINDOW(m_window), nullptr, &g, h);
     }
+  }
+
+  void move(int x, int y){
+    gtk_window_move(GTK_WINDOW(m_window), x, y);
   }
 
   void navigate(const std::string &url) {
@@ -2247,6 +2254,10 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints) {
   static_cast<webview::webview *>(w)->set_size(width, height, hints);
+}
+
+WEBVIEW_API void webview_move(webview_t w, int x, int y) {
+  static_cast<webview::webview *>(w)->move(x, y);
 }
 
 WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
