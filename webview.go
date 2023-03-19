@@ -4,11 +4,10 @@ package webview
 #cgo linux openbsd freebsd netbsd CXXFLAGS: -DWEBVIEW_GTK -std=c++11
 #cgo linux openbsd freebsd netbsd pkg-config: gtk+-3.0 webkit2gtk-4.0
 
-#cgo darwin CXXFLAGS: -DWEBVIEW_COCOA -std=c++11
 #cgo darwin LDFLAGS: -framework WebKit
 
 #cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
-#cgo windows LDFLAGS: -static -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion
+#cgo windows LDFLAGS: -static -ladvapi32 -lshlwapi -luser32 -lversion
 
 #include "webview.h"
 
@@ -52,7 +51,7 @@ const (
 
 type WebView interface {
 
-	// Run runs the main loop until it's terminated. After this function exits -
+	// Run runs the main webview interface until it's terminated. After this function exits -
 	// you must destroy the webview.
 	Run()
 
@@ -89,24 +88,9 @@ type WebView interface {
 
 	// SetHtml sets the webview HTML directly.
 	// Example: w.SetHtml(w, "<h1>Hello</h1>");
-	SetHtml(html string)
-
-	// Init injects JavaScript code at the initialization of the new page. Every
-	// time the webview will open a the new page - this initialization code will
-	// be executed. It is guaranteed that code is executed before window.onload.
-	Init(js string)
-
-	// Eval evaluates arbitrary JavaScript code. Evaluation happens asynchronously,
-	// also the result of the expression is ignored. Use RPC bindings if you want
-	// to receive notifications about the results of the evaluation.
-	Eval(js string)
-
-	// Bind binds a callback function so that it will appear under the given name
-	// as a global JavaScript function. Internally it uses webview_init().
-	// Callback receives a request string and a user-provided argument pointer.
-	// Request string is a JSON array of all the arguments passed to the
-	// JavaScript function.
-	//
+	SetHtml(html string) 
+	
+        //
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
@@ -117,7 +101,7 @@ type webview struct {
 }
 
 var (
-	m        sync.Mutex
+	
 	index    uintptr
 	dispatch = map[uintptr]func(){}
 	bindings = map[uintptr]func(id, req string) (interface{}, error){}
@@ -136,7 +120,7 @@ func New(debug bool) WebView { return NewWindow(debug, nil) }
 
 // NewWindow creates a new webview instance. If debug is non-zero - developer
 // tools will be enabled (if the platform supports them). Window parameter can be
-// a pointer to the native window handle. If it's non-null - then child WebView is
+// a pointer to the native wihttps://github.com/marc1706/phpbb3-ext-quickedit/blob/6afc6a87989a52711ddf26339032fe0926e86fcb/config/services.yml handle. If it's non-null - then child WebView is
 // embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be passed
 // here. Returns nil on failure. Creation can fail for various reasons such as when
