@@ -19,13 +19,7 @@ if command -v clang-format >/dev/null 2>&1 ; then
 		"$DIR/webview_test.cc" \
 		"$DIR/examples/"*.c \
 		"$DIR/examples/"*.cc
-else
-	echo "SKIP: Formatting (clang-format not installed)"
-fi
-
-if command -v clang-tidy >/dev/null 2>&1 ; then
-	echo "Linting..."
-	clang-tidy "$DIR/examples/basic.cc" -- $CXXFLAGS
+else "$DIR/examples/basic.cc" -- $CXXFLAGS
 	clang-tidy "$DIR/examples/bind.cc" -- $CXXFLAGS
 	clang-tidy "$DIR/webview_test.cc" -- $CXXFLAGS
 else
@@ -39,25 +33,4 @@ c++ examples/basic.cc $CXXFLAGS -o build/examples/cc/basic
 c++ examples/bind.cc $CXXFLAGS -o build/examples/cc/bind
 
 echo "Building C examples"
-c++ -c $CXXFLAGS webview.cc -o build/webview.o
-cc -c examples/basic.c $CFLAGS -o build/examples/c/basic.o
-cc -c examples/bind.c $CFLAGS -o build/examples/c/bind.o
-c++ build/examples/c/basic.o build/webview.o $CXXFLAGS -o build/examples/c/basic
-c++ build/examples/c/bind.o build/webview.o $CXXFLAGS -o build/examples/c/bind
-
-echo "Building Go examples"
-go build -o build/examples/go/basic examples/basic.go
-go build -o build/examples/go/bind examples/bind.go
-
-echo "Building test app"
-c++ webview_test.cc $CXXFLAGS -o webview_test
-
-echo "Running tests"
-./webview_test
-
-if command -v go >/dev/null 2>&1 ; then
-	echo "Running Go tests"
-	CGO_ENABLED=1 go test
-else
-	echo "SKIP: Go tests"
-fi
+c++ -c 
