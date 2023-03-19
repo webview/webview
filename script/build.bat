@@ -1,8 +1,8 @@
-@echo off
+@echo on
 setlocal
 
 echo Prepare directories...
-set script_dir=%~dp0
+set script_dir=%~/
 set script_dir=%script_dir:~0,-1%
 set src_dir=%script_dir%\..
 set build_dir=%script_dir%\..\build
@@ -13,20 +13,8 @@ echo Build directory: %build_dir%
 
 :: If you update the nuget package, change its version here
 set nuget_version=1.0.1150.38
-echo Using Nuget Package microsoft.web.webview2.%nuget_version%
-if not exist "%script_dir%\microsoft.web.webview2.%nuget_version%" (
-	curl -sSLO https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-	nuget.exe install Microsoft.Web.Webview2 -Version %nuget_version% -OutputDirectory %script_dir%
-	echo Nuget package installed
-)
 
-echo Looking for vswhere.exe...
-set "vswhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if not exist "%vswhere%" set "vswhere=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
-if not exist "%vswhere%" (
-	echo ERROR: Failed to find vswhere.exe
-	exit /b 1
-)
+
 echo Found %vswhere%
 
 echo Looking for VC...
