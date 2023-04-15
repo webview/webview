@@ -14,7 +14,7 @@ const html = `<button id="increment">Tap me</button>
       });
     });
   });
-</script>`;
+</script>`
 
 type IncrementResult struct {
 	Count uint `json:"count"`
@@ -26,10 +26,13 @@ func main() {
 	defer w.Destroy()
 	w.SetTitle("Bind Example")
 	w.SetSize(480, 320, webview.HintNone)
+
+	// A binding that increments a value and immediately returns the new value.
 	w.Bind("increment", func() IncrementResult {
 		count++
 		return IncrementResult{Count: count}
 	})
+
 	w.SetHtml(html)
 	w.Run()
 }
