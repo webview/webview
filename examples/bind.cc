@@ -1,7 +1,6 @@
 #include "webview.h"
 
 #include <chrono>
-#include <list>
 #include <string>
 #include <thread>
 
