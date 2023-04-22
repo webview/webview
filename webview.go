@@ -50,6 +50,16 @@ const (
 	HintMax = C.WEBVIEW_HINT_MAX
 )
 
+type Status int
+
+const (
+	// Binding call succeeded
+	StatusSuccess = 0
+
+	// Binding call failed
+	StatusError = 1
+)
+
 type WebView interface {
 
 	// Run runs the main loop until it's terminated. After this function exits -
@@ -110,6 +120,10 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// Return sends a response to the JavaScript callback.
+	// id is the callback id passed to the f function in Bind.
+	Return(id string, status Status, result interface{})
 }
 
 type webview struct {
@@ -312,4 +326,19 @@ func (w *webview) Bind(name string, f interface{}) error {
 	defer C.free(unsafe.Pointer(cname))
 	C.CgoWebViewBind(w.w, cname, C.uintptr_t(index))
 	return nil
+}
+
+func (w *webview) Return(id string, status Status, result interface{}) {
+	jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
+	resultString := ""
+
+	if status == StatusError {
+		resultString = jsString(result.(error).Error())
+	} else {
+		resultString = jsString(result)
+	}
+
+	s := C.CString(resultString)
+	defer C.free(unsafe.Pointer(s))
+	C.webview_return(w.w, C.CString(id), C.int(status), s)
 }
