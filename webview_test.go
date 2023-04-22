@@ -11,12 +11,12 @@ func Example() {
 	w := New(true)
 	defer w.Destroy()
 	w.SetTitle("Hello")
-	w.Bind("noop", func() string {
+	w.Bind("noop", func(id string) {
 		log.Println("hello")
-		return "hello"
+		w.Return(id, StatusSuccess, "hello")
 	})
-	w.Bind("add", func(a, b int) int {
-		return a + b
+	w.Bind("add", func(id string, a, b int) {
+		w.Return(id, StatusSuccess, a+b)
 	})
 	w.Bind("quit", func() {
 		w.Terminate()
