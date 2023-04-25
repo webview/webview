@@ -50,15 +50,15 @@ const (
 	HintMax = C.WEBVIEW_HINT_MAX
 )
 
-type Status int
+type BindCallbackResult struct {
+	// Error is an error returned by the callback. If error is not nil - the
+	// result of the callback is ignored.
+	Error error
 
-const (
-	// Binding call succeeded
-	StatusSuccess = 0
-
-	// Binding call failed
-	StatusError = 1
-)
+	// Value is a value returned by the callback. If error is not nil - the
+	// result of the callback is ignored.
+	Value interface{}
+}
 
 type WebView interface {
 
@@ -117,13 +117,10 @@ type WebView interface {
 	// Request string is a JSON array of all the arguments passed to the
 	// JavaScript function.
 	//
-	// f must be a function that accepts an id string as the first argument, and
-	// then any other arguments that you want to pass from the JavaScript function.
+	// f must be a function
+	// f can return either value and error or just error
+	// f can return a channel of BindCallbackResult as the value
 	Bind(name string, f interface{}) error
-
-	// Return sends a response to the JavaScript callback.
-	// id is the callback id passed to the f function in Bind.
-	Return(id string, status Status, result interface{})
 }
 
 type webview struct {
@@ -134,7 +131,7 @@ var (
 	m        sync.Mutex
 	index    uintptr
 	dispatch = map[uintptr]func(){}
-	bindings = map[uintptr]func(id, req string) error{}
+	bindings = map[uintptr]func(id, req string) (interface{}, error){}
 )
 
 func boolToInt(b bool) C.int {
@@ -237,15 +234,32 @@ func _webviewBindingGoCallback(w C.webview_t, id *C.char, req *C.char, index uin
 	f := bindings[uintptr(index)]
 	m.Unlock()
 
-	// handle any error trying to call the binding function
-	if err := f(C.GoString(id), C.GoString(req)); err != nil {
-		jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
-		result := jsString(err.Error())
+	// retain a reference to the id and params strings
+	reqId := C.GoString(id)
+	reqParams := C.GoString(req)
 
+	// run the callback in a separate goroutine
+	go func() {
+		jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
+
+		status, result := 0, ""
+		if res, err := f(reqId, reqParams); err != nil {
+			status = -1
+			result = jsString(err.Error())
+		} else if b, err := json.Marshal(res); err != nil {
+			status = -1
+			result = jsString(err.Error())
+		} else {
+			status = 0
+			result = string(b)
+		}
+
+		cId := C.CString(reqId)
+		defer C.free(unsafe.Pointer(cId))
 		s := C.CString(result)
 		defer C.free(unsafe.Pointer(s))
-		C.webview_return(w, id, C.int(StatusError), s)
-	}
+		C.webview_return(w, cId, C.int(status), s)
+	}()
 }
 
 func (w *webview) Bind(name string, f interface{}) error {
@@ -254,43 +268,81 @@ func (w *webview) Bind(name string, f interface{}) error {
 	if v.Kind() != reflect.Func {
 		return errors.New("only functions can be bound")
 	}
-
-	if v.Type().NumIn() > 0 && v.Type().In(0).Kind() != reflect.String {
-		return errors.New("first argument must be a string for the request id")
+	// f must return either value and error or just error
+	if n := v.Type().NumOut(); n > 2 {
+		return errors.New("function may only return a value or a value+error")
 	}
 
-	binding := func(id, req string) error {
+	binding := func(id, req string) (interface{}, error) {
 		raw := []json.RawMessage{}
 		if err := json.Unmarshal([]byte(req), &raw); err != nil {
-			return err
+			return nil, err
 		}
 
 		isVariadic := v.Type().IsVariadic()
 		numIn := v.Type().NumIn()
-
-		if (isVariadic && len(raw) < numIn-1) || (!isVariadic && len(raw) != numIn-1) {
-			return errors.New("function arguments mismatch")
+		if (isVariadic && len(raw) < numIn-1) || (!isVariadic && len(raw) != numIn) {
+			return nil, errors.New("function arguments mismatch")
 		}
-		args := []reflect.Value{
-			reflect.ValueOf(id),
-		}
+		args := []reflect.Value{}
 		for i := range raw {
 			var arg reflect.Value
-			// skip `id` when looking at `f` parameters
-			argNum := i + 1
-			if isVariadic && argNum >= numIn-1 {
+			if isVariadic && i >= numIn-1 {
 				arg = reflect.New(v.Type().In(numIn - 1).Elem())
 			} else {
-				arg = reflect.New(v.Type().In(argNum))
+				arg = reflect.New(v.Type().In(i))
 			}
 			if err := json.Unmarshal(raw[i], arg.Interface()); err != nil {
-				return err
+				return nil, err
 			}
 			args = append(args, arg.Elem())
 		}
+		errorType := reflect.TypeOf((*error)(nil)).Elem()
+		res := v.Call(args)
+		switch len(res) {
+		case 0:
+			// No results from the function, just return nil
+			return nil, nil
+		case 1:
+			// One result may be a value, or an error
+			if res[0].Type().Implements(errorType) {
+				if res[0].Interface() != nil {
+					return nil, res[0].Interface().(error)
+				}
+				return nil, nil
+			} else if res[0].Type().Kind() == reflect.Chan {
+				if res[0].Type().Elem() != reflect.TypeOf(BindCallbackResult{}) {
+					return nil, errors.New("channel must be of type CallbackResult")
+				}
 
-		v.Call(args)
-		return nil
+				// Wait for the channel to receive a value
+				val, ok := res[0].Recv()
+
+				if !ok {
+					return nil, errors.New("channel closed")
+				}
+
+				callbackResult := val.Interface().(BindCallbackResult)
+
+				if callbackResult.Error != nil {
+					return nil, callbackResult.Error
+				}
+
+				return callbackResult.Value, nil
+			}
+			return res[0].Interface(), nil
+		case 2:
+			// Two results: first one is value, second is error
+			if !res[1].Type().Implements(errorType) {
+				return nil, errors.New("second return value must be an error")
+			}
+			if res[1].Interface() == nil {
+				return res[0].Interface(), nil
+			}
+			return res[0].Interface(), res[1].Interface().(error)
+		default:
+			return nil, errors.New("unexpected number of return values")
+		}
 	}
 
 	m.Lock()
@@ -302,19 +354,4 @@ func (w *webview) Bind(name string, f interface{}) error {
 	defer C.free(unsafe.Pointer(cname))
 	C.CgoWebViewBind(w.w, cname, C.uintptr_t(index))
 	return nil
-}
-
-func (w *webview) Return(id string, status Status, result interface{}) {
-	jsString := func(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
-	resultString := ""
-
-	if status == StatusError {
-		resultString = jsString(result.(error).Error())
-	} else {
-		resultString = jsString(result)
-	}
-
-	s := C.CString(resultString)
-	defer C.free(unsafe.Pointer(s))
-	C.webview_return(w.w, C.CString(id), C.int(status), s)
 }

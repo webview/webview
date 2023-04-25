@@ -18,6 +18,14 @@ func Example() {
 	w.Bind("add", func(id string, a, b int) {
 		w.Return(id, StatusSuccess, a+b)
 	})
+	w.Bind("subtract", func(a, b int) chan BindCallbackResult {
+		ch := make(chan BindCallbackResult)
+		go func() {
+			defer close(ch)
+			ch <- BindCallbackResult{Value: a - b, Error: nil}
+		}()
+		return ch
+	})
 	w.Bind("quit", func() {
 		w.Terminate()
 	})
@@ -31,7 +39,10 @@ func Example() {
 						console.log('noop res', res);
 						add(1, 2).then(function(res) {
 							console.log('add res', res);
-							quit();
+							subtract(5, 3).then(function(res) {
+								console.log('subtract res', res);
+								quit();
+							});
 						});
 					});
 				};
