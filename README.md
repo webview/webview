@@ -324,6 +324,7 @@ Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
 V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
+PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 
