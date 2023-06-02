@@ -321,6 +321,7 @@ Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/web
 Nim         | [oskca/webview](https://github.com/oskca/webview)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
+PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
 V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
