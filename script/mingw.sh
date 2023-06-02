@@ -21,7 +21,7 @@ else
     echo "[Installed]"
 fi
 
-echo -n "Build library......"
+echo -n "Build webview object......"
 g++ -c webview.cc -std=c++17 -Ibuild/Microsoft.Web.WebView2.${nuget_version}/build/native/include -o build/webview.o
 if [ $? -eq 0 ]; then
   echo "[done]"
@@ -29,7 +29,15 @@ else
   echo "[failed]"
 fi
 
-echo -n "Build example......"
+echo -n "Build webview library......"
+g++ -shared -D "WEBVIEW_API=__declspec(dllexport)" build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/webview.dll
+if [ $? -eq 0 ]; then
+  echo "[done]"
+else
+  echo "[failed]"
+fi
+
+echo -n "Build webview example......"
 gcc -c examples/basic.c -std=c99 -I. -o build/basic.o
 g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe
 if [ $? -eq 0 ]; then
@@ -38,5 +46,5 @@ else
   echo "[failed]"
 fi
 
-echo -n "Run example app......"
+echo "Run webview example......"
 build/basic.exe &
