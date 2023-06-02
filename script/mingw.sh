@@ -37,9 +37,17 @@ else
   echo "[failed]"
 fi
 
-echo -n "Build webview example......"
+echo -n "Build webview example(link with dll)......"
+gcc -std=c99 -I. -L./build -mwindows -lwebview -o build/basic_dll.exe examples/basic.c
+if [ $? -eq 0 ]; then
+  echo "[done]"
+else
+  echo "[failed]"
+fi
+
+echo -n "Build webview example(stand-alone)......"
 gcc -c examples/basic.c -std=c99 -I. -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe
+g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic_std.exe
 if [ $? -eq 0 ]; then
   echo "[done]"
 else
@@ -47,4 +55,5 @@ else
 fi
 
 echo "Run webview example......"
-build/basic.exe &
+build/basic_dll.exe &
+build/basic_std.exe &
