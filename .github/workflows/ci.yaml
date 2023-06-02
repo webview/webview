@@ -22,8 +22,27 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Add MinGW-w64 to PATH
+        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
+        shell: cmd
       - name: Build and run tests
         run: ./script/build.bat
+        shell: cmd
+
+  swig:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [csharp, java, python, ruby]
+    steps:
+      - uses: actions/checkout@v1
+      - name: Generate bindings with SWIG
+        run: |
+          mkdir -p "build/bindings/${{ matrix.language }}" \
+            && swig -Wall -Werror -c++ "-${{ matrix.language }}" \
+              -outdir "build/bindings/${{ matrix.language }}" \
+              -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
+              webview.i
 
   clang-format:
     runs-on: ubuntu-latest

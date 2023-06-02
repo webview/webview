@@ -7,39 +7,16 @@ package webview
 #cgo darwin CXXFLAGS: -DWEBVIEW_COCOA -std=c++11
 #cgo darwin LDFLAGS: -framework WebKit
 
-#cgo windows CXXFLAGS: -std=c++11
-#cgo windows,amd64 LDFLAGS: -L./dll/x64 -lwebview -lWebView2Loader
-#cgo windows,386 LDFLAGS: -L./dll/x86 -lwebview -lWebView2Loader
+#cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
+#cgo windows LDFLAGS: -static -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion
 
-#define WEBVIEW_HEADER
 #include "webview.h"
 
 #include <stdlib.h>
 #include <stdint.h>
 
-extern void _webviewDispatchGoCallback(void *);
-static inline void _webview_dispatch_cb(webview_t w, void *arg) {
-	_webviewDispatchGoCallback(arg);
-}
-static inline void CgoWebViewDispatch(webview_t w, uintptr_t arg) {
-	webview_dispatch(w, _webview_dispatch_cb, (void *)arg);
-}
-
-struct binding_context {
-	webview_t w;
-	uintptr_t index;
-};
-extern void _webviewBindingGoCallback(webview_t, char *, char *, uintptr_t);
-static inline void _webview_binding_cb(const char *id, const char *req, void *arg) {
-	struct binding_context *ctx = (struct binding_context *) arg;
-	_webviewBindingGoCallback(ctx->w, (char *)id, (char *)req, ctx->index);
-}
-static inline void CgoWebViewBind(webview_t w, const char *name, uintptr_t index) {
-	struct binding_context *ctx = calloc(1, sizeof(struct binding_context));
-	ctx->w = w;
-	ctx->index = index;
-	webview_bind(w, name, _webview_binding_cb, (void *)ctx);
-}
+void CgoWebViewDispatch(webview_t w, uintptr_t arg);
+void CgoWebViewBind(webview_t w, const char *name, uintptr_t index);
 */
 import "C"
 import (
@@ -103,10 +80,16 @@ type WebView interface {
 	// SetSize updates native window size. See Hint constants.
 	SetSize(w int, h int, hint Hint)
 
-	// Navigate navigates webview to the given URL. URL may be a data URI, i.e.
-	// "data:text/html,<html>...</html>". It is often ok not to url-encode it
-	// properly, webview will re-encode it for you.
+	// Navigate navigates webview to the given URL. URL may be a properly encoded data.
+	// URI. Examples:
+	// w.Navigate("https://github.com/webview/webview")
+	// w.Navigate("data:text/html,%3Ch1%3EHello%3C%2Fh1%3E")
+	// w.Navigate("data:text/html;base64,PGgxPkhlbGxvPC9oMT4=")
 	Navigate(url string)
+
+	// SetHtml sets the webview HTML directly.
+	// Example: w.SetHtml(w, "<h1>Hello</h1>");
+	SetHtml(html string)
 
 	// Init injects JavaScript code at the initialization of the new page. Every
 	// time the webview will open a the new page - this initialization code will
@@ -156,11 +139,14 @@ func New(debug bool) WebView { return NewWindow(debug, nil) }
 // a pointer to the native window handle. If it's non-null - then child WebView is
 // embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be passed
-// here.
+// here. Returns nil on failure. Creation can fail for various reasons such as when
+// required runtime dependencies are missing or when window creation fails.
 func NewWindow(debug bool, window unsafe.Pointer) WebView {
-	w := &webview{}
-	w.w = C.webview_create(boolToInt(debug), window)
-	return w
+	res := C.webview_create(boolToInt(debug), window)
+	if res == nil {
+		return nil
+	}
+	return &webview{w: res}
 }
 
 func (w *webview) Destroy() {
@@ -183,6 +169,12 @@ func (w *webview) Navigate(url string) {
 	s := C.CString(url)
 	defer C.free(unsafe.Pointer(s))
 	C.webview_navigate(w.w, s)
+}
+
+func (w *webview) SetHtml(html string) {
+	s := C.CString(html)
+	defer C.free(unsafe.Pointer(s))
+	C.webview_set_html(w.w, s)
 }
 
 func (w *webview) SetTitle(title string) {
