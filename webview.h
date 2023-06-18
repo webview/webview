@@ -1034,6 +1034,12 @@ private:
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
+    if (m_debug) {
+      objc::msg_send<void>(
+          m_webview, "setInspectable:"_sel,
+          objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES));
+    }
+
     auto script_message_handler = create_script_message_handler();
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
