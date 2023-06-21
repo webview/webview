@@ -230,6 +230,8 @@ WEBVIEW_API const webview_version_info_t *webview_version();
 namespace webview {
 
 using dispatch_fn_t = std::function<void()>;
+using navigate_cb_fn_t =
+    std::function<void(const std::string &uri, void *usercontext)>;
 
 namespace detail {
 
@@ -598,6 +600,13 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
+  void set_navigate_listener(navigate_cb_fn_t callback, void *arg) {
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "load-changed",
+                     G_CALLBACK(on_load_changed), this);
+    m_navigate_callback_arg = arg;
+    m_navigate_callback = std::move(callback);
+  }
+
   void set_html(const std::string &html) {
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
                               nullptr);
@@ -638,8 +647,20 @@ private:
     return s;
   }
 
+  static void on_load_changed(WebKitWebView *web_view,
+                              WebKitLoadEvent load_event, gpointer arg) {
+    if (load_event == WEBKIT_LOAD_FINISHED) {
+      auto inst = static_cast<gtk_webkit_engine *>(arg);
+      inst->m_navigate_callback(webkit_web_view_get_uri(web_view),
+                                inst->m_navigate_callback_arg);
+    }
+  }
+
   GtkWidget *m_window;
   GtkWidget *m_webview;
+
+  void *m_navigate_callback_arg = nullptr;
+  navigate_cb_fn_t m_navigate_callback = nullptr;
 };
 
 } // namespace detail
@@ -815,6 +836,12 @@ public:
         m_webview, "loadRequest:"_sel,
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
+
+  void set_navigate_listener(navigate_cb_fn_t callback, void *arg) {
+    m_navigate_callback = callback;
+    m_navigate_callback_arg = arg;
+  }
+
   void set_html(const std::string &html) {
     objc::autoreleasepool pool;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
@@ -940,6 +967,25 @@ private:
     objc_registerClassPair(cls);
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
+  id create_webkit_navigation_delegate() {
+    auto cls = objc_allocateClassPair((Class) "NSObject"_cls,
+                                      "WebkitNavigationDelegate", 0);
+    class_addProtocol(cls, objc_getProtocol("WKNavigationDelegate"));
+    class_addMethod(cls, "webView:didFinishNavigation:"_sel,
+                    (IMP)(+[](id delegate, SEL sel, id webview, id navigation) {
+                      auto w = get_associated_webview(delegate);
+                      auto url = objc::msg_send<id>(webview, "URL"_sel);
+                      auto nstr = objc::msg_send<id>(url, "absoluteString"_sel);
+                      auto str = objc::msg_send<char *>(nstr, "UTF8String"_sel);
+                      w->m_navigate_callback(str, w->m_navigate_callback_arg);
+                    }),
+                    "v@:@");
+    objc_registerClassPair(cls);
+    auto instance = objc::msg_send<id>((id)cls, "new"_sel);
+    objc_setAssociatedObject(instance, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
+    return instance;
+  }
   static id get_shared_application() {
     return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
   }
@@ -1061,6 +1107,9 @@ private:
 #endif
     }
 
+    auto navigation_delegate = create_webkit_navigation_delegate();
+    objc::msg_send<void>(m_webview, "setNavigationDelegate:"_sel,
+                         navigation_delegate);
     auto script_message_handler = create_script_message_handler();
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
@@ -1104,6 +1153,8 @@ private:
   id m_window;
   id m_webview;
   id m_manager;
+  void *m_navigate_callback_arg = nullptr;
+  navigate_cb_fn_t m_navigate_callback = nullptr;
 };
 
 } // namespace detail
@@ -1951,7 +2002,8 @@ class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
       public ICoreWebView2WebMessageReceivedEventHandler,
-      public ICoreWebView2PermissionRequestedEventHandler {
+      public ICoreWebView2PermissionRequestedEventHandler,
+      public ICoreWebView2NavigationCompletedEventHandler {
   using webview2_com_handler_cb_t =
       std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
 
@@ -2029,6 +2081,7 @@ public:
     controller->get_CoreWebView2(&webview);
     webview->add_WebMessageReceived(this, &token);
     webview->add_PermissionRequested(this, &token);
+    webview->add_NavigationCompleted(this, &token);
 
     m_cb(controller, webview);
     return S_OK;
@@ -2052,6 +2105,18 @@ public:
       args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
     }
     return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2NavigationCompletedEventArgs *args) {
+    PWSTR wide_uri = nullptr;
+    auto hr = sender->get_Source(&wide_uri);
+    if (SUCCEEDED(hr)) {
+      auto narrow_uri = narrow_string(wide_uri);
+      if (m_navigate_callback)
+        m_navigate_callback(narrow_uri, m_navigate_callback_arg);
+    }
+    CoTaskMemFree(wide_uri);
+    return hr;
   }
 
   // Checks whether the specified IID equals the IID of the specified type and
@@ -2104,6 +2169,12 @@ public:
     m_cb(nullptr, nullptr);
   }
 
+  void STDMETHODCALLTYPE set_navigate_listener(navigate_cb_fn_t callback,
+                                               void *arg) {
+    m_navigate_callback = std::move(callback);
+    m_navigate_callback_arg = arg;
+  }
+
 private:
   HWND m_window;
   msg_cb_t m_msgCb;
@@ -2112,6 +2183,8 @@ private:
   std::function<HRESULT()> m_attempt_handler;
   unsigned int m_max_attempts = 5;
   unsigned int m_attempts = 0;
+  void *m_navigate_callback_arg = nullptr;
+  navigate_cb_fn_t m_navigate_callback = nullptr;
 };
 
 class win32_edge_engine {
@@ -2323,6 +2396,10 @@ public:
   void eval(const std::string &js) {
     auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
+  }
+
+  void set_navigate_listener(navigate_cb_fn_t callback, void *arg) {
+    m_com_handler->set_navigate_listener(callback, arg);
   }
 
   void set_html(const std::string &html) {
