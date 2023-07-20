@@ -683,6 +683,28 @@ Result msg_send(Args... args) noexcept {
   return invoke<Result>(objc_msgSend, args...);
 }
 
+// Wrapper around NSAutoreleasePool that drains the pool on destruction.
+class autoreleasepool {
+public:
+  autoreleasepool()
+      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
+                            sel_registerName("new"))) {}
+
+  ~autoreleasepool() {
+    if (m_pool) {
+      msg_send<void>(m_pool, sel_registerName("drain"));
+    }
+  }
+
+  autoreleasepool(const autoreleasepool &) = delete;
+  autoreleasepool &operator=(const autoreleasepool &) = delete;
+  autoreleasepool(autoreleasepool &&) = delete;
+  autoreleasepool &operator=(autoreleasepool &&) = delete;
+
+private:
+  id m_pool{};
+};
+
 } // namespace objc
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
@@ -784,6 +806,8 @@ public:
     objc::msg_send<void>(m_window, "center"_sel);
   }
   void navigate(const std::string &url) {
+    objc::autoreleasepool pool;
+
     auto nsurl = objc::msg_send<id>(
         "NSURL"_cls, "URLWithString:"_sel,
         objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
@@ -794,6 +818,7 @@ public:
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
   void set_html(const std::string &html) {
+    objc::autoreleasepool pool;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
