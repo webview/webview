@@ -172,7 +172,7 @@ Create a new Go module:
 go mod init example.com/m
 ```
 
-On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preperation](#windows-preperation)):
+On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preparation](#windows-preparation)):
 
 ```bat
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
