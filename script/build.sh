@@ -118,6 +118,16 @@ task_test() {
     "${build_dir}/webview_test${exe_suffix}" || return 1
 }
 
+invoke_go_build() {
+    local output=${1}
+    local input=${2}
+    local ldflags=()
+    if [[ ! -z "${3}" ]]; then
+        ldflags=("${3}")
+    fi
+    (cd "${project_dir}" && go build "${ldflags[@]}" -o "${output}" "${input}") || return 1
+}
+
 task_go_build() {
     if ! command -v go >/dev/null 2>&1 ; then
         local message="Go build (go not installed)"
@@ -130,17 +140,15 @@ task_go_build() {
     fi
     go_setup_env || return 1
     echo "Building Go examples..."
-    local go_ldflags=
+    local go_ldflags=()
     if [[ "${target_os}" == "windows" ]]; then
-        go_ldflags="-H windowsgui"
+        go_ldflags=(-H windowsgui)
     fi
-    if [[ ! -z "${go_ldflags}" ]]; then
-        go_ldflags="-ldflags \"${go_ldflags}\""
+    if [[ "${#go_ldflags}" -gt 0 ]]; then
+        go_ldflags="-ldflags=${go_ldflags[@]}"
     fi
-    (cd "${project_dir}" && (
-        go build ${go_ldflags} -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
-        go build ${go_ldflags} -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
-    )) || return 1
+    invoke_go_build "build/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
+    invoke_go_build "build/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
 }
 
 task_go_test() {
