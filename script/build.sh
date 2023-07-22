@@ -83,7 +83,8 @@ task_deps() {
 task_check() {
     if ! command -v clang-tidy >/dev/null 2>&1 ; then
         local message="Linting (clang-tidy not installed)"
-        if is_ci; then
+        # Allow skipping this task on macOS because GHA doesn't have clang-tidy installed.
+        if is_ci && [[ "${host_os}" != "macos" ]]; then
             echo "FAIL: ${message}"
             return 1
         fi
