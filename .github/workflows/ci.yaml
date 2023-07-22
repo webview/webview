@@ -31,16 +31,20 @@ jobs:
 
   build-cross-windows-on-linux:
     runs-on: ubuntu-latest
+    env:
+      TARGET_OS: windows
+      CC: x86_64-w64-mingw32-gcc
+      CXX: x86_64-w64-mingw32-g++
     steps:
       - uses: actions/checkout@v1
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install mingw-w64 -y
+      - name: Fetch library dependencies
+        run: ./script/build.sh deps
+      - name: Patch MS WebView2
+        run: ./script/build.sh cross_patch_mswebview2
       - name: Build
-        run: ./script/build.sh clean deps build
-        env:
-          TARGET_OS: windows
-          CC: x86_64-w64-mingw32-gcc
-          CXX: x86_64-w64-mingw32-g++
+        run: ./script/build.sh build
 
   swig:
     runs-on: ubuntu-latest

@@ -80,6 +80,11 @@ task_deps() {
     fi
 }
 
+task_cross_patch_mswebview2() {
+    local mswebview2_dir=${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}
+    sed -i 's/#include "EventToken.h"/\/\/#include "EventToken.h"/' ${mswebview2_dir}/build/native/include/WebView2.h || return 1
+}
+
 task_check() {
     if ! command -v clang-tidy >/dev/null 2>&1 ; then
         local message="Linting (clang-tidy not installed)"
@@ -251,6 +256,10 @@ elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
     cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
+    # Cross-compiling
+    if [[ "${target_os}" != "${host_os}" ]]; then
+        cxx_compile_flags+=(-include "${project_dir}/webview_mingw_support.h")
+    fi
 fi
 
 # Default tasks
