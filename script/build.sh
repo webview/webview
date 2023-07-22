@@ -106,8 +106,8 @@ task_build() {
     mkdir -p build/examples/c build/examples/cc build/examples/go || true
 
     echo "Building C++ examples"
-    "${cxx_compiler}" "${project_dir}/examples/basic.cc" "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/basic${exe_suffix}" || exit 1
-    "${cxx_compiler}" "${project_dir}/examples/bind.cc" "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || exit 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/basic.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/basic${exe_suffix}" || exit 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/bind.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || exit 1
 
     echo "Building C examples"
     "${cxx_compiler}" -c "${cxx_compile_flags[@]}" "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || exit 1
