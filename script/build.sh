@@ -56,22 +56,21 @@ task_clean() {
 }
 
 task_format() {
-    if command -v clang-format >/dev/null 2>&1 ; then
-        echo "Formatting..."
-        clang-format -i \
-                "${project_dir}/webview.h" \
-                "${project_dir}/webview_test.cc" \
-                "${project_dir}/examples/"*.c \
-                "${project_dir}/examples/"*.cc || return 1
-        return 0
-    fi
-    local message="Formatting (clang-format not installed)"
-    if ! is_ci; then
+    if ! command -v clang-format >/dev/null 2>&1 ; then
+        local message="Formatting (clang-format not installed)"
+        if is_ci; then
+            echo "FAIL: ${message}"
+            return 1
+        fi
         echo "SKIP: ${message}"
         return 0
     fi
-    echo "FAIL: ${message}"
-    return 1
+    echo "Formatting..."
+    clang-format -i \
+        "${project_dir}/webview.h" \
+        "${project_dir}/webview_test.cc" \
+        "${project_dir}/examples/"*.c \
+        "${project_dir}/examples/"*.cc || return 1
 }
 
 task_deps() {
@@ -81,19 +80,19 @@ task_deps() {
 }
 
 task_check() {
-    if command -v clang-tidy >/dev/null 2>&1 ; then
-        echo "Linting..."
-        clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-        clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-        clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    fi
-    local message="Linting (clang-tidy not installed)"
-    if ! is_ci; then
+    if ! command -v clang-tidy >/dev/null 2>&1 ; then
+        local message="Linting (clang-tidy not installed)"
+        if is_ci; then
+            echo "FAIL: ${message}"
+            return 1
+        fi
         echo "SKIP: ${message}"
         return 0
     fi
-    echo "FAIL: ${message}"
-    return 1
+    echo "Linting..."
+    clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
 task_build() {
@@ -120,42 +119,43 @@ task_test() {
 }
 
 task_go_build() {
-    if command -v go >/dev/null 2>&1 ; then
-        go_setup_env || return 1
-        echo "Building Go examples..."
-        local go_ldflags=
-        if [[ "${target_os}" == "windows" ]]; then
-            go_ldflags="-H windowsgui"
+    if ! command -v go >/dev/null 2>&1 ; then
+        local message="Go build (go not installed)"
+        if is_ci; then
+            echo "FAIL: ${message}"
+            return 1
         fi
-        if [[ ! -z "${go_ldflags}" ]]; then
-            go_ldflags="-ldflags \"${go_ldflags}\""
-        fi
-        (cd "${project_dir}" && (
-            go build ${go_ldflags} -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
-            go build ${go_ldflags} -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
-        )) || return 1
-    fi
-    if ! is_ci; then
-        echo "SKIP: Go build (go not installed)"
-        return 0
-    fi
-    echo "FAIL: Go build (go not installed)"
-    return 1
-}
-
-task_go_test() {
-    if command -v go >/dev/null 2>&1 ; then
-        go_setup_env || return 1
-        echo "Running Go tests..."
-        CGO_ENABLED=1 go test
-    fi
-    local message="Go tests (go not installed)"
-    if ! is_ci; then
         echo "SKIP: ${message}"
         return 0
     fi
-    echo "FAIL: ${message}"
-    return 1
+    go_setup_env || return 1
+    echo "Building Go examples..."
+    local go_ldflags=
+    if [[ "${target_os}" == "windows" ]]; then
+        go_ldflags="-H windowsgui"
+    fi
+    if [[ ! -z "${go_ldflags}" ]]; then
+        go_ldflags="-ldflags \"${go_ldflags}\""
+    fi
+    (cd "${project_dir}" && (
+        go build ${go_ldflags} -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
+        go build ${go_ldflags} -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
+    )) || return 1
+}
+
+task_go_test() {
+    if ! command -v go >/dev/null 2>&1 ; then
+        local message="Go tests (go not installed)"
+        if is_ci; then
+            echo "FAIL: ${message}"
+            return 1
+        fi
+        echo "SKIP: ${message}"
+        return 0
+    fi
+    go_setup_env || return 1
+    echo "Running Go tests..."
+    CGO_ENABLED=1 go test
 }
 
 run_task() {
