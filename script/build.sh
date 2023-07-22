@@ -58,7 +58,8 @@ task_clean() {
 task_format() {
     if ! command -v clang-format >/dev/null 2>&1 ; then
         local message="Formatting (clang-format not installed)"
-        if is_ci; then
+        # Allow skipping this task on macOS because GHA doesn't have clang-format installed.
+        if is_ci && [[ "${host_os}" != "macos" ]]; then
             echo "FAIL: ${message}"
             return 1
         fi
