@@ -41,6 +41,13 @@ go_setup_env() {
     export CGO_ENABLED=1
 }
 
+is_ci() {
+    if [[ -z "${CI+x}" ]]; then
+        return 1
+    fi
+    return 0
+}
+
 task_clean() {
     if [[ -d "${build_dir}" ]]; then
         rm -rd "${build_dir}" || return 1
@@ -55,9 +62,15 @@ task_format() {
                 "${project_dir}/webview_test.cc" \
                 "${project_dir}/examples/"*.c \
                 "${project_dir}/examples/"*.cc || return 1
-    else
-        echo "SKIP: Formatting (clang-format not installed)"
+        return 0
     fi
+    local message="Formatting (clang-format not installed)"
+    if ! is_ci; then
+        echo "SKIP: ${message}"
+        return 0
+    fi
+    echo "FAIL: ${message}"
+    return 1
 }
 
 task_deps() {
@@ -72,9 +85,14 @@ task_check() {
         clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
         clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
         clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    else
-        echo "SKIP: Linting (clang-tidy not installed)"
     fi
+    local message="Linting (clang-tidy not installed)"
+    if ! is_ci; then
+        echo "SKIP: ${message}"
+        return 0
+    fi
+    echo "FAIL: ${message}"
+    return 1
 }
 
 task_build() {
@@ -108,9 +126,13 @@ task_go_build() {
             go build -ldflags "-H windowsgui" -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
             go build -ldflags "-H windowsgui" -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
         )) || return 1
-    else
-        echo "SKIP: Go build (go not installed)"
     fi
+    if ! is_ci; then
+        echo "SKIP: Go build (go not installed)"
+        return 0
+    fi
+    echo "FAIL: Go build (go not installed)"
+    return 1
 }
 
 task_go_test() {
@@ -118,9 +140,14 @@ task_go_test() {
         go_setup_env || return 1
         echo "Running Go tests..."
         CGO_ENABLED=1 go test
-    else
-        echo "SKIP: Go tests (go not installed)"
     fi
+    local message="Go tests (go not installed)"
+    if ! is_ci; then
+        echo "SKIP: ${message}"
+        return 0
+    fi
+    echo "FAIL: ${message}"
+    return 1
 }
 
 run_task() {
@@ -130,7 +157,7 @@ run_task() {
 }
 
 # Host operating system
-if [[ -z "${HOST_OS}" ]]; then
+if [[ -z "${HOST_OS+x}" ]]; then
     if [[ "${OSTYPE}" == "msys" || "${OSTYPE}" == "cygwin" ]]; then
         host_os=windows
     elif [[ "$(uname)" == "Darwin" ]]; then
@@ -143,7 +170,7 @@ else
 fi
 
 # Target operating system for cross-compilation
-if [[ -z "${TARGET_OS}" ]]; then
+if [[ -z "${TARGET_OS+x}" ]]; then
     # Target OS is by default the same as the host OS
     target_os=${host_os}
 else
@@ -163,12 +190,12 @@ c_compiler=cc
 cxx_compiler=c++
 
 # C compiler override
-if [[ ! -z "${CC}" ]]; then
+if [[ ! -z "${CC+x}" ]]; then
     c_compiler=${CC}
 fi
 
 # C++ compiler override
-if [[ ! -z "${CXX}" ]]; then
+if [[ ! -z "${CXX+x}" ]]; then
     cxx_compiler=${CXX}
 fi
 
