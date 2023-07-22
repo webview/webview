@@ -216,6 +216,7 @@ if [[ ${#@} -gt 0 ]]; then
     tasks=("${@}")
 fi
 
+echo "-- Target OS: ${target_os}"
 echo "-- C compiler: ${c_compiler}"
 echo "-- C compiler flags: ${c_compile_flags[@]}"
 echo "-- C linker flags: ${c_link_flags[@]}"
