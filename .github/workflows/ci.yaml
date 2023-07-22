@@ -30,7 +30,10 @@ jobs:
         shell: cmd
 
   build-cross-windows-on-linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [ubuntu-20.04, ubuntu-22.04]
+    runs-on: ${{ matrix.image }}
     env:
       TARGET_OS: windows
       CC: x86_64-w64-mingw32-gcc-posix
