@@ -1118,6 +1118,9 @@ inline std::wstring widen_string(const std::string &input) {
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
 inline std::string narrow_string(const std::wstring &input) {
+#ifndef WC_ERR_INVALID_CHARS
+  static constexpr const auto WC_ERR_INVALID_CHARS = 0x00000080U;
+#endif
   if (input.empty()) {
     return std::string();
   }
@@ -1292,6 +1295,7 @@ struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
   using SetProcessDPIAware_t = BOOL(WINAPI *)();
+  enum class dpi_awareness { per_monitor_aware = -3 };
 
   static constexpr auto SetProcessDpiAwarenessContext =
       library_symbol<SetProcessDpiAwarenessContext_t>(
@@ -1372,7 +1376,10 @@ private:
 inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
-    if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+    auto dpi_awareness =
+        reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+            user32_symbols::dpi_awareness::per_monitor_aware);
+    if (fn(dpi_awareness)) {
       return true;
     }
     return GetLastError() == ERROR_ACCESS_DENIED;

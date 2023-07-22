@@ -10,13 +10,5 @@ typedef struct EventRegistrationToken {
 } EventRegistrationToken;
 #endif
 
-#ifndef WC_ERR_INVALID_CHARS
-#define WC_ERR_INVALID_CHARS 0
-#endif
-
-#ifndef DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE
-#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE ((DPI_AWARENESS_CONTEXT)-3)
-#endif
-
 #endif /* _WIN32 */
 #endif /* WEBVIEW_MINGW_SUPPORT_H */
