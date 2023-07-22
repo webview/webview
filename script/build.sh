@@ -34,10 +34,11 @@ windows_fetch_mswebview2() {
 }
 
 go_setup_env() {
-    # Argument quoting works for Go 1.18 and later but as of 2022-06-26 GitHub Actions has Go 1.17.11.
-    # See https://go-review.googlesource.com/c/go/+/334732/
-    # TODO: Use proper quoting when GHA has Go 1.18 or later.
-    export "CGO_CXXFLAGS=-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include"
+    local cgo_cxxflags=()
+    if [[ "${target_os}" == "windows" ]]; then
+        cgo_cxxflags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+    fi
+    export CGO_CXXFLAGS=("${cgo_cxxflags[@]}")
     export CGO_ENABLED=1
 }
 
@@ -122,9 +123,16 @@ task_go_build() {
     if command -v go >/dev/null 2>&1 ; then
         go_setup_env || return 1
         echo "Building Go examples..."
+        local go_ldflags=
+        if [[ "${target_os}" == "windows" ]]; then
+            go_ldflags="-H windowsgui"
+        fi
+        if [[ ! -z "${go_ldflags}" ]]; then
+            go_ldflags="-ldflags \"${go_ldflags}\""
+        fi
         (cd "${project_dir}" && (
-            go build -ldflags "-H windowsgui" -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
-            go build -ldflags "-H windowsgui" -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
+            go build ${go_ldflags} -o "build/examples/go/basic${exe_suffix}" examples/basic.go || exit 1
+            go build ${go_ldflags} -o "build/examples/go/bind${exe_suffix}" examples/bind.go || exit 1
         )) || return 1
     fi
     if ! is_ci; then
