@@ -30,6 +30,10 @@ windows_fetch_mswebview2() {
                 unzip -q "${mswebview2_zip}" -d "${mswebview2_dir}" || return 1
             fi
         fi
+        if [[ "${PATCH_MSWEBVIEW2}" == 1 ]]; then
+            echo "Patching mswebview2 ${mswebview2_version}..."
+            sed -i 's/#include "EventToken.h"/\/\/#include "EventToken.h"/' ${mswebview2_dir}/build/native/include/WebView2.h || return 1
+        fi
     fi
 }
 
@@ -82,11 +86,6 @@ task_deps() {
     if [[ "${target_os}" == "windows" ]]; then
         windows_fetch_mswebview2 || return 1
     fi
-}
-
-task_cross_patch_mswebview2() {
-    local mswebview2_dir=${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}
-    sed -i 's/#include "EventToken.h"/\/\/#include "EventToken.h"/' ${mswebview2_dir}/build/native/include/WebView2.h || return 1
 }
 
 task_check() {

@@ -34,6 +34,7 @@ jobs:
     env:
       CC: gcc
       CXX: g++
+      PATCH_MSWEBVIEW2: 1
     steps:
       - uses: actions/checkout@v1
       - name: Add MinGW-w64 to PATH
@@ -52,12 +53,13 @@ jobs:
       TARGET_OS: windows
       CC: x86_64-w64-mingw32-gcc-posix
       CXX: x86_64-w64-mingw32-g++-posix
+      PATCH_MSWEBVIEW2: 1
     steps:
       - uses: actions/checkout@v1
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install mingw-w64 -y
       - name: Build
-        run: ./script/build.sh info clean deps cross_patch_mswebview2 build
+        run: ./script/build.sh info clean deps build
 
   swig:
     runs-on: ubuntu-latest
