@@ -37,6 +37,7 @@ go_setup_env() {
     local cgo_cxxflags=()
     if [[ "${target_os}" == "windows" ]]; then
         cgo_cxxflags+=("'-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include'")
+        cgo_cxxflags+=(-include "'${project_dir}/webview_mingw_support.h'")
     fi
     export CGO_CXXFLAGS="${cgo_cxxflags[@]}"
     export CGO_ENABLED=1
@@ -255,11 +256,8 @@ elif [[ "${target_os}" == "macos" ]]; then
 elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
     cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+    cxx_compile_flags+=(-include "${project_dir}/webview_mingw_support.h")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
-    # Cross-compiling
-    if [[ "${target_os}" != "${host_os}" ]]; then
-        cxx_compile_flags+=(-include "${project_dir}/webview_mingw_support.h")
-    fi
 fi
 
 # Default tasks
