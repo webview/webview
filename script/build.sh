@@ -36,9 +36,9 @@ windows_fetch_mswebview2() {
 go_setup_env() {
     local cgo_cxxflags=()
     if [[ "${target_os}" == "windows" ]]; then
-        cgo_cxxflags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+        cgo_cxxflags+=("'-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include'")
     fi
-    export CGO_CXXFLAGS=("${cgo_cxxflags[@]}")
+    export CGO_CXXFLAGS="${cgo_cxxflags[@]}"
     export CGO_ENABLED=1
 }
 
