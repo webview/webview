@@ -18,7 +18,7 @@ jobs:
       - name: Build and run tests
         run: ./script/build.sh
 
-  build-windows:
+  build-windows-msvc:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
@@ -28,6 +28,20 @@ jobs:
       - name: Build and run tests
         run: ./script/build.bat
         shell: cmd
+
+  build-windows-mingw:
+    runs-on: windows-latest
+    env:
+      CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v1
+      - name: Add MinGW-w64 to PATH
+        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
+        shell: cmd
+      - name: Build and run tests
+        run: ./script/build.sh
+        shell: bash
 
   build-cross-windows-on-linux:
     strategy:
