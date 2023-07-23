@@ -174,6 +174,16 @@ task_go_test() {
     CGO_ENABLED=1 go test
 }
 
+task_info() {
+    echo "-- Target OS: ${target_os}"
+    echo "-- C compiler: ${c_compiler}"
+    echo "-- C compiler flags: ${c_compile_flags[@]}"
+    echo "-- C linker flags: ${c_link_flags[@]}"
+    echo "-- C++ compiler: ${cxx_compiler}"
+    echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
+    echo "-- C++ linker flags: ${cxx_link_flags[@]}"
+}
+
 run_task() {
     local name=${1/:/_}
     shift
@@ -261,20 +271,12 @@ elif [[ "${target_os}" == "windows" ]]; then
 fi
 
 # Default tasks
-tasks=(clean format deps check build test go:build go:test)
+tasks=(info clean format deps check build test go:build go:test)
 
 # Task override from command line
 if [[ ${#@} -gt 0 ]]; then
     tasks=("${@}")
 fi
-
-echo "-- Target OS: ${target_os}"
-echo "-- C compiler: ${c_compiler}"
-echo "-- C compiler flags: ${c_compile_flags[@]}"
-echo "-- C linker flags: ${c_link_flags[@]}"
-echo "-- C++ compiler: ${cxx_compiler}"
-echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
-echo "-- C++ linker flags: ${cxx_link_flags[@]}"
 
 for task in "${tasks[@]}"; do
     run_task "${task}" || exit 1

@@ -56,12 +56,8 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install mingw-w64 -y
-      - name: Fetch library dependencies
-        run: ./script/build.sh deps
-      - name: Patch MS WebView2
-        run: ./script/build.sh cross_patch_mswebview2
       - name: Build
-        run: ./script/build.sh build
+        run: ./script/build.sh info clean deps cross_patch_mswebview2 build
 
   swig:
     runs-on: ubuntu-latest
