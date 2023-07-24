@@ -44,6 +44,29 @@ jobs:
         run: ./script/build.sh
         shell: bash
 
+  build-windows-msys2:
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64, cc: gcc  , cxx: g++ }
+          - { sys: clang64, cc: clang, cxx: clang++ }
+    runs-on: windows-latest
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+          pacboy: toolchain:p
+      - name: Build and run tests
+        run: ./script/build.sh info clean deps build test
+
   build-cross-windows-on-linux:
     strategy:
       matrix:
