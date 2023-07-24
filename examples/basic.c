@@ -2,7 +2,7 @@
 #include <stddef.h>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 #ifdef _WIN32

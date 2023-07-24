@@ -18,7 +18,7 @@ jobs:
       - name: Build and run tests
         run: ./script/build.sh
 
-  build-windows:
+  build-windows-msvc:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
@@ -28,6 +28,38 @@ jobs:
       - name: Build and run tests
         run: ./script/build.bat
         shell: cmd
+
+  build-windows-mingw:
+    runs-on: windows-latest
+    env:
+      CC: gcc
+      CXX: g++
+      PATCH_MSWEBVIEW2: 1
+    steps:
+      - uses: actions/checkout@v1
+      - name: Add MinGW-w64 to PATH
+        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
+        shell: cmd
+      - name: Build and run tests
+        run: ./script/build.sh
+        shell: bash
+
+  build-cross-windows-on-linux:
+    strategy:
+      matrix:
+        image: [ubuntu-20.04, ubuntu-22.04]
+    runs-on: ${{ matrix.image }}
+    env:
+      TARGET_OS: windows
+      CC: x86_64-w64-mingw32-gcc-posix
+      CXX: x86_64-w64-mingw32-g++-posix
+      PATCH_MSWEBVIEW2: 1
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install mingw-w64 -y
+      - name: Build
+        run: ./script/build.sh info clean deps build
 
   swig:
     runs-on: ubuntu-latest

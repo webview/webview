@@ -217,6 +217,7 @@ WEBVIEW_API const webview_version_info_t *webview_version();
 
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <map>
@@ -1141,11 +1142,17 @@ inline std::wstring widen_string(const std::string &input) {
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
 inline std::string narrow_string(const std::wstring &input) {
+  struct wc_flags {
+    enum TYPE : unsigned int {
+      // WC_ERR_INVALID_CHARS
+      err_invalid_chars = 0x00000080U
+    };
+  };
   if (input.empty()) {
     return std::string();
   }
   UINT cp = CP_UTF8;
-  DWORD flags = WC_ERR_INVALID_CHARS;
+  DWORD flags = wc_flags::err_invalid_chars;
   auto input_c = input.c_str();
   auto input_length = static_cast<int>(input.size());
   auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
@@ -1315,6 +1322,9 @@ struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
   using SetProcessDPIAware_t = BOOL(WINAPI *)();
+  // Use intptr_t as the underlying type because we need to
+  // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
+  enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
 
   static constexpr auto SetProcessDpiAwarenessContext =
       library_symbol<SetProcessDpiAwarenessContext_t>(
@@ -1395,7 +1405,10 @@ private:
 inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
-    if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+    auto dpi_awareness =
+        reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+            user32_symbols::dpi_awareness::per_monitor_aware);
+    if (fn(dpi_awareness)) {
       return true;
     }
     return GetLastError() == ERROR_ACCESS_DENIED;
