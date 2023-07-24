@@ -1119,14 +1119,17 @@ inline std::wstring widen_string(const std::string &input) {
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
 inline std::string narrow_string(const std::wstring &input) {
-#ifndef WC_ERR_INVALID_CHARS
-  static constexpr const auto WC_ERR_INVALID_CHARS = 0x00000080U;
-#endif
+  struct wc_flags {
+    enum TYPE : unsigned int {
+      // WC_ERR_INVALID_CHARS
+      err_invalid_chars = 0x00000080U
+    };
+  };
   if (input.empty()) {
     return std::string();
   }
   UINT cp = CP_UTF8;
-  DWORD flags = WC_ERR_INVALID_CHARS;
+  DWORD flags = wc_flags::err_invalid_chars;
   auto input_c = input.c_str();
   auto input_length = static_cast<int>(input.size());
   auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
