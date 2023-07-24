@@ -6,6 +6,7 @@
 // Define the things used by WebView2 from the EventToken.h header if needed.
 #if defined(__has_include)
 #if !defined(WEBVIEW_HAVE_EVENTTOKEN_H) && __has_include(<EventToken.h>)
+#include <EventToken.h>
 #define WEBVIEW_HAVE_EVENTTOKEN_H
 #endif
 #if !defined(WEBVIEW_HAVE_EVENTTOKEN_H) && defined(__eventtoken_h__)
