@@ -217,6 +217,7 @@ WEBVIEW_API const webview_version_info_t *webview_version();
 
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <map>
@@ -1295,7 +1296,9 @@ struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
   using SetProcessDPIAware_t = BOOL(WINAPI *)();
-  enum class dpi_awareness { per_monitor_aware = -3 };
+  // Use intptr_t as the underlying type because we need to
+  // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
+  enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
 
   static constexpr auto SetProcessDpiAwarenessContext =
       library_symbol<SetProcessDpiAwarenessContext_t>(
