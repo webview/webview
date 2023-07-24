@@ -14,7 +14,9 @@
 #endif
 #if !defined(WEBVIEW_HAVE_EVENTTOKEN_H)
 #include <cstdint>
-typedef struct EventRegistrationToken { int64_t value; } EventRegistrationToken;
+typedef struct EventRegistrationToken {
+  int64_t value;
+} EventRegistrationToken;
 #endif
 #endif
 
