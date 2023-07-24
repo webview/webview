@@ -5,7 +5,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
@@ -14,14 +14,14 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Build and run tests
         run: ./script/build.sh
 
   build-windows-msvc:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Add MinGW-w64 to PATH
         run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
         shell: cmd
@@ -36,7 +36,7 @@ jobs:
       CXX: g++
       PATCH_MSWEBVIEW2: 1
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Add MinGW-w64 to PATH
         run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
         shell: cmd
@@ -58,7 +58,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
@@ -78,7 +78,7 @@ jobs:
       CXX: x86_64-w64-mingw32-g++-posix
       PATCH_MSWEBVIEW2: 1
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install mingw-w64 -y
       - name: Build
@@ -90,7 +90,7 @@ jobs:
       matrix:
         language: [csharp, java, python, ruby]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Generate bindings with SWIG
         run: |
           mkdir -p "build/bindings/${{ matrix.language }}" \
@@ -102,7 +102,7 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Run clang-format
         uses: DoozyX/clang-format-lint-action@v0.6
         with:
