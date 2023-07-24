@@ -41,9 +41,9 @@ go_setup_env() {
     local cgo_cxxflags=()
     if [[ "${target_os}" == "windows" ]]; then
         # Path must somehow be Windows-style (forward slashes are OK)
-        mswebview_include_path=$(cygpath --mixed "${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+        mswebview_include_path=$(cygpath --mixed "${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include") || return 1
         cgo_cxxflags+=("\"-I${mswebview_include_path}\"")
-        mingw_header_path=$(cygpath --mixed "${project_dir}/webview_mingw_support.h")
+        mingw_header_path=$(cygpath --mixed "${project_dir}/webview_mingw_support.h") || return 1
         cgo_cxxflags+=("\"--include=${mingw_header_path}\"")
     fi
     export CGO_CXXFLAGS="${cgo_cxxflags[@]}"
