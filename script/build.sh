@@ -161,6 +161,16 @@ task_build() {
 }
 
 task_test() {
+    if [[ "${target_os}" != "${host_os}" ]]; then
+        local message="Tests (target OS (${target_os}) is different from host OS (${host_os}))"
+        # Allow skipping this task on .
+        if is_ci && [[ "${host_os}" != "macos" ]]; then
+            echo "FAIL: ${message}"
+            return 1
+        fi
+        echo "SKIP: ${message}"
+        return 0
+    fi
     echo "Running tests..."
     "${build_dir}/webview_test${exe_suffix}" || return 1
 }
@@ -189,6 +199,16 @@ task_go_build() {
 }
 
 task_go_test() {
+    if [[ "${target_os}" != "${host_os}" ]]; then
+        local message="Go tests (target OS (${target_os}) is different from host OS (${host_os}))"
+        # Allow skipping this task on .
+        if is_ci && [[ "${host_os}" != "macos" ]]; then
+            echo "FAIL: ${message}"
+            return 1
+        fi
+        echo "SKIP: ${message}"
+        return 0
+    fi
     if ! command -v go >/dev/null 2>&1 ; then
         local message="Go tests (go not installed)"
         if is_ci; then
