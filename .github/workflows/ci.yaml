@@ -34,7 +34,6 @@ jobs:
     env:
       CC: gcc
       CXX: g++
-      PATCH_MSWEBVIEW2: 1
     steps:
       - uses: actions/checkout@v3
       - name: Add MinGW-w64 to PATH
