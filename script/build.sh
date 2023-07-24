@@ -57,6 +57,16 @@ is_ci() {
     return 0
 }
 
+invoke_go_build() {
+    local output=${1}
+    local input=${2}
+    local ldflags=()
+    if [[ ! -z "${3}" ]]; then
+        ldflags=("${3}")
+    fi
+    (cd "${project_dir}" && go build "${ldflags[@]}" -o "${output}" "${input}") || return 1
+}
+
 task_clean() {
     if [[ -d "${build_dir}" ]]; then
         rm -rd "${build_dir}" || return 1
@@ -126,16 +136,6 @@ task_build() {
 task_test() {
     echo "Running tests..."
     "${build_dir}/webview_test${exe_suffix}" || return 1
-}
-
-invoke_go_build() {
-    local output=${1}
-    local input=${2}
-    local ldflags=()
-    if [[ ! -z "${3}" ]]; then
-        ldflags=("${3}")
-    fi
-    (cd "${project_dir}" && go build "${ldflags[@]}" -o "${output}" "${input}") || return 1
 }
 
 task_go_build() {
