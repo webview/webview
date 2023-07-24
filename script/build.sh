@@ -22,7 +22,7 @@ windows_fetch_mswebview2() {
         mkdir -p "${mswebview2_dir}" || return 1
         echo "Fetching mswebview2 ${mswebview2_version}..."
         if [[ "${host_os}" == "windows" ]]; then
-            "${nuget_exe}" install Microsoft.Web.Webview2 -Version "${mswebview2_version}" -OutputDirectory "${libs_dir}" || return 1
+            "${nuget_exe}" install Microsoft.Web.Webview2 -Verbosity quiet -Version "${mswebview2_version}" -OutputDirectory "${libs_dir}" || return 1
         else
             local mswebview2_zip=${mswebview2_dir}.zip
             if [[ ! -f "${mswebview2_zip}" ]]; then
