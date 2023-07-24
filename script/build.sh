@@ -32,7 +32,7 @@ windows_fetch_mswebview2() {
         fi
         if [[ "${PATCH_MSWEBVIEW2}" == 1 ]]; then
             echo "Patching mswebview2 ${mswebview2_version}..."
-            sed -i 's/#include "EventToken.h"/\/\/#include "EventToken.h"/' ${mswebview2_dir}/build/native/include/WebView2.h || return 1
+            sed -i 's/#include "EventToken.h"/\/\/#include "EventToken.h"/' "${mswebview2_dir}/build/native/include/WebView2.h" || return 1
         fi
     fi
 }
