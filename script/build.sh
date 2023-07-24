@@ -37,6 +37,24 @@ windows_fetch_mswebview2() {
     fi
 }
 
+get_go_os_from_os() {
+    case "${1}" in
+        linux)
+            echo linux
+            ;;
+        macos)
+            echo darwin
+            ;;
+        windows)
+            echo windows
+            ;;
+        *)
+            echo "WARNING: Unsupported OS (${1}), assuming linux" >&2
+            echo linux
+            ;;
+    esac
+}
+
 go_setup_env() {
     local cgo_cxxflags=()
     if [[ "${target_os}" == "windows" ]]; then
@@ -53,6 +71,10 @@ go_setup_env() {
     fi
     export CGO_CXXFLAGS="${cgo_cxxflags[@]}"
     export CGO_ENABLED=1
+    # Export GOOS only when cross-compiling
+    if [[ "${target_os}" != "${host_os}" ]]; then
+        export GOOS=$(get_go_os_from_os "${target_os}")
+    fi
 }
 
 is_ci() {
