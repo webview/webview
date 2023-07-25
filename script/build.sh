@@ -283,6 +283,8 @@ cxx_std=c++11
 c_compiler=cc
 # Default C++ compiler
 cxx_compiler=c++
+# Default library name prefix
+lib_prefix=lib
 
 # C compiler override
 if [[ ! -z "${CC+x}" ]]; then
@@ -292,6 +294,11 @@ fi
 # C++ compiler override
 if [[ ! -z "${CXX+x}" ]]; then
     cxx_compiler=${CXX}
+fi
+
+# Library name prefix override
+if [[ ! -z "${LIB_PREFIX+x}" ]]; then
+    lib_prefix=${LIB_PREFIX}
 fi
 
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
@@ -307,7 +314,6 @@ c_link_flags=("${common_link_flags[@]}")
 cxx_compile_flags=("${common_compile_flags[@]}")
 cxx_link_flags=("${common_link_flags[@]}")
 exe_suffix=
-lib_prefix=lib
 shared_lib_suffix=
 
 if [[ "${target_os}" == "windows" ]]; then
@@ -330,7 +336,6 @@ elif [[ "${target_os}" == "macos" ]]; then
     cxx_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
 elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
-    lib_prefix=
     shared_lib_suffix=.dll
     cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
     cxx_compile_flags+=("--include=${project_dir}/webview_mingw_support.h")
