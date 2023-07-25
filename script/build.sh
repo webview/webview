@@ -143,6 +143,17 @@ task_check() {
 }
 
 task_build() {
+    mkdir -p "${build_dir}/library" || true
+
+    echo "Building shared library..."
+    local shared_lib_args=(-fPIC)
+    if [[ "${target_os}" == "macos" ]]; then
+        shared_lib_args+=(-dynamiclib "-Wl,-install_name,@rpath/${lib_prefix}webview${shared_lib_suffix}")
+    else
+        shared_lib_args+=(-shared)
+    fi
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${shared_lib_args[@]}" "${project_dir}/webview.cc" "${cxx_link_flags[@]}" -o "${build_dir}/library/${lib_prefix}webview${shared_lib_suffix}" || return 1
+
     mkdir -p "${build_dir}/examples/c" "${build_dir}/examples/cc" || true
 
     echo "Building C++ examples..."
@@ -296,6 +307,8 @@ c_link_flags=("${common_link_flags[@]}")
 cxx_compile_flags=("${common_compile_flags[@]}")
 cxx_link_flags=("${common_link_flags[@]}")
 exe_suffix=
+lib_prefix=lib
+shared_lib_suffix=
 
 if [[ "${target_os}" == "windows" ]]; then
     cxx_std=c++17
@@ -305,16 +318,20 @@ c_compile_flags+=("-std=${c_std}")
 cxx_compile_flags+=("-std=${cxx_std}")
 
 if [[ "${target_os}" == "linux" ]]; then
+    shared_lib_suffix=.so
     pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($(pkg-config --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($(pkg-config --libs "${pkgconfig_libs[@]}")) || exit 1
 elif [[ "${target_os}" == "macos" ]]; then
+    shared_lib_suffix=.dylib
     cxx_link_flags+=(-framework WebKit)
     macos_target_version=10.9
     c_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
     cxx_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
 elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
+    lib_prefix=
+    shared_lib_suffix=.dll
     cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
     cxx_compile_flags+=("--include=${project_dir}/webview_mingw_support.h")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
