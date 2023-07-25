@@ -146,11 +146,13 @@ task_build() {
     mkdir -p "${build_dir}/library" || true
 
     echo "Building shared library..."
-    local shared_lib_args=(-fPIC)
+    local shared_lib_args=(-fPIC -fvisibility=hidden -fvisibility-inlines-hidden)
     if [[ "${target_os}" == "macos" ]]; then
-        shared_lib_args+=(-dynamiclib "-Wl,-install_name,@rpath/${lib_prefix}webview${shared_lib_suffix}")
+        shared_lib_args+=(-dynamiclib "-Wl,-install_name,@rpath/${lib_prefix}webview${shared_lib_suffix}" '-DWEBVIEW_API=__attribute__ ((visibility ("default")))')
+    elif [[ "${target_os}" == "windows" ]]; then
+        shared_lib_args+=(-shared '-DWEBVIEW_API=__declspec(dllexport)')
     else
-        shared_lib_args+=(-shared)
+        shared_lib_args+=(-shared '-DWEBVIEW_API=__attribute__ ((visibility ("default")))')
     fi
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${shared_lib_args[@]}" "${project_dir}/webview.cc" "${cxx_link_flags[@]}" -o "${build_dir}/library/${lib_prefix}webview${shared_lib_suffix}" || return 1
 
