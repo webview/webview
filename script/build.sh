@@ -143,7 +143,7 @@ task_check() {
 }
 
 task_build() {
-    mkdir -p build/examples/c build/examples/cc build/examples/go || true
+    mkdir -p "${build_dir}/examples/c" "${build_dir}/examples/cc" || true
 
     echo "Building C++ examples"
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/basic.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/basic${exe_suffix}" || exit 1
@@ -194,6 +194,7 @@ task_go_build() {
     if [[ "${#go_ldflags}" -gt 0 ]]; then
         go_ldflags="-ldflags=${go_ldflags[@]}"
     fi
+    mkdir -p "${build_dir}/examples/go" || true
     invoke_go_build "build/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
     invoke_go_build "build/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
 }
