@@ -19,14 +19,23 @@ jobs:
         run: ./script/build.sh
 
   build-windows-msvc:
+    strategy:
+      matrix:
+        arch: [x64, x86]
     runs-on: windows-latest
+    env:
+      TARGET_ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
+      - name: Build and run tests
+        run: ./script/build.bat info clean format deps check build test
+        shell: cmd
       - name: Add MinGW-w64 to PATH
         run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
         shell: cmd
-      - name: Build and run tests
-        run: ./script/build.bat
+      - name: 'Go: Build and run tests'
+        if: matrix.arch == 'x64'
+        run: ./script/build.bat go:build go:test
         shell: cmd
 
   build-windows-mingw:
