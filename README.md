@@ -301,9 +301,56 @@ The following compile-time options can be used to change how the library integra
 
 ## Development
 
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+To build the library, examples and run tests, use one of the builds scripts in the `script` directory:
 
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
+* `build.sh`:
+  * On Unix-based systems.
+  * On Windows in a Unix-like environment such as MSYS2.
+
+* `build.bat`:
+  * On Windows when building with Visual C++.
+
+You can specify individual tasks on the command line for these scripts:
+
+Task       | Description
+---------- | ---------------------------------------
+`info`     | Displays information.
+`clean`    | Cleans the build directory.
+`format`   | Reformats code.
+`deps`     | Fetches dependencies.
+`check`    | Runs checks.
+`build`    | Builds the library, examples and tests.
+`test`     | Runs tests.
+`go:build` | Builds Go examples.
+`go:test`  | Runs Go tests.
+
+Additionally, the scripts accept the following environment variables.
+
+Both scripts:
+
+Variable     | Description
+------------ | ---------------------------------------------------------
+`CI`         | Changes behavior in CI environments (more strict).
+`TARGET_ARCH`| Target architecture for cross-compilation (`x64`, `x86`).
+
+Only `build.sh`:
+
+Variable     | Description
+------------ | --------------------------------------------------------------
+`CI`         | Changes behavior in CI environments.
+`HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
+`TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
+`CC`         | C compiler executable. Used for C/C++ and Go.
+`CXX`        | C++ compiler executable. Used for C/C++ and Go.
+`LIB_PREFIX` | Library name prefix.
+`PKGCONFIG`  | Alternative `pkgconfig` executable.
+
+Only `build.bat`:
+
+Variable     | Description
+------------ | --------------------------------------------------------------
+`CC`         | C compiler executable. Used by Go.
+`CXX`        | C++ compiler executable. Used by Go.
 
 ## Limitations
 
