@@ -118,17 +118,7 @@ g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/in
 
 #### Bonus for Visual C++
 
-Build a shared library:
-
-```bat
-cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
-    /D "WEBVIEW_API=__declspec(dllexport)" ^
-    /I libs\webview ^
-    /I libs\webview2\build\native\include ^
-    /link /DLL /OUT:build\webview.dll
-```
-
-Build an example:
+Build a C++ example:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
@@ -160,6 +150,27 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
+```
+
+#### Bonus for Visual C++
+
+Build a shared library:
+
+```bat
+cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
+    /D "WEBVIEW_API=__declspec(dllexport)" ^
+    /I libs\webview ^
+    /I libs\webview2\build\native\include ^
+    /link /DLL /OUT:build\webview.dll
+```
+
+Build a C example using the shared library:
+
+```bat
+cl basic.c build\webview.lib /EHsc /Fobuild\ ^
+    /D "WEBVIEW_API=__declspec(dllimport)" ^
+    /I libs\webview ^
+    /link /OUT:build\basic.exe
 ```
 
 ### Getting Started with Go
