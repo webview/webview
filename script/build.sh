@@ -37,6 +37,21 @@ windows_fetch_mswebview2() {
     fi
 }
 
+get_arch_bitness_from_arch() {
+    case "${1}" in
+        x64)
+            echo 64
+            ;;
+        x86)
+            echo 32
+            ;;
+        *)
+            echo "ERROR: Unsupported architecture (${1})" >&2
+            return 1
+            ;;
+    esac
+}
+
 get_go_os_from_os() {
     case "${1}" in
         linux)
@@ -51,6 +66,21 @@ get_go_os_from_os() {
         *)
             echo "WARNING: Unsupported OS (${1}), assuming linux" >&2
             echo linux
+            ;;
+    esac
+}
+
+get_go_arch_from_arch() {
+    case "${1}" in
+        x64)
+            echo amd64
+            ;;
+        x86)
+            echo 386
+            ;;
+        *)
+            echo "ERROR: Unsupported architecture (${1})" >&2
+            return 1
             ;;
     esac
 }
@@ -73,7 +103,11 @@ go_setup_env() {
     export CGO_ENABLED=1
     # Export GOOS only when cross-compiling
     if [[ "${target_os}" != "${host_os}" ]]; then
-        export GOOS=$(get_go_os_from_os "${target_os}")
+        export GOOS=$(get_go_os_from_os "${target_os}") || return 1
+    fi
+    # Export GOARCH only when cross-compiling
+    if [[ "${target_arch}" != "${host_arch}" ]]; then
+        export GOARCH=$(get_go_arch_from_arch "${target_arch}") || return 1
     fi
 }
 
@@ -239,12 +273,16 @@ task_go_test() {
 
 task_info() {
     echo "-- Target OS: ${target_os}"
+    echo "-- Target architecture: ${target_arch}"
     echo "-- C compiler: ${c_compiler}"
     echo "-- C compiler flags: ${c_compile_flags[@]}"
     echo "-- C linker flags: ${c_link_flags[@]}"
     echo "-- C++ compiler: ${cxx_compiler}"
     echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
     echo "-- C++ linker flags: ${cxx_link_flags[@]}"
+    if [[ "${target_os}" == "linux" ]]; then
+        echo "-- pkg-config: ${pkgconfig_exe}"
+    fi
 }
 
 run_task() {
@@ -274,6 +312,14 @@ else
     target_os=${TARGET_OS}
 fi
 
+# Target architecture for cross-compilation
+if [[ -z "${TARGET_ARCH+x}" ]]; then
+    # Target architecture is by default the same as the host architecture
+    target_arch=${host_arch}
+else
+    target_arch=${TARGET_ARCH}
+fi
+
 # Versions of dependencies
 mswebview2_version=1.0.1150.38
 
@@ -287,6 +333,8 @@ c_compiler=cc
 cxx_compiler=c++
 # Default library name prefix
 lib_prefix=lib
+# Default pkg-config executable
+pkgconfig_exe=pkg-config
 
 # C compiler override
 if [[ ! -z "${CC+x}" ]]; then
@@ -303,6 +351,11 @@ if [[ ! -z "${LIB_PREFIX+x}" ]]; then
     lib_prefix=${LIB_PREFIX}
 fi
 
+# pkg-config executable override
+if [[ ! -z "${PKGCONFIG+x}" ]]; then
+    pkgconfig_exe=${PKGCONFIG}
+fi
+
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
 build_dir=${project_dir}/build
 external_dir=${build_dir}/external
@@ -311,12 +364,22 @@ tools_dir=${external_dir}/tools
 warning_flags=(-Wall -Wextra -pedantic)
 common_compile_flags=("${warning_flags[@]}" "-I${project_dir}")
 common_link_flags=("${warning_flags[@]}")
-c_compile_flags=("${common_compile_flags[@]}")
-c_link_flags=("${common_link_flags[@]}")
-cxx_compile_flags=("${common_compile_flags[@]}")
-cxx_link_flags=("${common_link_flags[@]}")
+c_compile_flags=()
+c_link_flags=()
+cxx_compile_flags=()
+cxx_link_flags=()
 exe_suffix=
 shared_lib_suffix=
+
+if [[ "${target_arch}" != "${host_arch}" ]]; then
+    common_compile_flags+=("-m$(get_arch_bitness_from_arch "${target_arch}")")
+    common_link_flags+=("-m$(get_arch_bitness_from_arch "${target_arch}")")
+fi
+
+c_compile_flags+=("${common_compile_flags[@]}")
+c_link_flags+=("${common_link_flags[@]}")
+cxx_compile_flags+=("${common_compile_flags[@]}")
+cxx_link_flags+=("${common_link_flags[@]}")
 
 if [[ "${target_os}" == "windows" ]]; then
     cxx_std=c++17
@@ -328,8 +391,8 @@ cxx_compile_flags+=("-std=${cxx_std}")
 if [[ "${target_os}" == "linux" ]]; then
     shared_lib_suffix=.so
     pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
-    cxx_compile_flags+=($(pkg-config --cflags "${pkgconfig_libs[@]}")) || exit 1
-    cxx_link_flags+=($(pkg-config --libs "${pkgconfig_libs[@]}")) || exit 1
+    cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
+    cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
 elif [[ "${target_os}" == "macos" ]]; then
     shared_lib_suffix=.dylib
     cxx_link_flags+=(-framework WebKit)
