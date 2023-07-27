@@ -287,8 +287,7 @@ task_info() {
 
 run_task() {
     local name=${1/:/_}
-    shift
-    eval "task_${name}" "${@}" || return 1
+    eval "task_${name}" || return 1
 }
 
 # Host operating system
