@@ -352,6 +352,10 @@ Variable     | Description
 `CC`         | C compiler executable. Used by Go.
 `CXX`        | C++ compiler executable. Used by Go.
 
+### Cross-compilation
+
+See the CI configuration for examples.
+
 ## Limitations
 
 ### Browser Features
