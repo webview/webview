@@ -234,7 +234,7 @@ task_go_test() {
     fi
     go_setup_env || return 1
     echo "Running Go tests..."
-    CGO_ENABLED=1 go test
+    (cd "${project_dir}" && CGO_ENABLED=1 go test) || return 1
 }
 
 task_info() {
