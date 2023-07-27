@@ -144,7 +144,7 @@ goto :main
     goto :eof
 
 :task_check
-    echo SKIP: Linting ^(disabled^)
+    echo SKIP: Linting ^(not implemented^)
     goto :eof
 
 :task_build
