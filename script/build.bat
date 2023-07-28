@@ -2,6 +2,13 @@
 setlocal enabledelayedexpansion
 goto :main
 
+:realpath
+    setlocal
+    set "out_var=%~1"
+    set "in_path=%~dpf2"
+    endlocal & set "%out_var%=%in_path%"
+    goto :eof
+
 :dirname
     setlocal
     set "out_var=%~1"
@@ -198,8 +205,8 @@ goto :main
     if not exist "%build_dir%\examples\go" (
         mkdir "%build_dir%\examples\go" || (exit /b 1 & endlocal)
     )
-    call :invoke_go_build "build\examples\go\basic%exe_suffix%" examples\basic.go "%go_ldflags%" || (exit /b 1 & endlocal)
-    call :invoke_go_build "build\examples\go\bind%exe_suffix%" examples\bind.go "%go_ldflags%" || (exit /b 1 & endlocal)
+    call :invoke_go_build "%build_dir%\examples\go\basic%exe_suffix%" examples\basic.go "%go_ldflags%" || (exit /b 1 & endlocal)
+    call :invoke_go_build "%build_dir%\examples\go\bind%exe_suffix%" examples\bind.go "%go_ldflags%" || (exit /b 1 & endlocal)
     endlocal
     goto :eof
 
@@ -229,6 +236,7 @@ goto :main
 
 :task_info
     echo -- Target architecture: %target_arch%
+    echo -- Build directory: %build_dir%
     echo -- C compiler: %c_compiler%
     echo -- C compiler flags: %c_compile_flags%
     echo -- C linker flags: %c_link_flags%
@@ -266,7 +274,14 @@ set cxx_compiler=cl
 
 call :dirname project_dir "%~dpf0" || exit /b
 call :dirname project_dir "%project_dir%" || exit /b
-set build_dir=%project_dir%\build
+
+rem Default build directory unless overridden
+if defined BUILD_DIR (
+    call :realpath build_dir "%BUILD_DIR%" || exit /b
+) else (
+    set build_dir=%project_dir%\build
+)
+
 set external_dir=%build_dir%\external
 set libs_dir=%external_dir%\libs
 set tools_dir=%external_dir%\tools

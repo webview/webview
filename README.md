@@ -332,6 +332,7 @@ Variable     | Description
 ------------ | ---------------------------------------------------------
 `CI`         | Changes behavior in CI environments (more strict).
 `TARGET_ARCH`| Target architecture for cross-compilation (`x64`, `x86`).
+`BUILD_DIR`  | Overrides the path of the build directory.
 
 Only `build.sh`:
 

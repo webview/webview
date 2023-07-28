@@ -242,8 +242,8 @@ task_go_build() {
         go_ldflags="-ldflags=${go_ldflags[@]}"
     fi
     mkdir -p "${build_dir}/examples/go" || true
-    invoke_go_build "build/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
-    invoke_go_build "build/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
+    invoke_go_build "${build_dir}/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
+    invoke_go_build "${build_dir}/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
 }
 
 task_go_test() {
@@ -274,6 +274,7 @@ task_go_test() {
 task_info() {
     echo "-- Target OS: ${target_os}"
     echo "-- Target architecture: ${target_arch}"
+    echo "-- Build directory: ${build_dir}"
     echo "-- C compiler: ${c_compiler}"
     echo "-- C compiler flags: ${c_compile_flags[@]}"
     echo "-- C linker flags: ${c_link_flags[@]}"
@@ -356,7 +357,14 @@ if [[ ! -z "${PKGCONFIG+x}" ]]; then
 fi
 
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
-build_dir=${project_dir}/build
+
+# Default build directory unless overridden
+if [[ -z "${BUILD_DIR+x}" ]]; then
+    build_dir=${project_dir}/build
+else
+    build_dir=$(unix_realpath_wrapper "${BUILD_DIR}") || exit 1
+fi
+
 external_dir=${build_dir}/external
 libs_dir=${external_dir}/libs
 tools_dir=${external_dir}/tools
