@@ -242,8 +242,8 @@ task_go_build() {
         go_ldflags="-ldflags=${go_ldflags[@]}"
     fi
     mkdir -p "${build_dir}/examples/go" || true
-    invoke_go_build "build/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
-    invoke_go_build "build/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
+    invoke_go_build "${build_dir}/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
+    invoke_go_build "${build_dir}/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
 }
 
 task_go_test() {

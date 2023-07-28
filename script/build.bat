@@ -205,8 +205,8 @@ goto :main
     if not exist "%build_dir%\examples\go" (
         mkdir "%build_dir%\examples\go" || (exit /b 1 & endlocal)
     )
-    call :invoke_go_build "build\examples\go\basic%exe_suffix%" examples\basic.go "%go_ldflags%" || (exit /b 1 & endlocal)
-    call :invoke_go_build "build\examples\go\bind%exe_suffix%" examples\bind.go "%go_ldflags%" || (exit /b 1 & endlocal)
+    call :invoke_go_build "%build_dir%\examples\go\basic%exe_suffix%" examples\basic.go "%go_ldflags%" || (exit /b 1 & endlocal)
+    call :invoke_go_build "%build_dir%\examples\go\bind%exe_suffix%" examples\bind.go "%go_ldflags%" || (exit /b 1 & endlocal)
     endlocal
     goto :eof
 
