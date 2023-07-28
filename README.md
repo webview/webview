@@ -1,7 +1,7 @@
 # webview
 
-[![Join the chat at https://gitter.im/zserge/webview](https://badges.gitter.im/zserge/webview.svg)](https://gitter.im/zserge/webview?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://img.shields.io/github/workflow/status/webview/webview/CI%20Pipeline)](https://github.com/webview/webview)
+<a href="https://discord.gg/24KMecn" title="Join the chat at Discord"><img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0b5061df29d55a92d945_full_logo_blurple_RGB.svg" alt="Discord" height="20" /></a>
+[![Build Status](https://img.shields.io/github/actions/workflow/status/webview/webview/ci.yaml?branch=master)](https://github.com/webview/webview)
 [![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
