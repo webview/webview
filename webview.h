@@ -96,7 +96,7 @@ extern "C" {
 typedef void *webview_t;
 
 // Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). Window parameter can be a
+// be enabled (if the platform supports them). The window parameter can be a
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
@@ -121,9 +121,9 @@ WEBVIEW_API void webview_terminate(webview_t w);
 WEBVIEW_API void
 webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 
-// Returns a native window handle pointer. When using GTK backend the pointer
-// is GtkWindow pointer, when using Cocoa backend the pointer is NSWindow
-// pointer, when using Win32 backend the pointer is HWND pointer.
+// Returns a native window handle pointer. When using a GTK backend the pointer
+// is a GtkWindow pointer, when using a Cocoa backend the pointer is a NSWindow
+// pointer, when using a Win32 backend the pointer is a HWND pointer.
 WEBVIEW_API void *webview_get_window(webview_t w);
 
 // Updates the title of the native window. Must be called from the UI thread.
@@ -134,7 +134,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 #define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
 #define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
 #define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
-// Updates native window size. See WEBVIEW_HINT constants.
+// Updates the size of the native window. See WEBVIEW_HINT constants.
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
@@ -150,7 +150,7 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a the new page - this initialization code will be
+// the webview will open a new page - this initialization code will be
 // executed. It is guaranteed that code is executed before window.onload.
 WEBVIEW_API void webview_init(webview_t w, const char *js);
 
@@ -160,10 +160,10 @@ WEBVIEW_API void webview_init(webview_t w, const char *js);
 WEBVIEW_API void webview_eval(webview_t w, const char *js);
 
 // Binds a native C callback so that it will appear under the given name as a
-// global JavaScript function. Internally it uses webview_init(). Callback
-// receives a request string and a user-provided argument pointer. Request
-// string is a JSON array of all the arguments passed to the JavaScript
-// function.
+// global JavaScript function. Internally it uses webview_init(). The callback
+// receives a sequential request id, a request string and a user-provided
+// argument pointer. The request string is a JSON array of all the arguments
+// passed to the JavaScript function.
 WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void (*fn)(const char *seq, const char *req,
                                          void *arg),
@@ -172,10 +172,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 // Removes a native C callback that was previously set by webview_bind.
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 
-// Allows to return a value from the native binding. Original request pointer
-// must be provided to help internal RPC engine match requests with responses.
-// If status is zero - result is expected to be a valid JSON result value.
-// If status is not zero - result is an error JSON object.
+// Allows to return a value from the native binding. A request id pointer must
+// be provided to allow the internal RPC engine to match requests and responses.
+// If the status is zero - the result is expected to be a valid JSON value.
+// If the status is not zero - the result is an error JSON object.
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
