@@ -338,7 +338,6 @@ Only `build.sh`:
 
 Variable     | Description
 ------------ | --------------------------------------------------------------
-`CI`         | Changes behavior in CI environments.
 `HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
 `TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
 `CC`         | C compiler executable. Used for C/C++ and Go.
