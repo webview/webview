@@ -1259,7 +1259,7 @@ private:
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
 
-    if (m_debug) {
+    if (m_options.debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
       // disable the feature by default (macOS 13.3 and later) and support
       // enabling it. According to Apple, the behavior on older OS versions is
