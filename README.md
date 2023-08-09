@@ -216,6 +216,19 @@ go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.ex
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
 
+### Error Handling
+
+The library defines the following generic error codes and are used throughout the library.
+
+Error                            | Description
+-----                            | -----------
+`WEBVIEW_ERROR_OK`               | OK/Success. Functions that return errors code will typically return this to signify successful operations.
+`WEBVIEW_ERROR_INTERNAL`         | An internal error occurred. This means that something unexpected happened and you should not expect the library to function normally. It is also possible that the error is less severe and that the library simply needs to report a more specific error to the caller.
+`WEBVIEW_ERROR_INVALID_STATE`    | A severe error occurred resulting from invalid state. This could happen e.g. due a bug in the library or invalid API usage. You should not expect the library to function normally.
+`WEBVIEW_ERROR_INVALID_ARGUMENT` | One or more invalid arguments have been specified e.g. in a function call.
+
+You do not normally need to handle these errors specifically except for `WEBVIEW_ERROR_OK`. There are more specific error codes as well so you should check API documentation to know which errors are noteworthy.
+
 ## App Distribution
 
 Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
