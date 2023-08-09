@@ -2021,7 +2021,6 @@ public:
                   0, 0);
       return res;
     }
-    try_create_environment();
     return S_OK;
   }
   HRESULT STDMETHODCALLTYPE Invoke(HRESULT res,
