@@ -188,8 +188,10 @@ extern "C" {
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here. This function is kept for backward-compatibility.
-// New code should use webview_create_with_options() instead.
+// passed here. Returns null on failure. Creation can fail for various reasons
+// such as when required runtime dependencies are missing or when window creation
+// fails. This function is kept for backward-compatibility. New code should use
+// webview_create_with_options() instead.
 WEBVIEW_DEPRECATED("Please use webview_create_with_options instead")
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
