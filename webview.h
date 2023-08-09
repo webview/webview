@@ -2356,7 +2356,8 @@ private:
         [this, wnd](ICoreWebView2Controller *controller,
                     ICoreWebView2 *webview) {
           if (!controller || !webview) {
-            PostMessage(wnd, app_window_message::webview_initialization_failed, 0, 0);
+            PostMessage(wnd, app_window_message::webview_initialization_failed,
+                        0, 0);
             return;
           }
           controller->AddRef();
