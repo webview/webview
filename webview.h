@@ -206,7 +206,7 @@ WEBVIEW_API webview_error_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
 
 // Destroys a webview and closes the native window.
-// Always returns webview_error_ok given correct input.
+// Always returns webview_error_ok when given a valid pointer.
 WEBVIEW_API webview_error_t webview_destroy(webview_t w);
 
 // Runs the main loop until it's terminated. After this function exits - you
