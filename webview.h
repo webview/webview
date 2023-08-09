@@ -2027,6 +2027,10 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
+    UINT dpi = GetDpiForWindow(m_window);
+    width = (width * dpi) / USER_DEFAULT_SCREEN_DPI;
+    height = (height * dpi) / USER_DEFAULT_SCREEN_DPI;
+
     if (hints == WEBVIEW_HINT_MAX) {
       m_maxsz.x = width;
       m_maxsz.y = height;
