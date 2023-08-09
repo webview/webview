@@ -1,7 +1,7 @@
 # webview
 
-[![Join the chat at https://gitter.im/zserge/webview](https://badges.gitter.im/zserge/webview.svg)](https://gitter.im/zserge/webview?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://img.shields.io/github/workflow/status/webview/webview/CI%20Pipeline)](https://github.com/webview/webview)
+<a href="https://discord.gg/24KMecn" title="Join the chat at Discord"><img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0b5061df29d55a92d945_full_logo_blurple_RGB.svg" alt="Discord" height="20" /></a>
+[![Build Status](https://img.shields.io/github/actions/workflow/status/webview/webview/ci.yaml?branch=master)](https://github.com/webview/webview)
 [![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
@@ -71,19 +71,22 @@ mkdir my-project && cd my-project
 mkdir build libs "libs/webview"
 ```
 
-### Windows Preperation
+### Windows Preparation
 
 The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
 
 ```bat
 mkdir libs\webview2
 curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
+```
+
+If you wish to use the official WebView2 loader (`WebView2Loader.dll`) then grab a copy of the DLL (replace `x64` with your target architecture):
+
+```bat
 copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 ```
 
-> **Note:** `WebView2Loader.dll` must be distributed along with your app unless you link it statically, in which case you must use Visual C++ for compilation.
-
-> **Note:** All of the examples here assume that you are targeting `x64` so make sure to specify the correct path for WebView2 depending on what you are targeting.
+> **Note:** See the [WebView2 loader section](#ms-webview2-loader) for more options.
 
 ### C/C++ Preparation
 
@@ -110,32 +113,18 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
-
-> Windows Tip: The library supports linking `WebView2Loader.dll` explicitly when `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK` is defined, avoiding the need for `WebView2Loader.dll.lib`.
 
 #### Bonus for Visual C++
 
-Build a shared library with WebView2 linked statically:
-
-```bat
-cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
-    /D "WEBVIEW_API=__declspec(dllexport)" ^
-    /I libs\webview ^
-    /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link /DLL advapi32.lib /OUT:build\webview.dll
-```
-
-Build the example with WebView2 linked statically:
+Build a C++ example:
 
 ```bat
 cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
-    libs\webview2\build\native\x64\WebView2LoaderStatic.lib ^
-    /link advapi32.lib /OUT:build\basic.exe
+    /link /OUT:build\basic.exe
 ```
 
 ### Getting Started with C
@@ -160,7 +149,28 @@ g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basi
 # Windows/MinGW
 g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -Llibs/webview2/build/native/x64 -lWebView2Loader.dll -lole32 -lshell32 -lshlwapi -luser32 -o build/basic.exe && "build/basic.exe"
+g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
+```
+
+#### Bonus for Visual C++
+
+Build a shared library:
+
+```bat
+cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
+    /D "WEBVIEW_API=__declspec(dllexport)" ^
+    /I libs\webview ^
+    /I libs\webview2\build\native\include ^
+    /link /DLL /OUT:build\webview.dll
+```
+
+Build a C example using the shared library:
+
+```bat
+cl basic.c build\webview.lib /EHsc /Fobuild\ ^
+    /D "WEBVIEW_API=__declspec(dllimport)" ^
+    /I libs\webview ^
+    /link /OUT:build\basic.exe
 ```
 
 ### Getting Started with Go
@@ -173,7 +183,7 @@ Create a new Go module:
 go mod init example.com/m
 ```
 
-On Windows you will need to make the WebView2 loader discoverable by cgo (see [Windows Preperation](#windows-preperation)):
+On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preparation](#windows-preparation)):
 
 ```bat
 set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
@@ -205,19 +215,6 @@ go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.ex
 ### More Examples
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
-
-### Error Handling
-
-The library defines the following generic error codes and are used throughout the library.
-
-Error                            | Description
------                            | -----------
-`WEBVIEW_ERROR_OK`               | OK/Success. Functions that return errors code will typically return this to signify successful operations.
-`WEBVIEW_ERROR_INTERNAL`         | An internal error occurred. This means that something unexpected happened and you should not expect the library to function normally. It is also possible that the error is less severe and that the library simply needs to report a more specific error to the caller.
-`WEBVIEW_ERROR_INVALID_STATE`    | A severe error occurred resulting from invalid state. This could happen e.g. due a bug in the library or invalid API usage. You should not expect the library to function normally.
-`WEBVIEW_ERROR_INVALID_ARGUMENT` | One or more invalid arguments have been specified e.g. in a function call.
-
-You do not normally need to handle these errors specifically except for `WEBVIEW_ERROR_OK`. There are more specific error codes as well so you should check API documentation to know which errors are noteworthy.
 
 ## App Distribution
 
@@ -272,7 +269,7 @@ windres -o build/resources.o resources.rc
 g++ basic.cc build/resources.o [...]
 ```
 
-Remember to bundle the DLLs you have not linked statically, e.g. `WebView2Loader.dll` and those from MinGW-w64.
+Remember to bundle the DLLs you have not linked statically, e.g. those from MinGW-w64 and optionally `WebView2Loader.dll`.
 
 ## MinGW-w64 Requirements
 
@@ -284,11 +281,80 @@ Distributions that are known to be compatible:
 * [MSYS2](https://www.msys2.org/)
 * [WinLibs](https://winlibs.com/)
 
+## MS WebView2 Loader
+
+Linking the WebView2 loader part of the Microsoft WebView2 SDK is not a hard requirement when using our webview library, and neither is distributing `WebView2Loader.dll` with your app.
+
+If, however, `WebView2Loader.dll` is loadable at runtime, e.g. from the executable's directory, then it will be used; otherwise our minimalistic implementation will be used instead.
+
+Should you wish to use the official loader then remember to distribute it along with your app unless you link it statically. Linking it statically is possible with Visual C++ but not MinGW-w64.
+
+Here are some of the noteworthy ways our implementation of the loader differs from the official implementation:
+
+* Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
+* Microsoft Edge Insider (preview) channels are not supported.
+
+The following compile-time options can be used to change how the library integrates the WebView2 loader:
+
+* `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=<1|0>` - Enables or disables the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
+* `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=<1|0>` - Enables or disables explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
+
 ## Development
 
-To build the library, examples and run tests, run `script/build.sh` on Unix-based systems and `script/build.bat` on Windows.
+To build the library, examples and run tests, use one of the builds scripts in the `script` directory:
 
-> **Note:** These scripts are not in the best condition but a rewrite is being planned. Please bear with us and manually edit the scripts to your liking.
+* `build.sh`:
+  * On Unix-based systems.
+  * On Windows in a Unix-like environment such as MSYS2.
+
+* `build.bat`:
+  * On Windows when building with Visual C++.
+
+You can specify individual tasks on the command line for these scripts:
+
+Task       | Description
+---------- | ---------------------------------------
+`info`     | Displays information.
+`clean`    | Cleans the build directory.
+`format`   | Reformats code.
+`deps`     | Fetches dependencies.
+`check`    | Runs checks.
+`build`    | Builds the library, examples and tests.
+`test`     | Runs tests.
+`go:build` | Builds Go examples.
+`go:test`  | Runs Go tests.
+
+Additionally, the scripts accept the following environment variables.
+
+Both scripts:
+
+Variable     | Description
+------------ | ---------------------------------------------------------
+`CI`         | Changes behavior in CI environments (more strict).
+`TARGET_ARCH`| Target architecture for cross-compilation (`x64`, `x86`).
+`BUILD_DIR`  | Overrides the path of the build directory.
+
+Only `build.sh`:
+
+Variable     | Description
+------------ | --------------------------------------------------------------
+`HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
+`TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
+`CC`         | C compiler executable. Used for C/C++ and Go.
+`CXX`        | C++ compiler executable. Used for C/C++ and Go.
+`LIB_PREFIX` | Library name prefix.
+`PKGCONFIG`  | Alternative `pkgconfig` executable.
+
+Only `build.bat`:
+
+Variable     | Description
+------------ | --------------------------------------------------------------
+`CC`         | C compiler executable. Used by Go.
+`CXX`        | C++ compiler executable. Used by Go.
+
+### Cross-compilation
+
+See the CI configuration for examples.
 
 ## Limitations
 
@@ -317,11 +383,26 @@ Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/web
 Nim         | [oskca/webview](https://github.com/oskca/webview)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
+PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
-Rust        | [Boscop/webview-rs](https://github.com/Boscop/webview-rs)
+Rust        | [Boscop/web-view](https://github.com/Boscop/web-view)
 V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
+
+## Generating Bindings
+
+You can generate bindings for the library by yourself using the included SWIG interface (`webview.i`).
+
+Here are some examples to get you started. Unix-style command lines are used for conciseness.
+
+```sh
+mkdir -p build/bindings/{python,csharp,java,ruby}
+swig -c++ -python -outdir build/bindings/python -o build/bindings/python/python_wrap.cpp webview.i
+swig -c++ -csharp -outdir build/bindings/csharp -o build/bindings/csharp/csharp_wrap.cpp webview.i
+swig -c++ -java -outdir build/bindings/java -o build/bindings/java/java_wrap.cpp webview.i
+swig -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp webview.i
+```
 
 ## License
 

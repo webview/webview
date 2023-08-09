@@ -5,7 +5,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
@@ -14,25 +14,103 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Build and run tests
         run: ./script/build.sh
 
-  build-windows:
+  build-windows-msvc:
+    strategy:
+      matrix:
+        arch: [x64, x86]
     runs-on: windows-latest
+    env:
+      TARGET_ARCH: ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
+      - name: Build and run tests
+        run: ./script/build.bat info clean format deps check build test
+        shell: cmd
+      - name: Add MinGW-w64 to PATH
+        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
+        shell: cmd
+      - name: 'Go: Build and run tests'
+        if: matrix.arch == 'x64'
+        run: ./script/build.bat go:build go:test
+        shell: cmd
+
+  build-windows-mingw:
+    runs-on: windows-latest
+    env:
+      CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v3
       - name: Add MinGW-w64 to PATH
         run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
         shell: cmd
       - name: Build and run tests
-        run: ./script/build.bat
-        shell: cmd
+        run: ./script/build.sh
+        shell: bash
+
+  build-windows-msys2:
+    strategy:
+      matrix:
+        include:
+          - { sys: mingw64, cc: gcc  , cxx: g++ }
+          - { sys: clang64, cc: clang, cxx: clang++ }
+    runs-on: windows-latest
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+          pacboy: toolchain:p
+      - name: Build and run tests
+        run: ./script/build.sh info clean deps build test
+
+  build-cross-windows-on-linux:
+    strategy:
+      matrix:
+        image: [ubuntu-20.04, ubuntu-22.04]
+    runs-on: ${{ matrix.image }}
+    env:
+      TARGET_OS: windows
+      CC: x86_64-w64-mingw32-gcc-posix
+      CXX: x86_64-w64-mingw32-g++-posix
+      PATCH_MSWEBVIEW2: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install mingw-w64 -y
+      - name: Build
+        run: ./script/build.sh info clean deps build
+
+  swig:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [csharp, java, python, ruby]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate bindings with SWIG
+        run: |
+          mkdir -p "build/bindings/${{ matrix.language }}" \
+            && swig -Wall -Werror -c++ "-${{ matrix.language }}" \
+              -outdir "build/bindings/${{ matrix.language }}" \
+              -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
+              webview.i
 
   clang-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Run clang-format
         uses: DoozyX/clang-format-lint-action@v0.6
         with:
