@@ -2377,15 +2377,13 @@ private:
     bool is_initialized = false;
     while (!is_initialized && GetMessage(&msg, nullptr, 0, 0) >= 0) {
       switch (msg.message) {
-      case app_window_message::webview_ready: {
-        if (!m_controller) {
-          throw webview_exception(WEBVIEW_ERROR_INVALID_STATE);
-        }
+      case app_window_message::webview_ready:
         is_initialized = true;
         break;
-      }
       case app_window_message::webview_initialization_failed:
         throw webview_exception();
+      case WM_QUIT:
+        return;
       default:
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -2393,7 +2391,7 @@ private:
       }
     }
     if (!m_controller || !m_webview) {
-      return false;
+      throw webview_exception(WEBVIEW_ERROR_INVALID_STATE);
     }
     ICoreWebView2Settings *settings = nullptr;
     auto res = m_webview->get_Settings(&settings);
