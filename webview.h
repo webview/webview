@@ -141,7 +141,6 @@ typedef struct {
   // pointer to GtkWindow, NSWindow or HWND.
   void *window;
   // Initial visibility of the window.
-  // @since 0.11
   webview_visibility_t visibility;
 } webview_create_options_t;
 
@@ -206,6 +205,7 @@ WEBVIEW_API webview_t webview_create(int debug, void *window);
 //    required by the caller no longer supported by the library.
 //  - WEBVIEW_ERROR_VERSION_TOO_RECENT - The minimum version of the library
 //    required by the caller is newer than the one supported by the library.
+// @since 0.11
 WEBVIEW_API webview_error_t webview_create_with_options(
     webview_t *webview, const webview_create_options_t *options);
 
