@@ -67,7 +67,6 @@ int main() {
       nullptr);
 
   w.set_html(html);
-  w.show();
   w.run();
 
   return 0;

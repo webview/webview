@@ -153,7 +153,6 @@ int main() {
   webview_bind(w, "compute", compute, &context);
 
   webview_set_html(w, html);
-  webview_show(w);
   webview_run(w);
   webview_destroy(w);
   return 0;

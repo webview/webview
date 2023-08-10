@@ -13,7 +13,6 @@ int main() {
   w.set_title("Basic Example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
   w.set_html("Thanks for using webview!");
-  w.show();
   w.run();
   return 0;
 }
