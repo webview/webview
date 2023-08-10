@@ -439,19 +439,19 @@ static void test_create_options_builder() {
                             min_supported_version) == 0);
     assert(options.debug == WEBVIEW_FALSE);
     assert(options.window == nullptr);
-    assert(options.visible == WEBVIEW_FALSE);
+    assert(options.visibility == WEBVIEW_VISIBILITY_VISIBLE);
   }
   {
     auto options = webview::create_options_builder{}
                        .minimum_required_version({1, 2, 3})
                        .debug()
                        .window(reinterpret_cast<void *>(123))
-                       .visibility()
+                       .visibility(WEBVIEW_VISIBILITY_HIDDEN)
                        .build();
     assert(compare_versions(options.minimum_required_version, {1, 2, 3}) == 0);
     assert(options.debug == WEBVIEW_TRUE);
     assert(options.window == reinterpret_cast<void *>(123));
-    assert(options.visible == WEBVIEW_TRUE);
+    assert(options.visibility == WEBVIEW_VISIBILITY_HIDDEN);
   }
 }
 
@@ -464,13 +464,13 @@ static void test_apply_webview_create_options_compatibility() {
   assert(compare_versions(options.minimum_required_version, {0, 0, 0}) == 0);
   assert(options.debug == WEBVIEW_FALSE);
   assert(options.window == nullptr);
-  assert(options.visible == WEBVIEW_FALSE);
+  assert(options.visibility == WEBVIEW_VISIBILITY_VISIBLE);
   options = apply_webview_create_options_compatibility(options);
   assert(compare_versions(options.minimum_required_version,
                           min_supported_version) == 0);
   assert(options.debug == WEBVIEW_FALSE);
   assert(options.window == nullptr);
-  assert(options.visible == WEBVIEW_TRUE);
+  assert(options.visibility == WEBVIEW_VISIBILITY_VISIBLE);
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {

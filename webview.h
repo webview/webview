@@ -118,6 +118,11 @@ typedef void *webview_t;
 // as true.
 typedef enum { WEBVIEW_FALSE, WEBVIEW_TRUE } webview_bool_t;
 
+typedef enum {
+  WEBVIEW_VISIBILITY_VISIBLE,
+  WEBVIEW_VISIBILITY_HIDDEN
+} webview_visibility_t;
+
 // Options for webview_create_with_options().
 typedef struct {
   // Minimum required library version. This can be used to change the available
@@ -135,10 +140,9 @@ typedef struct {
   // underlying webview window. Depending on the platform it should be a
   // pointer to GtkWindow, NSWindow or HWND.
   void *window;
-  // Make the window initially visible. Defaults to WEBVIEW_TRUE for versions
-  // earlier than 0.11.
+  // Initial visibility of the window.
   // @since 0.11
-  webview_bool_t visible;
+  webview_visibility_t visibility;
 } webview_create_options_t;
 
 // Error codes returned to callers of the API.
@@ -371,8 +375,8 @@ public:
     return *this;
   }
 
-  create_options_builder &visibility(bool visible = true) noexcept {
-    m_options.visible = visible ? WEBVIEW_TRUE : WEBVIEW_FALSE;
+  create_options_builder &visibility(webview_visibility_t value) noexcept {
+    m_options.visibility = value;
     return *this;
   }
 
@@ -665,9 +669,6 @@ apply_webview_create_options_compatibility(webview_create_options_t options) {
     options.minimum_required_version = min_supported_version;
   }
   validate_create_options(options);
-  if (compare_versions(options.minimum_required_version, {0, 11, 0}) < 0) {
-    options.visible = WEBVIEW_TRUE;
-  }
   return options;
 }
 
@@ -774,7 +775,7 @@ public:
       webkit_settings_set_enable_developer_extras(settings, true);
     }
 
-    if (options.visible) {
+    if (options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
       show();
     }
   }
@@ -1294,7 +1295,7 @@ private:
       )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
 
-    if (m_options.visible) {
+    if (options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
       show();
     }
   }
@@ -2194,10 +2195,7 @@ public:
       m_window = *(static_cast<HWND *>(options.window));
     }
 
-    auto use_new_show_behavior =
-        compare_versions(options.minimum_required_version, {0, 11, 0}) >= 0;
-
-    if (options.visible && !use_new_show_behavior) {
+    if (options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
       show_window();
     }
 
@@ -2206,12 +2204,8 @@ public:
 
     embed(m_window, options.debug, cb);
 
-    if (options.visible) {
-      if (use_new_show_behavior) {
-        show();
-      } else {
-        show_embedded_webview();
-      }
+    if (options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
+      show_embedded_webview();
     }
   }
 
