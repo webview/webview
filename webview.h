@@ -1428,14 +1428,14 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
-inline void scale(HWND m_window, int *width, int *height) {
+inline int scale_with_window_dpi(HWND window, int value) {
+  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
   auto user32 = native_library(L"user32.dll");
-  auto GetDpiForWindow = user32.get(user32_symbols::GetDpiForWindow);
-  if (GetDpiForWindow != nullptr) {
-    int dpi = (int)GetDpiForWindow(m_window);
-    *width = (*width * dpi) / 96; // USER_DEFAULT_SCREEN_DPI = 96
-    *height = (*height * dpi) / 96;
+  if (auto fn = user32.get(user32_symbols::GetDpiForWindow)) {
+    auto dpi = static_cast<int>(fn(window));
+    return (value * dpi) / default_dpi;
   }
+  return value;
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -2040,7 +2040,8 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
-    scale(m_window, &width, &height);
+    width = scale_with_window_dpi(m_window, width);
+    height = scale_with_window_dpi(m_window, height);
 
     if (hints == WEBVIEW_HINT_MAX) {
       m_maxsz.x = width;
