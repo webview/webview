@@ -2027,12 +2027,13 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
-    if (GetProcAddress(GetModuleHandle("user32.dll"),
-                       "GetDpiForWindow") != nullptr) {
-      // Windows 10 (version 1607) or above
-      UINT dpi = GetDpiForWindow(m_window);
-      width = (width * dpi) / USER_DEFAULT_SCREEN_DPI;
-      height = (height * dpi) / USER_DEFAULT_SCREEN_DPI;
+    typedef UINT (WINAPI *pGetDpiForWindow_t)(HWND);
+    pGetDpiForWindow_t pGetDpiForWindow = (pGetDpiForWindow_t)
+        GetProcAddress(GetModuleHandle("user32.dll"), "GetDpiForWindow");
+    if (pGetDpiForWindow != nullptr) {
+      int dpi = (int)pGetDpiForWindow(m_window);
+      width = (width * dpi) / 96; // USER_DEFAULT_SCREEN_DPI = 96
+      height = (height * dpi) / 96;
     }
 
     if (hints == WEBVIEW_HINT_MAX) {
