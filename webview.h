@@ -1322,6 +1322,7 @@ struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
   using SetProcessDPIAware_t = BOOL(WINAPI *)();
+  using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
   // Use intptr_t as the underlying type because we need to
   // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
   enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
@@ -1331,6 +1332,8 @@ struct user32_symbols {
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
       library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+  static constexpr auto GetDpiForWindow =
+      library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
 };
 
 struct shcore_symbols {
@@ -1423,6 +1426,16 @@ inline bool enable_dpi_awareness() {
     return !!fn();
   }
   return true;
+}
+
+inline void scale(HWND m_window, int *width, int *height) {
+  auto user32 = native_library(L"user32.dll");
+  auto GetDpiForWindow = user32.get(user32_symbols::GetDpiForWindow);
+  if (GetDpiForWindow != nullptr) {
+    int dpi = (int)GetDpiForWindow(m_window);
+    *width = (*width * dpi) / 96; // USER_DEFAULT_SCREEN_DPI = 96
+    *height = (*height * dpi) / 96;
+  }
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -2027,14 +2040,7 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
-    typedef UINT (WINAPI *pGetDpiForWindow_t)(HWND);
-    pGetDpiForWindow_t pGetDpiForWindow = (pGetDpiForWindow_t)
-        GetProcAddress(GetModuleHandle("user32.dll"), "GetDpiForWindow");
-    if (pGetDpiForWindow != nullptr) {
-      int dpi = (int)pGetDpiForWindow(m_window);
-      width = (width * dpi) / 96; // USER_DEFAULT_SCREEN_DPI = 96
-      height = (height * dpi) / 96;
-    }
+    scale(m_window, &width, &height);
 
     if (hints == WEBVIEW_HINT_MAX) {
       m_maxsz.x = width;
