@@ -1322,6 +1322,8 @@ struct user32_symbols {
   using DPI_AWARENESS_CONTEXT = HANDLE;
   using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
   using SetProcessDPIAware_t = BOOL(WINAPI *)();
+  using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+  using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
   // Use intptr_t as the underlying type because we need to
   // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
   enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
@@ -1331,6 +1333,10 @@ struct user32_symbols {
           "SetProcessDpiAwarenessContext");
   static constexpr auto SetProcessDPIAware =
       library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+  static constexpr auto GetDpiForWindow =
+      library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
+  static constexpr auto EnableNonClientDpiScaling =
+      library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
 };
 
 struct shcore_symbols {
@@ -1423,6 +1429,38 @@ inline bool enable_dpi_awareness() {
     return !!fn();
   }
   return true;
+}
+
+inline bool enable_non_client_dpi_scaling(HWND window) {
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::EnableNonClientDpiScaling)) {
+    return !!fn(window);
+  }
+  return true;
+}
+
+template <typename T> class dpi_scale_t {
+public:
+  dpi_scale_t(T numerator, T denominator)
+      : m_numerator(numerator), m_denominator(denominator) {}
+
+  constexpr T apply_to(T value) {
+    return (value * m_numerator) / m_denominator;
+  }
+
+private:
+  T m_numerator{};
+  T m_denominator{};
+};
+
+inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
+  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::GetDpiForWindow)) {
+    auto dpi = static_cast<int>(fn(window));
+    return {dpi, default_dpi};
+  }
+  return {default_dpi, default_dpi};
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -1915,45 +1953,71 @@ public:
       wc.hInstance = hInstance;
       wc.lpszClassName = L"webview";
       wc.hIcon = icon;
-      wc.lpfnWndProc =
-          (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
-            auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            switch (msg) {
-            case WM_SIZE:
-              w->resize(hwnd);
-              break;
-            case WM_CLOSE:
-              DestroyWindow(hwnd);
-              break;
-            case WM_DESTROY:
-              w->terminate();
-              break;
-            case WM_GETMINMAXINFO: {
-              auto lpmmi = (LPMINMAXINFO)lp;
-              if (w == nullptr) {
-                return 0;
-              }
-              if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-                lpmmi->ptMaxSize = w->m_maxsz;
-                lpmmi->ptMaxTrackSize = w->m_maxsz;
-              }
-              if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-                lpmmi->ptMinTrackSize = w->m_minsz;
-              }
-            } break;
-            default:
-              return DefWindowProcW(hwnd, msg, wp, lp);
-            }
+      wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                     LPARAM lp) -> LRESULT {
+        win32_edge_engine *w{};
+
+        if (msg == WM_NCCREATE) {
+          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+          w->m_window = hwnd;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+          enable_non_client_dpi_scaling(hwnd);
+        } else {
+          w = reinterpret_cast<win32_edge_engine *>(
+              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        }
+
+        if (!w) {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+
+        switch (msg) {
+        case WM_SIZE:
+          w->resize_widget();
+          break;
+        case WM_CLOSE:
+          DestroyWindow(hwnd);
+          break;
+        case WM_DESTROY:
+          w->terminate();
+          break;
+        case WM_GETMINMAXINFO: {
+          auto lpmmi = (LPMINMAXINFO)lp;
+          if (w == nullptr) {
             return 0;
-          });
+          }
+          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+            lpmmi->ptMaxSize = w->m_maxsz;
+            lpmmi->ptMaxTrackSize = w->m_maxsz;
+          }
+          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+            lpmmi->ptMinTrackSize = w->m_minsz;
+          }
+        } break;
+        case 0x02E0 /*WM_DPICHANGED*/: {
+          auto x_dpi = LOWORD(wp);
+          auto y_dpi = HIWORD(wp);
+          auto *suggested_bounds = reinterpret_cast<RECT *>(lp);
+          w->on_dpi_changed(x_dpi, y_dpi, *suggested_bounds);
+          break;
+        }
+        default:
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+        return 0;
+      });
       RegisterClassExW(&wc);
-      m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
-                               CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                               nullptr, hInstance, nullptr);
+
+      CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                    CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
       if (m_window == nullptr) {
         return;
       }
-      SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
+
+      constexpr const int initial_width = 640;
+      constexpr const int initial_height = 480;
+      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = *(static_cast<HWND *>(window));
     }
@@ -1966,7 +2030,7 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_window, debug, cb);
-    resize(m_window);
+    resize_widget();
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
@@ -2027,6 +2091,10 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
+    auto scale = get_window_dpi_scale(m_window);
+    width = scale.apply_to(width);
+    height = scale.apply_to(height);
+
     if (hints == WEBVIEW_HINT_MAX) {
       m_maxsz.x = width;
       m_maxsz.y = height;
@@ -2034,15 +2102,14 @@ public:
       m_minsz.x = width;
       m_minsz.y = height;
     } else {
-      RECT r;
-      r.left = r.top = 0;
+      RECT r{};
       r.right = width;
       r.bottom = height;
       AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
       SetWindowPos(
           m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
           SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-      resize(m_window);
+      resize_widget();
     }
   }
 
@@ -2123,12 +2190,12 @@ private:
     return true;
   }
 
-  void resize(HWND wnd) {
+  void resize_widget() {
     if (m_controller == nullptr) {
       return;
     }
     RECT bounds;
-    GetClientRect(wnd, &bounds);
+    GetClientRect(m_window, &bounds);
     m_controller->put_Bounds(bounds);
   }
 
@@ -2143,6 +2210,13 @@ private:
       CoTaskMemFree(version_info);
     }
     return ok;
+  }
+
+  void on_dpi_changed(int x, int y, const RECT &suggested_bounds) {
+    const auto &r = suggested_bounds;
+    SetWindowPos(m_window, nullptr, r.left, r.top, r.right - r.left,
+                 r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
+    resize_widget();
   }
 
   virtual void on_message(const std::string &msg) = 0;
