@@ -2109,7 +2109,6 @@ public:
       SetWindowPos(
           m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
           SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-      resize_widget();
     }
   }
 
