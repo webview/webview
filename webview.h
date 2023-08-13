@@ -1445,7 +1445,7 @@ public:
       : m_numerator(numerator), m_denominator(denominator) {}
 
   constexpr T apply_to(T value) {
-    return (value * m_numerator) / m_denominator;
+    return ::MulDiv(value, m_numerator, m_denominator);
   }
 
 private:
