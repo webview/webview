@@ -2216,7 +2216,6 @@ private:
     const auto &r = suggested_bounds;
     SetWindowPos(m_window, nullptr, r.left, r.top, r.right - r.left,
                  r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
-    resize_widget();
   }
 
   virtual void on_message(const std::string &msg) = 0;
