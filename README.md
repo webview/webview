@@ -109,8 +109,10 @@ Build and run the example:
 
 ```sh
 # Linux
-g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && ./build/basic
-# macOS
+g++ basic.cc -std=c++17 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && ./build/basic
+# macOS arm
+g++ basic.cc -std=c++17 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
+# macOS intel
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
 g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
@@ -139,10 +141,14 @@ Build the library and example, then run it:
 
 ```sh
 # Linux
-g++ -c libs/webview/webview.cc -std=c++11 $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0) -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++17 $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0) -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o $(pkg-config --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && build/basic
-# macOS
+# macOS arm
+g++ -c libs/webview/webview.cc -std=c++17 -o build/webview.o
+gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
+g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basic
+# macOS intel
 g++ -c libs/webview/webview.cc -std=c++11 -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basic

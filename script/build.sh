@@ -325,7 +325,7 @@ mswebview2_version=1.0.1150.38
 # Default C standard
 c_std=c99
 # Default C++ standard
-cxx_std=c++11
+cxx_std=c++17
 # Default C compiler
 c_compiler=cc
 # Default C++ compiler
@@ -379,9 +379,10 @@ c_compile_flags+=("${common_compile_flags[@]}")
 c_link_flags+=("${common_link_flags[@]}")
 cxx_compile_flags+=("${common_compile_flags[@]}")
 cxx_link_flags+=("${common_link_flags[@]}")
+arch=$(uname -m)
 
-if [[ "${target_os}" == "windows" ]]; then
-    cxx_std=c++17
+if [[ "${target_os}" == "macos" ]] && [ "$arch" == "x86_64" ]; then
+    cxx_std=c++11
 fi
 
 c_compile_flags+=("-std=${c_std}")
