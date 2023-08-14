@@ -379,9 +379,8 @@ c_compile_flags+=("${common_compile_flags[@]}")
 c_link_flags+=("${common_link_flags[@]}")
 cxx_compile_flags+=("${common_compile_flags[@]}")
 cxx_link_flags+=("${common_link_flags[@]}")
-arch=$(uname -m)
 
-if [[ "${target_os}" == "macos" ]] && [ "$arch" == "x86_64" ]; then
+if [[ "${target_os}" == "macos" ]] && [[ -z "${target_arch}" ]] &&  [[ $(uname -m) == "x86_64" ]]; then
     cxx_std=c++11
 fi
 
