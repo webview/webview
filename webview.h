@@ -25,6 +25,26 @@
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+#if defined(__cplusplus)
+#if __cplusplus < 199711L
+#warning "Older than 1998 C++ standard"
+#elif __cplusplus == 199711L
+#warning "1998 C++ standard"
+#elif __cplusplus == 201103L
+#warning "2011 C++ standard"
+#elif __cplusplus == 201402L
+#warning "2014 C++ standard"
+#elif __cplusplus == 201703L
+#warning "2017 C++ standard"
+#elif __cplusplus == 202002L
+#warning "2020 C++ standard"
+#elif __cplusplus > 202002L
+#warning "Later than 2020 C++ standard"
+#else
+#warning "Other C++ standard"
+#endif
+#endif
+
 #ifndef WEBVIEW_API
 #define WEBVIEW_API extern
 #endif

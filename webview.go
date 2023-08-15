@@ -10,6 +10,13 @@ package webview
 #cgo windows CXXFLAGS: -DWEBVIEW_EDGE -std=c++17
 #cgo windows LDFLAGS: -static -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion
 
+#cgo cxx11 CXXFLAGS: -std=c++11
+#cgo cxx14 CXXFLAGS: -std=c++14
+#cgo cxx17 CXXFLAGS: -std=c++17
+#cgo cxx20 CXXFLAGS: -std=c++20
+#cgo cxx23 CXXFLAGS: -std=c++23
+#cgo cxx26 CXXFLAGS: -std=c++26
+
 #include "webview.h"
 
 #include <stdlib.h>
