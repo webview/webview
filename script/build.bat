@@ -172,8 +172,8 @@ goto :main
 
     echo Building C examples...
     "%cxx_compiler%" /c %cxx_compile_flags% "%project_dir%\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
-    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %cxx_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
-    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %cxx_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
+    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
+    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
 
     echo Building test app...
     "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\webview_test.cc" "/Fo%build_dir%"\ %cxx_link_flags% /link "/out:%build_dir%\webview_test%exe_suffix%" || exit /b 1
@@ -237,9 +237,11 @@ goto :main
 :task_info
     echo -- Target architecture: %target_arch%
     echo -- Build directory: %build_dir%
+    echo -- C standard: %c_std%
     echo -- C compiler: %c_compiler%
     echo -- C compiler flags: %c_compile_flags%
     echo -- C linker flags: %c_link_flags%
+    echo -- C++ standard: %cxx_std%
     echo -- C++ compiler: %cxx_compiler%
     echo -- C++ compiler flags: %cxx_compile_flags%
     echo -- C++ linker flags: %cxx_link_flags%
@@ -263,10 +265,10 @@ if not defined TARGET_ARCH (
     set target_arch=%host_arch%
 )
 
-rem Default C standard
-set c_std=c11
-rem Default C++ standard
-set cxx_std=c++17
+rem Default C standard unless overridden
+if not defined C_STD set c_std=c11
+rem Default C++ standard unless overridden
+if not defined CXX_STD set cxx_std=c++17
 rem Default C compiler
 set c_compiler=cl
 rem Default C++ compiler
