@@ -237,9 +237,11 @@ goto :main
 :task_info
     echo -- Target architecture: %target_arch%
     echo -- Build directory: %build_dir%
+    echo -- C standard: %c_std%
     echo -- C compiler: %c_compiler%
     echo -- C compiler flags: %c_compile_flags%
     echo -- C linker flags: %c_link_flags%
+    echo -- C++ standard: %cxx_std%
     echo -- C++ compiler: %cxx_compiler%
     echo -- C++ compiler flags: %cxx_compile_flags%
     echo -- C++ linker flags: %cxx_link_flags%
