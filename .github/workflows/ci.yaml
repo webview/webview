@@ -31,7 +31,7 @@ jobs:
   build-windows-msvc:
     strategy:
       matrix:
-        cxx_std: [c++17, c++20]
+        cxx_std: [c++14, c++17, c++20]
         arch: [x64, x86]
     runs-on: windows-latest
     env:
@@ -53,7 +53,7 @@ jobs:
   build-windows-mingw:
     strategy:
       matrix:
-        cxx_std: [c++17, c++20]
+        cxx_std: [c++14, c++17, c++20]
     runs-on: windows-latest
     env:
       CC: gcc
@@ -71,7 +71,7 @@ jobs:
   build-windows-msys2:
     strategy:
       matrix:
-        cxx_std: [c++17, c++20]
+        cxx_std: [c++14, c++17, c++20]
         include:
           - { sys: mingw64, cc: gcc  , cxx: g++ }
           - { sys: clang64, cc: clang, cxx: clang++ }
@@ -96,7 +96,7 @@ jobs:
   build-cross-windows-on-linux:
     strategy:
       matrix:
-        cxx_std: [c++17]
+        cxx_std: [c++14, c++17]
         image: [ubuntu-20.04, ubuntu-22.04]
         include:
           - cxx_std: c++20
