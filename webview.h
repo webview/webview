@@ -26,6 +26,16 @@
 #define WEBVIEW_H
 
 #if defined(__cplusplus)
+#if defined(WEBVIEW_GTK)
+#warning "GTK backend specified via macro"
+#elif defined(WEBVIEW_COCOA)
+#warning "Cocoa backend specified via macro"
+#elif defined(WEBVIEW_EDGE)
+#warning "Edge backend specified via macro"
+#else
+#error "No backend specified via macro"
+#endif
+
 #if __cplusplus < 199711L
 #warning "Older than 1998 C++ standard"
 #elif __cplusplus == 199711L
