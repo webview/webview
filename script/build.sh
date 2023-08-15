@@ -339,7 +339,7 @@ lib_prefix=lib
 pkgconfig_exe=pkg-config
 
 if [[ "${target_os}" == "windows" ]]; then
-    cxx_std=c++17
+    cxx_std=c++14
 fi
 
 # C standard override

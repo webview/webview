@@ -268,7 +268,7 @@ if not defined TARGET_ARCH (
 rem Default C standard unless overridden
 if not defined C_STD set c_std=c11
 rem Default C++ standard unless overridden
-if not defined CXX_STD set cxx_std=c++17
+if not defined CXX_STD set cxx_std=c++14
 rem Default C compiler
 set c_compiler=cl
 rem Default C++ compiler
