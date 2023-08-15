@@ -1318,34 +1318,34 @@ private:
   HMODULE m_handle = nullptr;
 };
 
-struct user32_symbols {
-  using DPI_AWARENESS_CONTEXT = HANDLE;
-  using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
-  using SetProcessDPIAware_t = BOOL(WINAPI *)();
-  using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
-  using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
-  // Use intptr_t as the underlying type because we need to
-  // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
-  enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
+namespace user32_symbols {
+using DPI_AWARENESS_CONTEXT = HANDLE;
+using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+using SetProcessDPIAware_t = BOOL(WINAPI *)();
+using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+// Use intptr_t as the underlying type because we need to
+// reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
+enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
 
-  static constexpr auto SetProcessDpiAwarenessContext =
-      library_symbol<SetProcessDpiAwarenessContext_t>(
-          "SetProcessDpiAwarenessContext");
-  static constexpr auto SetProcessDPIAware =
-      library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
-  static constexpr auto GetDpiForWindow =
-      library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
-  static constexpr auto EnableNonClientDpiScaling =
-      library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
-};
+constexpr auto SetProcessDpiAwarenessContext =
+    library_symbol<SetProcessDpiAwarenessContext_t>(
+        "SetProcessDpiAwarenessContext");
+constexpr auto SetProcessDPIAware =
+    library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+constexpr auto GetDpiForWindow =
+    library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
+constexpr auto EnableNonClientDpiScaling =
+    library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
+}; // namespace user32_symbols
 
-struct shcore_symbols {
-  typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
-  using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+namespace shcore_symbols {
+typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
 
-  static constexpr auto SetProcessDpiAwareness =
-      library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
-};
+constexpr auto SetProcessDpiAwareness =
+    library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
+}; // namespace shcore_symbols
 
 class reg_key {
 public:
@@ -1488,8 +1488,8 @@ inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
 template <typename T>
 std::basic_string<T>
 get_last_native_path_component(const std::basic_string<T> &path) {
-  if (auto pos = path.find_last_of(static_cast<T>('\\'));
-      pos != std::basic_string<T>::npos) {
+  auto pos = path.find_last_of(static_cast<T>('\\'));
+  if (pos != std::basic_string<T>::npos) {
     return path.substr(pos + 1);
   }
   return std::basic_string<T>();

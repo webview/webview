@@ -275,9 +275,11 @@ task_info() {
     echo "-- Target OS: ${target_os}"
     echo "-- Target architecture: ${target_arch}"
     echo "-- Build directory: ${build_dir}"
+    echo "-- C standard: ${c_std}"
     echo "-- C compiler: ${c_compiler}"
     echo "-- C compiler flags: ${c_compile_flags[@]}"
     echo "-- C linker flags: ${c_link_flags[@]}"
+    echo "-- C++ standard: ${cxx_std}"
     echo "-- C++ compiler: ${cxx_compiler}"
     echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
     echo "-- C++ linker flags: ${cxx_link_flags[@]}"
@@ -336,6 +338,20 @@ lib_prefix=lib
 # Default pkg-config executable
 pkgconfig_exe=pkg-config
 
+if [[ "${target_os}" == "windows" ]]; then
+    cxx_std=c++14
+fi
+
+# C standard override
+if [[ ! -z "${C_STD+x}" ]]; then
+    c_std=${C_STD}
+fi
+
+# C++ standard override
+if [[ ! -z "${CXX_STD+x}" ]]; then
+    cxx_std=${CXX_STD}
+fi
+
 # C compiler override
 if [[ ! -z "${CC+x}" ]]; then
     c_compiler=${CC}
@@ -387,10 +403,6 @@ c_compile_flags+=("${common_compile_flags[@]}")
 c_link_flags+=("${common_link_flags[@]}")
 cxx_compile_flags+=("${common_compile_flags[@]}")
 cxx_link_flags+=("${common_link_flags[@]}")
-
-if [[ "${target_os}" == "windows" ]]; then
-    cxx_std=c++17
-fi
 
 c_compile_flags+=("-std=${c_std}")
 cxx_compile_flags+=("-std=${cxx_std}")

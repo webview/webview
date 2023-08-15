@@ -381,11 +381,13 @@ Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [webview/webview_java](https://github.com/webview/webview_java)
 Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/webviewko)
 Nim         | [oskca/webview](https://github.com/oskca/webview)
+Node.js     | [Winterreisender/webview-nodejs](https://github.com/Winterreisender/webview-nodejs)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
 PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/web-view](https://github.com/Boscop/web-view)
+Swift       | [jakenvac/SwiftWebview](https://github.com/jakenvac/SwiftWebview)
 V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
