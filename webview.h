@@ -859,9 +859,10 @@ private:
                     (IMP)(+[](id, SEL, id) -> BOOL { return YES; }), "c@:@");
     class_addMethod(cls, "applicationShouldTerminate:"_sel,
                     (IMP)(+[](id self, SEL, id sender) -> int {
-                        auto w = get_associated_webview(self);
-                        return w->on_application_should_terminate(self, sender);
-                      }), "i@:@");
+                      auto w = get_associated_webview(self);
+                      return w->on_application_should_terminate(self, sender);
+                    }),
+                    "i@:@");
     // If the library was not initialized with an existing window then the user
     // is likely managing the application lifecycle and we would not get the
     // "applicationDidFinishLaunching:" message and therefore do not need to
