@@ -41,7 +41,8 @@ static void test_c_api() {
   w = webview_create(false, nullptr);
   webview_set_size(w, 480, 320, 0);
   webview_set_title(w, "Test");
-  webview_navigate(w, "https://github.com/zserge/webview");
+  webview_set_html(w, "set_html ok");
+  webview_navigate(w, "data:text/plain,navigate%20ok");
   webview_dispatch(w, cb_assert_arg, (void *)"arg");
   webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
