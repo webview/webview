@@ -762,9 +762,7 @@ public:
   }
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
-  void terminate() {
-    stop_run_loop();
-  }
+  void terminate() { stop_run_loop(); }
   void run() {
     auto app = get_shared_application();
     objc::msg_send<void>(app, "run"_sel);
