@@ -1079,13 +1079,9 @@ private:
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
   int on_application_should_terminate(id /*delegate*/, id app) {
-    dispatch([app] {
-      // Don't terminate the application.
-      objc::msg_send<void>(app, "replyToApplicationShouldTerminate:"_sel, NO);
-      // Instead stop the run loop.
-      objc::msg_send<void>(app, "stop:"_sel, nullptr);
-    });
-    return 2 /*NSTerminateLater*/;
+    // Stop the run loop instead of terminating the app.
+    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    return 0 /*NSTerminateCancel*/;
   }
   bool m_debug;
   void *m_parent_window;
