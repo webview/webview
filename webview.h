@@ -2152,17 +2152,20 @@ public:
       auto old_scale_factor = old_scale.get_factor();
       m_window_scale = new_scale;
 
+      // This is the 100% scale size.
       auto scaled_width = width;
       auto scaled_height = height;
 
       constexpr const auto epsilon = std::numeric_limits<double>::epsilon();
 
+      // Don't undo the old scale if it was 100%.
       if (std::abs(old_scale_factor - 1.0) > epsilon) {
         auto undo_scale = old_scale.swapped();
         scaled_width = undo_scale.apply_to(scaled_width);
         scaled_height = undo_scale.apply_to(scaled_height);
       }
 
+      // Don't apply the new scale if it's 100%.
       if (std::abs(new_scale_factor - 1.0) > epsilon) {
         scaled_width = new_scale.apply_to(scaled_width);
         scaled_height = new_scale.apply_to(scaled_height);
