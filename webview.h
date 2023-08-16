@@ -764,7 +764,8 @@ public:
   void *window() { return (void *)m_window; }
   void terminate() {
     auto app = get_shared_application();
-    objc::msg_send<void>(app, "terminate:"_sel, nullptr);
+    // Stop the run loop.
+    objc::msg_send<void>(app, "stop:"_sel, nullptr);
   }
   void run() {
     auto app = get_shared_application();
