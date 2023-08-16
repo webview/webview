@@ -1351,6 +1351,8 @@ using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
 using SetProcessDPIAware_t = BOOL(WINAPI *)();
 using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
 using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
+                                                  UINT);
 // Use intptr_t as the underlying type because we need to
 // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
 enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
@@ -1364,6 +1366,8 @@ constexpr auto GetDpiForWindow =
     library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
 constexpr auto EnableNonClientDpiScaling =
     library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
+constexpr auto AdjustWindowRectExForDpi =
+    library_symbol<AdjustWindowRectExForDpi_t>("AdjustWindowRectExForDpi");
 }; // namespace user32_symbols
 
 namespace shcore_symbols {
@@ -1468,16 +1472,30 @@ inline bool enable_non_client_dpi_scaling(HWND window) {
 
 template <typename T> class dpi_scale_t {
 public:
+  dpi_scale_t() {}
+
   dpi_scale_t(T numerator, T denominator)
       : m_numerator(numerator), m_denominator(denominator) {}
 
-  constexpr T apply_to(T value) {
+  constexpr T apply_to(T value) const {
     return ::MulDiv(value, m_numerator, m_denominator);
   }
 
+  constexpr T get_numerator() const { return m_numerator; }
+
+  constexpr T get_denominator() const { return m_denominator; }
+
+  constexpr double get_factor() const {
+    return m_numerator / static_cast<double>(m_denominator);
+  }
+
+  constexpr dpi_scale_t<T> swapped() const {
+    return {m_denominator, m_numerator};
+  }
+
 private:
-  T m_numerator{};
-  T m_denominator{};
+  T m_numerator{0};
+  T m_denominator{1};
 };
 
 inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
@@ -2042,11 +2060,14 @@ public:
         return;
       }
 
+      m_window_scale = get_window_dpi_scale(m_window);
+
       constexpr const int initial_width = 640;
       constexpr const int initial_height = 480;
       set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = *(static_cast<HWND *>(window));
+      m_window_scale = get_window_dpi_scale(m_window);
     }
 
     ShowWindow(m_window, SW_SHOW);
@@ -2118,10 +2139,6 @@ public:
     }
     SetWindowLong(m_window, GWL_STYLE, style);
 
-    auto scale = get_window_dpi_scale(m_window);
-    width = scale.apply_to(width);
-    height = scale.apply_to(height);
-
     if (hints == WEBVIEW_HINT_MAX) {
       m_maxsz.x = width;
       m_maxsz.y = height;
@@ -2129,13 +2146,42 @@ public:
       m_minsz.x = width;
       m_minsz.y = height;
     } else {
-      RECT r{};
-      r.right = width;
-      r.bottom = height;
-      AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
-      SetWindowPos(
-          m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
-          SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+      auto new_scale = get_window_dpi_scale(m_window);
+      auto new_scale_factor = new_scale.get_factor();
+      auto old_scale = m_window_scale;
+      auto old_scale_factor = old_scale.get_factor();
+      m_window_scale = new_scale;
+
+      auto scaled_width = width;
+      auto scaled_height = height;
+
+      constexpr const auto epsilon = std::numeric_limits<double>::epsilon();
+
+      if (std::abs(old_scale_factor - 1.0) > epsilon) {
+        auto undo_scale = old_scale.swapped();
+        scaled_width = undo_scale.apply_to(scaled_width);
+        scaled_height = undo_scale.apply_to(scaled_height);
+      }
+
+      if (std::abs(new_scale_factor - 1.0) > epsilon) {
+        scaled_width = new_scale.apply_to(scaled_width);
+        scaled_height = new_scale.apply_to(scaled_height);
+      }
+
+      RECT r{0, 0, scaled_width, scaled_height};
+      auto user32 = native_library(L"user32.dll");
+      if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+        fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
+      } else {
+        AdjustWindowRect(&r, style, 0);
+      }
+
+      auto frame_width = r.right - r.left;
+      auto frame_height = r.bottom - r.top;
+
+      SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
+                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
+                       SWP_FRAMECHANGED);
     }
   }
 
@@ -2239,9 +2285,13 @@ private:
   }
 
   void on_dpi_changed(int x, int y, const RECT &suggested_bounds) {
-    const auto &r = suggested_bounds;
-    SetWindowPos(m_window, nullptr, r.left, r.top, r.right - r.left,
-                 r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
+    // x and y are the same in desktop apps.
+    // The suggested bounds diverge from the expected bounds so don't use them.
+    RECT bounds;
+    GetClientRect(m_window, &bounds);
+    auto width = bounds.right - bounds.left;
+    auto height = bounds.bottom - bounds.top;
+    set_size(width, height, WEBVIEW_HINT_NONE);
   }
 
   virtual void on_message(const std::string &msg) = 0;
@@ -2258,6 +2308,7 @@ private:
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
+  dpi_scale_t<int> m_window_scale;
 };
 
 } // namespace detail
