@@ -763,9 +763,7 @@ public:
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
   void terminate() {
-    auto app = get_shared_application();
-    // Stop the run loop.
-    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    stop_run_loop();
   }
   void run() {
     auto app = get_shared_application();
@@ -971,7 +969,7 @@ private:
     if (!m_parent_window) {
       // Stop the main run loop so that we can return
       // from the constructor.
-      objc::msg_send<void>(app, "stop:"_sel, nullptr);
+      stop_run_loop();
     }
 
     // Activate the app if it is not bundled.
@@ -1080,14 +1078,29 @@ private:
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
   int on_application_should_terminate(id /*delegate*/, id app) {
-    dispatch([app] {
+    dispatch([app, this] {
       // Don't terminate the application.
       objc::msg_send<void>(app, "replyToApplicationShouldTerminate:"_sel, NO);
       // Instead stop the run loop.
-      objc::msg_send<void>(app, "stop:"_sel, nullptr);
+      stop_run_loop();
     });
     return 2 /*NSTerminateLater*/;
   }
+  void stop_run_loop() {
+    auto app = get_shared_application();
+    // Request the run loop to stop. This doesn't immediately stop the loop.
+    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    // The run loop will stop after processing an NSEvent.
+    // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
+    //             NSApplicationDefined (macOS 10.0–10.12)
+    int type = 15;
+    auto event = objc::msg_send<id>(
+        "NSEvent"_cls,
+        "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
+        type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
+    objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
+  }
+
   bool m_debug;
   void *m_parent_window;
   id m_window;
