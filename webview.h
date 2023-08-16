@@ -856,7 +856,12 @@ private:
                                       "WebviewAppDelegate", 0);
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
-                    (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
+                    (IMP)(+[](id, SEL, id) -> BOOL { return YES; }), "c@:@");
+    class_addMethod(cls, "applicationShouldTerminate:"_sel,
+                    (IMP)(+[](id self, SEL, id sender) -> int {
+                        auto w = get_associated_webview(self);
+                        return w->on_application_should_terminate(self, sender);
+                      }), "i@:@");
     // If the library was not initialized with an existing window then the user
     // is likely managing the application lifecycle and we would not get the
     // "applicationDidFinishLaunching:" message and therefore do not need to
@@ -1071,6 +1076,15 @@ private:
       )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+  }
+  int on_application_should_terminate(id /*delegate*/, id app) {
+    dispatch([app] {
+      // Don't terminate the application.
+      objc::msg_send<void>(app, "replyToApplicationShouldTerminate:"_sel, NO);
+      // Instead stop the run loop.
+      objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    });
+    return 2 /*NSTerminateLater*/;
   }
   bool m_debug;
   void *m_parent_window;
