@@ -1345,6 +1345,13 @@ private:
   HMODULE m_handle = nullptr;
 };
 
+namespace ntdll_symbols {
+using RtlGetVersion_t = unsigned int /*NTSTATUS*/ (WINAPI *)(
+    OSVERSIONINFOW * /*PRTL_OSVERSIONINFOW*/);
+
+constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
+}; // namespace ntdll_symbols
+
 namespace user32_symbols {
 using DPI_AWARENESS_CONTEXT = HANDLE;
 using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
@@ -1355,7 +1362,11 @@ using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
                                                   UINT);
 // Use intptr_t as the underlying type because we need to
 // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
-enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
+// Available since Windows 10, version 1607
+enum class dpi_awareness : intptr_t {
+  per_monitor_v2_aware = -4, // Available since Windows 10, version 1703
+  per_monitor_aware = -3
+};
 
 constexpr auto SetProcessDpiAwarenessContext =
     library_symbol<SetProcessDpiAwarenessContext_t>(
@@ -1439,12 +1450,41 @@ private:
   HKEY m_handle = nullptr;
 };
 
+inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
+                                   unsigned int build) {
+  // Use RtlGetVersion both to bypass potential issues related to
+  // VerifyVersionInfo and manifests, and because both GetVersion and
+  // GetVersionEx are deprecated.
+  auto ntdll = native_library(L"ntdll.dll");
+  if (auto fn = ntdll.get(ntdll_symbols::RtlGetVersion)) {
+    RTL_OSVERSIONINFOW vi{};
+    vi.dwOSVersionInfoSize = sizeof(vi);
+    if (fn(&vi) != 0) {
+      return false;
+    }
+    if (vi.dwMajorVersion == major) {
+      if (vi.dwMinorVersion == minor) {
+        return vi.dwBuildNumber >= build;
+      }
+      return vi.dwMinorVersion > minor;
+    }
+    return vi.dwMajorVersion > major;
+  }
+  return false;
+}
+
+inline bool is_per_monitor_v2_awareness_available() {
+  return is_os_version_at_least(10, 0, 1703);
+}
+
 inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
     auto dpi_awareness =
         reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
-            user32_symbols::dpi_awareness::per_monitor_aware);
+            is_per_monitor_v2_awareness_available()
+                ? user32_symbols::dpi_awareness::per_monitor_v2_aware
+                : user32_symbols::dpi_awareness::per_monitor_aware);
     if (fn(dpi_awareness)) {
       return true;
     }
@@ -1462,7 +1502,12 @@ inline bool enable_dpi_awareness() {
   return true;
 }
 
-inline bool enable_non_client_dpi_scaling(HWND window) {
+inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
+  if (is_per_monitor_v2_awareness_available()) {
+    // We should be using per monitor v2 awareness which makes calling
+    // EnableNonClientDpiScaling unnecessary.
+    return true;
+  }
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::EnableNonClientDpiScaling)) {
     return !!fn(window);
@@ -2010,7 +2055,7 @@ public:
           w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
           w->m_window = hwnd;
           SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
-          enable_non_client_dpi_scaling(hwnd);
+          enable_non_client_dpi_scaling_if_needed(hwnd);
         } else {
           w = reinterpret_cast<win32_edge_engine *>(
               GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -2043,6 +2088,9 @@ public:
             lpmmi->ptMinTrackSize = w->m_minsz;
           }
         } break;
+        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
+          break;
+        }
         case 0x02E0 /*WM_DPICHANGED*/: {
           auto x_dpi = LOWORD(wp);
           auto y_dpi = HIWORD(wp);
