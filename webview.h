@@ -2320,22 +2320,9 @@ private:
     auto old_scale = m_window_scale;
     m_window_scale = new_scale;
 
-    // This is the 100% scale size.
-    auto scaled_width = width;
-    auto scaled_height = height;
-
-    // Undo the old scale if it wasn't 100%.
-    if (!old_scale.is_one()) {
-      auto undo_scale = old_scale.swapped();
-      scaled_width = undo_scale.apply_to(scaled_width);
-      scaled_height = undo_scale.apply_to(scaled_height);
-    }
-
-    // Apply the new scale if it isn't 100%.
-    if (!new_scale.is_one()) {
-      scaled_width = new_scale.apply_to(scaled_width);
-      scaled_height = new_scale.apply_to(scaled_height);
-    }
+    dpi_scale_t<int> diff{new_scale.get_numerator(), old_scale.get_numerator()};
+    auto scaled_width = diff.apply_to(width);
+    auto scaled_height = diff.apply_to(height);
 
     RECT r{0, 0, scaled_width, scaled_height};
     auto user32 = native_library(L"user32.dll");
