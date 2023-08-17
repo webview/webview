@@ -1360,6 +1360,10 @@ using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
 using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
 using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
                                                   UINT);
+using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
+using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
+                                                      DPI_AWARENESS_CONTEXT);
+
 // Use intptr_t as the underlying type because we need to
 // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
 // Available since Windows 10, version 1607
@@ -1379,6 +1383,12 @@ constexpr auto EnableNonClientDpiScaling =
     library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
 constexpr auto AdjustWindowRectExForDpi =
     library_symbol<AdjustWindowRectExForDpi_t>("AdjustWindowRectExForDpi");
+constexpr auto GetWindowDpiAwarenessContext =
+    library_symbol<GetWindowDpiAwarenessContext_t>(
+        "GetWindowDpiAwarenessContext");
+constexpr auto AreDpiAwarenessContextsEqual =
+    library_symbol<AreDpiAwarenessContextsEqual_t>(
+        "AreDpiAwarenessContextsEqual");
 }; // namespace user32_symbols
 
 namespace shcore_symbols {
@@ -1503,14 +1513,22 @@ inline bool enable_dpi_awareness() {
 }
 
 inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
-  if (is_per_monitor_v2_awareness_available()) {
-    // We should be using per monitor v2 awareness which makes calling
-    // EnableNonClientDpiScaling unnecessary.
-    return true;
-  }
   auto user32 = native_library(L"user32.dll");
-  if (auto fn = user32.get(user32_symbols::EnableNonClientDpiScaling)) {
-    return !!fn(window);
+  if (auto fn = user32.get(user32_symbols::GetWindowDpiAwarenessContext)) {
+    auto awareness = fn(window);
+    if (!awareness) {
+      return false;
+    }
+    // EnableNonClientDpiScaling is only needed with per monitor v1 awareness.
+    auto per_monitor = reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+        user32_symbols::dpi_awareness::per_monitor_aware);
+    if (auto fn = user32.get(user32_symbols::AreDpiAwarenessContextsEqual)) {
+      if (fn(awareness, per_monitor)) {
+        if (auto fn = user32.get(user32_symbols::EnableNonClientDpiScaling)) {
+          return !!fn(window);
+        }
+      }
+    }
   }
   return true;
 }
