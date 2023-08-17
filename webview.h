@@ -1515,45 +1515,42 @@ inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
   return true;
 }
 
-template <typename T> class dpi_scale_t {
-public:
-  dpi_scale_t() {}
-
-  dpi_scale_t(T numerator, T denominator)
-      : m_numerator(numerator), m_denominator(denominator) {}
-
-  constexpr T apply_to(T value) const {
-    return ::MulDiv(value, m_numerator, m_denominator);
-  }
-
-  constexpr T get_numerator() const { return m_numerator; }
-
-  constexpr T get_denominator() const { return m_denominator; }
-
-  constexpr bool is_one() const { return m_denominator == m_numerator; }
-
-  constexpr dpi_scale_t<T> swapped() const {
-    return {m_denominator, m_numerator};
-  }
-
-private:
-  T m_numerator{0};
-  T m_denominator{1};
-};
-
-inline dpi_scale_t<int> get_default_window_dpi_scale() {
+constexpr inline int get_default_window_dpi() {
   constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
-  return {default_dpi, default_dpi};
+  return default_dpi;
 }
 
-inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
-  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
+inline int get_window_dpi(HWND window) {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::GetDpiForWindow)) {
     auto dpi = static_cast<int>(fn(window));
-    return {dpi, default_dpi};
+    return dpi;
   }
-  return get_default_window_dpi_scale();
+  return get_default_window_dpi();
+}
+
+constexpr int scale_value_for_dpi(int value, int from_dpi, int to_dpi) {
+  return (value * to_dpi) / from_dpi;
+}
+
+constexpr SIZE scale_size(int width, int height, int from_dpi, int to_dpi) {
+  auto scaled_width = scale_value_for_dpi(width, from_dpi, to_dpi);
+  auto scaled_height = scale_value_for_dpi(height, from_dpi, to_dpi);
+  return {scaled_width, scaled_height};
+}
+
+SIZE make_window_frame_size(HWND window, int width, int height, int dpi) {
+  auto style = GetWindowLong(window, GWL_STYLE);
+  RECT r{0, 0, width, height};
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+    fn(&r, style, FALSE, 0, static_cast<UINT>(dpi));
+  } else {
+    AdjustWindowRect(&r, style, 0);
+  }
+  auto frame_width = r.right - r.left;
+  auto frame_height = r.bottom - r.top;
+  return {frame_width, frame_height};
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -2089,13 +2086,17 @@ public:
           }
         } break;
         case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
-          break;
+          auto dpi = static_cast<int>(wp);
+          auto *size{reinterpret_cast<SIZE *>(lp)};
+          *size = w->get_scaled_size(w->m_dpi, dpi);
+          return TRUE;
         }
         case 0x02E0 /*WM_DPICHANGED*/: {
-          auto x_dpi = LOWORD(wp);
-          auto y_dpi = HIWORD(wp);
-          auto *suggested_bounds = reinterpret_cast<RECT *>(lp);
-          w->on_dpi_changed(x_dpi, y_dpi, *suggested_bounds);
+          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
+          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
+          // Due to this difference, don't use the suggested bounds.
+          auto dpi = static_cast<int>(HIWORD(wp));
+          w->on_dpi_changed(dpi);
           break;
         }
         default:
@@ -2111,14 +2112,13 @@ public:
         return;
       }
 
-      m_window_scale = get_window_dpi_scale(m_window);
-
+      m_dpi = get_window_dpi(m_window);
       constexpr const int initial_width = 640;
       constexpr const int initial_height = 480;
       set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = *(static_cast<HWND *>(window));
-      m_window_scale = get_window_dpi_scale(m_window);
+      m_dpi = get_window_dpi(m_window);
     }
 
     ShowWindow(m_window, SW_SHOW);
@@ -2197,31 +2197,13 @@ public:
       m_minsz.x = width;
       m_minsz.y = height;
     } else {
-      auto new_scale = get_window_dpi_scale(m_window);
-      m_window_scale = new_scale;
-
-      // This is the 100% scale size.
-      auto scaled_width = width;
-      auto scaled_height = height;
-
-      // Apply the new scale if it isn't 100%.
-      if (!new_scale.is_one()) {
-        scaled_width = new_scale.apply_to(scaled_width);
-        scaled_height = new_scale.apply_to(scaled_height);
-      }
-
-      RECT r{0, 0, scaled_width, scaled_height};
-      auto user32 = native_library(L"user32.dll");
-      if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
-        fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
-      } else {
-        AdjustWindowRect(&r, style, 0);
-      }
-
-      auto frame_width = r.right - r.left;
-      auto frame_height = r.bottom - r.top;
-
-      SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
+      auto dpi = get_window_dpi(m_window);
+      m_dpi = dpi;
+      auto scaled_size =
+          scale_size(width, height, get_default_window_dpi(), dpi);
+      auto frame_size =
+          make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+      SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
@@ -2313,32 +2295,6 @@ private:
     m_controller->put_Bounds(bounds);
   }
 
-  void rescale_window(int width, int height) {
-    auto style = GetWindowLong(m_window, GWL_STYLE);
-
-    auto new_scale = get_window_dpi_scale(m_window);
-    auto old_scale = m_window_scale;
-    m_window_scale = new_scale;
-
-    dpi_scale_t<int> diff{new_scale.get_numerator(), old_scale.get_numerator()};
-    auto scaled_width = diff.apply_to(width);
-    auto scaled_height = diff.apply_to(height);
-
-    RECT r{0, 0, scaled_width, scaled_height};
-    auto user32 = native_library(L"user32.dll");
-    if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
-      fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
-    } else {
-      AdjustWindowRect(&r, style, 0);
-    }
-
-    auto frame_width = r.right - r.left;
-    auto frame_height = r.bottom - r.top;
-
-    SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
-                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-  }
-
   bool is_webview2_available() const noexcept {
     LPWSTR version_info = nullptr;
     auto res = m_webview2_loader.get_available_browser_version_string(
@@ -2352,14 +2308,26 @@ private:
     return ok;
   }
 
-  void on_dpi_changed(int x, int y, const RECT &suggested_bounds) {
-    // x and y are the same in desktop apps.
-    // The suggested bounds diverge from the expected bounds so don't use them.
+  void on_dpi_changed(int dpi) {
+    auto scaled_size = get_scaled_size(m_dpi, dpi);
+    auto frame_size =
+        make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+    SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+    m_dpi = dpi;
+  }
+
+  SIZE get_size() const {
     RECT bounds;
     GetClientRect(m_window, &bounds);
     auto width = bounds.right - bounds.left;
     auto height = bounds.bottom - bounds.top;
-    rescale_window(width, height);
+    return {width, height};
+  }
+
+  SIZE get_scaled_size(int from_dpi, int to_dpi) const {
+    auto size = get_size();
+    return scale_size(size.cx, size.cy, from_dpi, to_dpi);
   }
 
   virtual void on_message(const std::string &msg) = 0;
@@ -2376,7 +2344,7 @@ private:
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
-  dpi_scale_t<int> m_window_scale;
+  int m_dpi{};
 };
 
 } // namespace detail
