@@ -1485,9 +1485,7 @@ public:
 
   constexpr T get_denominator() const { return m_denominator; }
 
-  constexpr double get_factor() const {
-    return m_numerator / static_cast<double>(m_denominator);
-  }
+  constexpr bool is_one() const { return m_denominator == m_numerator; }
 
   constexpr dpi_scale_t<T> swapped() const {
     return {m_denominator, m_numerator};
@@ -1498,6 +1496,11 @@ private:
   T m_denominator{1};
 };
 
+inline dpi_scale_t<int> get_default_window_dpi_scale() {
+  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
+  return {default_dpi, default_dpi};
+}
+
 inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
   constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
   auto user32 = native_library(L"user32.dll");
@@ -1505,7 +1508,7 @@ inline dpi_scale_t<int> get_window_dpi_scale(HWND window) {
     auto dpi = static_cast<int>(fn(window));
     return {dpi, default_dpi};
   }
-  return {default_dpi, default_dpi};
+  return get_default_window_dpi_scale();
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -2147,24 +2150,14 @@ public:
       m_minsz.y = height;
     } else {
       auto new_scale = get_window_dpi_scale(m_window);
-      auto old_scale = m_window_scale;
       m_window_scale = new_scale;
 
       // This is the 100% scale size.
       auto scaled_width = width;
       auto scaled_height = height;
 
-      constexpr const auto epsilon = std::numeric_limits<double>::epsilon();
-
-      // Don't undo the old scale if it was 100%.
-      if (std::abs(old_scale.get_factor() - 1.0) > epsilon) {
-        auto undo_scale = old_scale.swapped();
-        scaled_width = undo_scale.apply_to(scaled_width);
-        scaled_height = undo_scale.apply_to(scaled_height);
-      }
-
-      // Don't apply the new scale if it's 100%.
-      if (std::abs(new_scale.get_factor() - 1.0) > epsilon) {
+      // Apply the new scale if it isn't 100%.
+      if (!new_scale.is_one()) {
         scaled_width = new_scale.apply_to(scaled_width);
         scaled_height = new_scale.apply_to(scaled_height);
       }
@@ -2184,6 +2177,45 @@ public:
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
+  }
+
+  void rescale_window(int width, int height) {
+    auto style = GetWindowLong(m_window, GWL_STYLE);
+
+    auto new_scale = get_window_dpi_scale(m_window);
+    auto old_scale = m_window_scale;
+    m_window_scale = new_scale;
+
+    // This is the 100% scale size.
+    auto scaled_width = width;
+    auto scaled_height = height;
+
+    // Undo the old scale if it wasn't 100%.
+    if (!old_scale.is_one()) {
+      auto undo_scale = old_scale.swapped();
+      scaled_width = undo_scale.apply_to(scaled_width);
+      scaled_height = undo_scale.apply_to(scaled_height);
+    }
+
+    // Apply the new scale if it isn't 100%.
+    if (!new_scale.is_one()) {
+      scaled_width = new_scale.apply_to(scaled_width);
+      scaled_height = new_scale.apply_to(scaled_height);
+    }
+
+    RECT r{0, 0, scaled_width, scaled_height};
+    auto user32 = native_library(L"user32.dll");
+    if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+      fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
+    } else {
+      AdjustWindowRect(&r, style, 0);
+    }
+
+    auto frame_width = r.right - r.left;
+    auto frame_height = r.bottom - r.top;
+
+    SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
   }
 
   void navigate(const std::string &url) {
@@ -2292,7 +2324,7 @@ private:
     GetClientRect(m_window, &bounds);
     auto width = bounds.right - bounds.left;
     auto height = bounds.bottom - bounds.top;
-    set_size(width, height, WEBVIEW_HINT_NONE);
+    rescale_window(width, height);
   }
 
   virtual void on_message(const std::string &msg) = 0;
