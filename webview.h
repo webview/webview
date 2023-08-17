@@ -2179,45 +2179,6 @@ public:
     }
   }
 
-  void rescale_window(int width, int height) {
-    auto style = GetWindowLong(m_window, GWL_STYLE);
-
-    auto new_scale = get_window_dpi_scale(m_window);
-    auto old_scale = m_window_scale;
-    m_window_scale = new_scale;
-
-    // This is the 100% scale size.
-    auto scaled_width = width;
-    auto scaled_height = height;
-
-    // Undo the old scale if it wasn't 100%.
-    if (!old_scale.is_one()) {
-      auto undo_scale = old_scale.swapped();
-      scaled_width = undo_scale.apply_to(scaled_width);
-      scaled_height = undo_scale.apply_to(scaled_height);
-    }
-
-    // Apply the new scale if it isn't 100%.
-    if (!new_scale.is_one()) {
-      scaled_width = new_scale.apply_to(scaled_width);
-      scaled_height = new_scale.apply_to(scaled_height);
-    }
-
-    RECT r{0, 0, scaled_width, scaled_height};
-    auto user32 = native_library(L"user32.dll");
-    if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
-      fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
-    } else {
-      AdjustWindowRect(&r, style, 0);
-    }
-
-    auto frame_width = r.right - r.left;
-    auto frame_height = r.bottom - r.top;
-
-    SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
-                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-  }
-
   void navigate(const std::string &url) {
     auto wurl = widen_string(url);
     m_webview->Navigate(wurl.c_str());
@@ -2302,6 +2263,45 @@ private:
     RECT bounds;
     GetClientRect(m_window, &bounds);
     m_controller->put_Bounds(bounds);
+  }
+
+  void rescale_window(int width, int height) {
+    auto style = GetWindowLong(m_window, GWL_STYLE);
+
+    auto new_scale = get_window_dpi_scale(m_window);
+    auto old_scale = m_window_scale;
+    m_window_scale = new_scale;
+
+    // This is the 100% scale size.
+    auto scaled_width = width;
+    auto scaled_height = height;
+
+    // Undo the old scale if it wasn't 100%.
+    if (!old_scale.is_one()) {
+      auto undo_scale = old_scale.swapped();
+      scaled_width = undo_scale.apply_to(scaled_width);
+      scaled_height = undo_scale.apply_to(scaled_height);
+    }
+
+    // Apply the new scale if it isn't 100%.
+    if (!new_scale.is_one()) {
+      scaled_width = new_scale.apply_to(scaled_width);
+      scaled_height = new_scale.apply_to(scaled_height);
+    }
+
+    RECT r{0, 0, scaled_width, scaled_height};
+    auto user32 = native_library(L"user32.dll");
+    if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+      fn(&r, style, FALSE, 0, static_cast<UINT>(new_scale.get_numerator()));
+    } else {
+      AdjustWindowRect(&r, style, 0);
+    }
+
+    auto frame_width = r.right - r.left;
+    auto frame_height = r.bottom - r.top;
+
+    SetWindowPos(m_window, nullptr, 0, 0, frame_width, frame_height,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
   }
 
   bool is_webview2_available() const noexcept {
