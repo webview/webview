@@ -1346,8 +1346,8 @@ private:
 };
 
 namespace ntdll_symbols {
-using RtlGetVersion_t = unsigned int /*NTSTATUS*/ (WINAPI *)(
-    OSVERSIONINFOW * /*PRTL_OSVERSIONINFOW*/);
+using RtlGetVersion_t =
+    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
 
 constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
 }; // namespace ntdll_symbols
@@ -1533,7 +1533,7 @@ inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
   return true;
 }
 
-constexpr inline int get_default_window_dpi() {
+constexpr int get_default_window_dpi() {
   constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
   return default_dpi;
 }
