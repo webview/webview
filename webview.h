@@ -1484,7 +1484,7 @@ inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
 }
 
 inline bool is_per_monitor_v2_awareness_available() {
-  return is_os_version_at_least(10, 0, 1703);
+  return is_os_version_at_least(10, 0, 15063); // Windows 10, version 1703
 }
 
 inline bool enable_dpi_awareness() {
