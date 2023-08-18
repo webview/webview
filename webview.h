@@ -1557,7 +1557,7 @@ constexpr SIZE scale_size(int width, int height, int from_dpi, int to_dpi) {
   return {scaled_width, scaled_height};
 }
 
-SIZE make_window_frame_size(HWND window, int width, int height, int dpi) {
+inline SIZE make_window_frame_size(HWND window, int width, int height, int dpi) {
   auto style = GetWindowLong(window, GWL_STYLE);
   RECT r{0, 0, width, height};
   auto user32 = native_library(L"user32.dll");
