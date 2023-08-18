@@ -1514,23 +1514,29 @@ inline bool enable_dpi_awareness() {
 
 inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
   auto user32 = native_library(L"user32.dll");
-  if (auto fn = user32.get(user32_symbols::GetWindowDpiAwarenessContext)) {
-    auto awareness = fn(window);
-    if (!awareness) {
-      return false;
-    }
-    // EnableNonClientDpiScaling is only needed with per monitor v1 awareness.
-    auto per_monitor = reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
-        user32_symbols::dpi_awareness::per_monitor_aware);
-    if (auto fn = user32.get(user32_symbols::AreDpiAwarenessContextsEqual)) {
-      if (fn(awareness, per_monitor)) {
-        if (auto fn = user32.get(user32_symbols::EnableNonClientDpiScaling)) {
-          return !!fn(window);
-        }
-      }
-    }
+  auto get_ctx_fn = user32.get(user32_symbols::GetWindowDpiAwarenessContext);
+  if (!get_ctx_fn) {
+    return true;
   }
-  return true;
+  auto awareness = get_ctx_fn(window);
+  if (!awareness) {
+    return false;
+  }
+  auto ctx_equal_fn = user32.get(user32_symbols::AreDpiAwarenessContextsEqual);
+  if (!ctx_equal_fn) {
+    return true;
+  }
+  // EnableNonClientDpiScaling is only needed with per monitor v1 awareness.
+  auto per_monitor = reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+      user32_symbols::dpi_awareness::per_monitor_aware);
+  if (!ctx_equal_fn(awareness, per_monitor)) {
+    return true;
+  }
+  auto enable_fn = user32.get(user32_symbols::EnableNonClientDpiScaling);
+  if (!enable_fn) {
+    return true;
+  }
+  return !!enable_fn(window);
 }
 
 constexpr int get_default_window_dpi() {
