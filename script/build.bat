@@ -287,8 +287,7 @@ if defined BUILD_DIR (
 set external_dir=%build_dir%\external
 set libs_dir=%external_dir%\libs
 set tools_dir=%external_dir%\tools
-rem 4100: unreferenced formal parameter
-set warning_flags=/W4 /wd4100
+set warning_flags=/W4
 set common_compile_flags=%warning_flags% /utf-8 /I "%project_dir%"
 set common_link_flags=%warning_flags%
 set c_compile_flags=%common_compile_flags%
