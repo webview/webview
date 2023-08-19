@@ -1520,11 +1520,6 @@ inline int compare_os_version(unsigned int major, unsigned int minor,
   return false;
 }
 
-inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
-                                   unsigned int build) {
-  return compare_os_version(major, minor, build) >= 0;
-}
-
 inline bool is_per_monitor_v2_awareness_available() {
   // Windows 10, version 1703
   return compare_os_version(10, 0, 15063) >= 0;
