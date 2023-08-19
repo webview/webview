@@ -1,8 +1,8 @@
 #include "webview.h"
 
 #ifdef _WIN32
-int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
-                   int nCmdShow) {
+int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
+                   LPSTR /*lpCmdLine*/, int /*nCmdShow*/) {
 #else
 int main() {
 #endif
