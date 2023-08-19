@@ -1393,11 +1393,11 @@ constexpr auto AreDpiAwarenessContextsEqual =
 
 namespace dwmapi_symbols {
 typedef enum {
-  // This is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE on old versions of
-  // Windows 10.
-  DWMWA_USE_IMMERSIVE_DARK_MODE_OLD = 19,
-  // Documented as being supported since Windows 11 build 22000, but it also
-  // works on Windows 10.
+  // This undocumented value is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE
+  // on Windows 10 older than build 19041 (2004/20H1).
+  DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041 = 19,
+  // Documented as being supported since Windows 11 build 22000 (21H2) but it
+  // works since Windows 10 build 19041 (2004/20H1).
   DWMWA_USE_IMMERSIVE_DARK_MODE = 20
 } DWMWINDOWATTRIBUTE;
 using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
@@ -1493,8 +1493,12 @@ private:
   HKEY m_handle = nullptr;
 };
 
-inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
-                                   unsigned int build) {
+// Compare the specified version against the OS version.
+// Returns less than 0 if the OS version is less.
+// Returns 0 if the versions are equal.
+// Returns greater than 0 if the specified version is greater.
+inline int compare_os_version(unsigned int major, unsigned int minor,
+                              unsigned int build) {
   // Use RtlGetVersion both to bypass potential issues related to
   // VerifyVersionInfo and manifests, and because both GetVersion and
   // GetVersionEx are deprecated.
@@ -1507,13 +1511,18 @@ inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
     }
     if (vi.dwMajorVersion == major) {
       if (vi.dwMinorVersion == minor) {
-        return vi.dwBuildNumber >= build;
+        return static_cast<int>(vi.dwBuildNumber) - static_cast<int>(build);
       }
-      return vi.dwMinorVersion > minor;
+      return static_cast<int>(vi.dwMinorVersion) - static_cast<int>(minor);
     }
-    return vi.dwMajorVersion > major;
+    return static_cast<int>(vi.dwMajorVersion) - static_cast<int>(major);
   }
   return false;
+}
+
+inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
+                                   unsigned int build) {
+  return compare_os_version(major, minor, build) >= 0;
 }
 
 inline bool is_per_monitor_v2_awareness_available() {
@@ -1633,7 +1642,8 @@ inline void apply_window_theme(HWND window) {
     // Try the modern, documented attribute before the older, undocumented one.
     if (fn(window, dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE,
            &use_dark_mode, sizeof(use_dark_mode)) != S_OK) {
-      fn(window, dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE_OLD,
+      fn(window,
+         dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041,
          &use_dark_mode, sizeof(use_dark_mode));
     }
   }
