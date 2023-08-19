@@ -1445,8 +1445,8 @@ public:
   bool is_open() const { return !!m_handle; }
   bool get_handle() const { return m_handle; }
 
-  template<typename Container>
-  void query_bytes(const wchar_t *name, Container& result) const {
+  template <typename Container>
+  void query_bytes(const wchar_t *name, Container &result) const {
     DWORD buf_length = 0;
     // Get the size of the data in bytes.
     auto status = RegQueryValueExW(m_handle, name, nullptr, nullptr, nullptr,
