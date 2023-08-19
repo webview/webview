@@ -1345,19 +1345,50 @@ private:
   HMODULE m_handle = nullptr;
 };
 
+namespace ntdll_symbols {
+using RtlGetVersion_t =
+    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
+
+constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
+}; // namespace ntdll_symbols
+
 namespace user32_symbols {
 using DPI_AWARENESS_CONTEXT = HANDLE;
 using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
 using SetProcessDPIAware_t = BOOL(WINAPI *)();
+using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
+                                                  UINT);
+using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
+using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
+                                                      DPI_AWARENESS_CONTEXT);
+
 // Use intptr_t as the underlying type because we need to
 // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
-enum class dpi_awareness : intptr_t { per_monitor_aware = -3 };
+// Available since Windows 10, version 1607
+enum class dpi_awareness : intptr_t {
+  per_monitor_v2_aware = -4, // Available since Windows 10, version 1703
+  per_monitor_aware = -3
+};
 
 constexpr auto SetProcessDpiAwarenessContext =
     library_symbol<SetProcessDpiAwarenessContext_t>(
         "SetProcessDpiAwarenessContext");
 constexpr auto SetProcessDPIAware =
     library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+constexpr auto GetDpiForWindow =
+    library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
+constexpr auto EnableNonClientDpiScaling =
+    library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
+constexpr auto AdjustWindowRectExForDpi =
+    library_symbol<AdjustWindowRectExForDpi_t>("AdjustWindowRectExForDpi");
+constexpr auto GetWindowDpiAwarenessContext =
+    library_symbol<GetWindowDpiAwarenessContext_t>(
+        "GetWindowDpiAwarenessContext");
+constexpr auto AreDpiAwarenessContextsEqual =
+    library_symbol<AreDpiAwarenessContextsEqual_t>(
+        "AreDpiAwarenessContextsEqual");
 }; // namespace user32_symbols
 
 namespace shcore_symbols {
@@ -1429,12 +1460,41 @@ private:
   HKEY m_handle = nullptr;
 };
 
+inline bool is_os_version_at_least(unsigned int major, unsigned int minor,
+                                   unsigned int build) {
+  // Use RtlGetVersion both to bypass potential issues related to
+  // VerifyVersionInfo and manifests, and because both GetVersion and
+  // GetVersionEx are deprecated.
+  auto ntdll = native_library(L"ntdll.dll");
+  if (auto fn = ntdll.get(ntdll_symbols::RtlGetVersion)) {
+    RTL_OSVERSIONINFOW vi{};
+    vi.dwOSVersionInfoSize = sizeof(vi);
+    if (fn(&vi) != 0) {
+      return false;
+    }
+    if (vi.dwMajorVersion == major) {
+      if (vi.dwMinorVersion == minor) {
+        return vi.dwBuildNumber >= build;
+      }
+      return vi.dwMinorVersion > minor;
+    }
+    return vi.dwMajorVersion > major;
+  }
+  return false;
+}
+
+inline bool is_per_monitor_v2_awareness_available() {
+  return is_os_version_at_least(10, 0, 15063); // Windows 10, version 1703
+}
+
 inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
     auto dpi_awareness =
         reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
-            user32_symbols::dpi_awareness::per_monitor_aware);
+            is_per_monitor_v2_awareness_available()
+                ? user32_symbols::dpi_awareness::per_monitor_v2_aware
+                : user32_symbols::dpi_awareness::per_monitor_aware);
     if (fn(dpi_awareness)) {
       return true;
     }
@@ -1450,6 +1510,72 @@ inline bool enable_dpi_awareness() {
     return !!fn();
   }
   return true;
+}
+
+inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
+  auto user32 = native_library(L"user32.dll");
+  auto get_ctx_fn = user32.get(user32_symbols::GetWindowDpiAwarenessContext);
+  if (!get_ctx_fn) {
+    return true;
+  }
+  auto awareness = get_ctx_fn(window);
+  if (!awareness) {
+    return false;
+  }
+  auto ctx_equal_fn = user32.get(user32_symbols::AreDpiAwarenessContextsEqual);
+  if (!ctx_equal_fn) {
+    return true;
+  }
+  // EnableNonClientDpiScaling is only needed with per monitor v1 awareness.
+  auto per_monitor = reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+      user32_symbols::dpi_awareness::per_monitor_aware);
+  if (!ctx_equal_fn(awareness, per_monitor)) {
+    return true;
+  }
+  auto enable_fn = user32.get(user32_symbols::EnableNonClientDpiScaling);
+  if (!enable_fn) {
+    return true;
+  }
+  return !!enable_fn(window);
+}
+
+constexpr int get_default_window_dpi() {
+  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
+  return default_dpi;
+}
+
+inline int get_window_dpi(HWND window) {
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::GetDpiForWindow)) {
+    auto dpi = static_cast<int>(fn(window));
+    return dpi;
+  }
+  return get_default_window_dpi();
+}
+
+constexpr int scale_value_for_dpi(int value, int from_dpi, int to_dpi) {
+  return (value * to_dpi) / from_dpi;
+}
+
+constexpr SIZE scale_size(int width, int height, int from_dpi, int to_dpi) {
+  auto scaled_width = scale_value_for_dpi(width, from_dpi, to_dpi);
+  auto scaled_height = scale_value_for_dpi(height, from_dpi, to_dpi);
+  return {scaled_width, scaled_height};
+}
+
+inline SIZE make_window_frame_size(HWND window, int width, int height,
+                                   int dpi) {
+  auto style = GetWindowLong(window, GWL_STYLE);
+  RECT r{0, 0, width, height};
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+    fn(&r, style, FALSE, 0, static_cast<UINT>(dpi));
+  } else {
+    AdjustWindowRect(&r, style, 0);
+  }
+  auto frame_width = r.right - r.left;
+  auto frame_height = r.bottom - r.top;
+  return {frame_width, frame_height};
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -1943,47 +2069,82 @@ public:
       wc.hInstance = hInstance;
       wc.lpszClassName = L"webview";
       wc.hIcon = icon;
-      wc.lpfnWndProc =
-          (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
-            auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            switch (msg) {
-            case WM_SIZE:
-              w->resize(hwnd);
-              break;
-            case WM_CLOSE:
-              DestroyWindow(hwnd);
-              break;
-            case WM_DESTROY:
-              w->terminate();
-              break;
-            case WM_GETMINMAXINFO: {
-              auto lpmmi = (LPMINMAXINFO)lp;
-              if (w == nullptr) {
-                return 0;
-              }
-              if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-                lpmmi->ptMaxSize = w->m_maxsz;
-                lpmmi->ptMaxTrackSize = w->m_maxsz;
-              }
-              if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-                lpmmi->ptMinTrackSize = w->m_minsz;
-              }
-            } break;
-            default:
-              return DefWindowProcW(hwnd, msg, wp, lp);
-            }
+      wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                     LPARAM lp) -> LRESULT {
+        win32_edge_engine *w{};
+
+        if (msg == WM_NCCREATE) {
+          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+          w->m_window = hwnd;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+          enable_non_client_dpi_scaling_if_needed(hwnd);
+        } else {
+          w = reinterpret_cast<win32_edge_engine *>(
+              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        }
+
+        if (!w) {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+
+        switch (msg) {
+        case WM_SIZE:
+          w->resize_widget();
+          break;
+        case WM_CLOSE:
+          DestroyWindow(hwnd);
+          break;
+        case WM_DESTROY:
+          w->terminate();
+          break;
+        case WM_GETMINMAXINFO: {
+          auto lpmmi = (LPMINMAXINFO)lp;
+          if (w == nullptr) {
             return 0;
-          });
+          }
+          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+            lpmmi->ptMaxSize = w->m_maxsz;
+            lpmmi->ptMaxTrackSize = w->m_maxsz;
+          }
+          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+            lpmmi->ptMinTrackSize = w->m_minsz;
+          }
+        } break;
+        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
+          auto dpi = static_cast<int>(wp);
+          auto *size{reinterpret_cast<SIZE *>(lp)};
+          *size = w->get_scaled_size(w->m_dpi, dpi);
+          return TRUE;
+        }
+        case 0x02E0 /*WM_DPICHANGED*/: {
+          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
+          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
+          // Due to this difference, don't use the suggested bounds.
+          auto dpi = static_cast<int>(HIWORD(wp));
+          w->on_dpi_changed(dpi);
+          break;
+        }
+        default:
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+        return 0;
+      });
       RegisterClassExW(&wc);
-      m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
-                               CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                               nullptr, hInstance, nullptr);
+
+      CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                    CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
       if (m_window == nullptr) {
         return;
       }
-      SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
+
+      m_dpi = get_window_dpi(m_window);
+      constexpr const int initial_width = 640;
+      constexpr const int initial_height = 480;
+      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = *(static_cast<HWND *>(window));
+      m_dpi = get_window_dpi(m_window);
     }
 
     ShowWindow(m_window, SW_SHOW);
@@ -1994,7 +2155,7 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_window, debug, cb);
-    resize(m_window);
+    resize_widget();
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
@@ -2062,15 +2223,15 @@ public:
       m_minsz.x = width;
       m_minsz.y = height;
     } else {
-      RECT r;
-      r.left = r.top = 0;
-      r.right = width;
-      r.bottom = height;
-      AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
-      SetWindowPos(
-          m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
-          SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-      resize(m_window);
+      auto dpi = get_window_dpi(m_window);
+      m_dpi = dpi;
+      auto scaled_size =
+          scale_size(width, height, get_default_window_dpi(), dpi);
+      auto frame_size =
+          make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+      SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
+                       SWP_FRAMECHANGED);
     }
   }
 
@@ -2151,12 +2312,12 @@ private:
     return true;
   }
 
-  void resize(HWND wnd) {
+  void resize_widget() {
     if (m_controller == nullptr) {
       return;
     }
     RECT bounds;
-    GetClientRect(wnd, &bounds);
+    GetClientRect(m_window, &bounds);
     m_controller->put_Bounds(bounds);
   }
 
@@ -2173,6 +2334,28 @@ private:
     return ok;
   }
 
+  void on_dpi_changed(int dpi) {
+    auto scaled_size = get_scaled_size(m_dpi, dpi);
+    auto frame_size =
+        make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+    SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+    m_dpi = dpi;
+  }
+
+  SIZE get_size() const {
+    RECT bounds;
+    GetClientRect(m_window, &bounds);
+    auto width = bounds.right - bounds.left;
+    auto height = bounds.bottom - bounds.top;
+    return {width, height};
+  }
+
+  SIZE get_scaled_size(int from_dpi, int to_dpi) const {
+    auto size = get_size();
+    return scale_size(size.cx, size.cy, from_dpi, to_dpi);
+  }
+
   virtual void on_message(const std::string &msg) = 0;
 
   // The app is expected to call CoInitializeEx before
@@ -2187,6 +2370,7 @@ private:
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
+  int m_dpi{};
 };
 
 } // namespace detail
