@@ -1614,7 +1614,7 @@ inline SIZE make_window_frame_size(HWND window, int width, int height,
 inline bool is_dark_theme_enabled() {
   constexpr auto *sub_key =
       L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-  reg_key key(HKEY_CURRENT_USER, sub_key, 0, KEY_READ | KEY_WOW64_32KEY);
+  reg_key key(HKEY_CURRENT_USER, sub_key, 0, KEY_READ);
   if (!key.is_open()) {
     // Default is light theme
     return false;
