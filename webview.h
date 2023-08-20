@@ -1391,6 +1391,21 @@ constexpr auto AreDpiAwarenessContextsEqual =
         "AreDpiAwarenessContextsEqual");
 }; // namespace user32_symbols
 
+namespace dwmapi_symbols {
+typedef enum {
+  // This undocumented value is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE
+  // on Windows 10 older than build 19041 (2004/20H1).
+  DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041 = 19,
+  // Documented as being supported since Windows 11 build 22000 (21H2) but it
+  // works since Windows 10 build 19041 (2004/20H1).
+  DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+} DWMWINDOWATTRIBUTE;
+using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
+
+constexpr auto DwmSetWindowAttribute =
+    library_symbol<DwmSetWindowAttribute_t>("DwmSetWindowAttribute");
+}; // namespace dwmapi_symbols
+
 namespace shcore_symbols {
 typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
 using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
@@ -1430,22 +1445,30 @@ public:
   bool is_open() const { return !!m_handle; }
   bool get_handle() const { return m_handle; }
 
-  std::wstring query_string(const wchar_t *name) const {
+  template <typename Container>
+  void query_bytes(const wchar_t *name, Container &result) const {
     DWORD buf_length = 0;
     // Get the size of the data in bytes.
     auto status = RegQueryValueExW(m_handle, name, nullptr, nullptr, nullptr,
                                    &buf_length);
     if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) {
-      return std::wstring();
+      result.resize(0);
+      return;
     }
     // Read the data.
-    std::wstring result(buf_length / sizeof(wchar_t), 0);
-    auto buf = reinterpret_cast<LPBYTE>(&result[0]);
+    result.resize(buf_length / sizeof(typename Container::value_type));
+    auto *buf = reinterpret_cast<LPBYTE>(&result[0]);
     status =
         RegQueryValueExW(m_handle, name, nullptr, nullptr, buf, &buf_length);
     if (status != ERROR_SUCCESS) {
-      return std::wstring();
+      result.resize(0);
+      return;
     }
+  }
+
+  std::wstring query_string(const wchar_t *name) const {
+    std::wstring result;
+    query_bytes(name, result);
     // Remove trailing null-characters.
     for (std::size_t length = result.size(); length > 0; --length) {
       if (result[length - 1] != 0) {
@@ -1454,6 +1477,16 @@ public:
       }
     }
     return result;
+  }
+
+  unsigned int query_uint(const wchar_t *name,
+                          unsigned int default_value) const {
+    std::vector<char> data;
+    query_bytes(name, data);
+    if (data.size() < sizeof(DWORD)) {
+      return default_value;
+    }
+    return static_cast<unsigned int>(*reinterpret_cast<DWORD *>(data.data()));
   }
 
 private:
@@ -1581,6 +1614,35 @@ inline SIZE make_window_frame_size(HWND window, int width, int height,
   auto frame_width = r.right - r.left;
   auto frame_height = r.bottom - r.top;
   return {frame_width, frame_height};
+}
+
+inline bool is_dark_theme_enabled() {
+  constexpr auto *sub_key =
+      L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+  reg_key key(HKEY_CURRENT_USER, sub_key, 0, KEY_READ);
+  if (!key.is_open()) {
+    // Default is light theme
+    return false;
+  }
+  return key.query_uint(L"AppsUseLightTheme", 1) == 0;
+}
+
+inline void apply_window_theme(HWND window) {
+  auto dark_theme_enabled = is_dark_theme_enabled();
+
+  // Use "immersive dark mode" on systems that support it.
+  // Changes the color of the window's title bar (light or dark).
+  BOOL use_dark_mode{dark_theme_enabled ? TRUE : FALSE};
+  static native_library dwmapi{L"dwmapi.dll"};
+  if (auto fn = dwmapi.get(dwmapi_symbols::DwmSetWindowAttribute)) {
+    // Try the modern, documented attribute before the older, undocumented one.
+    if (fn(window, dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE,
+           &use_dark_mode, sizeof(use_dark_mode)) != S_OK) {
+      fn(window,
+         dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041,
+         &use_dark_mode, sizeof(use_dark_mode));
+    }
+  }
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -2084,6 +2146,7 @@ public:
           w->m_window = hwnd;
           SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
           enable_non_client_dpi_scaling_if_needed(hwnd);
+          apply_window_theme(hwnd);
         } else {
           w = reinterpret_cast<win32_edge_engine *>(
               GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -2128,6 +2191,13 @@ public:
           // Due to this difference, don't use the suggested bounds.
           auto dpi = static_cast<int>(HIWORD(wp));
           w->on_dpi_changed(dpi);
+          break;
+        }
+        case WM_SETTINGCHANGE: {
+          auto *area = reinterpret_cast<const wchar_t *>(lp);
+          if (area) {
+            w->on_system_setting_change(area);
+          }
           break;
         }
         default:
@@ -2359,6 +2429,13 @@ private:
   SIZE get_scaled_size(int from_dpi, int to_dpi) const {
     auto size = get_size();
     return scale_size(size.cx, size.cy, from_dpi, to_dpi);
+  }
+
+  void on_system_setting_change(const wchar_t *area) {
+    // Detect light/dark mode change in system.
+    if (lstrcmpW(area, L"ImmersiveColorSet") == 0) {
+      apply_window_theme(m_window);
+    }
   }
 
   virtual void on_message(const std::string &msg) = 0;
