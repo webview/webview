@@ -50,7 +50,7 @@ BSD-based systems:
 
 ### Windows
 
-Your compiler must support C++17 and we recommend to pair it with an up-to-date Windows 10 SDK.
+Your compiler must support C++14 and we recommend to pair it with an up-to-date Windows 10 SDK.
 
 For Visual C++ we recommend Visual Studio 2022 or later. We have a [separate section for MinGW-w64](#mingw-w64-requirements).
 
@@ -113,7 +113,7 @@ g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 web
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
-g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
+g++ basic.cc -std=c++14 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
 
 #### Bonus for Visual C++
@@ -121,7 +121,7 @@ g++ basic.cc -std=c++17 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/in
 Build a C++ example:
 
 ```bat
-cl basic.cc /std:c++17 /EHsc /Fobuild\ ^
+cl basic.cc /std:c++14 /EHsc /Fobuild\ ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     /link /OUT:build\basic.exe
@@ -147,7 +147,7 @@ g++ -c libs/webview/webview.cc -std=c++11 -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basic
 # Windows/MinGW
-g++ -c libs/webview/webview.cc -std=c++17 -Ilibs/webview2/build/native/include -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++14 -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
@@ -157,7 +157,7 @@ g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwa
 Build a shared library:
 
 ```bat
-cl libs\webview\webview.cc /std:c++17 /EHsc /Fobuild\ ^
+cl libs\webview\webview.cc /std:c++14 /EHsc /Fobuild\ ^
     /D "WEBVIEW_API=__declspec(dllexport)" ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
@@ -273,7 +273,7 @@ Remember to bundle the DLLs you have not linked statically, e.g. those from MinG
 
 ## MinGW-w64 Requirements
 
-In order to build this library using MinGW-w64 on Windows then it must support C++17 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
+In order to build this library using MinGW-w64 on Windows then it must support C++14 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
 
 Distributions that are known to be compatible:
 
