@@ -351,17 +351,24 @@ static void test_json() {
 // =================================================================
 static void test_json_escape() {
   using webview::detail::json_escape;
+  // These constants are needed to work around a bug in MSVC
+  auto expected_0 = R"("\"")";
+  auto expected_1 = R"("\\")";
+  auto expected_2 = R"("\u0000\u001f")";
+  auto expected_3 = R"("\u007f\u009f")";
+  auto expected_4 = "\"\xa0\xff\"";
+  auto expected_5 = R"js("alert(\"gotcha\")")js";
   // '"' and '\' should be escaped.
-  assert(json_escape("\"") == R"("\"")");
-  assert(json_escape("\\") == R"("\\")");
+  assert(json_escape("\"") == expected_0);
+  assert(json_escape("\\") == expected_1);
   // Control characters should be escaped.
-  assert(json_escape(std::string{0} + '\x1f') == R"("\u0000\u001f")");
-  assert(json_escape("\x7f\x9f") == R"("\u007f\u009f")");
+  assert(json_escape(std::string{0} + '\x1f') == expected_2);
+  assert(json_escape("\x7f\x9f") == expected_3);
   // ASCII printable characters shouldn't be escaped.
   assert(json_escape("\x20\x7e") == R"(" ~")");
-  assert(json_escape("\xa0\xff") == "\"\xa0\xff\"");
+  assert(json_escape("\xa0\xff") == expected_4);
   // Other input.
-  assert(json_escape(R"(alert("gotcha"))") == R"js("alert(\"gotcha\")")js");
+  assert(json_escape(R"(alert("gotcha"))") == expected_5);
   assert(json_escape("hello") == R"("hello")");
 }
 
