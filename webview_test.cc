@@ -361,7 +361,7 @@ static void test_json_escape() {
   assert(json_escape("\x20\x7e") == R"(" ~")");
   assert(json_escape("\xa0\xff") == "\"\xa0\xff\"");
   // Other input.
-  assert(json_escape(R"(alert("gotcha"))") == R"js("alert(\"gotcha\")")js");
+  assert(json_escape(R"js(alert("gotcha"))js") == R"js("alert(\"gotcha\")")js");
   assert(json_escape("hello") == R"("hello")");
 }
 
