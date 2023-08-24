@@ -516,11 +516,10 @@ class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)) {
-    if (gtk_init_check(nullptr, nullptr) == FALSE) {
-      return;
-    }
-    m_window = static_cast<GtkWidget *>(window);
-    if (m_window == nullptr) {
+    if (!m_window) {
+      if (gtk_init_check(nullptr, nullptr) == FALSE) {
+        return;
+      }
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     }
     g_signal_connect(G_OBJECT(m_window), "destroy",
