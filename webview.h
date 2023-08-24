@@ -1262,6 +1262,8 @@ std::wstring get_file_version_string(const std::wstring &file_path) noexcept {
 // constructor and CoUninitialize in the destructor.
 class com_init_wrapper {
 public:
+  com_init_wrapper() = default;
+
   com_init_wrapper(DWORD dwCoInit) {
     // We can safely continue as long as COM was either successfully
     // initialized or already initialized.
@@ -1284,8 +1286,12 @@ public:
 
   com_init_wrapper(const com_init_wrapper &other) = delete;
   com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
-  com_init_wrapper(com_init_wrapper &&other) = delete;
-  com_init_wrapper &operator=(com_init_wrapper &&other) = delete;
+  com_init_wrapper(com_init_wrapper &&other) { *this = std::move(other); }
+
+  com_init_wrapper &operator=(com_init_wrapper &&other) {
+    m_initialized = std::exchange(other.m_initialized, false);
+    return *this;
+  }
 
   bool is_initialized() const { return m_initialized; }
 
@@ -2120,11 +2126,12 @@ public:
     if (!is_webview2_available()) {
       return;
     }
-    if (!m_com_init.is_initialized()) {
-      return;
-    }
-    enable_dpi_awareness();
-    if (window == nullptr) {
+    if (!window) {
+      m_com_init = {COINIT_APARTMENTTHREADED};
+      if (!m_com_init.is_initialized()) {
+        return;
+      }
+      enable_dpi_awareness();
       HINSTANCE hInstance = GetModuleHandle(nullptr);
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
@@ -2443,7 +2450,7 @@ private:
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
-  com_init_wrapper m_com_init{COINIT_APARTMENTTHREADED};
+  com_init_wrapper m_com_init;
   HWND m_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
