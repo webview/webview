@@ -743,15 +743,16 @@ public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug}, m_parent_window{window} {
     auto app = get_shared_application();
-    auto delegate = create_app_delegate();
-    objc_setAssociatedObject(delegate, "webview", (id)this,
-                             OBJC_ASSOCIATION_ASSIGN);
-    objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
-
     // See comments related to application lifecycle in create_app_delegate().
     if (window) {
+      auto delegate = objc::msg_send<id>(app, "getDelegate"_sel);
       on_application_did_finish_launching(delegate, app);
     } else {
+      auto delegate = create_app_delegate();
+      objc_setAssociatedObject(delegate, "webview", (id)this,
+                               OBJC_ASSOCIATION_ASSIGN);
+      objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
+
       // Start the main run loop so that the app delegate gets the
       // NSApplicationDidFinishLaunchingNotification notification after the run
       // loop has started in order to perform further initialization.
