@@ -50,24 +50,6 @@ jobs:
         run: ./script/build.bat go:build go:test
         shell: cmd
 
-  build-windows-mingw:
-    strategy:
-      matrix:
-        cxx_std: [c++14, c++17, c++20]
-    runs-on: windows-latest
-    env:
-      CC: gcc
-      CXX: g++
-      CXX_STD: ${{ matrix.cxx_std }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Add MinGW-w64 to PATH
-        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
-        shell: cmd
-      - name: Build and run tests
-        run: ./script/build.sh
-        shell: bash
-
   build-windows-msys2:
     strategy:
       matrix:
