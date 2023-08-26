@@ -740,10 +740,11 @@ inline id operator"" _str(const char *s, std::size_t) {
 class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_debug{debug}, m_parent_window{window} {
+      : m_debug{debug}, m_window{static_cast<id>(window)},
+        m_owns_window{!window} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
-    if (window) {
+    if (!m_owns_window) {
       auto delegate = objc::msg_send<id>(app, "getDelegate"_sel);
       on_application_did_finish_launching(delegate, app);
     } else {
@@ -864,7 +865,7 @@ private:
     // is likely managing the application lifecycle and we would not get the
     // "applicationDidFinishLaunching:" message and therefore do not need to
     // add this method.
-    if (!m_parent_window) {
+    if (m_owns_window) {
       class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
                       (IMP)(+[](id self, SEL, id notification) {
                         auto app =
@@ -964,7 +965,7 @@ private:
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
     // See comments related to application lifecycle in create_app_delegate().
-    if (!m_parent_window) {
+    if (m_owns_window) {
       // Stop the main run loop so that we can return
       // from the constructor.
       stop_run_loop();
@@ -989,14 +990,12 @@ private:
     }
 
     // Main window
-    if (!m_parent_window) {
+    if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
       auto style = NSWindowStyleMaskTitled;
       m_window = objc::msg_send<id>(
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
-    } else {
-      m_window = (id)m_parent_window;
     }
 
     // Webview
@@ -1100,10 +1099,10 @@ private:
   }
 
   bool m_debug;
-  void *m_parent_window;
   id m_window;
   id m_webview;
   id m_manager;
+  bool m_owns_window;
 };
 
 } // namespace detail
