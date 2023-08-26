@@ -745,13 +745,12 @@ public:
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
-      auto delegate = objc::msg_send<id>(app, "delegate"_sel);
-      on_application_did_finish_launching(delegate, app);
+      create_window();
     } else {
       // Only set the app delegate if it hasn't already been set.
       auto delegate = objc::msg_send<id>(app, "delegate"_sel);
-      if (!delegate) {
-        on_application_did_finish_launching(delegate, app);
+      if (delegate) {
+        create_window();
       } else {
         delegate = create_app_delegate();
         objc_setAssociatedObject(delegate, "webview", (id)this,
@@ -1010,6 +1009,9 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
+    create_window();
+  }
+  void create_window() {
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
