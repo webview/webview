@@ -2224,8 +2224,8 @@ public:
       message_wc.cbSize = sizeof(WNDCLASSEX);
       message_wc.hInstance = hInstance;
       message_wc.lpszClassName = L"webview_message";
-      message_wc.lpfnWndProc =
-          +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+      message_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                             LPARAM lp) -> LRESULT {
         win32_edge_engine *w{};
 
         if (msg == WM_NCCREATE) {
@@ -2257,7 +2257,7 @@ public:
           return DefWindowProcW(hwnd, msg, wp, lp);
         }
         return 0;
-      };
+      });
       RegisterClassExW(&message_wc);
       CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0,
                       HWND_MESSAGE, nullptr, hInstance, this);
