@@ -2219,6 +2219,49 @@ public:
         return;
       }
 
+      // Create a message-only window for internal messaging.
+      WNDCLASSEXW message_wc{};
+      message_wc.cbSize = sizeof(WNDCLASSEX);
+      message_wc.hInstance = hInstance;
+      message_wc.lpszClassName = L"webview_message";
+      message_wc.lpfnWndProc =
+          +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+        win32_edge_engine *w{};
+
+        if (msg == WM_NCCREATE) {
+          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+          w->m_message_window = hwnd;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+        } else {
+          w = reinterpret_cast<win32_edge_engine *>(
+              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        }
+
+        if (!w) {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+
+        switch (msg) {
+        case WM_APP:
+          if (auto f = (dispatch_fn_t *)(lp)) {
+            (*f)();
+            delete f;
+          }
+          break;
+        case WM_DESTROY:
+          w->m_message_window = nullptr;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+          break;
+        default:
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+        return 0;
+      };
+      RegisterClassExW(&message_wc);
+      CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0,
+                      HWND_MESSAGE, nullptr, hInstance, this);
+
       m_dpi = get_window_dpi(m_window);
       constexpr const int initial_width = 640;
       constexpr const int initial_height = 480;
@@ -2262,26 +2305,15 @@ public:
 
   void run() {
     MSG msg;
-    BOOL res;
-    while ((res = GetMessage(&msg, nullptr, 0, 0)) != -1) {
-      if (msg.hwnd) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-        continue;
-      }
-      if (msg.message == WM_APP) {
-        auto f = (dispatch_fn_t *)(msg.lParam);
-        (*f)();
-        delete f;
-      } else if (msg.message == WM_QUIT) {
-        return;
-      }
+    while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
     }
   }
   void *window() { return (void *)m_window; }
   void terminate() { PostQuitMessage(0); }
   void dispatch(dispatch_fn_t f) {
-    PostThreadMessage(m_main_thread, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
+    PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
 
   void set_title(const std::string &title) {
@@ -2372,10 +2404,14 @@ private:
     });
     m_com_handler->try_create_environment();
 
-    MSG msg = {};
-    while (flag.test_and_set() && GetMessage(&msg, nullptr, 0, 0)) {
+    // Pump the message loop until WebView2 has finished initialization.
+    MSG msg;
+    while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
+      if (msg.message == WM_QUIT) {
+        return false;
+      }
       TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      DispatchMessageW(&msg);
     }
     if (!m_controller || !m_webview) {
       return false;
@@ -2451,6 +2487,7 @@ private:
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
   HWND m_window = nullptr;
+  HWND m_message_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
   DWORD m_main_thread = GetCurrentThreadId();
