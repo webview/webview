@@ -740,8 +740,8 @@ inline id operator"" _str(const char *s, std::size_t) {
 class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_debug{debug}, m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
+      : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
+                                                               !window} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
