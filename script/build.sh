@@ -52,80 +52,11 @@ get_arch_bitness_from_arch() {
     esac
 }
 
-get_go_os_from_os() {
-    case "${1}" in
-        linux)
-            echo linux
-            ;;
-        macos)
-            echo darwin
-            ;;
-        windows)
-            echo windows
-            ;;
-        *)
-            echo "WARNING: Unsupported OS (${1}), assuming linux" >&2
-            echo linux
-            ;;
-    esac
-}
-
-get_go_arch_from_arch() {
-    case "${1}" in
-        x64)
-            echo amd64
-            ;;
-        x86)
-            echo 386
-            ;;
-        *)
-            echo "ERROR: Unsupported architecture (${1})" >&2
-            return 1
-            ;;
-    esac
-}
-
-go_setup_env() {
-    local cgo_cxxflags=()
-    if [[ "${target_os}" == "windows" ]]; then
-        mswebview_include_path=${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include
-        mingw_header_path=${project_dir}/webview_mingw_support.h
-        # Path must somehow be Windows-style (forward slashes are OK) if the host OS is Windows.
-        # cygpath isn't available on Ubuntu so only convert the path while on Windows.
-        if [[ "${host_os}" == "windows" ]]; then
-            mswebview_include_path=$(cygpath --mixed "${mswebview_include_path}") || return 1
-            mingw_header_path=$(cygpath --mixed "${mingw_header_path}") || return 1
-        fi
-        cgo_cxxflags+=("\"-I${mswebview_include_path}\"")
-        cgo_cxxflags+=("\"--include=${mingw_header_path}\"")
-    fi
-    export CGO_CXXFLAGS="${cgo_cxxflags[@]}"
-    export CGO_ENABLED=1
-    # Export GOOS only when cross-compiling
-    if [[ "${target_os}" != "${host_os}" ]]; then
-        export GOOS=$(get_go_os_from_os "${target_os}") || return 1
-    fi
-    # Export GOARCH only when cross-compiling
-    if [[ "${target_arch}" != "${host_arch}" ]]; then
-        export GOARCH=$(get_go_arch_from_arch "${target_arch}") || return 1
-    fi
-}
-
 is_ci() {
     if [[ -z "${CI+x}" ]]; then
         return 1
     fi
     return 0
-}
-
-invoke_go_build() {
-    local output=${1}
-    local input=${2}
-    local ldflags=()
-    if [[ ! -z "${3}" ]]; then
-        ldflags=("${3}")
-    fi
-    (cd "${project_dir}" && go build "${ldflags[@]}" -o "${output}" "${input}") || return 1
 }
 
 task_clean() {
@@ -220,55 +151,6 @@ task_test() {
     fi
     echo "Running tests..."
     "${build_dir}/webview_test${exe_suffix}" || return 1
-}
-
-task_go_build() {
-    if ! command -v go >/dev/null 2>&1 ; then
-        local message="Go build (go not installed)"
-        if is_ci; then
-            echo "FAIL: ${message}"
-            return 1
-        fi
-        echo "SKIP: ${message}"
-        return 0
-    fi
-    go_setup_env || return 1
-    echo "Building Go examples..."
-    local go_ldflags=()
-    if [[ "${target_os}" == "windows" ]]; then
-        go_ldflags=(-H windowsgui)
-    fi
-    if [[ "${#go_ldflags}" -gt 0 ]]; then
-        go_ldflags="-ldflags=${go_ldflags[@]}"
-    fi
-    mkdir -p "${build_dir}/examples/go" || true
-    invoke_go_build "${build_dir}/examples/go/basic${exe_suffix}" examples/basic.go "${go_ldflags}" || return 1
-    invoke_go_build "${build_dir}/examples/go/bind${exe_suffix}" examples/bind.go "${go_ldflags}" || return 1
-}
-
-task_go_test() {
-    if [[ "${target_os}" != "${host_os}" ]]; then
-        local message="Go tests (target OS (${target_os}) is different from host OS (${host_os}))"
-        # Allow skipping this task on .
-        if is_ci && [[ "${host_os}" != "macos" ]]; then
-            echo "FAIL: ${message}"
-            return 1
-        fi
-        echo "SKIP: ${message}"
-        return 0
-    fi
-    if ! command -v go >/dev/null 2>&1 ; then
-        local message="Go tests (go not installed)"
-        if is_ci; then
-            echo "FAIL: ${message}"
-            return 1
-        fi
-        echo "SKIP: ${message}"
-        return 0
-    fi
-    go_setup_env || return 1
-    echo "Running Go tests..."
-    (cd "${project_dir}" && CGO_ENABLED=1 go test) || return 1
 }
 
 task_info() {
@@ -427,7 +309,7 @@ elif [[ "${target_os}" == "windows" ]]; then
 fi
 
 # Default tasks
-tasks=(info clean format deps check build test go:build go:test)
+tasks=(info clean format deps check build test)
 
 # Task override from command line
 if [[ ${#@} -gt 0 ]]; then

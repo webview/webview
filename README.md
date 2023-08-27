@@ -2,14 +2,12 @@
 
 <a href="https://discord.gg/24KMecn" title="Join the chat at Discord"><img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0b5061df29d55a92d945_full_logo_blurple_RGB.svg" alt="Discord" height="20" /></a>
 [![Build Status](https://img.shields.io/github/actions/workflow/status/webview/webview/ci.yaml?branch=master)](https://github.com/webview/webview)
-[![GoDoc](https://godoc.org/github.com/webview/webview?status.svg)](https://godoc.org/github.com/webview/webview)
-[![Go Report Card](https://goreportcard.com/badge/github.com/webview/webview)](https://goreportcard.com/report/github.com/webview/webview)
 
-A tiny cross-platform webview library for C/C++/Go to build modern cross-platform GUIs.
+A tiny cross-platform webview library for C/C++ to build modern cross-platform GUIs.
 
 The goal of the project is to create a common HTML5 UI abstraction layer for the most widely used platforms.
 
-It supports two-way JavaScript bindings (to call JavaScript from C/C++/Go and to call C/C++/Go from JavaScript).
+It supports two-way JavaScript bindings (to call JavaScript from C/C++ and to call C/C++ from JavaScript).
 
 ## Platform Support
 
@@ -173,45 +171,6 @@ cl basic.c build\webview.lib /EHsc /Fobuild\ ^
     /link /OUT:build\basic.exe
 ```
 
-### Getting Started with Go
-
-See [Go package documentation][go-docs] for the Go API documentation, or simply read the source code.
-
-Create a new Go module:
-
-```sh
-go mod init example.com/m
-```
-
-On Windows you will need to make the WebView2 headers discoverable by cgo (see [Windows Preparation](#windows-preparation)):
-
-```bat
-set CGO_CXXFLAGS="-I%cd%\libs\webview2\build\native\include"
-```
-
-> **Note:** Argument quoting works for Go 1.18 and later. Quotes can be removed if paths have no spaces.
-
-Save the basic Go example into your project directory:
-
-```sh
-curl -sSLo basic.go "https://raw.githubusercontent.com/webview/webview/master/examples/basic.go"
-```
-
-Install dependencies:
-
-```sh
-go get github.com/webview/webview
-```
-
-Build and run the example:
-
-```sh
-# Linux, macOS
-go build -o build/basic basic.go && ./build/basic
-# Windows
-go build -ldflags="-H windowsgui" -o build/basic.exe basic.go && "build/basic.exe"
-```
-
 ### More Examples
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
@@ -273,7 +232,7 @@ Remember to bundle the DLLs you have not linked statically, e.g. those from MinG
 
 ## MinGW-w64 Requirements
 
-In order to build this library using MinGW-w64 on Windows then it must support C++14 and have an up-to-date Windows SDK. This applies both when explicitly building the C/C++ library as well as when doing so implicitly through Go/cgo.
+In order to build this library using MinGW-w64 on Windows then it must support C++14 and have an up-to-date Windows SDK.
 
 Distributions that are known to be compatible:
 
@@ -321,8 +280,6 @@ Task       | Description
 `check`    | Runs checks.
 `build`    | Builds the library, examples and tests.
 `test`     | Runs tests.
-`go:build` | Builds Go examples.
-`go:test`  | Runs Go tests.
 
 Additionally, the scripts accept the following environment variables.
 
@@ -340,17 +297,10 @@ Variable     | Description
 ------------ | --------------------------------------------------------------
 `HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
 `TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
-`CC`         | C compiler executable. Used for C/C++ and Go.
-`CXX`        | C++ compiler executable. Used for C/C++ and Go.
+`CC`         | C compiler executable.
+`CXX`        | C++ compiler executable.
 `LIB_PREFIX` | Library name prefix.
 `PKGCONFIG`  | Alternative `pkgconfig` executable.
-
-Only `build.bat`:
-
-Variable     | Description
------------- | --------------------------------------------------------------
-`CC`         | C compiler executable. Used by Go.
-`CXX`        | C++ compiler executable. Used by Go.
 
 ### Cross-compilation
 
@@ -364,10 +314,6 @@ Since a browser engine is not a full web browser it may not support every featur
 
 For example, the library does not attempt to support user interaction features like `alert()`, `confirm()` and `prompt()` and other non-essential features like `console.log()`.
 
-### Go Bindings
-
-Calling `Eval()` or `Dispatch()` before `Run()` does not work because the webview instance has only been configured and not yet started.
-
 ## Bindings
 
 Language    | Project
@@ -375,7 +321,7 @@ Language    | Project
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
 Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)
-Go          | [webview/webview][webview]
+Go          | [webview/webview_go][webview_go]
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [webview/webview_java](https://github.com/webview/webview_java)
@@ -413,13 +359,13 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
 [docs-repo]:         https://github.com/webview/docs
 [examples]:          https://github.com/webview/webview/tree/master/examples
-[go-docs]:           https://pkg.go.dev/github.com/webview/webview
 [gtk]:               https://docs.gtk.org/gtk3/
 [issues]:            https://github.com/webview/docs/issues
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
 [webkitgtk]:         https://webkitgtk.org/
 [webview]:           https://github.com/webview/webview
+[webview_go]:        https://github.com/webview/webview_go
 [webview.dev]:       https://webview.dev
 [ms-webview2]:       https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
