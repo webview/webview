@@ -9,6 +9,9 @@ The goal of the project is to create a common HTML5 UI abstraction layer for the
 
 It supports two-way JavaScript bindings (to call JavaScript from C/C++ and to call C/C++ from JavaScript).
 
+> [!NOTE]
+> Language binding for Go [has moved][webview_go]. Versions <= 0.1.1 are available in *this* repository.
+
 ## Platform Support
 
 Platform | Technologies
