@@ -2212,7 +2212,9 @@ public:
           DestroyWindow(hwnd);
           break;
         case WM_DESTROY:
-          w->terminate();
+          if (w->dec_window_count() <= 0) {
+            w->terminate();
+          }
           break;
         case WM_GETMINMAXINFO: {
           auto lpmmi = (LPMINMAXINFO)lp;
@@ -2260,6 +2262,7 @@ public:
       if (m_window == nullptr) {
         return;
       }
+      inc_window_count();
 
       // Create a message-only window for internal messaging.
       WNDCLASSEXW message_wc{};
@@ -2520,6 +2523,21 @@ private:
     if (lstrcmpW(area, L"ImmersiveColorSet") == 0) {
       apply_window_theme(m_window);
     }
+  }
+
+  static std::atomic_uint &window_ref_count() {
+    static std::atomic_uint ref_count{0};
+    return ref_count;
+  }
+
+  static unsigned int inc_window_count() { return ++window_ref_count(); }
+
+  static unsigned int dec_window_count() {
+    auto &count = window_ref_count();
+    if (count > 0) {
+      return --count;
+    }
+    return 0;
   }
 
   virtual void on_message(const std::string &msg) = 0;
