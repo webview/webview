@@ -521,9 +521,13 @@ public:
         return;
       }
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+      inc_window_count();
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
-                         static_cast<gtk_webkit_engine *>(arg)->terminate();
+                         auto *w = static_cast<gtk_webkit_engine *>(arg);
+                         if (dec_window_count() <= 0) {
+                           w->terminate();
+                         }
                        }),
                        this);
     }
@@ -635,6 +639,21 @@ private:
     JSStringRelease(js);
 #endif
     return s;
+  }
+
+  static std::atomic_uint &window_ref_count() {
+    static std::atomic_uint ref_count{0};
+    return ref_count;
+  }
+
+  static unsigned int inc_window_count() { return ++window_ref_count(); }
+
+  static unsigned int dec_window_count() {
+    auto &count = window_ref_count();
+    if (count > 0) {
+      return --count;
+    }
+    return 0;
   }
 
   GtkWidget *m_window;
