@@ -22,7 +22,7 @@ Windows  | [Windows API][win32-api], [WebView2][ms-webview2]
 
 ## Documentation
 
-We have started working on publishing documentation at [webview.dev] but you can always find the most up-to-date documentation right in the source code. Improving the documentation is a continuous effort and you are more than welcome to [offer suggestions][issues-new] or [contribute with content][docs-repo]. Please bear with us if the latest updates are not yet published.
+The most up-to-date documentation is right in the source code. Improving the documentation is a continuous effort and you are more than welcome to contribute.
 
 ## Prerequisites
 
@@ -361,7 +361,6 @@ swig -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp
 Code is distributed under MIT license, feel free to use it in your proprietary projects as well.
 
 [macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
-[docs-repo]:         https://github.com/webview/docs
 [examples]:          https://github.com/webview/webview/tree/master/examples
 [gtk]:               https://docs.gtk.org/gtk3/
 [issues]:            https://github.com/webview/docs/issues
