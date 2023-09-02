@@ -321,6 +321,7 @@ For example, the library does not attempt to support user interaction features l
 
 Language    | Project
 ----------  | -------
+Bun         | [tr1ckydev/webview-bun](https://github.com/tr1ckydev/webview-bun)
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
 D           | [thechampagne/webview-d](https://github.com/thechampagne/webview-d)
