@@ -327,6 +327,7 @@ Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
 D           | [thechampagne/webview-d](https://github.com/thechampagne/webview-d)
 Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)
 Go          | [webview/webview_go][webview_go]
+Harbour     | [EricLendvai/Harbour_WebView](https://github.com/EricLendvai/Harbour_WebView)
 Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [webview/webview_java](https://github.com/webview/webview_java)
