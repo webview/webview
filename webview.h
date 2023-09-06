@@ -827,8 +827,8 @@ private:
       return loaded_lib;
     }
 
-    constexpr std::array<const char *, 2> lib_names{"libwebkit2gtk-4.1.so.37",
-                                                    "libwebkit2gtk-4.0.so.37"};
+    constexpr std::array<const char *, 2> lib_names{"libwebkit2gtk-4.1.so",
+                                                    "libwebkit2gtk-4.0.so"};
     const char *loaded_lib_name{};
     for (const auto *lib_name : lib_names) {
       if (native_library::is_loaded(lib_name)) {
