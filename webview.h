@@ -553,6 +553,12 @@ public:
 #endif
   }
 
+#ifdef _WIN32
+  explicit native_library(const std::wstring &name) {
+    m_handle = LoadLibraryW(name.c_str());
+  }
+#endif
+
   ~native_library() {
     if (m_handle) {
 #ifdef _WIN32
@@ -606,7 +612,13 @@ public:
   }
 
 private:
-  void *m_handle{};
+#ifdef _WIN32
+  using mod_handle_t = HMODULE;
+#else
+  using mod_handle_t = void *;
+#endif
+
+  mod_handle_t m_handle{};
 };
 
 } // namespace detail
