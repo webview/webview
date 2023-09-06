@@ -623,7 +623,8 @@ private:
 
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
+    WEBKIT_MAJOR_VERSION > 2
     JSCValue *value = webkit_javascript_result_get_js_value(r);
     s = jsc_value_to_string(value);
 #else
