@@ -227,6 +227,13 @@ WEBVIEW_API const webview_version_info_t *webview_version();
 
 #include <cstring>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
 namespace webview {
 
 using dispatch_fn_t = std::function<void()>;
@@ -239,6 +246,58 @@ constexpr const webview_version_info_t library_version_info{
     WEBVIEW_VERSION_NUMBER,
     WEBVIEW_VERSION_PRE_RELEASE,
     WEBVIEW_VERSION_BUILD_METADATA};
+
+#if defined(_WIN32)
+// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
+inline std::wstring widen_string(const std::string &input) {
+  if (input.empty()) {
+    return std::wstring();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = MB_ERR_INVALID_CHARS;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length =
+      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
+  if (required_length > 0) {
+    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
+    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
+                            required_length) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-8 to UTF-16
+  return std::wstring();
+}
+
+// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
+inline std::string narrow_string(const std::wstring &input) {
+  struct wc_flags {
+    enum TYPE : unsigned int {
+      // WC_ERR_INVALID_CHARS
+      err_invalid_chars = 0x00000080U
+    };
+  };
+  if (input.empty()) {
+    return std::string();
+  }
+  UINT cp = CP_UTF8;
+  DWORD flags = wc_flags::err_invalid_chars;
+  auto input_c = input.c_str();
+  auto input_length = static_cast<int>(input.size());
+  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
+                                             nullptr, 0, nullptr, nullptr);
+  if (required_length > 0) {
+    std::string output(static_cast<std::size_t>(required_length), '\0');
+    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
+                            required_length, nullptr, nullptr) > 0) {
+      return output;
+    }
+  }
+  // Failed to convert string from UTF-16 to UTF-8
+  return std::string();
+}
+#endif
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -468,6 +527,88 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+// Holds a symbol name and associated type for code clarity.
+template <typename T> class library_symbol {
+public:
+  using type = T;
+
+  constexpr explicit library_symbol(const char *name) : m_name(name) {}
+  constexpr const char *get_name() const { return m_name; }
+
+private:
+  const char *m_name;
+};
+
+// Loads a native shared library and allows one to get addresses for those
+// symbols.
+class native_library {
+public:
+  native_library() {}
+
+  explicit native_library(const std::string &name) {
+#ifdef _WIN32
+    m_handle = LoadLibraryW(widen_string(name).c_str());
+#else
+    m_handle = dlopen(name.c_str(), RTLD_NOW);
+#endif
+  }
+
+  ~native_library() {
+    if (m_handle) {
+#ifdef _WIN32
+      FreeLibrary(m_handle);
+#else
+      dlclose(m_handle);
+#endif
+      m_handle = nullptr;
+    }
+  }
+
+  native_library(const native_library &other) = delete;
+  native_library &operator=(const native_library &other) = delete;
+  native_library(native_library &&other) = default;
+  native_library &operator=(native_library &&other) = default;
+
+  // Returns true if the library is currently loaded; otherwise false.
+  operator bool() const { return is_loaded(); }
+
+  // Get the address for the specified symbol or nullptr if not found.
+  template <typename Symbol>
+  typename Symbol::type get(const Symbol &symbol) const {
+    if (is_loaded()) {
+      auto addr =
+#ifdef _WIN32
+          GetProcAddress(m_handle, symbol.get_name());
+#else
+          dlsym(m_handle, symbol.get_name());
+#endif
+      return reinterpret_cast<typename Symbol::type>(addr);
+    }
+    return nullptr;
+  }
+
+  // Returns true if the library is currently loaded; otherwise false.
+  bool is_loaded() const { return !!m_handle; }
+
+  void detach() { m_handle = nullptr; }
+
+  // Returns true if the library by the given name is currently loaded; otherwise false.
+  static inline bool is_loaded(const std::string &name) {
+#ifdef _WIN32
+    auto handle = GetModuleHandleW(widen_string(name).c_str());
+#else
+    auto handle = dlopen(name.c_str(), RTLD_NOW | RTLD_NOLOAD);
+    if (handle) {
+      dlclose(handle);
+    }
+#endif
+    return !!handle;
+  }
+
+private:
+  void *m_handle{};
+};
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -511,6 +652,24 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 
 namespace webview {
 namespace detail {
+
+namespace webkit_symbols {
+using webkit_web_view_evaluate_javascript_t =
+    void (*)(WebKitWebView *, const char *, gssize, const char *, const char *,
+             GCancellable *, GAsyncReadyCallback, gpointer);
+
+using webkit_web_view_run_javascript_t = void (*)(WebKitWebView *,
+                                                  const gchar *, GCancellable *,
+                                                  GAsyncReadyCallback,
+                                                  gpointer);
+
+constexpr auto webkit_web_view_evaluate_javascript =
+    library_symbol<webkit_web_view_evaluate_javascript_t>(
+        "webkit_web_view_evaluate_javascript");
+constexpr auto webkit_web_view_run_javascript =
+    library_symbol<webkit_web_view_run_javascript_t>(
+        "webkit_web_view_run_javascript");
+} // namespace webkit_symbols
 
 class gtk_webkit_engine {
 public:
@@ -614,15 +773,19 @@ public:
   }
 
   void eval(const std::string &js) {
-#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 40) ||               \
-    WEBKIT_MAJOR_VERSION > 2
-    webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
-                                        js.size(), nullptr, nullptr, nullptr,
-                                        nullptr, nullptr);
-#else
-    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
-                                   nullptr, nullptr, nullptr);
-#endif
+    auto &lib = get_webkit_library();
+    auto wkmajor = webkit_get_major_version();
+    auto wkminor = webkit_get_minor_version();
+    if ((wkmajor == 2 && wkminor >= 40) || wkmajor > 2) {
+      if (auto fn =
+              lib.get(webkit_symbols::webkit_web_view_evaluate_javascript)) {
+        fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(), js.size(), nullptr, nullptr,
+           nullptr, nullptr, nullptr);
+      }
+    } else if (auto fn =
+                   lib.get(webkit_symbols::webkit_web_view_run_javascript)) {
+      fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(), nullptr, nullptr, nullptr);
+    }
   }
 
 private:
@@ -643,6 +806,39 @@ private:
     JSStringRelease(js);
 #endif
     return s;
+  }
+
+  static const native_library &get_webkit_library() {
+    static native_library loaded_lib;
+
+    if (loaded_lib.is_loaded()) {
+      return loaded_lib;
+    }
+
+    constexpr std::array<const char *, 2> lib_names{"libwebkit2gtk-4.1.so.37",
+                                                    "libwebkit2gtk-4.0.so.37"};
+    const char *loaded_lib_name{};
+    for (const auto *lib_name : lib_names) {
+      if (native_library::is_loaded(lib_name)) {
+        loaded_lib_name = lib_name;
+        break;
+      }
+    }
+
+    static const native_library non_loaded_lib;
+
+    if (!loaded_lib_name) {
+      return non_loaded_lib;
+    }
+
+    loaded_lib = native_library(loaded_lib_name);
+
+    auto loaded = loaded_lib.is_loaded();
+    if (!loaded) {
+      return non_loaded_lib;
+    }
+
+    return loaded_lib;
   }
 
   GtkWidget *m_window;
@@ -1152,56 +1348,6 @@ namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
 
-// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-inline std::wstring widen_string(const std::string &input) {
-  if (input.empty()) {
-    return std::wstring();
-  }
-  UINT cp = CP_UTF8;
-  DWORD flags = MB_ERR_INVALID_CHARS;
-  auto input_c = input.c_str();
-  auto input_length = static_cast<int>(input.size());
-  auto required_length =
-      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
-  if (required_length > 0) {
-    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
-    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
-                            required_length) > 0) {
-      return output;
-    }
-  }
-  // Failed to convert string from UTF-8 to UTF-16
-  return std::wstring();
-}
-
-// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
-inline std::string narrow_string(const std::wstring &input) {
-  struct wc_flags {
-    enum TYPE : unsigned int {
-      // WC_ERR_INVALID_CHARS
-      err_invalid_chars = 0x00000080U
-    };
-  };
-  if (input.empty()) {
-    return std::string();
-  }
-  UINT cp = CP_UTF8;
-  DWORD flags = wc_flags::err_invalid_chars;
-  auto input_c = input.c_str();
-  auto input_length = static_cast<int>(input.size());
-  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
-                                             nullptr, 0, nullptr, nullptr);
-  if (required_length > 0) {
-    std::string output(static_cast<std::size_t>(required_length), '\0');
-    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
-                            required_length, nullptr, nullptr) > 0) {
-      return output;
-    }
-  }
-  // Failed to convert string from UTF-16 to UTF-8
-  return std::string();
-}
-
 // Parses a version string with 1-4 integral components, e.g. "1.2.3.4".
 // Missing or invalid components default to 0, and excess components are ignored.
 template <typename T>
@@ -1298,58 +1444,6 @@ public:
 
 private:
   bool m_initialized = false;
-};
-
-// Holds a symbol name and associated type for code clarity.
-template <typename T> class library_symbol {
-public:
-  using type = T;
-
-  constexpr explicit library_symbol(const char *name) : m_name(name) {}
-  constexpr const char *get_name() const { return m_name; }
-
-private:
-  const char *m_name;
-};
-
-// Loads a native shared library and allows one to get addresses for those
-// symbols.
-class native_library {
-public:
-  explicit native_library(const wchar_t *name) : m_handle(LoadLibraryW(name)) {}
-
-  ~native_library() {
-    if (m_handle) {
-      FreeLibrary(m_handle);
-      m_handle = nullptr;
-    }
-  }
-
-  native_library(const native_library &other) = delete;
-  native_library &operator=(const native_library &other) = delete;
-  native_library(native_library &&other) = default;
-  native_library &operator=(native_library &&other) = default;
-
-  // Returns true if the library is currently loaded; otherwise false.
-  operator bool() const { return is_loaded(); }
-
-  // Get the address for the specified symbol or nullptr if not found.
-  template <typename Symbol>
-  typename Symbol::type get(const Symbol &symbol) const {
-    if (is_loaded()) {
-      return reinterpret_cast<typename Symbol::type>(
-          GetProcAddress(m_handle, symbol.get_name()));
-    }
-    return nullptr;
-  }
-
-  // Returns true if the library is currently loaded; otherwise false.
-  bool is_loaded() const { return !!m_handle; }
-
-  void detach() { m_handle = nullptr; }
-
-private:
-  HMODULE m_handle = nullptr;
 };
 
 namespace ntdll_symbols {
