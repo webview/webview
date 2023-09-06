@@ -215,6 +215,7 @@ WEBVIEW_API const webview_version_info_t *webview_version();
   WEBVIEW_DEPRECATED("Private API should not be used")
 #endif
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -821,6 +822,7 @@ private:
   }
 
   static const native_library &get_webkit_library() {
+    static const native_library non_loaded_lib;
     static native_library loaded_lib;
 
     if (loaded_lib.is_loaded()) {
@@ -829,21 +831,16 @@ private:
 
     constexpr std::array<const char *, 2> lib_names{"libwebkit2gtk-4.1.so",
                                                     "libwebkit2gtk-4.0.so"};
-    const char *loaded_lib_name{};
-    for (const auto *lib_name : lib_names) {
-      if (native_library::is_loaded(lib_name)) {
-        loaded_lib_name = lib_name;
-        break;
-      }
-    }
+    auto found =
+        std::find_if(lib_names.begin(), lib_names.end(), [](const char *name) {
+          return native_library::is_loaded(name);
+        });
 
-    static const native_library non_loaded_lib;
-
-    if (!loaded_lib_name) {
+    if (found == lib_names.end()) {
       return non_loaded_lib;
     }
 
-    loaded_lib = native_library(loaded_lib_name);
+    loaded_lib = native_library(*found);
 
     auto loaded = loaded_lib.is_loaded();
     if (!loaded) {
