@@ -614,8 +614,15 @@ public:
   }
 
   void eval(const std::string &js) {
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 40) ||               \
+    WEBKIT_MAJOR_VERSION > 2
+    webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                        js.size(), nullptr, nullptr, nullptr,
+                                        nullptr, nullptr);
+#else
     webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
                                    nullptr, nullptr, nullptr);
+#endif
   }
 
 private:
