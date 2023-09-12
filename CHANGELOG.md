@@ -7,16 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+This is the first release since the library rewrite by [zserge](https://github.com/zserge) ([#315](https://github.com/webview/webview/pull/315)).
+
 ### Added
 
 Windows:
 
+- Microsoft Edge WebView2 backend ([#315](https://github.com/webview/webview/pull/315))
 - Custom WebView2Loader implementation ([#783](https://github.com/webview/webview/pull/783))
 - DPI scaling for Windows 10 and later ([#982](https://github.com/webview/webview/pull/982))
 - Add support for dark title bar on Windows 10 and later ([#996](https://github.com/webview/webview/pull/996))
 
 ### Removed
 
+- MSHTML backend ([#315](https://github.com/webview/webview/pull/315))
 - Go binding ([#1009](https://github.com/webview/webview/pull/1009)) — moved to [webview/webview_go](https://github.com/webview/webview_go)
 
 ## [0.1.1] - 2020-01-21
