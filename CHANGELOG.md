@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-This is the first release since the library rewrite by [zserge](https://github.com/zserge) ([#315](https://github.com/webview/webview/pull/315)).
+This is the first release since the library rewrite by [zserge](https://github.com/zserge) ([#315](https://github.com/webview/webview/pull/315)), and is a necessary one that allows us to prepare for future changes in the library.
+
+Due to the vast amount of contributions that are in this release on top of the changes and removals introduced in the library rewrite, we've picked a few contributions aside from the rewrite that had a significant impact compared to the previous release.
 
 ### Added
 
