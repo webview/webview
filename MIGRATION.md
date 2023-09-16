@@ -11,6 +11,10 @@ C        | `extern`    | `extern`
 
 If you relied on the old default being `extern` when using a C++ compiler then you should either define `WEBVIEW_STATIC` or `WEBVIEW_API=extern`.
 
+### Behavior of `webview_return()`
+
+`webview_return()` no longer evaluates the passed-in result as JavaScript but instead parses it as JSON. The new behavior is consistent with the documented behavior while the old behavior wasn't. Use `webview_eval()` if you need to evaluate JavaScript code.
+
 ## v0.1.1 to v0.10.0
 
 1. Use opaque `webview_t` type instead of `struct webview`. Size, title and URL are controlled via API setter functions. Invoke callback has been replaced with `webview_bind()` and `webview_return()` to make native function bindings inter-operate with JS.
