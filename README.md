@@ -140,15 +140,15 @@ Build the library and example, then run it:
 
 ```sh
 # Linux
-g++ -c libs/webview/webview.cc -std=c++11 $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0) -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0) -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o $(pkg-config --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && build/basic
 # macOS
-g++ -c libs/webview/webview.cc -std=c++11 -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basic
 # Windows/MinGW
-g++ -c libs/webview/webview.cc -std=c++14 -Ilibs/webview2/build/native/include -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++14 -DWEBVIEW_STATIC -Ilibs/webview2/build/native/include -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
 g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
 ```
@@ -159,7 +159,7 @@ Build a shared library:
 
 ```bat
 cl libs\webview\webview.cc /std:c++14 /EHsc /Fobuild\ ^
-    /D "WEBVIEW_API=__declspec(dllexport)" ^
+    /D WEBVIEW_BUILD_SHARED ^
     /I libs\webview ^
     /I libs\webview2\build\native\include ^
     /link /DLL /OUT:build\webview.dll
@@ -169,7 +169,7 @@ Build a C example using the shared library:
 
 ```bat
 cl basic.c build\webview.lib /EHsc /Fobuild\ ^
-    /D "WEBVIEW_API=__declspec(dllimport)" ^
+    /D WEBVIEW_SHARED ^
     /I libs\webview ^
     /link /OUT:build\basic.exe
 ```
