@@ -39,7 +39,7 @@
 #elif !defined(WEBVIEW_STATIC) && defined(__cplusplus)
 #define WEBVIEW_API inline
 #else
-#define WEBVIEW_API
+#define WEBVIEW_API extern
 #endif
 #endif
 
