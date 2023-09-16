@@ -26,7 +26,21 @@
 #define WEBVIEW_H
 
 #ifndef WEBVIEW_API
+#if defined(WEBVIEW_SHARED) || defined(WEBVIEW_BUILD_SHARED)
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(WEBVIEW_BUILD_SHARED)
+#define WEBVIEW_API __declspec(dllexport)
+#else
+#define WEBVIEW_API __declspec(dllimport)
+#endif
+#else
+#define WEBVIEW_API __attribute__((visibility("default")))
+#endif
+#elif !defined(WEBVIEW_STATIC) && defined(__cplusplus)
+#define WEBVIEW_API inline
+#else
 #define WEBVIEW_API extern
+#endif
 #endif
 
 #ifndef WEBVIEW_VERSION_MAJOR
@@ -36,7 +50,7 @@
 
 #ifndef WEBVIEW_VERSION_MINOR
 // The current library minor version.
-#define WEBVIEW_VERSION_MINOR 10
+#define WEBVIEW_VERSION_MINOR 11
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
@@ -676,7 +690,8 @@ private:
 
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
+    WEBKIT_MAJOR_VERSION > 2
     JSCValue *value = webkit_javascript_result_get_js_value(r);
     s = jsc_value_to_string(value);
 #else
