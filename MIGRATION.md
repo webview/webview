@@ -1,5 +1,16 @@
 # Migration
 
+## v0.10.0 to v0.11.0
+
+### New Defaults for `WEBVIEW_API`
+
+Language | Old default | New default
+-------- | ----------- | -----------
+C++      | `extern`    | `inline`
+C        | `extern`    | `extern`
+
+If you relied on the old default being `extern` when using a C++ compiler then you should either define `WEBVIEW_STATIC` or `WEBVIEW_API=extern`.
+
 ## v0.1.1 to v0.10.0
 
 1. Use opaque `webview_t` type instead of `struct webview`. Size, title and URL are controlled via API setter functions. Invoke callback has been replaced with `webview_bind()` and `webview_return()` to make native function bindings inter-operate with JS.

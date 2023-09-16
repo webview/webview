@@ -111,13 +111,11 @@ task_build() {
     mkdir -p "${build_dir}/library" || true
 
     echo "Building shared library..."
-    local shared_lib_args=(-fPIC -fvisibility=hidden -fvisibility-inlines-hidden)
+    local shared_lib_args=(-fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DWEBVIEW_BUILD_SHARED)
     if [[ "${target_os}" == "macos" ]]; then
-        shared_lib_args+=(-dynamiclib "-Wl,-install_name,@rpath/${lib_prefix}webview${shared_lib_suffix}" '-DWEBVIEW_API=__attribute__ ((visibility ("default")))')
-    elif [[ "${target_os}" == "windows" ]]; then
-        shared_lib_args+=(-shared '-DWEBVIEW_API=__declspec(dllexport)')
+        shared_lib_args+=(-dynamiclib "-Wl,-install_name,@rpath/${lib_prefix}webview${shared_lib_suffix}")
     else
-        shared_lib_args+=(-shared '-DWEBVIEW_API=__attribute__ ((visibility ("default")))')
+        shared_lib_args+=(-shared)
     fi
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${shared_lib_args[@]}" "${project_dir}/webview.cc" "${cxx_link_flags[@]}" -o "${build_dir}/library/${lib_prefix}webview${shared_lib_suffix}" || return 1
 
@@ -128,7 +126,7 @@ task_build() {
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/bind.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
 
     echo "Building C examples..."
-    "${cxx_compiler}" -c "${cxx_compile_flags[@]}" "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || return 1
+    "${cxx_compiler}" -c "${cxx_compile_flags[@]}" -DWEBVIEW_STATIC "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/basic.c" -o "${build_dir}/examples/c/basic.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/bind.c" -o "${build_dir}/examples/c/bind.o" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/basic.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/basic${exe_suffix}" || return 1
