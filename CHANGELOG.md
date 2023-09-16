@@ -11,13 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New compile-time options for controlling `WEBVIEW_API` ([#893](https://github.com/webview/webview/pull/893))
 
-### Fixed
-
-- Treat result of binding function as JSON, not JS ([#1002](https://github.com/webview/webview/pull/1002))
-
-### Changed
+### Breaking Changes
 
 - `WEBVIEW_API` is now `inline` by default for C++ ([#893](https://github.com/webview/webview/pull/893))
+- Treat result of binding function as JSON, not JS ([#1002](https://github.com/webview/webview/pull/1002))
+- App lifecycle separation ([#1005](https://github.com/webview/webview/pull/1005))
 
 ## [0.10.0] - 2023-09-16
 
