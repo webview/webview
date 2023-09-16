@@ -15,6 +15,17 @@ If you relied on the old default being `extern` when using a C++ compiler then y
 
 `webview_return()` no longer evaluates the passed-in result as JavaScript but instead parses it as JSON. The new behavior is consistent with the documented behavior while the old behavior wasn't. Use `webview_eval()` if you need to evaluate JavaScript code.
 
+### Application Lifecycle
+
+If you relied on the library's management of the application lifecycle when passing in an existing window to the library then you should now either manage the lifecycle by yourself or let the library create the window.
+
+Specific things that are now only done by the library when the window is created for you:
+
+Platform | What
+-------- | ----
+Linux    | Call to `gtk_init_check()`.
+Windows  | COM initialization and DPI awareness enablement.
+
 ## v0.1.1 to v0.10.0
 
 1. Use opaque `webview_t` type instead of `struct webview`. Size, title and URL are controlled via API setter functions. Invoke callback has been replaced with `webview_bind()` and `webview_return()` to make native function bindings inter-operate with JS.
