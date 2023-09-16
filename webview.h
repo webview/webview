@@ -50,7 +50,7 @@
 
 #ifndef WEBVIEW_VERSION_MINOR
 // The current library minor version.
-#define WEBVIEW_VERSION_MINOR 10
+#define WEBVIEW_VERSION_MINOR 11
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
@@ -110,7 +110,7 @@ extern "C" {
 typedef void *webview_t;
 
 // Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). Window parameter can be a
+// be enabled (if the platform supports them). The window parameter can be a
 // pointer to the native window handle. If it's non-null - then child WebView
 // is embedded into the given parent window. Otherwise a new window is created.
 // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
@@ -135,9 +135,9 @@ WEBVIEW_API void webview_terminate(webview_t w);
 WEBVIEW_API void
 webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 
-// Returns a native window handle pointer. When using GTK backend the pointer
-// is GtkWindow pointer, when using Cocoa backend the pointer is NSWindow
-// pointer, when using Win32 backend the pointer is HWND pointer.
+// Returns a native window handle pointer. When using a GTK backend the pointer
+// is a GtkWindow pointer, when using a Cocoa backend the pointer is a NSWindow
+// pointer, when using a Win32 backend the pointer is a HWND pointer.
 WEBVIEW_API void *webview_get_window(webview_t w);
 
 // Updates the title of the native window. Must be called from the UI thread.
@@ -148,7 +148,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 #define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
 #define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
 #define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
-// Updates native window size. See WEBVIEW_HINT constants.
+// Updates the size of the native window. See WEBVIEW_HINT constants.
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
@@ -164,7 +164,7 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a the new page - this initialization code will be
+// the webview will open a new page - this initialization code will be
 // executed. It is guaranteed that code is executed before window.onload.
 WEBVIEW_API void webview_init(webview_t w, const char *js);
 
@@ -174,10 +174,10 @@ WEBVIEW_API void webview_init(webview_t w, const char *js);
 WEBVIEW_API void webview_eval(webview_t w, const char *js);
 
 // Binds a native C callback so that it will appear under the given name as a
-// global JavaScript function. Internally it uses webview_init(). Callback
-// receives a request string and a user-provided argument pointer. Request
-// string is a JSON array of all the arguments passed to the JavaScript
-// function.
+// global JavaScript function. Internally it uses webview_init(). The callback
+// receives a sequential request id, a request string and a user-provided
+// argument pointer. The request string is a JSON array of all the arguments
+// passed to the JavaScript function.
 WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void (*fn)(const char *seq, const char *req,
                                          void *arg),
@@ -186,10 +186,10 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 // Removes a native C callback that was previously set by webview_bind.
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 
-// Allows to return a value from the native binding. Original request pointer
-// must be provided to help internal RPC engine match requests with responses.
-// If status is zero - result is expected to be a valid JSON result value.
-// If status is not zero - result is an error JSON object.
+// Allows to return a value from the native binding. A request id pointer must
+// be provided to allow the internal RPC engine to match requests and responses.
+// If the status is zero - the result is expected to be a valid JSON value.
+// If the status is not zero - the result is an error JSON object.
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
@@ -231,6 +231,7 @@ WEBVIEW_API const webview_version_info_t *webview_version();
 
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <map>
@@ -636,7 +637,8 @@ private:
 
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
+    WEBKIT_MAJOR_VERSION > 2
     JSCValue *value = webkit_javascript_result_get_js_value(r);
     s = jsc_value_to_string(value);
 #else
@@ -697,6 +699,28 @@ Result msg_send(Args... args) noexcept {
   return invoke<Result>(objc_msgSend, args...);
 }
 
+// Wrapper around NSAutoreleasePool that drains the pool on destruction.
+class autoreleasepool {
+public:
+  autoreleasepool()
+      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
+                            sel_registerName("new"))) {}
+
+  ~autoreleasepool() {
+    if (m_pool) {
+      msg_send<void>(m_pool, sel_registerName("drain"));
+    }
+  }
+
+  autoreleasepool(const autoreleasepool &) = delete;
+  autoreleasepool &operator=(const autoreleasepool &) = delete;
+  autoreleasepool(autoreleasepool &&) = delete;
+  autoreleasepool &operator=(autoreleasepool &&) = delete;
+
+private:
+  id m_pool{};
+};
+
 } // namespace objc
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
@@ -753,10 +777,7 @@ public:
   }
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
-  void terminate() {
-    auto app = get_shared_application();
-    objc::msg_send<void>(app, "terminate:"_sel, nullptr);
-  }
+  void terminate() { stop_run_loop(); }
   void run() {
     auto app = get_shared_application();
     objc::msg_send<void>(app, "run"_sel);
@@ -798,6 +819,8 @@ public:
     objc::msg_send<void>(m_window, "center"_sel);
   }
   void navigate(const std::string &url) {
+    objc::autoreleasepool pool;
+
     auto nsurl = objc::msg_send<id>(
         "NSURL"_cls, "URLWithString:"_sel,
         objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
@@ -808,6 +831,7 @@ public:
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
   void set_html(const std::string &html) {
+    objc::autoreleasepool pool;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
@@ -844,7 +868,13 @@ private:
                                       "WebviewAppDelegate", 0);
     class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
     class_addMethod(cls, "applicationShouldTerminateAfterLastWindowClosed:"_sel,
-                    (IMP)(+[](id, SEL, id) -> BOOL { return 1; }), "c@:@");
+                    (IMP)(+[](id, SEL, id) -> BOOL { return YES; }), "c@:@");
+    class_addMethod(cls, "applicationShouldTerminate:"_sel,
+                    (IMP)(+[](id self, SEL, id sender) -> int {
+                      auto w = get_associated_webview(self);
+                      return w->on_application_should_terminate(self, sender);
+                    }),
+                    "i@:@");
     // If the library was not initialized with an existing window then the user
     // is likely managing the application lifecycle and we would not get the
     // "applicationDidFinishLaunching:" message and therefore do not need to
@@ -952,7 +982,7 @@ private:
     if (!m_parent_window) {
       // Stop the main run loop so that we can return
       // from the constructor.
-      objc::msg_send<void>(app, "stop:"_sel, nullptr);
+      stop_run_loop();
     }
 
     // Activate the app if it is not bundled.
@@ -1023,6 +1053,29 @@ private:
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
+
+    if (m_debug) {
+      // Explicitly make WKWebView inspectable via Safari on OS versions that
+      // disable the feature by default (macOS 13.3 and later) and support
+      // enabling it. According to Apple, the behavior on older OS versions is
+      // for content to always be inspectable in "debug builds".
+      // Testing shows that this is true for macOS 12.6 but somehow not 10.15.
+      // https://webkit.org/blog/13936/enabling-the-inspection-of-web-content-in-apps/
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_available)
+      if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
+        objc::msg_send<void>(
+            m_webview, "setInspectable:"_sel,
+            objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES));
+      }
+#else
+#error __builtin_available not supported by compiler
+#endif
+#else
+#error __has_builtin not supported by compiler
+#endif
+    }
+
     auto script_message_handler = create_script_message_handler();
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
@@ -1037,6 +1090,30 @@ private:
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
     objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
   }
+  int on_application_should_terminate(id /*delegate*/, id app) {
+    dispatch([app, this] {
+      // Don't terminate the application.
+      objc::msg_send<void>(app, "replyToApplicationShouldTerminate:"_sel, NO);
+      // Instead stop the run loop.
+      stop_run_loop();
+    });
+    return 2 /*NSTerminateLater*/;
+  }
+  void stop_run_loop() {
+    auto app = get_shared_application();
+    // Request the run loop to stop. This doesn't immediately stop the loop.
+    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    // The run loop will stop after processing an NSEvent.
+    // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
+    //             NSApplicationDefined (macOS 10.0–10.12)
+    int type = 15;
+    auto event = objc::msg_send<id>(
+        "NSEvent"_cls,
+        "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
+        type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
+    objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
+  }
+
   bool m_debug;
   void *m_parent_window;
   id m_window;
@@ -1107,11 +1184,17 @@ inline std::wstring widen_string(const std::string &input) {
 
 // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
 inline std::string narrow_string(const std::wstring &input) {
+  struct wc_flags {
+    enum TYPE : unsigned int {
+      // WC_ERR_INVALID_CHARS
+      err_invalid_chars = 0x00000080U
+    };
+  };
   if (input.empty()) {
     return std::string();
   }
   UINT cp = CP_UTF8;
-  DWORD flags = WC_ERR_INVALID_CHARS;
+  DWORD flags = wc_flags::err_invalid_chars;
   auto input_c = input.c_str();
   auto input_length = static_cast<int>(input.size());
   auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
@@ -1277,25 +1360,74 @@ private:
   HMODULE m_handle = nullptr;
 };
 
-struct user32_symbols {
-  using DPI_AWARENESS_CONTEXT = HANDLE;
-  using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
-  using SetProcessDPIAware_t = BOOL(WINAPI *)();
+namespace ntdll_symbols {
+using RtlGetVersion_t =
+    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
 
-  static constexpr auto SetProcessDpiAwarenessContext =
-      library_symbol<SetProcessDpiAwarenessContext_t>(
-          "SetProcessDpiAwarenessContext");
-  static constexpr auto SetProcessDPIAware =
-      library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
+}; // namespace ntdll_symbols
+
+namespace user32_symbols {
+using DPI_AWARENESS_CONTEXT = HANDLE;
+using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+using SetProcessDPIAware_t = BOOL(WINAPI *)();
+using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
+                                                  UINT);
+using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
+using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
+                                                      DPI_AWARENESS_CONTEXT);
+
+// Use intptr_t as the underlying type because we need to
+// reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
+// Available since Windows 10, version 1607
+enum class dpi_awareness : intptr_t {
+  per_monitor_v2_aware = -4, // Available since Windows 10, version 1703
+  per_monitor_aware = -3
 };
 
-struct shcore_symbols {
-  typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
-  using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+constexpr auto SetProcessDpiAwarenessContext =
+    library_symbol<SetProcessDpiAwarenessContext_t>(
+        "SetProcessDpiAwarenessContext");
+constexpr auto SetProcessDPIAware =
+    library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+constexpr auto GetDpiForWindow =
+    library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
+constexpr auto EnableNonClientDpiScaling =
+    library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
+constexpr auto AdjustWindowRectExForDpi =
+    library_symbol<AdjustWindowRectExForDpi_t>("AdjustWindowRectExForDpi");
+constexpr auto GetWindowDpiAwarenessContext =
+    library_symbol<GetWindowDpiAwarenessContext_t>(
+        "GetWindowDpiAwarenessContext");
+constexpr auto AreDpiAwarenessContextsEqual =
+    library_symbol<AreDpiAwarenessContextsEqual_t>(
+        "AreDpiAwarenessContextsEqual");
+}; // namespace user32_symbols
 
-  static constexpr auto SetProcessDpiAwareness =
-      library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
-};
+namespace dwmapi_symbols {
+typedef enum {
+  // This undocumented value is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE
+  // on Windows 10 older than build 19041 (2004/20H1).
+  DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041 = 19,
+  // Documented as being supported since Windows 11 build 22000 (21H2) but it
+  // works since Windows 10 build 19041 (2004/20H1).
+  DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+} DWMWINDOWATTRIBUTE;
+using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
+
+constexpr auto DwmSetWindowAttribute =
+    library_symbol<DwmSetWindowAttribute_t>("DwmSetWindowAttribute");
+}; // namespace dwmapi_symbols
+
+namespace shcore_symbols {
+typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+
+constexpr auto SetProcessDpiAwareness =
+    library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
+}; // namespace shcore_symbols
 
 class reg_key {
 public:
@@ -1328,22 +1460,30 @@ public:
   bool is_open() const { return !!m_handle; }
   bool get_handle() const { return m_handle; }
 
-  std::wstring query_string(const wchar_t *name) const {
+  template <typename Container>
+  void query_bytes(const wchar_t *name, Container &result) const {
     DWORD buf_length = 0;
     // Get the size of the data in bytes.
     auto status = RegQueryValueExW(m_handle, name, nullptr, nullptr, nullptr,
                                    &buf_length);
     if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) {
-      return std::wstring();
+      result.resize(0);
+      return;
     }
     // Read the data.
-    std::wstring result(buf_length / sizeof(wchar_t), 0);
-    auto buf = reinterpret_cast<LPBYTE>(&result[0]);
+    result.resize(buf_length / sizeof(typename Container::value_type));
+    auto *buf = reinterpret_cast<LPBYTE>(&result[0]);
     status =
         RegQueryValueExW(m_handle, name, nullptr, nullptr, buf, &buf_length);
     if (status != ERROR_SUCCESS) {
-      return std::wstring();
+      result.resize(0);
+      return;
     }
+  }
+
+  std::wstring query_string(const wchar_t *name) const {
+    std::wstring result;
+    query_bytes(name, result);
     // Remove trailing null-characters.
     for (std::size_t length = result.size(); length > 0; --length) {
       if (result[length - 1] != 0) {
@@ -1354,14 +1494,61 @@ public:
     return result;
   }
 
+  unsigned int query_uint(const wchar_t *name,
+                          unsigned int default_value) const {
+    std::vector<char> data;
+    query_bytes(name, data);
+    if (data.size() < sizeof(DWORD)) {
+      return default_value;
+    }
+    return static_cast<unsigned int>(*reinterpret_cast<DWORD *>(data.data()));
+  }
+
 private:
   HKEY m_handle = nullptr;
 };
 
+// Compare the specified version against the OS version.
+// Returns less than 0 if the OS version is less.
+// Returns 0 if the versions are equal.
+// Returns greater than 0 if the specified version is greater.
+inline int compare_os_version(unsigned int major, unsigned int minor,
+                              unsigned int build) {
+  // Use RtlGetVersion both to bypass potential issues related to
+  // VerifyVersionInfo and manifests, and because both GetVersion and
+  // GetVersionEx are deprecated.
+  auto ntdll = native_library(L"ntdll.dll");
+  if (auto fn = ntdll.get(ntdll_symbols::RtlGetVersion)) {
+    RTL_OSVERSIONINFOW vi{};
+    vi.dwOSVersionInfoSize = sizeof(vi);
+    if (fn(&vi) != 0) {
+      return false;
+    }
+    if (vi.dwMajorVersion == major) {
+      if (vi.dwMinorVersion == minor) {
+        return static_cast<int>(vi.dwBuildNumber) - static_cast<int>(build);
+      }
+      return static_cast<int>(vi.dwMinorVersion) - static_cast<int>(minor);
+    }
+    return static_cast<int>(vi.dwMajorVersion) - static_cast<int>(major);
+  }
+  return false;
+}
+
+inline bool is_per_monitor_v2_awareness_available() {
+  // Windows 10, version 1703
+  return compare_os_version(10, 0, 15063) >= 0;
+}
+
 inline bool enable_dpi_awareness() {
   auto user32 = native_library(L"user32.dll");
   if (auto fn = user32.get(user32_symbols::SetProcessDpiAwarenessContext)) {
-    if (fn(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)) {
+    auto dpi_awareness =
+        reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+            is_per_monitor_v2_awareness_available()
+                ? user32_symbols::dpi_awareness::per_monitor_v2_aware
+                : user32_symbols::dpi_awareness::per_monitor_aware);
+    if (fn(dpi_awareness)) {
       return true;
     }
     return GetLastError() == ERROR_ACCESS_DENIED;
@@ -1376,6 +1563,101 @@ inline bool enable_dpi_awareness() {
     return !!fn();
   }
   return true;
+}
+
+inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
+  auto user32 = native_library(L"user32.dll");
+  auto get_ctx_fn = user32.get(user32_symbols::GetWindowDpiAwarenessContext);
+  if (!get_ctx_fn) {
+    return true;
+  }
+  auto awareness = get_ctx_fn(window);
+  if (!awareness) {
+    return false;
+  }
+  auto ctx_equal_fn = user32.get(user32_symbols::AreDpiAwarenessContextsEqual);
+  if (!ctx_equal_fn) {
+    return true;
+  }
+  // EnableNonClientDpiScaling is only needed with per monitor v1 awareness.
+  auto per_monitor = reinterpret_cast<user32_symbols::DPI_AWARENESS_CONTEXT>(
+      user32_symbols::dpi_awareness::per_monitor_aware);
+  if (!ctx_equal_fn(awareness, per_monitor)) {
+    return true;
+  }
+  auto enable_fn = user32.get(user32_symbols::EnableNonClientDpiScaling);
+  if (!enable_fn) {
+    return true;
+  }
+  return !!enable_fn(window);
+}
+
+constexpr int get_default_window_dpi() {
+  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
+  return default_dpi;
+}
+
+inline int get_window_dpi(HWND window) {
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::GetDpiForWindow)) {
+    auto dpi = static_cast<int>(fn(window));
+    return dpi;
+  }
+  return get_default_window_dpi();
+}
+
+constexpr int scale_value_for_dpi(int value, int from_dpi, int to_dpi) {
+  return (value * to_dpi) / from_dpi;
+}
+
+constexpr SIZE scale_size(int width, int height, int from_dpi, int to_dpi) {
+  auto scaled_width = scale_value_for_dpi(width, from_dpi, to_dpi);
+  auto scaled_height = scale_value_for_dpi(height, from_dpi, to_dpi);
+  return {scaled_width, scaled_height};
+}
+
+inline SIZE make_window_frame_size(HWND window, int width, int height,
+                                   int dpi) {
+  auto style = GetWindowLong(window, GWL_STYLE);
+  RECT r{0, 0, width, height};
+  auto user32 = native_library(L"user32.dll");
+  if (auto fn = user32.get(user32_symbols::AdjustWindowRectExForDpi)) {
+    fn(&r, style, FALSE, 0, static_cast<UINT>(dpi));
+  } else {
+    AdjustWindowRect(&r, style, 0);
+  }
+  auto frame_width = r.right - r.left;
+  auto frame_height = r.bottom - r.top;
+  return {frame_width, frame_height};
+}
+
+inline bool is_dark_theme_enabled() {
+  constexpr auto *sub_key =
+      L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+  reg_key key(HKEY_CURRENT_USER, sub_key, 0, KEY_READ);
+  if (!key.is_open()) {
+    // Default is light theme
+    return false;
+  }
+  return key.query_uint(L"AppsUseLightTheme", 1) == 0;
+}
+
+inline void apply_window_theme(HWND window) {
+  auto dark_theme_enabled = is_dark_theme_enabled();
+
+  // Use "immersive dark mode" on systems that support it.
+  // Changes the color of the window's title bar (light or dark).
+  BOOL use_dark_mode{dark_theme_enabled ? TRUE : FALSE};
+  static native_library dwmapi{L"dwmapi.dll"};
+  if (auto fn = dwmapi.get(dwmapi_symbols::DwmSetWindowAttribute)) {
+    // Try the modern, documented attribute before the older, undocumented one.
+    if (fn(window, dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE,
+           &use_dark_mode, sizeof(use_dark_mode)) != S_OK) {
+      fn(window,
+         dwmapi_symbols::DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041,
+         &use_dark_mode, sizeof(use_dark_mode));
+    }
+  }
 }
 
 // Enable built-in WebView2Loader implementation by default.
@@ -1403,8 +1685,8 @@ inline bool enable_dpi_awareness() {
 template <typename T>
 std::basic_string<T>
 get_last_native_path_component(const std::basic_string<T> &path) {
-  if (auto pos = path.find_last_of(static_cast<T>('\\'));
-      pos != std::basic_string<T>::npos) {
+  auto pos = path.find_last_of(static_cast<T>('\\'));
+  if (pos != std::basic_string<T>::npos) {
     return path.substr(pos + 1);
   }
   return std::basic_string<T>();
@@ -1776,8 +2058,9 @@ public:
     CoTaskMemFree(message);
     return S_OK;
   }
-  HRESULT STDMETHODCALLTYPE Invoke(
-      ICoreWebView2 *sender, ICoreWebView2PermissionRequestedEventArgs *args) {
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2PermissionRequestedEventArgs *args) {
     COREWEBVIEW2_PERMISSION_KIND kind;
     args->get_PermissionKind(&kind);
     if (kind == COREWEBVIEW2_PERMISSION_KIND_CLIPBOARD_READ) {
@@ -1868,47 +2151,90 @@ public:
       wc.hInstance = hInstance;
       wc.lpszClassName = L"webview";
       wc.hIcon = icon;
-      wc.lpfnWndProc =
-          (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
-            auto w = (win32_edge_engine *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            switch (msg) {
-            case WM_SIZE:
-              w->resize(hwnd);
-              break;
-            case WM_CLOSE:
-              DestroyWindow(hwnd);
-              break;
-            case WM_DESTROY:
-              w->terminate();
-              break;
-            case WM_GETMINMAXINFO: {
-              auto lpmmi = (LPMINMAXINFO)lp;
-              if (w == nullptr) {
-                return 0;
-              }
-              if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-                lpmmi->ptMaxSize = w->m_maxsz;
-                lpmmi->ptMaxTrackSize = w->m_maxsz;
-              }
-              if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-                lpmmi->ptMinTrackSize = w->m_minsz;
-              }
-            } break;
-            default:
-              return DefWindowProcW(hwnd, msg, wp, lp);
-            }
+      wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                     LPARAM lp) -> LRESULT {
+        win32_edge_engine *w{};
+
+        if (msg == WM_NCCREATE) {
+          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+          w->m_window = hwnd;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+          enable_non_client_dpi_scaling_if_needed(hwnd);
+          apply_window_theme(hwnd);
+        } else {
+          w = reinterpret_cast<win32_edge_engine *>(
+              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        }
+
+        if (!w) {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+
+        switch (msg) {
+        case WM_SIZE:
+          w->resize_widget();
+          break;
+        case WM_CLOSE:
+          DestroyWindow(hwnd);
+          break;
+        case WM_DESTROY:
+          w->terminate();
+          break;
+        case WM_GETMINMAXINFO: {
+          auto lpmmi = (LPMINMAXINFO)lp;
+          if (w == nullptr) {
             return 0;
-          });
+          }
+          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+            lpmmi->ptMaxSize = w->m_maxsz;
+            lpmmi->ptMaxTrackSize = w->m_maxsz;
+          }
+          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+            lpmmi->ptMinTrackSize = w->m_minsz;
+          }
+        } break;
+        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
+          auto dpi = static_cast<int>(wp);
+          auto *size{reinterpret_cast<SIZE *>(lp)};
+          *size = w->get_scaled_size(w->m_dpi, dpi);
+          return TRUE;
+        }
+        case 0x02E0 /*WM_DPICHANGED*/: {
+          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
+          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
+          // Due to this difference, don't use the suggested bounds.
+          auto dpi = static_cast<int>(HIWORD(wp));
+          w->on_dpi_changed(dpi);
+          break;
+        }
+        case WM_SETTINGCHANGE: {
+          auto *area = reinterpret_cast<const wchar_t *>(lp);
+          if (area) {
+            w->on_system_setting_change(area);
+          }
+          break;
+        }
+        default:
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+        return 0;
+      });
       RegisterClassExW(&wc);
-      m_window = CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW,
-                               CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, nullptr,
-                               nullptr, hInstance, nullptr);
+
+      CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                    CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
       if (m_window == nullptr) {
         return;
       }
-      SetWindowLongPtr(m_window, GWLP_USERDATA, (LONG_PTR)this);
+
+      m_dpi = get_window_dpi(m_window);
+      constexpr const int initial_width = 640;
+      constexpr const int initial_height = 480;
+      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = *(static_cast<HWND *>(window));
+      m_dpi = get_window_dpi(m_window);
     }
 
     ShowWindow(m_window, SW_SHOW);
@@ -1919,7 +2245,7 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_window, debug, cb);
-    resize(m_window);
+    resize_widget();
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
@@ -1987,15 +2313,15 @@ public:
       m_minsz.x = width;
       m_minsz.y = height;
     } else {
-      RECT r;
-      r.left = r.top = 0;
-      r.right = width;
-      r.bottom = height;
-      AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, 0);
-      SetWindowPos(
-          m_window, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
-          SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
-      resize(m_window);
+      auto dpi = get_window_dpi(m_window);
+      m_dpi = dpi;
+      auto scaled_size =
+          scale_size(width, height, get_default_window_dpi(), dpi);
+      auto frame_size =
+          make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+      SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                   SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
+                       SWP_FRAMECHANGED);
     }
   }
 
@@ -2076,12 +2402,12 @@ private:
     return true;
   }
 
-  void resize(HWND wnd) {
+  void resize_widget() {
     if (m_controller == nullptr) {
       return;
     }
     RECT bounds;
-    GetClientRect(wnd, &bounds);
+    GetClientRect(m_window, &bounds);
     m_controller->put_Bounds(bounds);
   }
 
@@ -2098,6 +2424,35 @@ private:
     return ok;
   }
 
+  void on_dpi_changed(int dpi) {
+    auto scaled_size = get_scaled_size(m_dpi, dpi);
+    auto frame_size =
+        make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
+    SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
+                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+    m_dpi = dpi;
+  }
+
+  SIZE get_size() const {
+    RECT bounds;
+    GetClientRect(m_window, &bounds);
+    auto width = bounds.right - bounds.left;
+    auto height = bounds.bottom - bounds.top;
+    return {width, height};
+  }
+
+  SIZE get_scaled_size(int from_dpi, int to_dpi) const {
+    auto size = get_size();
+    return scale_size(size.cx, size.cy, from_dpi, to_dpi);
+  }
+
+  void on_system_setting_change(const wchar_t *area) {
+    // Detect light/dark mode change in system.
+    if (lstrcmpW(area, L"ImmersiveColorSet") == 0) {
+      apply_window_theme(m_window);
+    }
+  }
+
   virtual void on_message(const std::string &msg) = 0;
 
   // The app is expected to call CoInitializeEx before
@@ -2112,6 +2467,7 @@ private:
   ICoreWebView2Controller *m_controller = nullptr;
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
+  int m_dpi{};
 };
 
 } // namespace detail

@@ -3,31 +3,92 @@ on: [push, pull_request]
 
 jobs:
   build-linux:
+    strategy:
+      matrix:
+        cxx_std: [c++11, c++14, c++17, c++20]
     runs-on: ubuntu-latest
+    env:
+      CXX_STD: ${{ matrix.cxx_std }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
         run: xvfb-run ./script/build.sh
 
   build-macos:
+    strategy:
+      matrix:
+        cxx_std: [c++11, c++14, c++17, c++20]
     runs-on: macos-latest
+    env:
+      CXX_STD: ${{ matrix.cxx_std }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Build and run tests
         run: ./script/build.sh
 
-  build-windows:
+  build-windows-msvc:
+    strategy:
+      matrix:
+        cxx_std: [c++14, c++17, c++20]
+        arch: [x64, x86]
     runs-on: windows-latest
+    env:
+      CXX_STD: ${{ matrix.cxx_std }}
+      TARGET_ARCH: ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v1
-      - name: Add MinGW-w64 to PATH
-        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
-        shell: cmd
+      - uses: actions/checkout@v3
       - name: Build and run tests
-        run: ./script/build.bat
+        run: ./script/build.bat info clean format deps check build test
         shell: cmd
+
+  build-windows-msys2:
+    strategy:
+      matrix:
+        cxx_std: [c++14, c++17, c++20]
+        include:
+          - { sys: mingw64, cc: gcc  , cxx: g++ }
+          - { sys: clang64, cc: clang, cxx: clang++ }
+    runs-on: windows-latest
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      CXX_STD: ${{ matrix.cxx_std }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+          pacboy: toolchain:p
+      - name: Build and run tests
+        run: ./script/build.sh info clean deps build test
+
+  build-cross-windows-on-linux:
+    strategy:
+      matrix:
+        cxx_std: [c++14, c++17]
+        image: [ubuntu-20.04, ubuntu-22.04]
+        include:
+          - cxx_std: c++20
+            image: ubuntu-22.04
+    runs-on: ${{ matrix.image }}
+    env:
+      TARGET_OS: windows
+      CC: x86_64-w64-mingw32-gcc-posix
+      CXX: x86_64-w64-mingw32-g++-posix
+      CXX_STD: ${{ matrix.cxx_std }}
+      PATCH_MSWEBVIEW2: 1
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install mingw-w64 -y
+      - name: Build
+        run: ./script/build.sh info clean deps build
 
   swig:
     runs-on: ubuntu-latest
@@ -35,7 +96,7 @@ jobs:
       matrix:
         language: [csharp, java, python, ruby]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Generate bindings with SWIG
         run: |
           mkdir -p "build/bindings/${{ matrix.language }}" \
@@ -47,7 +108,7 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Run clang-format
         uses: DoozyX/clang-format-lint-action@v0.6
         with:

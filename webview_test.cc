@@ -1,5 +1,4 @@
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
-// +build ignore
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2
@@ -41,7 +40,8 @@ static void test_c_api() {
   w = webview_create(false, nullptr);
   webview_set_size(w, 480, 320, 0);
   webview_set_title(w, "Test");
-  webview_navigate(w, "https://github.com/zserge/webview");
+  webview_set_html(w, "set_html ok");
+  webview_navigate(w, "data:text/plain,navigate%20ok");
   webview_dispatch(w, cb_assert_arg, (void *)"arg");
   webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);

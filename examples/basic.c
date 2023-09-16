@@ -2,12 +2,16 @@
 #include <stddef.h>
 
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 #ifdef _WIN32
-int WINAPI WinMain(HINSTANCE hInt, HINSTANCE hPrevInst, LPSTR lpCmdLine,
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine,
                    int nCmdShow) {
+  (void)hInst;
+  (void)hPrevInst;
+  (void)lpCmdLine;
+  (void)nCmdShow;
 #else
 int main() {
 #endif
