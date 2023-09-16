@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Disable status bar (Windows/WebView2) ([#978](https://github.com/webview/webview/pull/978))
+- Disable status bar (Windows/WebView2) ([#1028](https://github.com/webview/webview/pull/1028))
 
 ### Breaking Changes
 
