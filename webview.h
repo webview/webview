@@ -26,7 +26,21 @@
 #define WEBVIEW_H
 
 #ifndef WEBVIEW_API
+#if defined(WEBVIEW_SHARED) || defined(WEBVIEW_BUILD_SHARED)
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(WEBVIEW_BUILD_SHARED)
+#define WEBVIEW_API __declspec(dllexport)
+#else
+#define WEBVIEW_API __declspec(dllimport)
+#endif
+#else
+#define WEBVIEW_API __attribute__((visibility("default")))
+#endif
+#elif !defined(WEBVIEW_STATIC) && defined(__cplusplus)
+#define WEBVIEW_API inline
+#else
 #define WEBVIEW_API extern
+#endif
 #endif
 
 #ifndef WEBVIEW_VERSION_MAJOR
@@ -36,7 +50,7 @@
 
 #ifndef WEBVIEW_VERSION_MINOR
 // The current library minor version.
-#define WEBVIEW_VERSION_MINOR 10
+#define WEBVIEW_VERSION_MINOR 11
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
@@ -172,10 +186,11 @@ WEBVIEW_API void webview_bind(webview_t w, const char *name,
 // Removes a native C callback that was previously set by webview_bind.
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 
-// Allows to return a value from the native binding. A request id pointer must
-// be provided to allow the internal RPC engine to match requests and responses.
-// If the status is zero - the result is expected to be a valid JSON value.
-// If the status is not zero - the result is an error JSON object.
+// Responds to a binding call from the JS side. The ID/sequence number must
+// match the value passed to the binding handler in order to respond to the
+// call and complete the promise on the JS side. A status of zero resolves
+// the promise, and any other value rejects it. The result must either be a
+// valid JSON value or an empty string for the primitive JS value "undefined".
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
@@ -382,9 +397,61 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   return -1;
 }
 
-inline std::string json_escape(const std::string &s) {
-  // TODO: implement
-  return '"' + s + '"';
+constexpr bool is_json_special_char(unsigned int c) {
+  return c == '"' || c == '\\';
+}
+
+constexpr bool is_control_char(unsigned int c) {
+  return (c >= 0x00 && c <= 0x1f) || (c >= 0x7f && c <= 0x9f);
+}
+
+inline std::string json_escape(const std::string &s, bool add_quotes = true) {
+  constexpr char hex_alphabet[]{"0123456789abcdef"};
+  // Calculate the size of the resulting string.
+  // Add space for the double quotes.
+  auto required_length = s.size() + (add_quotes ? 2 : 0);
+  for (auto c : s) {
+    auto uc = static_cast<unsigned int>(c);
+    if (is_json_special_char(uc)) {
+      // '\' and a single following character
+      required_length += 2;
+      continue;
+    }
+    if (is_control_char(uc)) {
+      // '\', 'u', 4 digits
+      required_length += 6;
+      continue;
+    }
+    ++required_length;
+  }
+  // Allocate memory for resulting string only once.
+  std::string result;
+  result.reserve(required_length);
+  if (add_quotes) {
+    result += '"';
+  }
+  // Copy string while escaping characters.
+  for (auto c : s) {
+    auto uc = static_cast<unsigned char>(c);
+    if (is_json_special_char(uc)) {
+      result += '\\';
+      result += c;
+      continue;
+    }
+    if (is_control_char(uc)) {
+      auto h = (uc >> 4) & 0x0f;
+      auto l = uc & 0x0f;
+      result += "\\u00";
+      result += hex_alphabet[h];
+      result += hex_alphabet[l];
+      continue;
+    }
+    result += c;
+  }
+  if (add_quotes) {
+    result += '"';
+  }
+  return result;
 }
 
 inline int json_unescape(const char *s, size_t n, char *out) {
@@ -626,7 +693,8 @@ private:
 
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
-#if WEBKIT_MAJOR_VERSION >= 2 && WEBKIT_MINOR_VERSION >= 22
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
+    WEBKIT_MAJOR_VERSION > 2
     JSCValue *value = webkit_javascript_result_get_js_value(r);
     s = jsc_value_to_string(value);
 #else
@@ -2640,15 +2708,37 @@ public:
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
-    dispatch([seq, status, result, this]() {
-      if (status == 0) {
-        eval("window._rpc[" + seq + "].resolve(" + result +
-             "); delete window._rpc[" + seq + "]");
-      } else {
-        eval("window._rpc[" + seq + "].reject(" + result +
-             "); delete window._rpc[" + seq + "]");
-      }
-    });
+    dispatch(std::bind(
+        [seq, status, this](std::string escaped_result) {
+          std::string js;
+          js += "(function(){var seq = \"";
+          js += seq;
+          js += "\";\n";
+          js += "var status = ";
+          js += std::to_string(status);
+          js += ";\n";
+          js += "var result = ";
+          js += escaped_result;
+          js += R"js(;
+var promise = window._rpc[seq];
+delete window._rpc[seq];
+if (result !== undefined) {
+  try {
+    result = JSON.parse(result);
+  } catch {
+    promise.reject(new Error("Failed to parse binding result as JSON"));
+    return;
+  }
+}
+if (status === 0) {
+  promise.resolve(result);
+} else {
+  promise.reject(result);
+}
+})())js";
+          eval(js);
+        },
+        result.empty() ? "undefined" : detail::json_escape(result)));
   }
 
 private:
