@@ -178,6 +178,17 @@ cl basic.c build\webview.lib /EHsc /Fobuild\ ^
 
 The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
 
+### Compile-time Options
+
+#### C API Linkage
+
+Name                   | Description
+----                   | -----------
+`WEBVIEW_API`          | Controls C API linkage, symbol visibility and whether it's a shared library. By default this is `inline` for C++ and `extern` for C.
+`WEBVIEW_BUILD_SHARED` | Modifies `WEBVIEW_API` for building a shared library.
+`WEBVIEW_SHARED`       | Modifies `WEBVIEW_API` for using a shared library.
+`WEBVIEW_STATIC`       | Modifies `WEBVIEW_API` for building or using a static library.
+
 ## App Distribution
 
 Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
