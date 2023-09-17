@@ -297,8 +297,8 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 // call and complete the promise on the JS side. A status of zero resolves
 // the promise, and any other value rejects it. The result must either be a
 // valid JSON value or an empty string for the primitive JS value "undefined".
-WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
-                                const char *result);
+WEBVIEW_API webview_error_t webview_return(webview_t w, const char *seq,
+                                           int status, const char *result);
 
 // Show the window.
 // @since 0.11
@@ -1048,7 +1048,8 @@ inline id operator"" _str(const char *s, std::size_t) {
 class cocoa_wkwebview_engine {
 public:
   explicit cocoa_wkwebview_engine(const webview_create_options_t &options)
-      : m_options(options), m_window{static_cast<id>(options.window)}, m_owns_window{!options.window} {
+      : m_options(options), m_window{static_cast<id>(options.window)},
+        m_owns_window{!options.window} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -1162,8 +1163,6 @@ public:
 private:
   virtual void on_message(const std::string &msg) = 0;
   id create_app_delegate() {
-    static id shared_delegate{};
-
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -2676,7 +2675,8 @@ public:
   void *window() { return (void *)m_window; }
   void terminate() { PostQuitMessage(0); }
   void dispatch(dispatch_fn_t f) {
-    PostMessageW(m_message_window, app_window_message::dispatch, 0, (LPARAM) new dispatch_fn_t(f));
+    PostMessageW(m_message_window, app_window_message::dispatch, 0,
+                 (LPARAM) new dispatch_fn_t(f));
   }
 
   void set_title(const std::string &title) {

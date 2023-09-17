@@ -562,6 +562,7 @@ static void test_apply_webview_create_options_compatibility() {
   assert(options.debug == WEBVIEW_FALSE);
   assert(options.window == nullptr);
   assert(options.visibility == WEBVIEW_VISIBILITY_VISIBLE);
+}
 
 // =================================================================
 // TEST: ensure that JSON escaping works.
