@@ -1608,7 +1608,8 @@ public:
     switch (CoInitializeEx(nullptr, dwCoInit)) {
     case S_OK:
     case S_FALSE:
-      return;
+      m_initialized = true;
+      break;
     case RPC_E_CHANGED_MODE:
       throw webview_exception(
           WEBVIEW_ERROR_INVALID_STATE,
@@ -1618,7 +1619,12 @@ public:
     }
   }
 
-  ~com_init_wrapper() { CoUninitialize(); }
+  ~com_init_wrapper() {
+    if (m_initialized) {
+      CoUninitialize();
+      m_initialized = false;
+    }
+  }
 
   com_init_wrapper(const com_init_wrapper &other) = delete;
   com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
