@@ -1295,7 +1295,7 @@ private:
       )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
 
-    if (options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
+    if (m_options.visibility == WEBVIEW_VISIBILITY_VISIBLE) {
       show();
     }
   }
