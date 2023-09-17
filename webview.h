@@ -2749,7 +2749,7 @@ private:
     if (!m_controller) {
       return;
     }
-    resize(m_window);
+    resize_widget();
     m_controller->put_IsVisible(TRUE);
     m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
@@ -2799,7 +2799,7 @@ private:
       case app_window_message::webview_initialization_failed:
         throw webview_exception();
       case WM_QUIT:
-        return false;
+        throw webview_exception();
       default:
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
@@ -2820,7 +2820,7 @@ private:
     }
     res = settings->put_IsStatusBarEnabled(FALSE);
     if (res != S_OK) {
-      return false;
+      throw webview_exception();
     }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
   }
