@@ -1,5 +1,4 @@
 //bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
-// +build ignore
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2
@@ -50,7 +49,9 @@ static void continue_c_api_test(webview_t w) {
   assert(err == WEBVIEW_ERROR_OK);
   err = webview_set_title(w, "Test");
   assert(err == WEBVIEW_ERROR_OK);
-  err = webview_navigate(w, "https://github.com/zserge/webview");
+  err = webview_set_html(w, "set_html ok");
+  assert(err == WEBVIEW_ERROR_OK);
+  err = webview_navigate(w, "data:text/plain,navigate%20ok");
   assert(err == WEBVIEW_ERROR_OK);
   err = webview_dispatch(w, cb_assert_arg, (void *)"arg");
   assert(err == WEBVIEW_ERROR_OK);
@@ -125,37 +126,44 @@ static void test_c_api_bind() {
     unsigned int number;
   } context{};
   auto test = +[](const char *seq, const char *req, void *arg) {
-    auto increment =
-        +[](const char * /*seq*/, const char * /*req*/, void *arg) {
-          ++static_cast<context_t *>(arg)->number;
-        };
+    auto increment = +[](const char *seq, const char * /*req*/, void *arg) {
+      auto *context = static_cast<context_t *>(arg);
+      ++context->number;
+      webview_return(context->w, seq, 0, "");
+    };
     auto context = static_cast<context_t *>(arg);
     std::string req_(req);
     // Bind and increment number.
     if (req_ == "[0]") {
       assert(context->number == 0);
       webview_bind(context->w, "increment", increment, context);
-      webview_return(
-          context->w, seq, 0,
-          "(() => {try{window.increment()}catch{}window.test(1)})()");
+      webview_eval(context->w,
+                   "try{window.increment().then(r => window.test(1))"
+                   ".catch(() => window.test(1,1))}"
+                   "catch{window.test(1,1)}");
+      webview_return(context->w, seq, 0, "");
       return;
     }
     // Unbind and make sure that we cannot increment even if we try.
     if (req_ == "[1]") {
       assert(context->number == 1);
       webview_unbind(context->w, "increment");
-      webview_return(
-          context->w, seq, 0,
-          "(() => {try{window.increment()}catch{}window.test(2)})()");
+      webview_eval(context->w,
+                   "try{window.increment().then(r => window.test(2))"
+                   ".catch(() => window.test(2,1))}"
+                   "catch{window.test(2,1)}");
+      webview_return(context->w, seq, 0, "");
       return;
     }
     // Number should not have changed but we can bind again and change the number.
-    if (req_ == "[2]") {
+    if (req_ == "[2,1]") {
       assert(context->number == 1);
       webview_bind(context->w, "increment", increment, context);
-      webview_return(
-          context->w, seq, 0,
-          "(() => {try{window.increment()}catch{}window.test(3)})()");
+      webview_eval(context->w,
+                   "try{window.increment().then(r => window.test(3))"
+                   ".catch(() => window.test(3,1))}"
+                   "catch{window.test(3,1)}");
+      webview_return(context->w, seq, 0, "");
       return;
     }
     // Finish test.
@@ -189,6 +197,18 @@ static void test_c_api_bind() {
 static void test_sync_bind() {
   using namespace webview::detail;
   auto options = get_create_options();
+  auto make_call_js = [](unsigned int result) {
+    std::string js;
+    js += "try{window.increment().then(r => window.test(";
+    js += std::to_string(result);
+    js += "))";
+    js += ".catch(() => window.test(";
+    js += std::to_string(result);
+    js += ",1))}catch{window.test(";
+    js += std::to_string(result);
+    js += ",1)}";
+    return js;
+  };
   unsigned int number = 0;
   webview::webview w(options);
   auto test = [&](const std::string &req) -> std::string {
@@ -200,19 +220,23 @@ static void test_sync_bind() {
     if (req == "[0]") {
       assert(number == 0);
       w.bind("increment", increment);
-      return "(() => {try{window.increment()}catch{}window.test(1)})()";
+      w.eval(make_call_js(1));
+      return "";
     }
     // Unbind and make sure that we cannot increment even if we try.
     if (req == "[1]") {
       assert(number == 1);
       w.unbind("increment");
-      return "(() => {try{window.increment()}catch{}window.test(2)})()";
+      w.eval(make_call_js(2));
+      return "";
     }
+    // We should have gotten an error on the JS side.
     // Number should not have changed but we can bind again and change the number.
-    if (req == "[2]") {
+    if (req == "[2,1]") {
       assert(number == 1);
       w.bind("increment", increment);
-      return "(() => {try{window.increment()}catch{}window.test(3)})()";
+      w.eval(make_call_js(3));
+      return "";
     }
     // Finish test.
     if (req == "[3]") {
@@ -231,6 +255,73 @@ static void test_sync_bind() {
   w.bind("test", test);
   // Attempting to bind multiple times only binds once
   assert(try_catch([&] { w.bind("test", test); }) == WEBVIEW_ERROR_DUPLICATE);
+  w.set_html(html);
+  w.run();
+}
+
+// =================================================================
+// TEST: the string returned from a binding call must be JSON.
+// =================================================================
+static void test_binding_result_must_be_json() {
+  constexpr auto html =
+      R"html(<script>
+  try {
+    window.loadData()
+      .then(() => window.endTest(0))
+      .catch(() => window.endTest(1));
+  } catch {
+    window.endTest(2);
+  }
+</script>)html";
+
+  webview::webview w(true, nullptr);
+
+  w.bind("loadData", [](const std::string & /*req*/) -> std::string {
+    return "\"hello\"";
+  });
+
+  w.bind("endTest", [&](const std::string &req) -> std::string {
+    assert(req != "[2]");
+    assert(req != "[1]");
+    assert(req == "[0]");
+    w.terminate();
+    return "";
+  });
+
+  w.set_html(html);
+  w.run();
+}
+
+// =================================================================
+// TEST: the string returned of a binding call must not be JS.
+// =================================================================
+static void test_binding_result_must_not_be_js() {
+  constexpr const auto html =
+      R"html(<script>
+  try {
+    window.loadData()
+      .then(() => window.endTest(0))
+      .catch(() => window.endTest(1));
+  } catch {
+    window.endTest(2);
+  }
+</script>)html";
+
+  webview::webview w(true, nullptr);
+
+  w.bind("loadData", [](const std::string & /*req*/) -> std::string {
+    // Try to load malicious JS code
+    return "(()=>{document.body.innerHTML='gotcha';return 'hello';})()";
+  });
+
+  w.bind("endTest", [&](const std::string &req) -> std::string {
+    assert(req != "[0]");
+    assert(req != "[2]");
+    assert(req == "[1]");
+    w.terminate();
+    return "";
+  });
+
   w.set_html(html);
   w.run();
 }
@@ -471,6 +562,31 @@ static void test_apply_webview_create_options_compatibility() {
   assert(options.debug == WEBVIEW_FALSE);
   assert(options.window == nullptr);
   assert(options.visibility == WEBVIEW_VISIBILITY_VISIBLE);
+
+// =================================================================
+// TEST: ensure that JSON escaping works.
+// =================================================================
+static void test_json_escape() {
+  using webview::detail::json_escape;
+  // These constants are needed to work around a bug in MSVC
+  auto expected_0 = R"("\"")";
+  auto expected_1 = R"("\\")";
+  auto expected_2 = R"("\u0000\u001f")";
+  auto expected_3 = R"("\u007f\u009f")";
+  auto expected_4 = "\"\xa0\xff\"";
+  auto expected_5 = R"js("alert(\"gotcha\")")js";
+  // '"' and '\' should be escaped.
+  assert(json_escape("\"") == expected_0);
+  assert(json_escape("\\") == expected_1);
+  // Control characters should be escaped.
+  assert(json_escape(std::string{0} + '\x1f') == expected_2);
+  assert(json_escape("\x7f\x9f") == expected_3);
+  // ASCII printable characters shouldn't be escaped.
+  assert(json_escape("\x20\x7e") == R"(" ~")");
+  assert(json_escape("\xa0\xff") == expected_4);
+  // Other input.
+  assert(json_escape(R"(alert("gotcha"))") == expected_5);
+  assert(json_escape("hello") == R"("hello")");
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
@@ -581,6 +697,8 @@ int main(int argc, char *argv[]) {
        test_apply_webview_create_options_compatibility},
       {"async_bind_error", test_async_bind_error},
       {"bidir_comms", test_bidir_comms},
+      {"binding_result_must_be_json", test_binding_result_must_be_json},
+      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
       {"c_api_bind", test_c_api_bind},
       {"c_api_create", test_c_api_create},
       {"c_api_create_with_options", test_c_api_create_with_options},
@@ -589,6 +707,7 @@ int main(int argc, char *argv[]) {
       {"c_api_version", test_c_api_version},
       {"create_options_builder", test_create_options_builder},
       {"json", test_json},
+      {"json_escape", test_json_escape},
       {"sync_bind", test_sync_bind},
       {"sync_bind_error", test_sync_bind_error},
       {"terminate", test_terminate},

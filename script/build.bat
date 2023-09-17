@@ -55,39 +55,8 @@ goto :main
     )
     goto :eof
 
-:get_go_arch_from_arch
-    setlocal
-    set out_var=%~1
-    if "%~2" == "x64" (
-        set result=amd64
-    ) else if "%~2" == "x86" (
-        set result=386
-    ) else (
-        echo ERROR: Unsupported architecture ^(%~2^)
-        endlocal & exit /b 1
-    )
-    endlocal & set "%out_var%=%result%"
-    goto :eof
-
-:go_setup_env
-    set CGO_CXXFLAGS=%cgo_cxxflags% "-I%libs_dir%\Microsoft.Web.WebView2.%mswebview2_version%\build\native\include"
-    set CGO_ENABLED=1
-    call :get_go_arch_from_arch GOARCH "%target_arch%"
-    goto :eof
-
 :is_ci
     if "%CI%" == "" exit /b 1
-    goto :eof
-
-:invoke_go_build
-    setlocal
-    set output=%~1
-    set input=%~2
-    set ldflags=%~3
-    pushd "%project_dir%" || (popd & exit /b 1 & endlocal)
-    go build "%ldflags%" -o "%output%" "%input%" || (popd & exit /b 1 & endlocal)
-    popd
-    endlocal
     goto :eof
 
 :find_msvc
@@ -160,8 +129,7 @@ goto :main
     if not exist "%build_dir%\library" mkdir "%build_dir%\library"
 
     echo Building shared library...
-    set shared_lib_args=/D "WEBVIEW_API=__declspec(dllexport)"
-    "%cxx_compiler%" %cxx_compile_flags% %shared_lib_args% "%project_dir%\webview.cc" "/Fo%build_dir%\library"\ %cxx_link_flags% /link /DLL "/out:%build_dir%\library\webview%shared_lib_suffix%" || exit /b 1
+    "%cxx_compiler%" %cxx_compile_flags% /DWEBVIEW_BUILD_SHARED "%project_dir%\webview.cc" "/Fo%build_dir%\library"\ %cxx_link_flags% /link /DLL "/out:%build_dir%\library\webview%shared_lib_suffix%" || exit /b 1
 
     if not exist "%build_dir%\examples\c" mkdir "%build_dir%\examples\c"
     if not exist "%build_dir%\examples\cc" mkdir "%build_dir%\examples\cc"
@@ -171,9 +139,9 @@ goto :main
     "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\bind.cc" "/Fo%build_dir%\examples\cc"\ %cxx_link_flags% /link "/out:%build_dir%\examples\cc\bind%exe_suffix%" || exit /b 1
 
     echo Building C examples...
-    "%cxx_compiler%" /c %cxx_compile_flags% "%project_dir%\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
-    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %cxx_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
-    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %cxx_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
+    "%cxx_compiler%" /c %cxx_compile_flags% /DWEBVIEW_STATIC "%project_dir%\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
+    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
+    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
 
     echo Building test app...
     "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\webview_test.cc" "/Fo%build_dir%"\ %cxx_link_flags% /link "/out:%build_dir%\webview_test%exe_suffix%" || exit /b 1
@@ -184,62 +152,14 @@ goto :main
     "%build_dir%\webview_test%exe_suffix%" || exit /b 1
     goto :eof
 
-:task_go_build
-    where go > nul 2>&1
-    if not "%errorlevel%" == "0" (
-        setlocal
-        set message=Go build ^(go not installed^)
-        call :is_ci && (
-            echo FAIL: !message!
-            endlocal
-            exit /b 1
-        )
-        echo SKIP: !message!
-        endlocal
-        exit /b 0
-    )
-    setlocal
-    call :go_setup_env || (exit /b 1 & endlocal)
-    echo Building Go examples...
-    set go_ldflags=-ldflags=-H windowsgui
-    if not exist "%build_dir%\examples\go" (
-        mkdir "%build_dir%\examples\go" || (exit /b 1 & endlocal)
-    )
-    call :invoke_go_build "%build_dir%\examples\go\basic%exe_suffix%" examples\basic.go "%go_ldflags%" || (exit /b 1 & endlocal)
-    call :invoke_go_build "%build_dir%\examples\go\bind%exe_suffix%" examples\bind.go "%go_ldflags%" || (exit /b 1 & endlocal)
-    endlocal
-    goto :eof
-
-:task_go_test
-    where go > nul 2>&1
-    if not "%errorlevel%" == "0" (
-        setlocal
-        set message=Go tests ^(go not installed^)
-        call :is_ci && (
-            echo FAIL: !message!
-            endlocal
-            exit /b 1
-        )
-        echo SKIP: !message!
-        endlocal
-        exit /b 0
-    )
-    setlocal
-    call :go_setup_env || (exit /b 1 & endlocal)
-    echo Running Go tests...
-    set CGO_ENABLED=1
-    pushd "%project_dir%" || (popd & exit /b 1 & endlocal)
-    go test || (popd & exit /b 1 & endlocal)
-    popd
-    endlocal
-    goto :eof
-
 :task_info
     echo -- Target architecture: %target_arch%
     echo -- Build directory: %build_dir%
+    echo -- C standard: %c_std%
     echo -- C compiler: %c_compiler%
     echo -- C compiler flags: %c_compile_flags%
     echo -- C linker flags: %c_link_flags%
+    echo -- C++ standard: %cxx_std%
     echo -- C++ compiler: %cxx_compiler%
     echo -- C++ compiler flags: %cxx_compile_flags%
     echo -- C++ linker flags: %cxx_link_flags%
@@ -263,10 +183,10 @@ if not defined TARGET_ARCH (
     set target_arch=%host_arch%
 )
 
-rem Default C standard
-set c_std=c11
-rem Default C++ standard
-set cxx_std=c++17
+rem Default C standard unless overridden
+if not defined C_STD set c_std=c11
+rem Default C++ standard unless overridden
+if not defined CXX_STD set cxx_std=c++14
 rem Default C compiler
 set c_compiler=cl
 rem Default C++ compiler
@@ -285,8 +205,7 @@ if defined BUILD_DIR (
 set external_dir=%build_dir%\external
 set libs_dir=%external_dir%\libs
 set tools_dir=%external_dir%\tools
-rem 4100: unreferenced formal parameter
-set warning_flags=/W4 /wd4100
+set warning_flags=/W4
 set common_compile_flags=%warning_flags% /utf-8 /I "%project_dir%"
 set common_link_flags=%warning_flags%
 set c_compile_flags=%common_compile_flags%
@@ -302,7 +221,7 @@ set cxx_compile_flags=%cxx_compile_flags% "/std:%cxx_std%"
 set cxx_compile_flags=%cxx_compile_flags% /I "%libs_dir%\Microsoft.Web.WebView2.%mswebview2_version%\build\native\include"
 
 rem Default tasks
-set tasks=info clean format deps check build test go:build go:test
+set tasks=info clean format deps check build test
 
 rem Task override from command line
 if not "%~1" == "" (

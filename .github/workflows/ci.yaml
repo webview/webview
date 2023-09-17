@@ -3,7 +3,12 @@ on: [push, pull_request]
 
 jobs:
   build-linux:
+    strategy:
+      matrix:
+        cxx_std: [c++11, c++14, c++17, c++20]
     runs-on: ubuntu-latest
+    env:
+      CXX_STD: ${{ matrix.cxx_std }}
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -12,7 +17,12 @@ jobs:
         run: xvfb-run ./script/build.sh
 
   build-macos:
+    strategy:
+      matrix:
+        cxx_std: [c++11, c++14, c++17, c++20]
     runs-on: macos-latest
+    env:
+      CXX_STD: ${{ matrix.cxx_std }}
     steps:
       - uses: actions/checkout@v3
       - name: Build and run tests
@@ -21,40 +31,22 @@ jobs:
   build-windows-msvc:
     strategy:
       matrix:
+        cxx_std: [c++14, c++17, c++20]
         arch: [x64, x86]
     runs-on: windows-latest
     env:
+      CXX_STD: ${{ matrix.cxx_std }}
       TARGET_ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v3
       - name: Build and run tests
         run: ./script/build.bat info clean format deps check build test
         shell: cmd
-      - name: Add MinGW-w64 to PATH
-        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
-        shell: cmd
-      - name: 'Go: Build and run tests'
-        if: matrix.arch == 'x64'
-        run: ./script/build.bat go:build go:test
-        shell: cmd
-
-  build-windows-mingw:
-    runs-on: windows-latest
-    env:
-      CC: gcc
-      CXX: g++
-    steps:
-      - uses: actions/checkout@v3
-      - name: Add MinGW-w64 to PATH
-        run: echo PATH=%ProgramData%\chocolatey\lib\mingw\tools\install\mingw64\bin;%PATH%>>%GITHUB_ENV%
-        shell: cmd
-      - name: Build and run tests
-        run: ./script/build.sh
-        shell: bash
 
   build-windows-msys2:
     strategy:
       matrix:
+        cxx_std: [c++14, c++17, c++20]
         include:
           - { sys: mingw64, cc: gcc  , cxx: g++ }
           - { sys: clang64, cc: clang, cxx: clang++ }
@@ -62,6 +54,7 @@ jobs:
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
+      CXX_STD: ${{ matrix.cxx_std }}
     defaults:
       run:
         shell: msys2 {0}
@@ -78,12 +71,17 @@ jobs:
   build-cross-windows-on-linux:
     strategy:
       matrix:
+        cxx_std: [c++14, c++17]
         image: [ubuntu-20.04, ubuntu-22.04]
+        include:
+          - cxx_std: c++20
+            image: ubuntu-22.04
     runs-on: ${{ matrix.image }}
     env:
       TARGET_OS: windows
       CC: x86_64-w64-mingw32-gcc-posix
       CXX: x86_64-w64-mingw32-g++-posix
+      CXX_STD: ${{ matrix.cxx_std }}
       PATCH_MSWEBVIEW2: 1
     steps:
       - uses: actions/checkout@v3
