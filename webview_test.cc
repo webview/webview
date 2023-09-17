@@ -8,6 +8,7 @@
 
 #include "webview.h"
 
+#undef NDEBUG
 #include <cassert>
 #include <cstdint>
 #include <cstring>
