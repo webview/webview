@@ -939,8 +939,6 @@ public:
 private:
   virtual void on_message(const std::string &msg) = 0;
   id create_app_delegate() {
-    static id shared_delegate{};
-
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
