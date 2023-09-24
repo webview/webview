@@ -274,6 +274,8 @@ The following compile-time options can be used to change how the library integra
 
 ## Development
 
+### Build Scripts
+
 To build the library, examples and run tests, use one of the builds scripts in the `script` directory:
 
 * `build.sh`:
@@ -315,6 +317,13 @@ Variable     | Description
 `CXX`        | C++ compiler executable.
 `LIB_PREFIX` | Library name prefix.
 `PKGCONFIG`  | Alternative `pkgconfig` executable.
+
+### CMake
+
+```
+cmake -Bbuild -Sbuild_system/cmake
+cmake --build build
+```
 
 ### Cross-compilation
 

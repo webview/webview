@@ -1,0 +1,10 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+include("${CMAKE_CURRENT_LIST_DIR}/webview.cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+
+webview_options()
+webview_find_dependencies()
+
+include("${CMAKE_CURRENT_LIST_DIR}/webview-targets.cmake")

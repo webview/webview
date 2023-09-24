@@ -2,93 +2,104 @@ name: CI Pipeline
 on: [push, pull_request]
 
 jobs:
-  build-linux:
-    strategy:
-      matrix:
-        cxx_std: [c++11, c++14, c++17, c++20]
+  cmake-linux:
     runs-on: ubuntu-latest
-    env:
-      CXX_STD: ${{ matrix.cxx_std }}
+    strategy:
+      matrix:
+        build-type: [Release]
+        cxx-std: [11, 14, 17, 20]
+        generator: [Ninja]
     steps:
-      - uses: actions/checkout@v3
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
-      - name: Build and run tests
-        run: xvfb-run ./script/build.sh
-
-  build-macos:
-    strategy:
-      matrix:
-        cxx_std: [c++11, c++14, c++17, c++20]
-    runs-on: macos-latest
-    env:
-      CXX_STD: ${{ matrix.cxx_std }}
-    steps:
+        run: sudo apt-get update && sudo apt-get install cmake libwebkit2gtk-4.0-dev ninja-build xvfb -y
       - uses: actions/checkout@v3
-      - name: Build and run tests
-        run: ./script/build.sh
-
-  build-windows-msvc:
-    strategy:
-      matrix:
-        cxx_std: [c++14, c++17, c++20]
-        arch: [x64, x86]
-    runs-on: windows-latest
-    env:
-      CXX_STD: ${{ matrix.cxx_std }}
-      TARGET_ARCH: ${{ matrix.arch }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build and run tests
-        run: ./script/build.bat info clean format deps check build test
-        shell: cmd
-
-  build-windows-msys2:
-    strategy:
-      matrix:
-        cxx_std: [c++14, c++17, c++20]
-        include:
-          - { sys: mingw64, cc: gcc  , cxx: g++ }
-          - { sys: clang64, cc: clang, cxx: clang++ }
-    runs-on: windows-latest
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
-      CXX_STD: ${{ matrix.cxx_std }}
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: msys2/setup-msys2@v2
+      - uses: ./.github/workflows/cmake
         with:
-          msystem: ${{ matrix.sys }}
-          update: true
-          pacboy: toolchain:p
-      - name: Build and run tests
-        run: ./script/build.sh info clean deps build test
+          build-type: ${{ matrix.build-type }}
+          generator: ${{ matrix.generator }}
+          install-wrapper-cmd: sudo
+          test-wrapper-cmd: xvfb-run
 
-  build-cross-windows-on-linux:
+  cmake-linux-mingw-w64:
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
-        cxx_std: [c++14, c++17]
+        build-type: [Release]
+        cxx-std: [14, 17, 20]
+        generator: [Ninja]
         image: [ubuntu-20.04, ubuntu-22.04]
-        include:
-          - cxx_std: c++20
-            image: ubuntu-22.04
-    runs-on: ${{ matrix.image }}
-    env:
-      TARGET_OS: windows
-      CC: x86_64-w64-mingw32-gcc-posix
-      CXX: x86_64-w64-mingw32-g++-posix
-      CXX_STD: ${{ matrix.cxx_std }}
-      PATCH_MSWEBVIEW2: 1
+        exclude:
+          - cxx-std: 20
+            image: ubuntu-20.04
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install cmake mingw-w64 ninja-build -y
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: ${{ matrix.build-type }}
+          generator: ${{ matrix.generator }}
+          test: false
+          install: false
+          toolchain-file: x86_64-w64-mingw32
+
+  cmake-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build-type: [Release]
+        cxx-std: [11, 14, 17, 20]
+        generator: [Ninja, Xcode]
+    steps:
+      - name: Install dependencies
+        run: brew install cmake ninja
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: ${{ matrix.build-type }}
+          cxx-std: ${{ matrix.cxx-std }}
+          install-wrapper-cmd: sudo
+          generator: ${{ matrix.generator }}
+
+  cmake-windows-msys2:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build-type: [Release]
+        cxx-std: [11, 14, 17, 20]
+        msystem: [clang64, mingw64, ucrt64]
+        generator: [Ninja]
+    steps:
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          pacboy: toolchain:p cmake:p ninja:p
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: ${{ matrix.build-type }}
+          cxx-std: ${{ matrix.cxx-std }}
+          generator: ${{ matrix.generator }}
+          shell: msys2 {0}
+
+  cmake-windows-msvc:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+        cxx-std: [14, 17, 20]
+        generator: [Visual Studio 17 2022]
+        generator-platform: [x64]
     steps:
       - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install mingw-w64 -y
-      - name: Build
-        run: ./script/build.sh info clean deps build
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: ${{ matrix.build-type }}
+          cxx-std: ${{ matrix.cxx-std }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
 
   swig:
     runs-on: ubuntu-latest

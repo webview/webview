@@ -78,8 +78,10 @@ task_format() {
     fi
     echo "Formatting..."
     clang-format -i \
-        "${project_dir}/webview.h" \
-        "${project_dir}/webview_test.cc" \
+        "${project_dir}/include/webview.h" \
+        "${project_dir}/include/webview/webview.h" \
+        "${project_dir}/include/webview/detail/mingw_support.h" \
+        "${project_dir}/tests/core_test.cc" \
         "${project_dir}/examples/"*.c \
         "${project_dir}/examples/"*.cc || return 1
 }
@@ -104,11 +106,11 @@ task_check() {
     echo "Linting..."
     clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
     clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy "${project_dir}/tests/core_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
 task_build() {
-    mkdir -p "${build_dir}/library" || true
+    mkdir -p "${build_dir}/library" "${build_dir}/tests" || true
 
     echo "Building shared library..."
     local shared_lib_args=(-fPIC -fvisibility=hidden -fvisibility-inlines-hidden -DWEBVIEW_BUILD_SHARED)
@@ -117,7 +119,7 @@ task_build() {
     else
         shared_lib_args+=(-shared)
     fi
-    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${shared_lib_args[@]}" "${project_dir}/webview.cc" "${cxx_link_flags[@]}" -o "${build_dir}/library/${lib_prefix}webview${shared_lib_suffix}" || return 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${shared_lib_args[@]}" "${project_dir}/src/core/webview.cc" "${cxx_link_flags[@]}" -o "${build_dir}/library/${lib_prefix}webview${shared_lib_suffix}" || return 1
 
     mkdir -p "${build_dir}/examples/c" "${build_dir}/examples/cc" || true
 
@@ -126,14 +128,14 @@ task_build() {
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/bind.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
 
     echo "Building C examples..."
-    "${cxx_compiler}" -c "${cxx_compile_flags[@]}" -DWEBVIEW_STATIC "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || return 1
+    "${cxx_compiler}" -c "${cxx_compile_flags[@]}" -DWEBVIEW_STATIC "${project_dir}/src/core/webview.cc" -o "${build_dir}/webview.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/basic.c" -o "${build_dir}/examples/c/basic.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/bind.c" -o "${build_dir}/examples/c/bind.o" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/basic.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/basic${exe_suffix}" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/bind.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/bind${exe_suffix}" || return 1
 
     echo "Building test app..."
-    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/webview_test.cc" "${cxx_link_flags[@]}" -o "${build_dir}/webview_test${exe_suffix}" || return 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/tests/core_test.cc" "${cxx_link_flags[@]}" -o "${build_dir}/tests/core_test${exe_suffix}" || return 1
 }
 
 task_test() {
@@ -148,7 +150,7 @@ task_test() {
         return 0
     fi
     echo "Running tests..."
-    "${build_dir}/webview_test${exe_suffix}" || return 1
+    "${build_dir}/tests/core_test${exe_suffix}" || return 1
 }
 
 task_info() {
@@ -265,7 +267,7 @@ external_dir=${build_dir}/external
 libs_dir=${external_dir}/libs
 tools_dir=${external_dir}/tools
 warning_flags=(-Wall -Wextra -pedantic)
-common_compile_flags=("${warning_flags[@]}" "-I${project_dir}")
+common_compile_flags=("${warning_flags[@]}" "-I${project_dir}/include/webview")
 common_link_flags=("${warning_flags[@]}")
 c_compile_flags=()
 c_link_flags=()
@@ -302,7 +304,7 @@ elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
     shared_lib_suffix=.dll
     cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
-    cxx_compile_flags+=("--include=${project_dir}/webview_mingw_support.h")
+    cxx_compile_flags+=("--include=${project_dir}/include/webview/detail/mingw_support.h")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
 fi
 

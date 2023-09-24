@@ -106,8 +106,10 @@ goto :main
     )
     echo Formatting...
     clang-format -i ^
-        "%project_dir%\webview.h" ^
-        "%project_dir%\webview_test.cc" ^
+        "%project_dir%\include\webview.h" ^
+        "%project_dir%\include\webview\webview.h" ^
+        "%project_dir%\include\webview\detail\mingw_support.h" ^
+        "%project_dir%\tests\core_test.cc" ^
         "%project_dir%\examples/basic.c" ^
         "%project_dir%\examples/bind.c" ^
         "%project_dir%\examples/basic.cc" ^
@@ -127,9 +129,10 @@ goto :main
     call :activate_msvc "%target_arch%" || goto :eof
 
     if not exist "%build_dir%\library" mkdir "%build_dir%\library"
+    if not exist "%build_dir%\tests" mkdir "%build_dir%\tests"
 
     echo Building shared library...
-    "%cxx_compiler%" %cxx_compile_flags% /DWEBVIEW_BUILD_SHARED "%project_dir%\webview.cc" "/Fo%build_dir%\library"\ %cxx_link_flags% /link /DLL "/out:%build_dir%\library\webview%shared_lib_suffix%" || exit /b 1
+    "%cxx_compiler%" %cxx_compile_flags% /DWEBVIEW_BUILD_SHARED "%project_dir%\src\core\webview.cc" "/Fo%build_dir%\library"\ %cxx_link_flags% /link /DLL "/out:%build_dir%\library\webview%shared_lib_suffix%" || exit /b 1
 
     if not exist "%build_dir%\examples\c" mkdir "%build_dir%\examples\c"
     if not exist "%build_dir%\examples\cc" mkdir "%build_dir%\examples\cc"
@@ -139,17 +142,17 @@ goto :main
     "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\examples\bind.cc" "/Fo%build_dir%\examples\cc"\ %cxx_link_flags% /link "/out:%build_dir%\examples\cc\bind%exe_suffix%" || exit /b 1
 
     echo Building C examples...
-    "%cxx_compiler%" /c %cxx_compile_flags% /DWEBVIEW_STATIC "%project_dir%\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
+    "%cxx_compiler%" /c %cxx_compile_flags% /DWEBVIEW_STATIC "%project_dir%\src\core\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
     "%c_compiler%" %c_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
     "%c_compiler%" %c_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
 
     echo Building test app...
-    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\webview_test.cc" "/Fo%build_dir%"\ %cxx_link_flags% /link "/out:%build_dir%\webview_test%exe_suffix%" || exit /b 1
+    "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\tests\core_test.cc" "/Fo%build_dir%"\ %cxx_link_flags% /link "/out:%build_dir%\tests\core_test%exe_suffix%" || exit /b 1
     goto :eof
 
 :task_test
     echo Running tests...
-    "%build_dir%\webview_test%exe_suffix%" || exit /b 1
+    "%build_dir%\tests\core_test%exe_suffix%" || exit /b 1
     goto :eof
 
 :task_info
@@ -206,7 +209,7 @@ set external_dir=%build_dir%\external
 set libs_dir=%external_dir%\libs
 set tools_dir=%external_dir%\tools
 set warning_flags=/W4
-set common_compile_flags=%warning_flags% /utf-8 /I "%project_dir%"
+set common_compile_flags=%warning_flags% /utf-8 /I "%project_dir%\include"
 set common_link_flags=%warning_flags%
 set c_compile_flags=%common_compile_flags%
 set c_link_flags=%common_link_flags%

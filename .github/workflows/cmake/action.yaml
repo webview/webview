@@ -1,0 +1,73 @@
+name: CMake
+inputs:
+  build-type:
+    required: true
+    default: Release
+  generator:
+    required: true
+    default: Ninja
+  shell:
+    required: true
+    default: bash
+  test:
+    required: true
+    default: true
+  install:
+    required: true
+    default: false
+  cxx-std:
+    required: false
+  generator-platform:
+    required: false
+  test-wrapper-cmd:
+    required: false
+  install-wrapper-cmd:
+    required: false
+  toolchain-file:
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Configure library
+      run: |
+        configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
+        if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
+          configure_args+=("-DCMAKE_CXX_STANDARD=${{ inputs.cxx-std }}")
+        fi
+        if [[ ! -z "${{ inputs.generator-platform }}" ]]; then
+          configure_args+=("-DCMAKE_GENERATOR_PLATFORM=${{ inputs.generator-platform }}")
+        fi
+        if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
+          configure_args+=("-DCMAKE_TOOLCHAIN_FILE=toolchains/${{ inputs.toolchain-file }}.cmake")
+        fi
+        cmake -G "${{ inputs.generator }}" -B build -S build_system/cmake "${configure_args[@]}" || exit 1
+      shell: ${{ inputs.shell }}
+    - name: Build library
+      run: cmake --build build --config "${{ inputs.build-type }}"
+      shell: ${{ inputs.shell }}
+    - name: Test library
+      if: fromJSON(inputs.test)
+      run: |
+        if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
+          wrapper_cmd+=("${{ inputs.test-wrapper-cmd }}")
+        fi
+        "${wrapper_cmd[@]}" ctest --test-dir build/tests --output-on-failure --build-config "${{ inputs.build-type }}" || exit 1
+      shell: ${{ inputs.shell }}
+    - name: Install library
+      if: fromJSON(inputs.install)
+      run: |
+        if [[ ! -z "${{ inputs.install-wrapper-cmd }}" ]]; then
+          wrapper_cmd+=("${{ inputs.install-wrapper-cmd }}")
+        fi
+        "${wrapper_cmd[@]}" cmake --install build --config "${{ inputs.build-type }}"
+      shell: ${{ inputs.shell }}
+    - name: Configure CMake example
+      if: fromJSON(inputs.install)
+      run: cmake -G "${{ inputs.generator }}" -B build -S . "-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}"
+      working-directory: examples/cmake
+      shell: ${{ inputs.shell }}
+    - name: Build CMake example
+      if: fromJSON(inputs.install)
+      run: cmake --build build --config "${{ inputs.build-type }}"
+      working-directory: examples/cmake
+      shell: ${{ inputs.shell }}
