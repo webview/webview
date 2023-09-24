@@ -3,12 +3,13 @@ on: [push, pull_request]
 
 jobs:
   cmake-linux:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         build-type: [Release]
         cxx-std: [11, 14, 17, 20]
         generator: [Ninja]
+        image: [ubuntu-20.04, ubuntu-22.04]
     steps:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install cmake libwebkit2gtk-4.0-dev ninja-build xvfb -y
