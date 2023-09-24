@@ -45,12 +45,13 @@ jobs:
           toolchain-file: x86_64-w64-mingw32
 
   cmake-macos:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         build-type: [Release]
         cxx-std: [11, 14, 17, 20]
         generator: [Ninja, Xcode]
+        image: [macos-11, macos-12, macos-13]
     steps:
       - name: Install dependencies
         run: brew install cmake ninja
@@ -63,7 +64,7 @@ jobs:
           generator: ${{ matrix.generator }}
 
   cmake-windows-msys2:
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       matrix:
         build-type: [Release]
@@ -86,13 +87,16 @@ jobs:
           shell: msys2 {0}
 
   cmake-windows-msvc:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         build-type: [Debug, Release]
         cxx-std: [14, 17, 20]
-        generator: [Visual Studio 17 2022]
         generator-platform: [x64]
+        image: [windows-2022]
+        include:
+          - image: windows-2022
+            generator: Visual Studio 17 2022
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
@@ -103,7 +107,7 @@ jobs:
           generator-platform: ${{ matrix.generator-platform }}
 
   swig:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         language: [csharp, java, python, ruby]
@@ -118,7 +122,7 @@ jobs:
               webview.i
 
   clang-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Run clang-format
