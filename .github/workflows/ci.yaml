@@ -92,7 +92,7 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         cxx-std: [14, 17, 20]
-        generator-platform: [x64]
+        generator-platform: [x64, Win32]
         image: [windows-2022]
         include:
           - image: windows-2022
