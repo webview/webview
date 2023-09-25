@@ -17,6 +17,7 @@ jobs:
       - uses: ./.github/workflows/cmake
         with:
           build-type: ${{ matrix.build-type }}
+          cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           install-wrapper-cmd: sudo
           test-wrapper-cmd: xvfb-run
@@ -39,6 +40,7 @@ jobs:
       - uses: ./.github/workflows/cmake
         with:
           build-type: ${{ matrix.build-type }}
+          cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           test: false
           install: false
