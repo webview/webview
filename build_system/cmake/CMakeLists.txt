@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 
 # Use the latest CMake policies the project has been validated against.
 set(WEBVIEW_MAX_POLICY_VERSION 3.26)
