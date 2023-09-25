@@ -76,3 +76,7 @@ endif()
 if(WEBVIEW_INSTALL_TARGETS)
     webview_install()
 endif()
+
+if(WEBVIEW_BUILD_PACKAGE)
+    add_subdirectory(packaging)
+endif()

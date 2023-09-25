@@ -25,7 +25,9 @@ jobs:
         if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja'
         with:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
-          path: build
+          path: |
+            build/*.gz
+            build/*.zip
           retention-days: 1
 
   cmake-linux-mingw-w64:
@@ -55,7 +57,9 @@ jobs:
         if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'ubuntu-22.04'
         with:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
-          path: build
+          path: |
+            build/*.gz
+            build/*.zip
           retention-days: 1
 
   cmake-macos:
@@ -86,7 +90,9 @@ jobs:
         if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Xcode' && matrix.architectures == 'arm64;x86_64' && matrix.image == 'macos-12'
         with:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
-          path: build
+          path: |
+            build/*.gz
+            build/*.zip
           retention-days: 1
 
   cmake-windows-msys2:
@@ -116,7 +122,9 @@ jobs:
         if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'windows-2022'
         with:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
-          path: build
+          path: |
+            build/*.gz
+            build/*.zip
           retention-days: 1
 
   cmake-windows-msvc:
@@ -147,7 +155,9 @@ jobs:
         if: matrix.cxx-std == 20 && matrix.generator == 'Visual Studio 17 2022' && matrix.image == 'windows-2022'
         with:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.generator-platform }}
-          path: build
+          path: |
+            build/*.gz
+            build/*.zip
           retention-days: 1
 
   swig:

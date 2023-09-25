@@ -90,3 +90,7 @@ runs:
       run: cmake --build build --config "${{ inputs.build-type }}"
       working-directory: examples/cmake
       shell: ${{ inputs.shell }}
+    - name: Package library
+      run: cpack
+      working-directory: build
+      shell: ${{ inputs.shell }}
