@@ -411,7 +411,7 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   // Add space for the double quotes.
   auto required_length = s.size() + (add_quotes ? 2 : 0);
   for (auto c : s) {
-    auto uc = static_cast<unsigned int>(c);
+    auto uc = static_cast<unsigned char>(c);
     if (is_json_special_char(uc)) {
       // '\' and a single following character
       required_length += 2;
@@ -442,8 +442,10 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
       auto h = (uc >> 4) & 0x0f;
       auto l = uc & 0x0f;
       result += "\\u00";
+      // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
       result += hex_alphabet[h];
       result += hex_alphabet[l];
+      // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
       continue;
     }
     result += c;
