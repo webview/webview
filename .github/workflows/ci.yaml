@@ -27,6 +27,7 @@ jobs:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
           path: |
             build/*.gz
+            build/*.sha256
             build/*.zip
           retention-days: 1
 
@@ -59,6 +60,7 @@ jobs:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
           path: |
             build/*.gz
+            build/*.sha256
             build/*.zip
           retention-days: 1
 
@@ -92,6 +94,7 @@ jobs:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
           path: |
             build/*.gz
+            build/*.sha256
             build/*.zip
           retention-days: 1
 
@@ -124,6 +127,7 @@ jobs:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
           path: |
             build/*.gz
+            build/*.sha256
             build/*.zip
           retention-days: 1
 
@@ -168,6 +172,7 @@ jobs:
           name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.generator-platform }}
           path: |
             build/*.gz
+            build/*.sha256
             build/*.zip
           retention-days: 1
 
