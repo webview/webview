@@ -10,8 +10,6 @@ macro(webview_init)
     # CMAKE_OSX_* should be set prior to the first project() or enable_language()
     # Target macOS version
     set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "")
-    # Target architectures (universal binaries)
-    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")
 
     enable_language(C CXX)
 

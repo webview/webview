@@ -25,6 +25,8 @@ inputs:
     required: false
   toolchain-file:
     required: false
+  macos-architectures:
+    required: false
 runs:
   using: "composite"
   steps:
@@ -39,6 +41,9 @@ runs:
         fi
         if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
           configure_args+=("-DCMAKE_TOOLCHAIN_FILE=toolchains/${{ inputs.toolchain-file }}.cmake")
+        fi
+        if [[ ! -z "${{ inputs.macos-architectures }}" ]]; then
+          configure_args+=("-DCMAKE_OSX_ARCHITECTURES=${{ inputs.macos-architectures }}")
         fi
         cmake -G "${{ inputs.generator }}" -B build -S build_system/cmake "${configure_args[@]}" || exit 1
       shell: ${{ inputs.shell }}
@@ -73,6 +78,9 @@ runs:
         fi
         if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
           configure_args+=("-DCMAKE_TOOLCHAIN_FILE=toolchains/${{ inputs.toolchain-file }}.cmake")
+        fi
+        if [[ ! -z "${{ inputs.macos-architectures }}" ]]; then
+          configure_args+=("-DCMAKE_OSX_ARCHITECTURES=${{ inputs.macos-architectures }}")
         fi
         cmake -G "${{ inputs.generator }}" -B build -S . "${configure_args[@]}" || exit 1
       working-directory: examples/cmake

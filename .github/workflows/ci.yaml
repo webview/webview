@@ -52,6 +52,10 @@ jobs:
         cxx-std: [11, 14, 17, 20]
         generator: [Ninja, Xcode]
         image: [macos-11, macos-12, macos-13]
+        architectures: [arm64, x86_64, arm64;x86_64]
+        include:
+          - architectures: arm64
+            test: false
     steps:
       - name: Install dependencies
         run: brew install cmake ninja
@@ -62,6 +66,8 @@ jobs:
           cxx-std: ${{ matrix.cxx-std }}
           install-wrapper-cmd: sudo
           generator: ${{ matrix.generator }}
+          macos-architectures: ${{ matrix.architectures }}
+          test: ${{ matrix.test }}
 
   cmake-windows-msys2:
     runs-on: windows-2022
