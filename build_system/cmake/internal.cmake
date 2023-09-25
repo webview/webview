@@ -41,6 +41,9 @@ macro(webview_init)
     set(CMAKE_CXX_STANDARD_REQUIRED YES)
     set(CMAKE_CXX_EXTENSIONS NO)
 
+    # Use debug postfix to separate debug/release binaries for the library
+    set(CMAKE_DEBUG_POSTFIX d)
+
     # Enable compile warnings
     if(MSVC)
         add_compile_options(/W4)
