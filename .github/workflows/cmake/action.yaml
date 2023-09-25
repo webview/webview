@@ -10,11 +10,11 @@ inputs:
     required: true
     default: bash
   test:
-    required: true
+    required: false
     default: true
   install:
-    required: true
-    default: false
+    required: false
+    default: true
   cxx-std:
     required: false
   generator-platform:
@@ -46,7 +46,7 @@ runs:
       run: cmake --build build --config "${{ inputs.build-type }}"
       shell: ${{ inputs.shell }}
     - name: Test library
-      if: fromJSON(inputs.test)
+      if: inputs.test == '' || fromJSON(inputs.test)
       run: |
         if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
           wrapper_cmd+=("${{ inputs.test-wrapper-cmd }}")
@@ -54,7 +54,7 @@ runs:
         "${wrapper_cmd[@]}" ctest --test-dir build/tests --output-on-failure --build-config "${{ inputs.build-type }}" || exit 1
       shell: ${{ inputs.shell }}
     - name: Install library
-      if: fromJSON(inputs.install)
+      if: inputs.install == '' || fromJSON(inputs.install)
       run: |
         if [[ ! -z "${{ inputs.install-wrapper-cmd }}" ]]; then
           wrapper_cmd+=("${{ inputs.install-wrapper-cmd }}")
@@ -62,12 +62,12 @@ runs:
         "${wrapper_cmd[@]}" cmake --install build --config "${{ inputs.build-type }}"
       shell: ${{ inputs.shell }}
     - name: Configure CMake example
-      if: fromJSON(inputs.install)
+      if: inputs.install == '' || fromJSON(inputs.install)
       run: cmake -G "${{ inputs.generator }}" -B build -S . "-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}"
       working-directory: examples/cmake
       shell: ${{ inputs.shell }}
     - name: Build CMake example
-      if: fromJSON(inputs.install)
+      if: inputs.install == '' || fromJSON(inputs.install)
       run: cmake --build build --config "${{ inputs.build-type }}"
       working-directory: examples/cmake
       shell: ${{ inputs.shell }}

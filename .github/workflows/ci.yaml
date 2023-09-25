@@ -92,11 +92,13 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         cxx-std: [14, 17, 20]
-        generator-platform: [x64, Win32]
+        generator-platform: [ARM64, x64, Win32]
         image: [windows-2022]
         include:
           - image: windows-2022
             generator: Visual Studio 17 2022
+          - generator-platform: ARM64
+            test: false
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
@@ -105,6 +107,7 @@ jobs:
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
+          test: ${{ matrix.test }}
 
   swig:
     runs-on: ubuntu-22.04
