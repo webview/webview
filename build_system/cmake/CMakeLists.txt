@@ -15,8 +15,7 @@ project(
     webview
     VERSION "${WEBVIEW_VERSION_NUMBER}"
     DESCRIPTION "A tiny cross-platform webview library for C/C++ to build modern cross-platform GUIs."
-    HOMEPAGE_URL https://github.com/webview/webview
-    LANGUAGES C CXX)
+    HOMEPAGE_URL https://github.com/webview/webview)
 
 webview_init()
 
