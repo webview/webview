@@ -2692,6 +2692,7 @@ public:
 
   // Asynchronous bind
   void bind(const std::string &name, binding_t fn, void *arg) {
+    // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
     if (bindings.count(name) > 0) {
       return;
     }
