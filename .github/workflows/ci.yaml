@@ -21,6 +21,11 @@ jobs:
           generator: ${{ matrix.generator }}
           install-wrapper-cmd: sudo
           test-wrapper-cmd: xvfb-run
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
+          path: build
+          retention-days: 1
 
   cmake-linux-mingw-w64:
     runs-on: ${{ matrix.image }}
@@ -45,6 +50,11 @@ jobs:
           test: false
           install: false
           toolchain-file: x86_64-w64-mingw32
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
+          path: build
+          retention-days: 1
 
   cmake-macos:
     runs-on: ${{ matrix.image }}
@@ -70,15 +80,21 @@ jobs:
           generator: ${{ matrix.generator }}
           macos-architectures: ${{ matrix.architectures }}
           test: ${{ matrix.test }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
+          path: build
+          retention-days: 1
 
   cmake-windows-msys2:
-    runs-on: windows-2022
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         build-type: [Release]
         cxx-std: [11, 14, 17, 20]
         msystem: [clang64, mingw64, ucrt64]
         generator: [Ninja]
+        image: [windows-2022]
     steps:
       - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
@@ -93,6 +109,11 @@ jobs:
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           shell: msys2 {0}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
+          path: build
+          retention-days: 1
 
   cmake-windows-msvc:
     runs-on: ${{ matrix.image }}
@@ -107,6 +128,8 @@ jobs:
             generator: Visual Studio 17 2022
           - generator-platform: ARM64
             test: false
+          - generator: Visual Studio 17 2022
+            generator-short-name: vs17
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
@@ -116,6 +139,11 @@ jobs:
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
           test: ${{ matrix.test }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.generator-platform }}
+          path: build
+          retention-days: 1
 
   swig:
     runs-on: ubuntu-22.04
