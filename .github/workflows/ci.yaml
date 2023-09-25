@@ -63,7 +63,7 @@ jobs:
         build-type: [Release]
         cxx-std: [11, 14, 17, 20]
         generator: [Xcode]
-        image: [macos-11, macos-12, macos-13]
+        image: [macos-11, macos-12]
         architectures: [arm64, x86_64, arm64;x86_64]
         include:
           - architectures: arm64
