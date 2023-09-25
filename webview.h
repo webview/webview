@@ -196,7 +196,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 
 // Get the library's version information.
 // @since 0.10
-WEBVIEW_API const webview_version_info_t *webview_version();
+WEBVIEW_API const webview_version_info_t *webview_version(void);
 
 #ifdef __cplusplus
 }
@@ -402,7 +402,7 @@ constexpr bool is_json_special_char(unsigned int c) {
 }
 
 constexpr bool is_control_char(unsigned int c) {
-  return (c >= 0x00 && c <= 0x1f) || (c >= 0x7f && c <= 0x9f);
+  return c <= 0x1f || (c >= 0x7f && c <= 0x9f);
 }
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
@@ -411,7 +411,7 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   // Add space for the double quotes.
   auto required_length = s.size() + (add_quotes ? 2 : 0);
   for (auto c : s) {
-    auto uc = static_cast<unsigned int>(c);
+    auto uc = static_cast<unsigned char>(c);
     if (is_json_special_char(uc)) {
       // '\' and a single following character
       required_length += 2;
@@ -442,8 +442,10 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
       auto h = (uc >> 4) & 0x0f;
       auto l = uc & 0x0f;
       result += "\\u00";
+      // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
       result += hex_alphabet[h];
       result += hex_alphabet[l];
+      // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
       continue;
     }
     result += c;
@@ -1443,8 +1445,15 @@ public:
   template <typename Symbol>
   typename Symbol::type get(const Symbol &symbol) const {
     if (is_loaded()) {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
       return reinterpret_cast<typename Symbol::type>(
           GetProcAddress(m_handle, symbol.get_name()));
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
     }
     return nullptr;
   }
@@ -1463,7 +1472,7 @@ using RtlGetVersion_t =
     unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
 
 constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
-}; // namespace ntdll_symbols
+} // namespace ntdll_symbols
 
 namespace user32_symbols {
 using DPI_AWARENESS_CONTEXT = HANDLE;
@@ -1502,7 +1511,7 @@ constexpr auto GetWindowDpiAwarenessContext =
 constexpr auto AreDpiAwarenessContextsEqual =
     library_symbol<AreDpiAwarenessContextsEqual_t>(
         "AreDpiAwarenessContextsEqual");
-}; // namespace user32_symbols
+} // namespace user32_symbols
 
 namespace dwmapi_symbols {
 typedef enum {
@@ -1517,7 +1526,7 @@ using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
 
 constexpr auto DwmSetWindowAttribute =
     library_symbol<DwmSetWindowAttribute_t>("DwmSetWindowAttribute");
-}; // namespace dwmapi_symbols
+} // namespace dwmapi_symbols
 
 namespace shcore_symbols {
 typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
@@ -1525,7 +1534,7 @@ using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
 
 constexpr auto SetProcessDpiAwareness =
     library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
-}; // namespace shcore_symbols
+} // namespace shcore_symbols
 
 class reg_key {
 public:
@@ -1799,16 +1808,26 @@ template <typename T> struct cast_info_t {
 namespace mswebview2 {
 static constexpr IID
     IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler{
-        0x6C4819F3, 0xC9B7, 0x4260, 0x81, 0x27, 0xC9,
-        0xF5,       0xBD,   0xE7,   0xF6, 0x8C};
+        0x6C4819F3,
+        0xC9B7,
+        0x4260,
+        {0x81, 0x27, 0xC9, 0xF5, 0xBD, 0xE7, 0xF6, 0x8C}};
 static constexpr IID
     IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler{
-        0x4E8A3389, 0xC9D8, 0x4BD2, 0xB6, 0xB5, 0x12,
-        0x4F,       0xEE,   0x6C,   0xC1, 0x4D};
+        0x4E8A3389,
+        0xC9D8,
+        0x4BD2,
+        {0xB6, 0xB5, 0x12, 0x4F, 0xEE, 0x6C, 0xC1, 0x4D}};
 static constexpr IID IID_ICoreWebView2PermissionRequestedEventHandler{
-    0x15E1C6A3, 0xC72A, 0x4DF3, 0x91, 0xD7, 0xD0, 0x97, 0xFB, 0xEC, 0x6B, 0xFD};
+    0x15E1C6A3,
+    0xC72A,
+    0x4DF3,
+    {0x91, 0xD7, 0xD0, 0x97, 0xFB, 0xEC, 0x6B, 0xFD}};
 static constexpr IID IID_ICoreWebView2WebMessageReceivedEventHandler{
-    0x57213F19, 0x00E6, 0x49FA, 0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2};
+    0x57213F19,
+    0x00E6,
+    0x49FA,
+    {0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2}};
 
 #if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
 enum class webview2_runtime_type { installed = 0, embedded = 1 };
@@ -2673,6 +2692,7 @@ public:
 
   // Asynchronous bind
   void bind(const std::string &name, binding_t fn, void *arg) {
+    // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
     if (bindings.count(name) > 0) {
       return;
     }
@@ -2710,6 +2730,7 @@ public:
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
+    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
     dispatch(std::bind(
         [seq, status, this](std::string escaped_result) {
           std::string js;
@@ -2836,7 +2857,7 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
   static_cast<webview::webview *>(w)->resolve(seq, status, result);
 }
 
-WEBVIEW_API const webview_version_info_t *webview_version() {
+WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
