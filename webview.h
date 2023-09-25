@@ -2730,6 +2730,7 @@ public:
   }
 
   void resolve(const std::string &seq, int status, const std::string &result) {
+    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
     dispatch(std::bind(
         [seq, status, this](std::string escaped_result) {
           std::string js;
