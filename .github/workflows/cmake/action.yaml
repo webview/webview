@@ -9,6 +9,8 @@ inputs:
   shell:
     required: true
     default: bash
+  configure:
+    required: false
   test:
     required: false
     default: true
@@ -27,10 +29,13 @@ inputs:
     required: false
   macos-architectures:
     required: false
+  cpack-configs:
+    required: false
 runs:
   using: "composite"
   steps:
     - name: Configure library
+      if: inputs.configure == '' || fromJSON(inputs.configure)
       run: |
         configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
         if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
@@ -91,6 +96,10 @@ runs:
       working-directory: examples/cmake
       shell: ${{ inputs.shell }}
     - name: Package library
-      run: cpack
+      run: |
+        if [[ ! -z "${{ inputs.cpack-configs }}" ]]; then
+          cpack_args+=(-C "${{ inputs.cpack-configs }}")
+        fi
+        cpack "${cpack_args[@]}" || exit 1
       working-directory: build
       shell: ${{ inputs.shell }}

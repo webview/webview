@@ -131,7 +131,6 @@ jobs:
     runs-on: ${{ matrix.image }}
     strategy:
       matrix:
-        build-type: [Debug, Release]
         cxx-std: [14, 17, 20]
         generator-platform: [ARM64, x64, Win32]
         image: [windows-2022]
@@ -146,15 +145,27 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
-          build-type: ${{ matrix.build-type }}
+          build-type: Debug
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
+          configure: true
           test: ${{ matrix.test }}
+          install: false
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: Release
+          cxx-std: ${{ matrix.cxx-std }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          configure: false
+          test: ${{ matrix.test }}
+          install: true
+          cpack-configs: Debug;Release
       - uses: actions/upload-artifact@v3
         if: matrix.cxx-std == 20 && matrix.generator == 'Visual Studio 17 2022' && matrix.image == 'windows-2022'
         with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.generator-platform }}
+          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.generator-platform }}
           path: |
             build/*.gz
             build/*.zip
