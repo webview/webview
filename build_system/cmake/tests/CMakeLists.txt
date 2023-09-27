@@ -7,5 +7,4 @@ endif()
 add_executable(webview_core_test "${TEST_DIR}/core_test.cc")
 target_link_libraries(webview_core_test PRIVATE webview_core_headers Threads::Threads)
 
-include(CTest)
-add_test(NAME core COMMAND webview_core_test)
+webview_add_test(core webview_core_test "${WEBVIEW_TEST_COVERAGE}")

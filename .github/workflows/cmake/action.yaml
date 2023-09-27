@@ -11,12 +11,21 @@ inputs:
     default: bash
   configure:
     required: false
+    default: false
+  build:
+    required: false
+    default: false
   test:
     required: false
-    default: true
+    default: false
   install:
     required: false
-    default: true
+    default: false
+  package:
+    required: false
+    default: false
+  package-configurations:
+    required: false
   cxx-std:
     required: false
   generator-platform:
@@ -29,77 +38,94 @@ inputs:
     required: false
   macos-architectures:
     required: false
-  cpack-configs:
+  upload-artifacts:
+    required: false
+  artifact-name:
     required: false
 runs:
   using: "composite"
   steps:
     - name: Configure library
+      uses: ./.github/workflows/cmake-configure
       if: inputs.configure == '' || fromJSON(inputs.configure)
-      run: |
-        configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
-        if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
-          configure_args+=("-DCMAKE_CXX_STANDARD=${{ inputs.cxx-std }}")
-        fi
-        if [[ ! -z "${{ inputs.generator-platform }}" ]]; then
-          configure_args+=("-DCMAKE_GENERATOR_PLATFORM=${{ inputs.generator-platform }}")
-        fi
-        if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
-          configure_args+=("-DCMAKE_TOOLCHAIN_FILE=toolchains/${{ inputs.toolchain-file }}.cmake")
-        fi
-        if [[ ! -z "${{ inputs.macos-architectures }}" ]]; then
-          configure_args+=("-DCMAKE_OSX_ARCHITECTURES=${{ inputs.macos-architectures }}")
-        fi
-        cmake -G "${{ inputs.generator }}" -B build -S build_system/cmake "${configure_args[@]}" || exit 1
-      shell: ${{ inputs.shell }}
+      with:
+        source-dir: build_system/cmake
+        build-type: ${{ inputs.build-type }}
+        cxx-std: ${{ inputs.cxx-std }}
+        generator: ${{ inputs.generator }}
+        generator-platform: ${{ inputs.generator-platform }}
+        toolchain-file: ${{ inputs.toolchain-file }}
+        macos-architectures: ${{ inputs.macos-architectures }}
+        shell: ${{ inputs.shell }}
     - name: Build library
-      run: cmake --build build --config "${{ inputs.build-type }}"
-      shell: ${{ inputs.shell }}
+      if: inputs.build == '' || fromJSON(inputs.build)
+      uses: ./.github/workflows/cmake-build
+      with:
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
     - name: Test library
       if: inputs.test == '' || fromJSON(inputs.test)
-      run: |
-        if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
-          wrapper_cmd+=("${{ inputs.test-wrapper-cmd }}")
-        fi
-        "${wrapper_cmd[@]}" ctest --test-dir build/tests --output-on-failure --build-config "${{ inputs.build-type }}" || exit 1
-      shell: ${{ inputs.shell }}
-    - name: Install library
+      uses: ./.github/workflows/cmake-test
+      with:
+        test-dir: build/tests
+        build-type: ${{ inputs.build-type }}
+        test-wrapper-cmd: ${{ inputs.test-wrapper-cmd }}
+        shell: ${{ inputs.shell }}
+    - name: Package library
+      if: inputs.package == '' || fromJSON(inputs.package)
+      uses: ./.github/workflows/cmake-package
+      with:
+        configurations: ${{ inputs.package-configurations }}
+        shell: ${{ inputs.shell }}
+    - name: Ensure failure to configure CMake example before installing library
       if: inputs.install == '' || fromJSON(inputs.install)
-      run: |
-        if [[ ! -z "${{ inputs.install-wrapper-cmd }}" ]]; then
-          wrapper_cmd+=("${{ inputs.install-wrapper-cmd }}")
-        fi
-        "${wrapper_cmd[@]}" cmake --install build --config "${{ inputs.build-type }}"
-      shell: ${{ inputs.shell }}
+      uses: ./.github/workflows/cmake-configure
+      with:
+        build-dir: examples/cmake/build
+        source-dir: examples/cmake
+        build-type: ${{ inputs.build-type }}
+        cxx-std: ${{ inputs.cxx-std }}
+        generator: ${{ inputs.generator }}
+        generator-platform: ${{ inputs.generator-platform }}
+        toolchain-file: ${{ inputs.toolchain-file }}
+        macos-architectures: ${{ inputs.macos-architectures }}
+        require-failure: true
+        shell: ${{ inputs.shell }}
+    - name: Install library locally
+      uses: ./.github/workflows/cmake-install
+      with:
+        build-dir: build
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
+        install-wrapper-cmd: ${{ inputs.install-wrapper-cmd }}
+      if: inputs.install == '' || fromJSON(inputs.install)
     - name: Configure CMake example
+      uses: ./.github/workflows/cmake-configure
       if: inputs.install == '' || fromJSON(inputs.install)
-      run: |
-        configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
-        if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
-          configure_args+=("-DCMAKE_CXX_STANDARD=${{ inputs.cxx-std }}")
-        fi
-        if [[ ! -z "${{ inputs.generator-platform }}" ]]; then
-          configure_args+=("-DCMAKE_GENERATOR_PLATFORM=${{ inputs.generator-platform }}")
-        fi
-        if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
-          configure_args+=("-DCMAKE_TOOLCHAIN_FILE=toolchains/${{ inputs.toolchain-file }}.cmake")
-        fi
-        if [[ ! -z "${{ inputs.macos-architectures }}" ]]; then
-          configure_args+=("-DCMAKE_OSX_ARCHITECTURES=${{ inputs.macos-architectures }}")
-        fi
-        cmake -G "${{ inputs.generator }}" -B build -S . "${configure_args[@]}" || exit 1
-      working-directory: examples/cmake
-      shell: ${{ inputs.shell }}
+      with:
+        build-dir: examples/cmake/build
+        source-dir: examples/cmake
+        build-type: ${{ inputs.build-type }}
+        cxx-std: ${{ inputs.cxx-std }}
+        generator: ${{ inputs.generator }}
+        generator-platform: ${{ inputs.generator-platform }}
+        toolchain-file: ${{ inputs.toolchain-file }}
+        macos-architectures: ${{ inputs.macos-architectures }}
+        shell: ${{ inputs.shell }}
     - name: Build CMake example
       if: inputs.install == '' || fromJSON(inputs.install)
-      run: cmake --build build --config "${{ inputs.build-type }}"
-      working-directory: examples/cmake
-      shell: ${{ inputs.shell }}
-    - name: Package library
-      run: |
-        if [[ ! -z "${{ inputs.cpack-configs }}" ]]; then
-          cpack_args+=(-C "${{ inputs.cpack-configs }}")
-        fi
-        cpack "${cpack_args[@]}" || exit 1
-      working-directory: build
-      shell: ${{ inputs.shell }}
+      uses: ./.github/workflows/cmake-build
+      with:
+        build-dir: examples/cmake/build
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      if: inputs.upload-artifacts != '' && fromJSON(inputs.upload-artifacts)
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          build/*.gz
+          build/*.sha256
+          build/*.zip
+        retention-days: 1

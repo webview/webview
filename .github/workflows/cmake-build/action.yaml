@@ -1,0 +1,17 @@
+name: CMake Build
+inputs:
+  build-dir:
+    required: true
+    default: build
+  build-type:
+    required: true
+    default: Release
+  shell:
+    required: true
+    default: bash
+runs:
+  using: "composite"
+  steps:
+    - name: Build
+      run: cmake --build "${{ inputs.build-dir }}" --config "${{ inputs.build-type }}"
+      shell: ${{ inputs.shell }}

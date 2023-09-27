@@ -1,0 +1,22 @@
+name: CMake Test
+inputs:
+  test-dir:
+    required: true
+  build-type:
+    required: true
+    default: Release
+  shell:
+    required: true
+    default: bash
+  test-wrapper-cmd:
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Test
+      run: |
+        if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
+          wrapper_cmd+=("${{ inputs.test-wrapper-cmd }}")
+        fi
+        "${wrapper_cmd[@]}" ctest --verbose --test-dir "${{ inputs.test-dir }}" --output-on-failure --build-config "${{ inputs.build-type }}"
+      shell: ${{ inputs.shell }}

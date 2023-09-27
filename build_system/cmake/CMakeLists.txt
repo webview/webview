@@ -66,6 +66,7 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
 endif()
 
 if(WEBVIEW_BUILD_TESTS)
+    include(CTest)
     add_subdirectory(tests)
 endif()
 

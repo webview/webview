@@ -57,7 +57,6 @@ macro(webview_init)
         if(NOT HAVE_EVENTTOKEN_H)
             configure_file("${CMAKE_CURRENT_LIST_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
             include_directories("${CMAKE_CURRENT_BINARY_DIR}/generated/include")
-            #list(APPEND CMAKE_CXX_FLAGS "-include webview/detail/mingw_support.h")
         endif()
     endif()
 
@@ -77,6 +76,7 @@ macro(webview_init)
 
     webview_find_dependencies()
     webview_set_install_rpath()
+    webview_enable_coverage()
 endmacro()
 
 macro(webview_extract_version)
@@ -187,6 +187,7 @@ macro(webview_internal_options)
     option(WEBVIEW_BUILD_EXAMPLES "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_INSTALL_TARGETS "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_PACKAGE "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
+    option(WEBVIEW_TEST_COVERAGE "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_SHARED_LIBRARY "" ON)
     option(WEBVIEW_BUILD_STATIC_LIBRARY "" ON)
     option(WEBVIEW_IS_OFFICIAL_BUILD "" OFF)
@@ -207,3 +208,44 @@ macro(webview_set_install_rpath)
         set(CMAKE_INSTALL_RPATH "${RPATH_BASE}" "${RPATH_BASE}/${RPATH_SUBDIR}")
     endif()
 endmacro()
+
+function(webview_enable_coverage)
+    find_program(LCOV_EXE lcov)
+    find_program(GENHTML_EXE genhtml)
+
+    if(LCOV_EXE AND GENHTML_EXE)
+        # Include coverage only for files under this directory
+        get_filename_component(COVERAGE_SOURCE_DIR "${ROOT_DIR}" ABSOLUTE)
+        set(COVERAGE_INFO_FILE "${CMAKE_BINARY_DIR}/coverage.info")
+
+        add_custom_target(webview_coverage
+            COMMAND "${LCOV_EXE}" --capture --output-file "${COVERAGE_INFO_FILE}" --directory "${CMAKE_BINARY_DIR}" --include "${COVERAGE_SOURCE_DIR}/*" --exclude "${COVERAGE_SOURCE_DIR}/tests/*"
+            BYPRODUCTS "${COVERAGE_INFO_FILE}"
+            VERBATIM)
+        add_custom_target(webview_coverage_report
+            COMMAND "${LCOV_EXE}" --list "${COVERAGE_INFO_FILE}"
+            DEPENDS webview_coverage
+            VERBATIM)
+        add_custom_target(webview_coverage_report_html
+            COMMAND "${GENHTML_EXE}" "${COVERAGE_INFO_FILE}" --output-directory "${CMAKE_BINARY_DIR}/coverage-report/html"
+            DEPENDS webview_coverage
+            VERBATIM)
+    endif()
+endfunction()
+
+
+function(webview_add_coverage TARGET)
+    if(MSVC)
+        # TODO: Enable coverage for MSVC
+    else()
+        target_compile_options("${TARGET}" PRIVATE -g -O0 -fprofile-arcs -ftest-coverage)
+        target_link_options("${TARGET}" PRIVATE -fprofile-arcs)
+    endif()
+endfunction()
+
+function(webview_add_test NAME TARGET COVERAGE)
+    add_test(NAME "${NAME}" COMMAND "${TARGET}")
+    if(COVERAGE)
+        webview_add_coverage("${TARGET}")
+    endif()
+endfunction()

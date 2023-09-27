@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CMake
 on: [push, pull_request]
 
 jobs:
@@ -12,24 +12,20 @@ jobs:
         image: [ubuntu-20.04, ubuntu-22.04]
     steps:
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install cmake libwebkit2gtk-4.0-dev ninja-build xvfb -y
+        run: sudo apt-get update && sudo apt-get install cmake lcov libwebkit2gtk-4.0-dev ninja-build xvfb -y
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
+          configure: true
+          build: true
+          test: true
+          install: true
+          package: true
           build-type: ${{ matrix.build-type }}
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
-          install-wrapper-cmd: sudo
           test-wrapper-cmd: xvfb-run
-      - uses: actions/upload-artifact@v3
-        if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja'
-        with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
-          path: |
-            build/*.gz
-            build/*.sha256
-            build/*.zip
-          retention-days: 1
+          install-wrapper-cmd: sudo
 
   cmake-linux-mingw-w64:
     runs-on: ${{ matrix.image }}
@@ -48,21 +44,15 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
+          configure: true
+          build: true
+          test: false
+          install: false
+          package: true
           build-type: ${{ matrix.build-type }}
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
-          test: false
-          install: false
           toolchain-file: x86_64-w64-mingw32
-      - uses: actions/upload-artifact@v3
-        if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'ubuntu-22.04'
-        with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}
-          path: |
-            build/*.gz
-            build/*.sha256
-            build/*.zip
-          retention-days: 1
 
   cmake-macos:
     runs-on: ${{ matrix.image }}
@@ -74,29 +64,30 @@ jobs:
         image: [macos-11, macos-12]
         architectures: [arm64, x86_64, arm64;x86_64]
         include:
+          - test: true
+            install: true
           - architectures: arm64
             test: false
+            install: false
     steps:
       - name: Install dependencies
-        run: brew install cmake ninja
+        run: brew install lcov
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
+          configure: true
+          build: true
+          test: ${{ matrix.test }}
+          install: ${{ matrix.install }}
+          package: true
           build-type: ${{ matrix.build-type }}
           cxx-std: ${{ matrix.cxx-std }}
-          install-wrapper-cmd: sudo
           generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          install-wrapper-cmd: sudo
           macos-architectures: ${{ matrix.architectures }}
-          test: ${{ matrix.test }}
-      - uses: actions/upload-artifact@v3
-        if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Xcode' && matrix.architectures == 'arm64;x86_64' && matrix.image == 'macos-12'
-        with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
-          path: |
-            build/*.gz
-            build/*.sha256
-            build/*.zip
-          retention-days: 1
+          upload-artifacts: ${{ matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Xcode' && matrix.image == 'macos-12' }}
+          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
 
   cmake-windows-msys2:
     runs-on: ${{ matrix.image }}
@@ -104,7 +95,7 @@ jobs:
       matrix:
         build-type: [Release]
         cxx-std: [11, 14, 17, 20]
-        msystem: [clang64, mingw64, ucrt64]
+        msystem: [mingw64] #[clang64, mingw64, ucrt64]
         generator: [Ninja]
         image: [windows-2022]
     steps:
@@ -113,23 +104,21 @@ jobs:
         with:
           msystem: ${{ matrix.msystem }}
           update: false
-          pacboy: toolchain:p cmake:p ninja:p
+          pacboy: toolchain:p cmake:p lcov:p ninja:p
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
+          configure: true
+          build: true
+          test: true
+          install: true
+          package: true
           build-type: ${{ matrix.build-type }}
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           shell: msys2 {0}
-      - uses: actions/upload-artifact@v3
-        if: matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'windows-2022'
-        with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
-          path: |
-            build/*.gz
-            build/*.sha256
-            build/*.zip
-          retention-days: 1
+          upload-artifacts: ${{ matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'windows-2022' }}
+          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
 
   cmake-windows-msvc:
     runs-on: ${{ matrix.image }}
@@ -139,42 +128,47 @@ jobs:
         generator-platform: [ARM64, x64, Win32]
         image: [windows-2022]
         include:
+          - test: true
+            install: true
           - image: windows-2022
             generator: Visual Studio 17 2022
           - generator-platform: ARM64
             test: false
+            install: false
           - generator: Visual Studio 17 2022
             generator-short-name: vs17
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
+      - name: Configure
+        uses: ./.github/workflows/cmake
         with:
-          build-type: Debug
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          generator-platform: ${{ matrix.generator-platform }}
           configure: true
-          test: ${{ matrix.test }}
-          install: false
-      - uses: ./.github/workflows/cmake
-        with:
-          build-type: Release
           cxx-std: ${{ matrix.cxx-std }}
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
-          configure: false
-          test: ${{ matrix.test }}
-          install: true
-          cpack-configs: Debug;Release
-      - uses: actions/upload-artifact@v3
-        if: matrix.cxx-std == 20 && matrix.generator == 'Visual Studio 17 2022' && matrix.image == 'windows-2022'
+      - name: Build Debug
+        uses: ./.github/workflows/cmake
         with:
-          name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.generator-platform }}
-          path: |
-            build/*.gz
-            build/*.sha256
-            build/*.zip
-          retention-days: 1
+          build: true
+          test: ${{ matrix.test }}
+          build-type: Debug
+      - name: Build Release
+        uses: ./.github/workflows/cmake
+        with:
+          build: true
+          test: ${{ matrix.test }}
+          build-type: Release
+      - name: Package
+        uses: ./.github/workflows/cmake
+        with:
+          install: ${{ matrix.install }}
+          package: true
+          package-configurations: Debug;Release
+          cxx-std: ${{ matrix.cxx-std }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          upload-artifacts: ${{ matrix.cxx-std == 20 && matrix.generator == 'Visual Studio 17 2022' && matrix.image == 'windows-2022' }}
+          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.generator-platform }}
 
   swig:
     runs-on: ubuntu-22.04

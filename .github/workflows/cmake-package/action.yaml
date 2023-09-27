@@ -1,0 +1,22 @@
+name: CMake Package
+inputs:
+  build-dir:
+    required: true
+    default: build
+  configurations:
+    required: true
+    default: Release
+  shell:
+    required: true
+    default: bash
+runs:
+  using: "composite"
+  steps:
+    - name: Package
+      run: |
+        if [[ ! -z "${{ inputs.configurations }}" ]]; then
+          cpack_args+=(-C "${{ inputs.configurations }}")
+        fi
+        cpack "${cpack_args[@]}"
+      shell: ${{ inputs.shell }}
+      working-directory: ${{ inputs.build-dir }}

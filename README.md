@@ -320,9 +320,24 @@ Variable     | Description
 
 ### CMake
 
+#### Build for Release
+
 ```
-cmake -Bbuild -Sbuild_system/cmake
+cmake -G Ninja -B build -S build_system/cmake
 cmake --build build
+```
+
+#### Generate Test Coverage Report
+
+```
+ctest --test-dir build
+
+# Plain test coverage report:
+#cmake --build build --target webview_coverage_report
+
+# HTML test coverage report:
+#cmake --build build --target webview_coverage_report_html
+# See: build/coverage-report/html/index.html
 ```
 
 ### Cross-compilation
