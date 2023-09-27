@@ -71,6 +71,20 @@ runs:
         build-type: ${{ inputs.build-type }}
         test-wrapper-cmd: ${{ inputs.test-wrapper-cmd }}
         shell: ${{ inputs.shell }}
+    - name: Generate test coverage report (plain)
+      if: inputs.test == '' || fromJSON(inputs.test)
+      uses: ./.github/workflows/cmake-build
+      with:
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
+        target: webview_coverage_report
+    - name: Generate test coverage report (HTML)
+      if: inputs.test == '' || fromJSON(inputs.test)
+      uses: ./.github/workflows/cmake-build
+      with:
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
+        target: webview_coverage_report_html
     - name: Package library
       if: inputs.package == '' || fromJSON(inputs.package)
       uses: ./.github/workflows/cmake-package
@@ -119,7 +133,7 @@ runs:
         build-dir: examples/cmake/build
         build-type: ${{ inputs.build-type }}
         shell: ${{ inputs.shell }}
-    - name: Upload artifacts
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       if: inputs.upload-artifacts != '' && fromJSON(inputs.upload-artifacts)
       with:
@@ -128,4 +142,12 @@ runs:
           build/*.gz
           build/*.sha256
           build/*.zip
+        retention-days: 1
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v3
+      if: inputs.upload-artifacts != '' && fromJSON(inputs.upload-artifacts)
+      with:
+        name: ${{ inputs.artifact-name }}_coverage
+        path: |
+          build/coverage-report
         retention-days: 1

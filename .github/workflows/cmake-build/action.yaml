@@ -9,9 +9,15 @@ inputs:
   shell:
     required: true
     default: bash
+  target:
+    required: false
 runs:
   using: "composite"
   steps:
     - name: Build
-      run: cmake --build "${{ inputs.build-dir }}" --config "${{ inputs.build-type }}"
+      run: |
+        if [[ ! -z "${{ inputs.target }}" ]]; then
+          cmake_args+=(--target "${{ inputs.target }}")
+        fi
+        cmake --build "${{ inputs.build-dir }}" --config "${{ inputs.build-type }}" "${cmake_args[@]}"
       shell: ${{ inputs.shell }}
