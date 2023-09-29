@@ -35,7 +35,10 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   unsigned int count = 0;
-  webview::webview w(false, nullptr);
+  auto options = webview::create_options_builder{}
+                     .minimum_required_version(WEBVIEW_VERSION)
+                     .build();
+  webview::webview w(options);
   w.set_title("Bind Example");
   w.set_size(480, 320, WEBVIEW_HINT_NONE);
 
