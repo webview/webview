@@ -385,8 +385,19 @@ jobs:
           - image: windows-2022
             standard: 14
             generator: Visual Studio 17 2022
+            generator-platform: ARM64
+            # Skip tests because we can't execute ARM64 binaries
+            test: false
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
             generator-platform: x64
-            distributable: true
+            test: true
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: Win32
+            test: true
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
@@ -398,7 +409,7 @@ jobs:
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
           test-coverage: false
-          distributable: ${{ matrix.distributable }}
+          distributable: true
 
   cmake-extra-windows-msvc:
     name: cmake-extra (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
@@ -413,32 +424,16 @@ jobs:
             generator-platform: x64
             # Skip tests because WebView2 Runtime isn't installed
             test: false
-            distributable: false
-          - image: windows-2022
-            standard: 14
-            generator: Visual Studio 17 2022
-            generator-platform: ARM64
-            # Skip tests because we can't execute ARM64 binaries
-            test: false
-            distributable: true
           - image: windows-2022
             standard: 17
             generator: Visual Studio 17 2022
             generator-platform: x64
             test: true
-            distributable: false
           - image: windows-2022
             standard: 20
             generator: Visual Studio 17 2022
             generator-platform: x64
             test: true
-            distributable: false
-          - image: windows-2022
-            standard: 14
-            generator: Visual Studio 17 2022
-            generator-platform: Win32
-            test: true
-            distributable: true
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
@@ -450,4 +445,3 @@ jobs:
           generator-platform: ${{ matrix.generator-platform }}
           test: ${{ matrix.test }}
           test-coverage: false
-          distributable: ${{ matrix.distributable }}
