@@ -142,12 +142,14 @@ jobs:
             cxx: clang++-15
             gcov: llvm-cov-15 gcov
             standard: 11
+            test-coverage: true
             apt-packages: clang-15
           - image: ubuntu-22.04
             cc: gcc-12
             cxx: g++-12
             gcov: gcov-12
             standard: 11
+            test-coverage: false
             apt-packages: gcc-12 g++-12
     steps:
       - uses: actions/checkout@v3
@@ -158,6 +160,7 @@ jobs:
           gcov: ${{ matrix.gcov }}
           standard: ${{ matrix.standard }}
           generator: Ninja
+          test-coverage: ${{ matrix.test-coverage }}
           test-coverage-name: main_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
           test-wrapper-cmd: xvfb-run
           apt-packages: ${{ matrix.apt-packages }}
@@ -227,7 +230,7 @@ jobs:
           gcov: ${{ matrix.gcov }}
           standard: ${{ matrix.standard }}
           generator: Ninja
-          test-coverage-name: extra_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          test-coverage: false
           test-wrapper-cmd: xvfb-run
           apt-packages: ${{ matrix.apt-packages }}
           install-wrapper-cmd: sudo
@@ -336,7 +339,7 @@ jobs:
           cxx: clang++
           standard: ${{ matrix.standard }}
           generator: Xcode
-          test-coverage-name: extra_macos_cxx${{ matrix.standard }}
+          test-coverage: false
           install-wrapper-cmd: sudo
 
   cmake-main-windows-msys2:
@@ -350,11 +353,13 @@ jobs:
             cc: clang
             cxx: clang++
             standard: 14
+            test-coverage: true
             msys2-system: CLANG64
           - image: windows-2022
             cc: gcc
             cxx: g++
             standard: 14
+            test-coverage: false
             msys2-system: UCRT64
     steps:
       - uses: actions/checkout@v3
@@ -364,6 +369,7 @@ jobs:
           cxx: ${{ matrix.cxx }}
           standard: ${{ matrix.standard }}
           generator: MSYS Makefiles
+          test-coverage: ${{ matrix.test-coverage }}
           test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
           msys2-system: ${{ matrix.msys2-system }}
           shell: msys2 {0}
@@ -420,7 +426,7 @@ jobs:
           cxx: ${{ matrix.cxx }}
           standard: ${{ matrix.standard }}
           generator: MSYS Makefiles
-          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          test-coverage: false
           msys2-system: ${{ matrix.msys2-system }}
           shell: msys2 {0}
 
