@@ -1,14 +1,19 @@
 name: CMake
 on: [push, pull_request]
 jobs:
-  # Initial checks and other short-running jobs
-  initial:
+  # Initial checks
+  checks:
     runs-on: ubuntu-latest
-    needs:
-      - clang-format
-      - swig
     steps:
-      - run: echo
+      - uses: actions/checkout@v3
+      - name: Run clang-format
+        uses: DoozyX/clang-format-lint-action@v0.6
+        with:
+          source: '.'
+          exclude: './script'
+          extensions: 'h,cc'
+          clangFormatVersion: 9
+          style: file
 
   # Main CMake jobs
   cmake-main:
@@ -34,20 +39,8 @@ jobs:
     steps:
       - run: echo
 
-  clang-format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run clang-format
-        uses: DoozyX/clang-format-lint-action@v0.6
-        with:
-          source: '.'
-          exclude: './script'
-          extensions: 'h,cc'
-          clangFormatVersion: 9
-          style: file
-
   swig:
+    needs: cmake-main
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -64,9 +57,7 @@ jobs:
 
   test-coverage:
     runs-on: ubuntu-latest
-    needs:
-      - cmake-main
-      - cmake-extra
+    needs: cmake-main
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
@@ -78,7 +69,7 @@ jobs:
   cmake-main-linux:
     name: cmake-main (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
     runs-on: ${{ matrix.image }}
-    needs: initial
+    needs: checks
     strategy:
       matrix:
         include:
@@ -183,7 +174,7 @@ jobs:
   cmake-main-linux-mingw-w64:
     name: cmake-main (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
     runs-on: ${{ matrix.image }}
-    needs: initial
+    needs: checks
     strategy:
       matrix:
         include:
@@ -231,7 +222,7 @@ jobs:
   cmake-main-macos:
     name: cmake-main (${{ matrix.image }}, macos, c++${{ matrix.standard }}, ${{ matrix.osx-architectures }})
     runs-on: ${{ matrix.image }}
-    needs: initial
+    needs: checks
     strategy:
       matrix:
         include:
@@ -290,7 +281,7 @@ jobs:
   cmake-main-windows-msys2:
     name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
     runs-on: ${{ matrix.image }}
-    needs: initial
+    needs: checks
     strategy:
       matrix:
         include:
@@ -378,7 +369,7 @@ jobs:
   cmake-main-windows-msvc:
     name: cmake-main (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
     runs-on: ${{ matrix.image }}
-    needs: initial
+    needs: checks
     strategy:
       matrix:
         include:
