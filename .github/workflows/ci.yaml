@@ -387,6 +387,7 @@ jobs:
           standard: ${{ matrix.standard }}
           generator: ${{ matrix.generator }}
           generator-platform: ${{ matrix.generator-platform }}
+          test: ${{ matrix.test }}
           test-coverage: false
           distributable: true
 
