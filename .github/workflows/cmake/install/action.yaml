@@ -1,0 +1,31 @@
+name: CMake Install
+inputs:
+  build-dir:
+    description: 'CMake build directory'
+    required: true
+    default: build
+  build-type:
+    description: 'Semicolon-separated CMake build types (Debug, Release, etc)'
+    required: true
+    default: Release
+  install-wrapper-cmd:
+    description: 'Wrapper command for installing the CMake package'
+    required: false
+  shell:
+    required: true
+    default: bash
+runs:
+  using: "composite"
+  steps:
+    - name: Install
+      run: |
+        wrapper_cmd=()
+        if [[ ! -z "${{ inputs.install-wrapper-cmd }}" ]]; then
+          wrapper_cmd+=("${{ inputs.install-wrapper-cmd }}")
+        fi
+        build_types="${{ inputs.build-type }}"
+        build_types=(${build_types//;/ })
+        for build_type in "${build_types[@]}"; do
+          "${wrapper_cmd[@]}" cmake --install "${{ inputs.build-dir }}" --config "${build_type}"
+        done
+      shell: ${{ inputs.shell }}

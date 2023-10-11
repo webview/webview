@@ -1,177 +1,54 @@
 name: CMake
 on: [push, pull_request]
-
 jobs:
-  cmake-linux:
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        build-type: [Release]
-        cxx-std: [11, 14, 17, 20]
-        generator: [Ninja]
-        image: [ubuntu-20.04, ubuntu-22.04]
+  # Initial checks and other short-running jobs
+  initial:
+    runs-on: ubuntu-latest
+    needs:
+      - clang-format
+      - swig
     steps:
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install cmake lcov libwebkit2gtk-4.0-dev ninja-build xvfb -y
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          configure: true
-          build: true
-          test: true
-          install: true
-          package: true
-          build-type: ${{ matrix.build-type }}
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          test-wrapper-cmd: xvfb-run
-          install-wrapper-cmd: sudo
+      - run: echo
 
-  cmake-linux-mingw-w64:
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        build-type: [Release]
-        cxx-std: [14, 17, 20]
-        generator: [Ninja]
-        image: [ubuntu-20.04, ubuntu-22.04]
-        exclude:
-          - cxx-std: 20
-            image: ubuntu-20.04
+  # Main CMake jobs
+  cmake-main:
+    runs-on: ubuntu-latest
+    needs:
+      - cmake-main-linux
+      - cmake-main-linux-mingw-w64
+      - cmake-main-macos
+      - cmake-main-windows-msys2
+      - cmake-main-windows-msvc
     steps:
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install cmake mingw-w64 ninja-build -y
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          configure: true
-          build: true
-          test: false
-          install: false
-          package: true
-          build-type: ${{ matrix.build-type }}
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          toolchain-file: x86_64-w64-mingw32
+      - run: echo
 
-  cmake-macos:
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        build-type: [Release]
-        cxx-std: [11, 14, 17, 20]
-        generator: [Xcode]
-        image: [macos-11, macos-12]
-        architectures: [arm64, x86_64, arm64;x86_64]
-        include:
-          - test: true
-            install: true
-          - architectures: arm64
-            test: false
-            install: false
+  # Extra CMake jobs
+  cmake-extra:
+    runs-on: ubuntu-latest
+    needs:
+      - cmake-extra-linux
+      - cmake-extra-linux-mingw-w64
+      - cmake-extra-macos
+      - cmake-extra-windows-msys2
+      - cmake-extra-windows-msvc
     steps:
-      - name: Install dependencies
-        run: brew install lcov
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          configure: true
-          build: true
-          test: ${{ matrix.test }}
-          install: ${{ matrix.install }}
-          package: true
-          build-type: ${{ matrix.build-type }}
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          generator-platform: ${{ matrix.generator-platform }}
-          install-wrapper-cmd: sudo
-          macos-architectures: ${{ matrix.architectures }}
-          upload-artifacts: ${{ matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Xcode' && matrix.image == 'macos-12' }}
-          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.architectures }}
+      - run: echo
 
-  cmake-windows-msys2:
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        build-type: [Release]
-        cxx-std: [11, 14, 17, 20]
-        msystem: [mingw64] #[clang64, mingw64, ucrt64]
-        generator: [Ninja]
-        image: [windows-2022]
-    steps:
-      - name: Set up MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.msystem }}
-          update: false
-          pacboy: toolchain:p cmake:p lcov:p ninja:p
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          configure: true
-          build: true
-          test: true
-          install: true
-          package: true
-          build-type: ${{ matrix.build-type }}
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          shell: msys2 {0}
-          upload-artifacts: ${{ matrix.build-type == 'Release' && matrix.cxx-std == 20 && matrix.generator == 'Ninja' && matrix.image == 'windows-2022' }}
-          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator }}_cxx${{ matrix.cxx-std }}_${{ matrix.build-type }}_${{ matrix.msystem }}
-
-  cmake-windows-msvc:
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        cxx-std: [14, 17, 20]
-        generator-platform: [ARM64, x64, Win32]
-        image: [windows-2022]
-        include:
-          - test: true
-            install: true
-          - image: windows-2022
-            generator: Visual Studio 17 2022
-          - generator-platform: ARM64
-            test: false
-            install: false
-          - generator: Visual Studio 17 2022
-            generator-short-name: vs17
+  clang-format:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Configure
-        uses: ./.github/workflows/cmake
+      - name: Run clang-format
+        uses: DoozyX/clang-format-lint-action@v0.6
         with:
-          configure: true
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          generator-platform: ${{ matrix.generator-platform }}
-      - name: Build Debug
-        uses: ./.github/workflows/cmake
-        with:
-          build: true
-          test: ${{ matrix.test }}
-          build-type: Debug
-      - name: Build Release
-        uses: ./.github/workflows/cmake
-        with:
-          build: true
-          test: ${{ matrix.test }}
-          build-type: Release
-      - name: Package
-        uses: ./.github/workflows/cmake
-        with:
-          install: ${{ matrix.install }}
-          package: true
-          package-configurations: Debug;Release
-          cxx-std: ${{ matrix.cxx-std }}
-          generator: ${{ matrix.generator }}
-          generator-platform: ${{ matrix.generator-platform }}
-          upload-artifacts: ${{ matrix.cxx-std == 20 && matrix.generator == 'Visual Studio 17 2022' && matrix.image == 'windows-2022' }}
-          artifact-name: ${{ github.job }}_${{ matrix.image }}_${{ matrix.generator-short-name }}_cxx${{ matrix.cxx-std }}_${{ matrix.generator-platform }}
+          source: '.'
+          exclude: './script'
+          extensions: 'h,cc'
+          clangFormatVersion: 9
+          style: file
 
   swig:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         language: [csharp, java, python, ruby]
@@ -185,15 +62,441 @@ jobs:
               -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
               webview.i
 
-  clang-format:
-    runs-on: ubuntu-22.04
+  test-coverage:
+    runs-on: ubuntu-latest
+    needs:
+      - cmake-main
+      - cmake-extra
     steps:
       - uses: actions/checkout@v3
-      - name: Run clang-format
-        uses: DoozyX/clang-format-lint-action@v0.6
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          source: '.'
-          exclude: './script'
-          extensions: 'h,cc'
-          clangFormatVersion: 9
-          style: file
+          python-version: '3.11'
+      - name: Install gcovr
+        run: pip install gcovr==6.0
+      - name: Download test coverage artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: test_coverage
+      - name: Generate report
+        run: |
+          tracefile_args=()
+          while read f; do
+            tracefile_args+=(--add-tracefile "${f}")
+          done <<< "$(find . -type f -name "coverage.json")"
+          mkdir -p report/html
+          gcovr --json-summary report/summary.json "${tracefile_args[@]}"
+          gcovr --html-details report/html/index.html "${tracefile_args[@]}"
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: test_coverage_report
+          path: report
+          retention-days: 1
+          if-no-files-found: error
+      - name: Add report to CI job summary
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const data = require("./report/summary.json");
+            await core.summary
+              .addHeading("Test Coverage Summary")
+              .addTable([
+                [
+                  { data: "Lines", header: true },
+                  { data: "Functions", header: true },
+                  { data: "Branches", header: true }
+                ],
+                [
+                  `${data.line_percent}% ${data.line_covered}/${data.line_total}`,
+                  `${data.function_percent}% ${data.function_covered}/${data.function_total}`,
+                  `${data.branch_percent}% ${data.branch_covered}/${data.branch_total}`
+                ]
+              ])
+              .addTable([
+                [
+                  { data: "File", header: true },
+                  { data: "Lines", header: true },
+                  { data: "Functions", header: true },
+                  { data: "Branches", header: true }
+                ],
+                ...data.files.map(file => [
+                  file.filename,
+                  `${file.line_percent}% ${file.line_covered}/${file.line_total}`,
+                  `${file.function_percent}% ${file.function_covered}/${file.function_total}`,
+                  `${file.branch_percent}% ${file.branch_covered}/${file.branch_total}`
+                ])
+              ])
+              .write();
+
+  cmake-main-linux:
+    name: cmake-main (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: initial
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-22.04
+            cc: clang-15
+            cxx: clang++-15
+            gcov: llvm-cov-15 gcov
+            standard: 11
+            apt-packages: clang-15
+          - image: ubuntu-22.04
+            cc: gcc-12
+            cxx: g++-12
+            gcov: gcov-12
+            standard: 11
+            apt-packages: gcc-12 g++-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: ${{ matrix.cc }}
+          cxx: ${{ matrix.cxx }}
+          gcov: ${{ matrix.gcov }}
+          standard: ${{ matrix.standard }}
+          generator: Ninja
+          test-coverage-name: main_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          test-wrapper-cmd: xvfb-run
+          apt-packages: ${{ matrix.apt-packages }}
+          install-wrapper-cmd: sudo
+
+  cmake-extra-linux:
+    name: cmake-extra (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: cmake-main
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-20.04
+            cc: clang-8
+            cxx: clang++-8
+            gcov: llvm-cov-8 gcov
+            standard: 11
+            apt-packages: clang-8
+          - image: ubuntu-22.04
+            cc: clang-15
+            cxx: clang++-15
+            gcov: llvm-cov-15 gcov
+            standard: 14
+            apt-packages: clang-15
+          - image: ubuntu-22.04
+            cc: clang-15
+            cxx: clang++-15
+            gcov: llvm-cov-15 gcov
+            standard: 17
+            apt-packages: clang-15
+          - image: ubuntu-22.04
+            cc: clang-15
+            cxx: clang++-15
+            gcov: llvm-cov-15 gcov
+            standard: 20
+            apt-packages: clang-15
+          - image: ubuntu-20.04
+            cc: gcc-7
+            cxx: g++-7
+            gcov: gcov-7
+            standard: 11
+            apt-packages: gcc-7 g++-7
+          - image: ubuntu-22.04
+            cc: gcc-12
+            cxx: g++-12
+            gcov: gcov-12
+            standard: 14
+            apt-packages: gcc-12 g++-12
+          - image: ubuntu-22.04
+            cc: gcc-12
+            cxx: g++-12
+            gcov: gcov-12
+            standard: 17
+            apt-packages: gcc-12 g++-12
+          - image: ubuntu-22.04
+            cc: gcc-12
+            cxx: g++-12
+            gcov: gcov-12
+            standard: 20
+            apt-packages: gcc-12 g++-12
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: ${{ matrix.cc }}
+          cxx: ${{ matrix.cxx }}
+          gcov: ${{ matrix.gcov }}
+          standard: ${{ matrix.standard }}
+          generator: Ninja
+          test-coverage-name: extra_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          test-wrapper-cmd: xvfb-run
+          apt-packages: ${{ matrix.apt-packages }}
+          install-wrapper-cmd: sudo
+
+  cmake-main-linux-mingw-w64:
+    name: cmake-main (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: initial
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-22.04
+            toolchain-file: x86_64-w64-mingw32
+            standard: 14
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          toolchain-file: ${{ github.workspace }}/build_system/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
+          standard: ${{ matrix.standard }}
+          generator: Ninja
+          test: false
+          apt-packages: mingw-w64
+          install-wrapper-cmd: sudo
+
+  cmake-extra-linux-mingw-w64:
+    name: cmake-extra (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: cmake-main
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-22.04
+            toolchain-file: i686-w64-mingw32
+            standard: 14
+          - image: ubuntu-22.04
+            toolchain-file: x86_64-w64-mingw32
+            standard: 17
+          - image: ubuntu-22.04
+            toolchain-file: x86_64-w64-mingw32
+            standard: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          toolchain-file: ${{ github.workspace }}/build_system/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
+          standard: ${{ matrix.standard }}
+          generator: Ninja
+          test: false
+          apt-packages: mingw-w64
+          install-wrapper-cmd: sudo
+
+  cmake-main-macos:
+    name: cmake-main (${{ matrix.image }}, macos, c++${{ matrix.standard }}, ${{ matrix.osx-architectures }})
+    runs-on: ${{ matrix.image }}
+    needs: initial
+    strategy:
+      matrix:
+        include:
+          - image: macos-12
+            standard: 11
+            test-coverage: true
+            osx-architectures: x86_64
+            distributable: false
+          - image: macos-12
+            standard: 11
+            # While we can get coverage for universal binaries, keep it simple by
+            # avoiding the need to specify the architecture to get coverage for.
+            test-coverage: false
+            osx-architectures: arm64;x86_64
+            distributable: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: clang
+          cxx: clang++
+          standard: ${{ matrix.standard }}
+          generator: Xcode
+          test-coverage: ${{ matrix.test-coverage }}
+          test-coverage-name: main_macos_cxx${{ matrix.standard }}
+          osx-architectures: ${{ matrix.osx-architectures }}
+          install-wrapper-cmd: sudo
+          distributable: ${{ matrix.distributable }}
+
+  cmake-extra-macos:
+    name: cmake-extra (${{ matrix.image }}, macos, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: cmake-main
+    strategy:
+      matrix:
+        include:
+          - image: macos-11
+            standard: 11
+          - image: macos-12
+            standard: 14
+          - image: macos-12
+            standard: 17
+          - image: macos-12
+            standard: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: clang
+          cxx: clang++
+          standard: ${{ matrix.standard }}
+          generator: Xcode
+          test-coverage-name: extra_macos_cxx${{ matrix.standard }}
+          install-wrapper-cmd: sudo
+
+  cmake-main-windows-msys2:
+    name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: initial
+    strategy:
+      matrix:
+        include:
+          - image: windows-2022
+            cc: clang
+            cxx: clang++
+            standard: 14
+            msys2-system: CLANG64
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 14
+            msys2-system: UCRT64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: ${{ matrix.cc }}
+          cxx: ${{ matrix.cxx }}
+          standard: ${{ matrix.standard }}
+          generator: MSYS Makefiles
+          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          msys2-system: ${{ matrix.msys2-system }}
+          shell: msys2 {0}
+
+  cmake-extra-windows-msys2:
+    name: cmake-extra (${{ matrix.msys2-system }}, ${{ matrix.image }}, win, msys2, ${{ matrix.cc }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: cmake-main
+    strategy:
+      matrix:
+        include:
+          # "MSYS" environment skipped due to error "pacman: unknown option -- a"
+          # "CLANGARM64" environment skipped due to error "/clangarm64/bin/cmake: cannot execute binary file: Exec format error"
+          - image: windows-2022
+            cc: clang
+            cxx: clang++
+            standard: 17
+            msys2-system: CLANG64
+          - image: windows-2022
+            cc: clang
+            cxx: clang++
+            standard: 20
+            msys2-system: CLANG64
+          - image: windows-2022
+            cc: clang
+            cxx: clang++
+            standard: 14
+            msys2-system: CLANG32
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 14
+            msys2-system: MINGW64
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 14
+            msys2-system: MINGW32
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 17
+            msys2-system: UCRT64
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 20
+            msys2-system: UCRT64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: ${{ matrix.cc }}
+          cxx: ${{ matrix.cxx }}
+          standard: ${{ matrix.standard }}
+          generator: MSYS Makefiles
+          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          msys2-system: ${{ matrix.msys2-system }}
+          shell: msys2 {0}
+
+  cmake-main-windows-msvc:
+    name: cmake-main (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
+    runs-on: ${{ matrix.image }}
+    needs: initial
+    strategy:
+      matrix:
+        include:
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: x64
+            distributable: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: Debug;Release
+          cc: cl
+          cxx: cl
+          standard: ${{ matrix.standard }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          test-coverage: false
+          distributable: ${{ matrix.distributable }}
+
+  cmake-extra-windows-msvc:
+    name: cmake-extra (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
+    runs-on: ${{ matrix.image }}
+    needs: cmake-main
+    strategy:
+      matrix:
+        include:
+          - image: windows-2019
+            standard: 14
+            generator: Visual Studio 16 2019
+            generator-platform: x64
+            # Skip tests because WebView2 Runtime isn't installed
+            test: false
+            distributable: false
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: ARM64
+            # Skip tests because we can't execute ARM64 binaries
+            test: false
+            distributable: true
+          - image: windows-2022
+            standard: 17
+            generator: Visual Studio 17 2022
+            generator-platform: x64
+            test: true
+            distributable: false
+          - image: windows-2022
+            standard: 20
+            generator: Visual Studio 17 2022
+            generator-platform: x64
+            test: true
+            distributable: false
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: Win32
+            test: true
+            distributable: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: cl
+          cxx: cl
+          standard: ${{ matrix.standard }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          test: ${{ matrix.test }}
+          test-coverage: false
+          distributable: ${{ matrix.distributable }}

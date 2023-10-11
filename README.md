@@ -320,24 +320,30 @@ Variable     | Description
 
 ### CMake
 
-#### Build for Release
+#### Building
 
 ```
-cmake -G Ninja -B build -S build_system/cmake
-cmake --build build
+cmake -GNinja -Bbuild -Sbuild_system/cmake
+cmake --build build-profile
 ```
 
-#### Generate Test Coverage Report
+#### Generate Test Coverage
+
+Test coverage is currently only supported with GCC/Clang. We suggest using gcovr for generating reports.
 
 ```
-ctest --test-dir build
+# Build for profiling
+cmake -GNinja -Bbuild-profile -Sbuild_system/cmake -DCMAKE_BUILD_TYPE=Profile
 
-# Plain test coverage report:
-#cmake --build build --target webview_coverage_report
+# Build tests
+cmake --build build-profile --target tests
 
-# HTML test coverage report:
-#cmake --build build --target webview_coverage_report_html
-# See: build/coverage-report/html/index.html
+# Run tests
+ctest --test-dir build-profile
+
+# Generate an HTML test coverage report
+mkdir build-profile/coverage
+gcovr --filter include/ --html-details build-profile/coverage/index.html
 ```
 
 ### Cross-compilation

@@ -1,0 +1,79 @@
+name: CMake Configure
+inputs:
+  build-dir:
+    description: 'CMake build directory'
+    required: true
+    default: build
+  build-type:
+    description: 'CMake build type (Debug, Release, etc)'
+    required: true
+    default: Release
+  cc:
+    description: 'Sets CMAKE_C_COMPILER'
+    required: false
+  cxx:
+    description: 'Sets CMAKE_CXX_COMPILER'
+    required: false
+  generator:
+    description: 'CMake generator'
+    required: true
+    default: Ninja
+  generator-platform:
+    description: 'Sets CMAKE_GENERATOR_PLATFORM'
+    required: false
+  osx-architectures:
+    description: 'Sets CMAKE_OSX_ARCHITECTURES'
+    required: false
+  require-failure:
+    description: 'Whether to treat configuration failure as success and success as failure'
+    required: false
+  shell:
+    required: true
+    default: bash
+  source-dir:
+    description: 'CMake source directory'
+    required: true
+    default: .
+  standard:
+    description: 'C++ standard (11, 14, etc)'
+    required: false
+  toolchain-file:
+    description: 'Sets CMAKE_TOOLCHAIN_FILE'
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Configure
+      run: |
+        if [[ ! -z "${{ inputs.build-type }}" ]]; then
+          configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
+        fi
+        if [[ ! -z "${{ inputs.standard }}" ]]; then
+          configure_args+=("-DCMAKE_CXX_STANDARD=${{ inputs.standard }}")
+        fi
+        if [[ ! -z "${{ inputs.cc }}" ]]; then
+          configure_args+=("-DCMAKE_C_COMPILER=${{ inputs.cc }}")
+        fi
+        if [[ ! -z "${{ inputs.cxx }}" ]]; then
+          configure_args+=("-DCMAKE_CXX_COMPILER=${{ inputs.cxx }}")
+        fi
+        if [[ ! -z "${{ inputs.generator-platform }}" ]]; then
+          configure_args+=("-DCMAKE_GENERATOR_PLATFORM=${{ inputs.generator-platform }}")
+        fi
+        if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
+          configure_args+=("-DCMAKE_TOOLCHAIN_FILE=${{ inputs.toolchain-file }}")
+        fi
+        if [[ ! -z "${{ inputs.osx-architectures }}" ]]; then
+          configure_args+=("-DCMAKE_OSX_ARCHITECTURES=${{ inputs.osx-architectures }}")
+        fi
+        result=0
+        cmake -G "${{ inputs.generator }}" -B "${{ inputs.build-dir }}" -S "${{ inputs.source-dir }}" "${configure_args[@]}" || result=1
+        if [[ "${{ inputs.require-failure }}" == "true" ]]; then
+          if [[ "${result}" == "0" ]]; then
+            echo Configuration succeeded but failure is required.
+            exit 1
+          fi
+          exit 0
+        fi
+        exit "${result}"
+      shell: ${{ inputs.shell }}

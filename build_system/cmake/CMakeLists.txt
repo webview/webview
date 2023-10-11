@@ -25,7 +25,7 @@ add_library(webview::core_headers ALIAS webview_core_headers)
 target_include_directories(
     webview_core_headers
     INTERFACE
-        "$<BUILD_INTERFACE:${INCLUDE_DIR}>"
+        "$<BUILD_INTERFACE:${WEBVIEW_INCLUDE_DIR}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 target_link_libraries(webview_core_headers INTERFACE ${WEBVIEW_DEPENDENCIES})
 set_target_properties(webview_core_headers PROPERTIES
@@ -33,7 +33,7 @@ set_target_properties(webview_core_headers PROPERTIES
 
 # Core shared library
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
-    add_library(webview_core_shared SHARED "${SRC_DIR}/core/webview.cc")
+    add_library(webview_core_shared SHARED "${WEBVIEW_SRC_DIR}/core/webview.cc")
     add_library(webview::core_shared ALIAS webview_core_shared)
     target_link_libraries(webview_core_shared PUBLIC webview_core_headers)
     set_target_properties(webview_core_shared PROPERTIES
@@ -55,7 +55,7 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
         set(STATIC_LIBRARY_OUTPUT_NAME webview)
     endif()
 
-    add_library(webview_core_static STATIC "${SRC_DIR}/core/webview.cc")
+    add_library(webview_core_static STATIC "${WEBVIEW_SRC_DIR}/core/webview.cc")
     add_library(webview::core_static ALIAS webview_core_static)
     target_link_libraries(webview_core_static PUBLIC webview_core_headers)
     set_target_properties(webview_core_static PROPERTIES

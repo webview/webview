@@ -1,26 +1,29 @@
-include("${CMAKE_CURRENT_LIST_DIR}/webview.cmake")
+set(WEBVIEW_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+include("${WEBVIEW_CMAKE_DIR}/webview.cmake")
 
 macro(webview_init)
     include(CheckCXXSourceCompiles)
     include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
 
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules")
+    list(APPEND CMAKE_MODULE_PATH "${WEBVIEW_CMAKE_DIR}/modules")
 
-    # CMAKE_OSX_* should be set prior to the first project() or enable_language()
-    # Target macOS version
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "")
+    if(WEBVIEW_IS_TOP_LEVEL_BUILD)
+        # CMAKE_OSX_* should be set prior to the first project() or enable_language()
+        # Target macOS version
+        set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "")
+    endif()
 
     enable_language(C CXX)
 
     webview_options()
     webview_internal_options()
 
-    set(ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../..")
-    set(EXAMPLE_DIR "${ROOT_DIR}/examples")
-    set(INCLUDE_DIR "${ROOT_DIR}/include")
-    set(SRC_DIR "${ROOT_DIR}/src")
-    set(TEST_DIR "${ROOT_DIR}/tests")
+    set(WEBVIEW_ROOT_DIR "${WEBVIEW_CMAKE_DIR}/../..")
+    set(WEBVIEW_EXAMPLE_DIR "${WEBVIEW_ROOT_DIR}/examples")
+    set(WEBVIEW_INCLUDE_DIR "${WEBVIEW_ROOT_DIR}/include")
+    set(WEBVIEW_SRC_DIR "${WEBVIEW_ROOT_DIR}/src")
+    set(WEBVIEW_TEST_DIR "${WEBVIEW_ROOT_DIR}/tests")
 
     # Version 0.x of the library can't guarantee backward compatibility.
     if(WEBVIEW_VERSION_NUMBER VERSION_LESS 1.0)
@@ -33,54 +36,77 @@ macro(webview_init)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 
-    # Default language standards
-    set(CMAKE_C_STANDARD 99 CACHE STRING "")
-    set(CMAKE_C_STANDARD_REQUIRED YES)
-    set(CMAKE_C_EXTENSIONS NO)
-    set(CMAKE_CXX_STANDARD 11 CACHE STRING "")
-    set(CMAKE_CXX_STANDARD_REQUIRED YES)
-    set(CMAKE_CXX_EXTENSIONS NO)
-
     # Use debug postfix to separate debug/release binaries for the library
     set(CMAKE_DEBUG_POSTFIX d)
 
-    # Enable compile warnings
-    if(MSVC)
-        add_compile_options(/W4)
-    else()
-        add_compile_options(-Wall -Wextra -Wpedantic)
-    endif()
-
-    # Workaround for missing "EventToken.h" (used by MS WebView2)
-    if(WEBVIEW_IS_TOP_LEVEL_BUILD AND CMAKE_SYSTEM_NAME STREQUAL Windows AND NOT MSVC)
-        check_cxx_source_compiles("#include <EventToken.h>" HAVE_EVENTTOKEN_H)
-        if(NOT HAVE_EVENTTOKEN_H)
-            configure_file("${CMAKE_CURRENT_LIST_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
-            include_directories("${CMAKE_CURRENT_BINARY_DIR}/generated/include")
+    if(WEBVIEW_IS_TOP_LEVEL_BUILD)
+        # Add custom build types
+        if(CMAKE_CONFIGURATION_TYPES)
+            list(APPEND CMAKE_CONFIGURATION_TYPES Profile)
+            list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+            set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "" FORCE)
         endif()
-    endif()
 
-    # Set default build type for single-config generators
-    get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-    if(NOT IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
-        set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
-    endif()
-
-    # Settings used when creating an official build
-    if(WEBVIEW_IS_OFFICIAL_BUILD)
-        if(MSVC AND NOT CMAKE_MSVC_RUNTIME_LIBRARY)
-            # Use static MSVC runtime library
-            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        # Use custom compiler/linker flags for the "Profile" build type
+        if((CMAKE_C_COMPILER_ID MATCHES "((^GNU)|Clang)$") AND (CMAKE_CXX_COMPILER_ID MATCHES "((^GNU)|Clang)$"))
+            set(CMAKE_C_FLAGS_PROFILE "-g -O0 -fprofile-arcs -ftest-coverage")
+            set(CMAKE_CXX_FLAGS_PROFILE "-g -O0 -fprofile-arcs -ftest-coverage")
+            set(CMAKE_EXE_LINKER_FLAGS_PROFILE "-fprofile-arcs")
+            set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "-fprofile-arcs")
+        elseif(MSVC)
+            # MSVC isn't supported but warnings are emitted if these variables are undefined
+            set(CMAKE_C_FLAGS_PROFILE "/Od")
+            set(CMAKE_CXX_FLAGS_PROFILE "/Od")
+            set(CMAKE_EXE_LINKER_FLAGS_PROFILE "")
+            set(CMAKE_SHARED_LINKER_FLAGS_PROFILE "")
         endif()
+
+        # Default language standards
+        set(CMAKE_C_STANDARD 99 CACHE STRING "")
+        set(CMAKE_C_STANDARD_REQUIRED YES)
+        set(CMAKE_C_EXTENSIONS NO)
+        set(CMAKE_CXX_STANDARD 11 CACHE STRING "")
+        set(CMAKE_CXX_STANDARD_REQUIRED YES)
+        set(CMAKE_CXX_EXTENSIONS NO)
+
+        # Enable compile warnings
+        if(MSVC)
+            add_compile_options(/W4)
+        else()
+            add_compile_options(-Wall -Wextra -Wpedantic)
+        endif()
+
+        # Workaround for missing "EventToken.h" (used by MS WebView2)
+        if(CMAKE_SYSTEM_NAME STREQUAL Windows AND NOT MSVC)
+            check_cxx_source_compiles("#include <EventToken.h>" HAVE_EVENTTOKEN_H)
+            if(NOT HAVE_EVENTTOKEN_H)
+                configure_file("${WEBVIEW_CMAKE_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
+                include_directories("${CMAKE_CURRENT_BINARY_DIR}/generated/include")
+            endif()
+        endif()
+
+        # Set default build type for single-config generators
+        get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+        if(NOT IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
+            set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+        endif()
+
+        # Settings used when creating an official build
+        if(WEBVIEW_IS_OFFICIAL_BUILD)
+            if(MSVC AND NOT CMAKE_MSVC_RUNTIME_LIBRARY)
+                # Use static MSVC runtime library
+                set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+            endif()
+        endif()
+
+        webview_set_install_rpath()
     endif()
 
     webview_find_dependencies()
-    webview_set_install_rpath()
-    webview_enable_coverage()
 endmacro()
 
 macro(webview_extract_version)
-    file(READ "${CMAKE_CURRENT_LIST_DIR}/../../include/webview/webview.h" WEBVIEW_H_CONTENT)
+    file(READ "${WEBVIEW_CMAKE_DIR}/../../include/webview/webview.h" WEBVIEW_H_CONTENT)
 
     if(NOT DEFINED WEBVIEW_VERSION_MAJOR)
         string(REGEX MATCH "#define WEBVIEW_VERSION_MAJOR ([0-9]+)" WEBVIEW_VERSION_MAJOR_MATCH "${WEBVIEW_H_CONTENT}")
@@ -113,15 +139,15 @@ endmacro()
 
 macro(webview_install)
     # Install headers
-    install(DIRECTORY "${INCLUDE_DIR}/webview"
+    install(DIRECTORY "${WEBVIEW_INCLUDE_DIR}/webview"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_development)
-    install(FILES "${INCLUDE_DIR}/webview.h"
+    install(FILES "${WEBVIEW_INCLUDE_DIR}/webview.h"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_development)
 
     # Install modules
-    install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/modules"
+    install(DIRECTORY "${WEBVIEW_CMAKE_DIR}/modules"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
         COMPONENT webview_development)
 
@@ -187,7 +213,6 @@ macro(webview_internal_options)
     option(WEBVIEW_BUILD_EXAMPLES "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_INSTALL_TARGETS "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_PACKAGE "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
-    option(WEBVIEW_TEST_COVERAGE "" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_SHARED_LIBRARY "" ON)
     option(WEBVIEW_BUILD_STATIC_LIBRARY "" ON)
     option(WEBVIEW_IS_OFFICIAL_BUILD "" OFF)
@@ -208,44 +233,3 @@ macro(webview_set_install_rpath)
         set(CMAKE_INSTALL_RPATH "${RPATH_BASE}" "${RPATH_BASE}/${RPATH_SUBDIR}")
     endif()
 endmacro()
-
-function(webview_enable_coverage)
-    find_program(LCOV_EXE lcov)
-    find_program(GENHTML_EXE genhtml)
-
-    if(LCOV_EXE AND GENHTML_EXE)
-        # Include coverage only for files under this directory
-        get_filename_component(COVERAGE_SOURCE_DIR "${ROOT_DIR}" ABSOLUTE)
-        set(COVERAGE_INFO_FILE "${CMAKE_BINARY_DIR}/coverage.info")
-
-        add_custom_target(webview_coverage
-            COMMAND "${LCOV_EXE}" --capture --output-file "${COVERAGE_INFO_FILE}" --directory "${CMAKE_BINARY_DIR}" --include "${COVERAGE_SOURCE_DIR}/*" --exclude "${COVERAGE_SOURCE_DIR}/tests/*"
-            BYPRODUCTS "${COVERAGE_INFO_FILE}"
-            VERBATIM)
-        add_custom_target(webview_coverage_report
-            COMMAND "${LCOV_EXE}" --list "${COVERAGE_INFO_FILE}"
-            DEPENDS webview_coverage
-            VERBATIM)
-        add_custom_target(webview_coverage_report_html
-            COMMAND "${GENHTML_EXE}" "${COVERAGE_INFO_FILE}" --output-directory "${CMAKE_BINARY_DIR}/coverage-report/html"
-            DEPENDS webview_coverage
-            VERBATIM)
-    endif()
-endfunction()
-
-
-function(webview_add_coverage TARGET)
-    if(MSVC)
-        # TODO: Enable coverage for MSVC
-    else()
-        target_compile_options("${TARGET}" PRIVATE -g -O0 -fprofile-arcs -ftest-coverage)
-        target_link_options("${TARGET}" PRIVATE -fprofile-arcs)
-    endif()
-endfunction()
-
-function(webview_add_test NAME TARGET COVERAGE)
-    add_test(NAME "${NAME}" COMMAND "${TARGET}")
-    if(COVERAGE)
-        webview_add_coverage("${TARGET}")
-    endif()
-endfunction()

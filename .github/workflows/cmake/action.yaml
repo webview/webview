@@ -1,153 +1,282 @@
 name: CMake
 inputs:
+  apt-packages:
+    description: 'Space-deliminated names of packages to install with apt-get'
+    required: false
+  build-dir:
+    description: 'CMake build directory'
+    required: true
+    default: build
   build-type:
+    description: 'Semicolon-separated CMake build types (Debug, Release, etc)'
     required: true
     default: Release
-  generator:
+  build-tests-target:
+    description: 'CMake target for building all tests'
     required: true
-    default: Ninja
+    default: tests
+  cc:
+    description: 'Sets CMAKE_C_COMPILER'
+    required: false
+  cxx:
+    description: 'Sets CMAKE_CXX_COMPILER'
+    required: false
+  distributable:
+    required: false
+  gcov:
+    description: 'gcov executable (gcov-12, llvm-cov-15 gcov, etc)'
+    required: false
+  gcovr-version:
+    description: 'Version of gcovr to install'
+    required: true
+    default: '6.0'
+  generator:
+    description: 'CMake generator'
+    required: true
+  generator-platform:
+    description: 'Sets CMAKE_GENERATOR_PLATFORM'
+    required: false
+  image:
+    description: 'GHA runner image name'
+    required: true
+  install-wrapper-cmd:
+    description: 'Wrapper command for installing the CMake package'
+    required: false
+  msys2-system:
+    description: 'MSYS2 system (UCRT64, CLANG64, etc)'
+    required: false
+  osx-architectures:
+    description: 'Sets CMAKE_OSX_ARCHITECTURES'
+    required: false
+  package-test-build-dir:
+    description: 'CMake build directory for testing the CMake package'
+    required: true
+    default: examples/cmake/build
+  package-test-source-dir:
+    description: 'CMake source directory for testing the CMake package'
+    required: true
+    default: examples/cmake
   shell:
     required: true
     default: bash
-  configure:
-    required: false
-    default: false
-  build:
-    required: false
-    default: false
+  source-dir:
+    description: 'CMake source directory'
+    required: true
+    default: build_system/cmake
+  standard:
+    description: 'C++ standard (11, 14, etc)'
+    required: true
   test:
+    description: 'Whether to enable tests'
+    required: true
+    default: true
+  test-build-dir:
+    description: 'CMake build directory for tests'
+    required: true
+    default: build-test
+  test-build-type:
+    description: 'CMake build type for test targets'
+    required: true
+    default: Profile
+  test-coverage:
+    description: 'Whether to enable test coverage'
     required: false
-    default: false
-  install:
-    required: false
-    default: false
-  package:
-    required: false
-    default: false
-  package-configurations:
-    required: false
-  cxx-std:
-    required: false
-  generator-platform:
+    default: true
+  test-coverage-name:
+    description: 'Test coverage name when enabled'
     required: false
   test-wrapper-cmd:
-    required: false
-  install-wrapper-cmd:
+    description: 'Wrapper command for running tests'
     required: false
   toolchain-file:
-    required: false
-  macos-architectures:
-    required: false
-  upload-artifacts:
-    required: false
-  artifact-name:
+    description: 'Sets CMAKE_TOOLCHAIN_FILE'
     required: false
 runs:
   using: "composite"
   steps:
-    - name: Configure library
-      uses: ./.github/workflows/cmake-configure
-      if: inputs.configure == '' || fromJSON(inputs.configure)
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        packages=(cmake libwebkit2gtk-4.0-dev ninja-build xvfb)
+        if [[ ! -z "${{ inputs.apt-packages }}" ]]; then
+          packages+=(${{ inputs.apt-packages }})
+        fi
+        sudo apt-get install "${packages[@]}" -y
+      shell: bash
+
+    - name: Set up MSYS2
+      if: runner.os == 'Windows' && inputs.msys2-system != ''
+      uses: msys2/setup-msys2@v2
       with:
-        source-dir: build_system/cmake
-        build-type: ${{ inputs.build-type }}
-        cxx-std: ${{ inputs.cxx-std }}
+        msystem: ${{ inputs.msys2-system }}
+        update: false
+        install: base-devel
+        pacboy: cmake:p python:p python-pip:p python-lxml:p toolchain:p
+
+    - name: Configure tests
+      uses: ./.github/workflows/cmake/configure
+      with:
+        build-dir: ${{ inputs.test-build-dir }}
+        source-dir: ${{ inputs.source-dir }}
+        build-type: ${{ inputs.test-build-type }}
+        cc: ${{ inputs.cc }}
+        cxx: ${{ inputs.cxx }}
+        standard: ${{ inputs.standard }}
         generator: ${{ inputs.generator }}
         generator-platform: ${{ inputs.generator-platform }}
         toolchain-file: ${{ inputs.toolchain-file }}
-        macos-architectures: ${{ inputs.macos-architectures }}
+        osx-architectures: ${{ inputs.osx-architectures }}
         shell: ${{ inputs.shell }}
-    - name: Build library
-      if: inputs.build == '' || fromJSON(inputs.build)
-      uses: ./.github/workflows/cmake-build
+
+    - name: Build tests
+      if: fromJSON(inputs.test)
+      uses: ./.github/workflows/cmake/build
       with:
-        build-type: ${{ inputs.build-type }}
+        build-dir: ${{ inputs.test-build-dir }}
+        build-type: ${{ inputs.test-build-type }}
+        target: ${{ inputs.build-tests-target }}
         shell: ${{ inputs.shell }}
-    - name: Test library
-      if: inputs.test == '' || fromJSON(inputs.test)
-      uses: ./.github/workflows/cmake-test
+
+    - name: Run tests
+      if: fromJSON(inputs.test)
+      uses: ./.github/workflows/cmake/test
       with:
-        test-dir: build/tests
-        build-type: ${{ inputs.build-type }}
+        build-dir: ${{ inputs.test-build-dir }}
+        build-type: ${{ inputs.test-build-type }}
         test-wrapper-cmd: ${{ inputs.test-wrapper-cmd }}
         shell: ${{ inputs.shell }}
-    - name: Generate test coverage report (plain)
-      if: inputs.test == '' || fromJSON(inputs.test)
-      uses: ./.github/workflows/cmake-build
+
+    - name: Configure project
+      uses: ./.github/workflows/cmake/configure
       with:
+        build-dir: ${{ inputs.build-dir }}
+        source-dir: ${{ inputs.source-dir }}
         build-type: ${{ inputs.build-type }}
-        shell: ${{ inputs.shell }}
-        target: webview_coverage_report
-    - name: Generate test coverage report (HTML)
-      if: inputs.test == '' || fromJSON(inputs.test)
-      uses: ./.github/workflows/cmake-build
-      with:
-        build-type: ${{ inputs.build-type }}
-        shell: ${{ inputs.shell }}
-        target: webview_coverage_report_html
-    - name: Package library
-      if: inputs.package == '' || fromJSON(inputs.package)
-      uses: ./.github/workflows/cmake-package
-      with:
-        configurations: ${{ inputs.package-configurations }}
-        shell: ${{ inputs.shell }}
-    - name: Ensure failure to configure CMake example before installing library
-      if: inputs.install == '' || fromJSON(inputs.install)
-      uses: ./.github/workflows/cmake-configure
-      with:
-        build-dir: examples/cmake/build
-        source-dir: examples/cmake
-        build-type: ${{ inputs.build-type }}
-        cxx-std: ${{ inputs.cxx-std }}
+        cc: ${{ inputs.cc }}
+        cxx: ${{ inputs.cxx }}
+        standard: ${{ inputs.standard }}
         generator: ${{ inputs.generator }}
         generator-platform: ${{ inputs.generator-platform }}
         toolchain-file: ${{ inputs.toolchain-file }}
-        macos-architectures: ${{ inputs.macos-architectures }}
+        osx-architectures: ${{ inputs.osx-architectures }}
+        shell: ${{ inputs.shell }}
+
+    - name: Build project
+      uses: ./.github/workflows/cmake/build
+      with:
+        build-dir: ${{ inputs.build-dir }}
+        build-type: ${{ inputs.build-type }}
+        shell: ${{ inputs.shell }}
+
+    - name: Package
+      run: |
+        args=()
+        if [[ ! -z "${{ inputs.build-type }}" ]]; then
+          args+=(-C "${{ inputs.build-type }}")
+        fi
+        cpack "${args[@]}"
+      working-directory: ${{ inputs.build-dir }}
+      shell: ${{ inputs.shell }}
+
+    - name: Ensure failure to configure CMake example before installing library
+      uses: ./.github/workflows/cmake/configure
+      with:
+        build-dir: ${{ inputs.package-test-build-dir }}
+        source-dir: ${{ inputs.package-test-source-dir }}
+        build-type: ${{ inputs.build-type }}
+        cc: ${{ inputs.cc }}
+        cxx: ${{ inputs.cxx }}
+        standard: ${{ inputs.standard }}
+        generator: ${{ inputs.generator }}
+        generator-platform: ${{ inputs.generator-platform }}
+        toolchain-file: ${{ inputs.toolchain-file }}
+        osx-architectures: ${{ inputs.osx-architectures }}
         require-failure: true
         shell: ${{ inputs.shell }}
-    - name: Install library locally
-      uses: ./.github/workflows/cmake-install
+
+    - name: Install project locally
+      uses: ./.github/workflows/cmake/install
       with:
-        build-dir: build
+        build-dir: ${{ inputs.build-dir }}
         build-type: ${{ inputs.build-type }}
-        shell: ${{ inputs.shell }}
         install-wrapper-cmd: ${{ inputs.install-wrapper-cmd }}
-      if: inputs.install == '' || fromJSON(inputs.install)
+        shell: ${{ inputs.shell }}
+
     - name: Configure CMake example
-      uses: ./.github/workflows/cmake-configure
-      if: inputs.install == '' || fromJSON(inputs.install)
+      uses: ./.github/workflows/cmake/configure
       with:
-        build-dir: examples/cmake/build
-        source-dir: examples/cmake
+        build-dir: ${{ inputs.package-test-build-dir }}
+        source-dir: ${{ inputs.package-test-source-dir }}
         build-type: ${{ inputs.build-type }}
-        cxx-std: ${{ inputs.cxx-std }}
+        cc: ${{ inputs.cc }}
+        cxx: ${{ inputs.cxx }}
+        standard: ${{ inputs.standard }}
         generator: ${{ inputs.generator }}
         generator-platform: ${{ inputs.generator-platform }}
         toolchain-file: ${{ inputs.toolchain-file }}
-        macos-architectures: ${{ inputs.macos-architectures }}
+        osx-architectures: ${{ inputs.osx-architectures }}
         shell: ${{ inputs.shell }}
+
     - name: Build CMake example
-      if: inputs.install == '' || fromJSON(inputs.install)
-      uses: ./.github/workflows/cmake-build
+      uses: ./.github/workflows/cmake/build
       with:
-        build-dir: examples/cmake/build
+        build-dir: ${{ inputs.package-test-build-dir }}
         build-type: ${{ inputs.build-type }}
         shell: ${{ inputs.shell }}
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
-      if: inputs.upload-artifacts != '' && fromJSON(inputs.upload-artifacts)
+
+    - name: Set up Python (Other)
+      if: runner.os != 'Windows' || inputs.msys2-system == ''
+      uses: actions/setup-python@v4
       with:
-        name: ${{ inputs.artifact-name }}
-        path: |
-          build/*.gz
-          build/*.sha256
-          build/*.zip
-        retention-days: 1
-    - name: Upload coverage artifacts
+        python-version: '3.11'
+
+    - name: Install gcovr (MSYS2)
+      if: runner.os == 'Windows' && inputs.msys2-system != ''
+      run: pip install "gcovr==${{ inputs.gcovr-version }}"
+      shell: msys2 {0}
+
+    - name: Install gcovr (Other)
+      if: runner.os != 'Windows' || inputs.msys2-system == ''
+      run: pip3 install "gcovr==${{ inputs.gcovr-version }}"
+      shell: bash
+
+    - name: Prepare test coverage artifacts
+      id: prepare-test-coverage-artifacts
+      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
+      run: |
+        base_dir="test_coverage_${RANDOM}"
+        artifact_dir="${base_dir}/coverage/${{ inputs.test-coverage-name }}"
+
+        gcovr_args=(--filter include/ --json "${artifact_dir}/coverage.json")
+        if [[ ! -z "${{ inputs.gcov }}" ]]; then
+          gcovr_args+=(--gcov-executable "${{ inputs.gcov }}")
+        fi
+
+        mkdir -p "${artifact_dir}"
+        gcovr "${gcovr_args[@]}"
+
+        echo "upload-dir=${base_dir}" >> "${GITHUB_OUTPUT}"
+        find "${base_dir}" -type f
+      shell: ${{ inputs.shell }}
+
+    - name: Upload test coverage artifacts
+      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
       uses: actions/upload-artifact@v3
-      if: inputs.upload-artifacts != '' && fromJSON(inputs.upload-artifacts)
       with:
-        name: ${{ inputs.artifact-name }}_coverage
-        path: |
-          build/coverage-report
+        name: test_coverage
+        path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
         retention-days: 1
+        if-no-files-found: error
+
+    - name: Upload distributable artifacts
+      if: matrix.distributable != '' && fromJSON(matrix.distributable)
+      uses: actions/upload-artifact@v3
+      with:
+        name: distributables
+        path: |
+          ${{ inputs.build-dir }}/*.gz
+          ${{ inputs.build-dir }}/*.sha256
+          ${{ inputs.build-dir }}/*.zip
+        retention-days: 1
+        if-no-files-found: error
