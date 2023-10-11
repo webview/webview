@@ -23,8 +23,10 @@ runs:
           tracefile_args+=(--add-tracefile "${f}")
         done <<< "$(find . -type f -name "coverage.json")"
         mkdir -p "${{ inputs.report-dir }}/html"
-        gcovr --json-summary "${{ inputs.report-dir }}/summary.json" "${tracefile_args[@]}"
-        gcovr --html-details "${{ inputs.report-dir }}/html/index.html" "${tracefile_args[@]}"
+        gcovr --json "${{ inputs.report-dir }}/gcovr.json" "${tracefile_args[@]}"
+        gcovr --coveralls "${{ inputs.report-dir }}/coveralls.json" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
+        gcovr --json-summary "${{ inputs.report-dir }}/summary.json" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
+        gcovr --html-details "${{ inputs.report-dir }}/html/index.html" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
       shell: bash
 
     - name: Upload report artifacts
@@ -69,3 +71,8 @@ runs:
               ])
             ])
             .write();
+
+    - name: Upload test coverage to codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ${{ inputs.report-dir }}/coveralls.json
