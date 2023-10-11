@@ -27,18 +27,6 @@ jobs:
     steps:
       - run: echo
 
-  # Extra CMake jobs
-  cmake-extra:
-    runs-on: ubuntu-latest
-    needs:
-      - cmake-extra-linux
-      - cmake-extra-linux-mingw-w64
-      - cmake-extra-macos
-      - cmake-extra-windows-msys2
-      - cmake-extra-windows-msvc
-    steps:
-      - run: echo
-
   swig:
     needs: cmake-main
     runs-on: ubuntu-latest
