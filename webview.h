@@ -143,6 +143,9 @@ WEBVIEW_API void *webview_get_window(webview_t w);
 // Updates the title of the native window. Must be called from the UI thread.
 WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 
+// Hides the native window frame
+WEBVIEW_API void webview_hide_frame(webview_t w);
+
 // Window size hints
 #define WEBVIEW_HINT_NONE 0  // Width and height are default size
 #define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
@@ -829,8 +832,8 @@ inline id operator"" _str(const char *s, std::size_t) {
 class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
-                                                               !window} {
+      : m_debug{debug}, m_window{static_cast<id>(window)},
+        m_owns_window{!window} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -2764,7 +2767,15 @@ if (status === 0) {
         result.empty() ? "undefined" : detail::json_escape(result)));
   }
 
+  void set_window_frame_visible(bool visibility) {
+    _frame_visbility = visibility;
+  }
+
+  bool get_window_frame_visible() { return _frame_visbility; }
+
 private:
+  bool _frame_visbility = true;
+
   void on_message(const std::string &msg) {
     auto seq = detail::json_parse(msg, "id", 0);
     auto name = detail::json_parse(msg, "method", 0);
@@ -2815,8 +2826,12 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
   static_cast<webview::webview *>(w)->set_title(title);
 }
 
-WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints) {
+WEBVIEW_API void webview_hide_frame(webview_t w) {
+  static_cast<webview::webview *>(w)->set_window_frame_visible(false);
+}
+
+WEBVIEW_API
+void webview_set_size(webview_t w, int width, int height, int hints) {
   static_cast<webview::webview *>(w)->set_size(width, height, hints);
 }
 

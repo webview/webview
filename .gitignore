@@ -9,4 +9,6 @@ webview-example
 *.exe
 *.o
 
+.vscode
+
 examples/scrape/scrape
