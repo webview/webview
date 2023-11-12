@@ -104,6 +104,7 @@ task_check() {
     echo "Linting..."
     clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
     clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy "${project_dir}/examples/no_frame.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
     clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
@@ -124,16 +125,16 @@ task_build() {
     echo "Building C++ examples..."
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/basic.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/basic${exe_suffix}" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/bind.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
-    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/no_frame.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/examples/no_frame.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/no_frame${exe_suffix}" || return 1
 
     echo "Building C examples..."
     "${cxx_compiler}" -c "${cxx_compile_flags[@]}" -DWEBVIEW_STATIC "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/basic.c" -o "${build_dir}/examples/c/basic.o" || return 1
     "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/bind.c" -o "${build_dir}/examples/c/bind.o" || return 1
-    "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/no_frame.c" -o "${build_dir}/examples/c/bind.o" || return 1
+    "${c_compiler}" -c "${c_compile_flags[@]}" "${project_dir}/examples/no_frame.c" -o "${build_dir}/examples/c/no_frame.o" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/basic.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/basic${exe_suffix}" || return 1
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/bind.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/bind${exe_suffix}" || return 1
-    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/no_frame.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/bind${exe_suffix}" || return 1
+    "${cxx_compiler}" "${cxx_compile_flags[@]}" "${build_dir}/examples/c/no_frame.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/no_frame${exe_suffix}" || return 1
 
     echo "Building test app..."
     "${cxx_compiler}" "${cxx_compile_flags[@]}" "${project_dir}/webview_test.cc" "${cxx_link_flags[@]}" -o "${build_dir}/webview_test${exe_suffix}" || return 1
@@ -313,7 +314,7 @@ fi
 tasks=(info clean format deps check build test)
 
 # Task override from command line
-if [[ ${#@}t 0 ]]; then
+if [[ ${#@} -gt 0 ]]; then
     tasks=("${@}")
 fi
 

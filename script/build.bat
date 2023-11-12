@@ -110,8 +110,10 @@ goto :main
         "%project_dir%\webview_test.cc" ^
         "%project_dir%\examples/basic.c" ^
         "%project_dir%\examples/bind.c" ^
+        "%project_dir%\examples/no_frame.c" ^
         "%project_dir%\examples/basic.cc" ^
         "%project_dir%\examples/bind.cc" ^
+        "%project_dir%\examples/no_frame.cc" ^
         || exit /b 1
     goto :eof
 
@@ -143,7 +145,7 @@ goto :main
     "%cxx_compiler%" /c %cxx_compile_flags% /DWEBVIEW_STATIC "%project_dir%\webview.cc" "/Fo%build_dir%\library\webview.obj" %cxx_link_flags% || exit /b 1
     "%c_compiler%" %c_compile_flags% "%project_dir%\examples\basic.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\basic%exe_suffix%" || exit /b 1
     "%c_compiler%" %c_compile_flags% "%project_dir%\examples\bind.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
-    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\no_frame.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\bind%exe_suffix%" || exit /b 1
+    "%c_compiler%" %c_compile_flags% "%project_dir%\examples\no_frame.c" "%build_dir%\library\webview.obj" "/Fo%build_dir%\examples\c"\ %c_link_flags% /link "/out:%build_dir%\examples\c\no_frame%exe_suffix%" || exit /b 1
 
     echo Building test app...
     "%cxx_compiler%" %cxx_compile_flags% "%project_dir%\webview_test.cc" "/Fo%build_dir%"\ %cxx_link_flags% /link "/out:%build_dir%\webview_test%exe_suffix%" || exit /b 1
