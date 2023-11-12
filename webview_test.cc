@@ -52,15 +52,7 @@ static void test_c_api() {
 // =============================================================================
 // TEST: use C API to create a window, hide the frame, run app and terminate it.
 // =============================================================================
-static void cb_assert_arg(webview_t w, void *arg) {
-  assert(w != nullptr);
-  assert(memcmp(arg, "arg", 3) == 0);
-}
-static void cb_terminate(webview_t w, void *arg) {
-  assert(arg == nullptr);
-  webview_terminate(w);
-}
-static void test_c_api() {
+static void test_c_api_no_frame() {
   webview_t w;
   w = webview_create(false, nullptr);
   webview_set_size(w, 480, 320, 0);
@@ -491,6 +483,7 @@ int main(int argc, char *argv[]) {
   std::unordered_map<std::string, std::function<void()>> all_tests = {
       {"terminate", test_terminate},
       {"c_api", test_c_api},
+      {"c_api_no_frame", test_c_api_no_frame},
       {"c_api_bind", test_c_api_bind},
       {"c_api_version", test_c_api_version},
       {"bidir_comms", test_bidir_comms},
