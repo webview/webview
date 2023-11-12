@@ -603,8 +603,10 @@ public:
                        }),
                        this);
     }
+
     // Initialize webview widget
     m_webview = webkit_web_view_new();
+
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     g_signal_connect(manager, "script-message-received::external",
@@ -646,6 +648,10 @@ public:
                     }),
                     new std::function<void()>(f),
                     [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
+  }
+
+  void hide_frame() { 
+    gtk_window_set_decorated(GTK_WINDOW(m_window), FALSE); 
   }
 
   void set_title(const std::string &title) {
@@ -873,6 +879,7 @@ public:
                        delete f;
                      }));
   }
+  void hide_frame(){}
   void set_title(const std::string &title) {
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
@@ -2449,6 +2456,8 @@ public:
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
 
+  void hide_frame(){}
+
   void set_title(const std::string &title) {
     SetWindowTextW(m_window, widen_string(title).c_str());
   }
@@ -2767,15 +2776,7 @@ if (status === 0) {
         result.empty() ? "undefined" : detail::json_escape(result)));
   }
 
-  void set_window_frame_visible(bool visibility) {
-    _frame_visbility = visibility;
-  }
-
-  bool get_window_frame_visible() { return _frame_visbility; }
-
 private:
-  bool _frame_visbility = true;
-
   void on_message(const std::string &msg) {
     auto seq = detail::json_parse(msg, "id", 0);
     auto name = detail::json_parse(msg, "method", 0);
@@ -2827,7 +2828,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 }
 
 WEBVIEW_API void webview_hide_frame(webview_t w) {
-  static_cast<webview::webview *>(w)->set_window_frame_visible(false);
+ static_cast<webview::webview *>(w)->hide_frame();
 }
 
 WEBVIEW_API
