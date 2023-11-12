@@ -806,6 +806,7 @@ private:
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
 
 enum NSWindowStyleMask : NSUInteger {
+  NSWindowStyleMaskBorderless = 0,
   NSWindowStyleMaskTitled = 1,
   NSWindowStyleMaskClosable = 2,
   NSWindowStyleMaskMiniaturizable = 4,
@@ -837,7 +838,7 @@ class cocoa_wkwebview_engine {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug}, m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
+        m_owns_window{!window},m_hide_frame{false} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -877,7 +878,9 @@ public:
                        delete f;
                      }));
   }
-  void hide_frame() {}
+  void hide_frame() {
+    m_hide_frame = true;
+  }
   void set_title(const std::string &title) {
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
@@ -885,8 +888,9 @@ public:
                                             title.c_str()));
   }
   void set_size(int width, int height, int hints) {
+    auto window_border_style = m_hide_frame ? NSWindowStyleMaskBorderless : NSWindowStyleMaskTitled;
     auto style = static_cast<NSWindowStyleMask>(
-        NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+        window_border_style | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable);
     if (hints != WEBVIEW_HINT_FIXED) {
       style =
@@ -1110,7 +1114,7 @@ private:
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
-      auto style = NSWindowStyleMaskTitled;
+      auto style = m_hide_frame ? NSWindowStyleMaskBorderless : NSWindowStyleMaskTitled;
       m_window = objc::msg_send<id>(
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
@@ -1221,6 +1225,7 @@ private:
   id m_webview;
   id m_manager;
   bool m_owns_window;
+  bool m_hide_frame;
 };
 
 } // namespace detail
