@@ -49,6 +49,31 @@ static void test_c_api() {
   webview_destroy(w);
 }
 
+// =============================================================================
+// TEST: use C API to create a window, hide the frame, run app and terminate it.
+// =============================================================================
+static void cb_assert_arg(webview_t w, void *arg) {
+  assert(w != nullptr);
+  assert(memcmp(arg, "arg", 3) == 0);
+}
+static void cb_terminate(webview_t w, void *arg) {
+  assert(arg == nullptr);
+  webview_terminate(w);
+}
+static void test_c_api() {
+  webview_t w;
+  w = webview_create(false, nullptr);
+  webview_set_size(w, 480, 320, 0);
+  webview_set_title(w, "Test");
+  webview_set_html(w, "set_html ok");
+  webview_hide_frame(w);
+  webview_navigate(w, "data:text/plain,navigate%20ok");
+  webview_dispatch(w, cb_assert_arg, (void *)"arg");
+  webview_dispatch(w, cb_terminate, nullptr);
+  webview_run(w);
+  webview_destroy(w);
+}
+
 // =================================================================
 // TEST: use C API to test binding and unbinding.
 // =================================================================

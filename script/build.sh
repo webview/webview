@@ -124,13 +124,16 @@ task_build() {
     echo "Building C++ examples..."
     "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${project_dir}/examples/basic.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/basic${exe_suffix}" || return 1
     "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${project_dir}/examples/bind.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
+    "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${project_dir}/examples/no_frame.cc" "${cxx_link_flags[@]}" -o "${build_dir}/examples/cc/bind${exe_suffix}" || return 1
 
     echo "Building C examples..."
     "${cxx_compiler}" -g -c "${cxx_compile_flags[@]}" -DWEBVIEW_STATIC "${project_dir}/webview.cc" -o "${build_dir}/webview.o" || return 1
     "${c_compiler}" -g -c "${c_compile_flags[@]}" "${project_dir}/examples/basic.c" -o "${build_dir}/examples/c/basic.o" || return 1
     "${c_compiler}" -g -c "${c_compile_flags[@]}" "${project_dir}/examples/bind.c" -o "${build_dir}/examples/c/bind.o" || return 1
+    "${c_compiler}" -g -c "${c_compile_flags[@]}" "${project_dir}/examples/no_frame.c" -o "${build_dir}/examples/c/bind.o" || return 1
     "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${build_dir}/examples/c/basic.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/basic${exe_suffix}" || return 1
     "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${build_dir}/examples/c/bind.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/bind${exe_suffix}" || return 1
+    "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${build_dir}/examples/c/no_frame.o" "${build_dir}/webview.o" "${cxx_link_flags[@]}" -o "${build_dir}/examples/c/bind${exe_suffix}" || return 1
 
     echo "Building test app..."
     "${cxx_compiler}" -g "${cxx_compile_flags[@]}" "${project_dir}/webview_test.cc" "${cxx_link_flags[@]}" -o "${build_dir}/webview_test${exe_suffix}" || return 1
