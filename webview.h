@@ -650,7 +650,7 @@ public:
                     [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
   }
 
-  void hide_frame() { gtk_window_set_decorated(GTK_WINDOW(m_window), FALSE); }
+  void hide_frame() { gtk_window_set_decorated(GTK_WINDOW(m_window), false); }
 
   void set_title(const std::string &title) {
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
