@@ -8,7 +8,9 @@ webview_test
 webview-example
 *.exe
 *.o
+*.pdb
 
 .vscode
 
 examples/scrape/scrape
+

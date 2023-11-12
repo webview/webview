@@ -650,9 +650,7 @@ public:
                     [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
   }
 
-  void hide_frame() { 
-    gtk_window_set_decorated(GTK_WINDOW(m_window), FALSE); 
-  }
+  void hide_frame() { gtk_window_set_decorated(GTK_WINDOW(m_window), FALSE); }
 
   void set_title(const std::string &title) {
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
@@ -879,7 +877,7 @@ public:
                        delete f;
                      }));
   }
-  void hide_frame(){}
+  void hide_frame() {}
   void set_title(const std::string &title) {
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
@@ -2456,7 +2454,11 @@ public:
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
 
-  void hide_frame(){}
+  void hide_frame() {
+    LONG current_style = GetWindowLong(m_window, GWL_STYLE);
+    current_style &= ~(WS_CAPTION | WS_SIZEBOX | WS_BORDER | WS_THICKFRAME);
+    SetWindowLong(m_window, GWL_STYLE, current_style);
+  }
 
   void set_title(const std::string &title) {
     SetWindowTextW(m_window, widen_string(title).c_str());
@@ -2828,7 +2830,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 }
 
 WEBVIEW_API void webview_hide_frame(webview_t w) {
- static_cast<webview::webview *>(w)->hide_frame();
+  static_cast<webview::webview *>(w)->hide_frame();
 }
 
 WEBVIEW_API
