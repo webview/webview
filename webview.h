@@ -2252,13 +2252,16 @@ public:
     if (!is_webview2_available()) {
       return;
     }
+
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+
     if (!window) {
       m_com_init = {COINIT_APARTMENTTHREADED};
       if (!m_com_init.is_initialized()) {
         return;
       }
       enable_dpi_awareness();
-      HINSTANCE hInstance = GetModuleHandle(nullptr);
+      
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
           GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
@@ -2349,49 +2352,6 @@ public:
       }
       inc_window_count();
 
-      // Create a message-only window for internal messaging.
-      WNDCLASSEXW message_wc{};
-      message_wc.cbSize = sizeof(WNDCLASSEX);
-      message_wc.hInstance = hInstance;
-      message_wc.lpszClassName = L"webview_message";
-      message_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
-                                             LPARAM lp) -> LRESULT {
-        win32_edge_engine *w{};
-
-        if (msg == WM_NCCREATE) {
-          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
-          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
-          w->m_message_window = hwnd;
-          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
-        } else {
-          w = reinterpret_cast<win32_edge_engine *>(
-              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-        }
-
-        if (!w) {
-          return DefWindowProcW(hwnd, msg, wp, lp);
-        }
-
-        switch (msg) {
-        case WM_APP:
-          if (auto f = (dispatch_fn_t *)(lp)) {
-            (*f)();
-            delete f;
-          }
-          break;
-        case WM_DESTROY:
-          w->m_message_window = nullptr;
-          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-          break;
-        default:
-          return DefWindowProcW(hwnd, msg, wp, lp);
-        }
-        return 0;
-      });
-      RegisterClassExW(&message_wc);
-      CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0,
-                      HWND_MESSAGE, nullptr, hInstance, this);
-
       m_dpi = get_window_dpi(m_window);
       constexpr const int initial_width = 640;
       constexpr const int initial_height = 480;
@@ -2400,6 +2360,49 @@ public:
       m_window = *(static_cast<HWND *>(window));
       m_dpi = get_window_dpi(m_window);
     }
+
+    // Create a message-only window for internal messaging.
+    WNDCLASSEXW message_wc{};
+    message_wc.cbSize = sizeof(WNDCLASSEX);
+    message_wc.hInstance = hInstance;
+    message_wc.lpszClassName = L"webview_message";
+    message_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                           LPARAM lp) -> LRESULT {
+      win32_edge_engine *w{};
+
+      if (msg == WM_NCCREATE) {
+        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+        w->m_message_window = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+      } else {
+        w = reinterpret_cast<win32_edge_engine *>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+      }
+
+      if (!w) {
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+
+      switch (msg) {
+      case WM_APP:
+        if (auto f = (dispatch_fn_t *)(lp)) {
+          (*f)();
+          delete f;
+        }
+        break;
+      case WM_DESTROY:
+        w->m_message_window = nullptr;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+        break;
+      default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+      return 0;
+    });
+    RegisterClassExW(&message_wc);
+    CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
+                    nullptr, hInstance, this);
 
     ShowWindow(m_window, SW_SHOW);
     UpdateWindow(m_window);
