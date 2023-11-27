@@ -6,10 +6,19 @@ jobs:
     strategy:
       matrix:
         cxx_std: [c++11, c++14, c++17, c++20]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       CXX_STD: ${{ matrix.cxx_std }}
     steps:
+      # Set default compiler toolchain version to latest available versions for Ubuntu 22.04 as of 2023-11-27
+      - name: Set default compiler toolchain versions
+        run: |
+          sudo update-alternatives --force --install /usr/bin/gcc gcc /usr/bin/gcc-12 1200 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+          sudo update-alternatives --remove-all clang
+          sudo update-alternatives --remove-all clang++
+          sudo update-alternatives --remove-all clang-format
+          sudo update-alternatives --remove-all clang-tidy
+          sudo update-alternatives --force --install /usr/bin/clang clang /usr/bin/clang-15 1500 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-15 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-15 --slave /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
