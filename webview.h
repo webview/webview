@@ -2261,7 +2261,7 @@ public:
         return;
       }
       enable_dpi_awareness();
-      
+
       HICON icon = (HICON)LoadImage(
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
           GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
