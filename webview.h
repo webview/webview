@@ -1183,7 +1183,6 @@ private:
       )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
 
-    // External window handle can be NSView, so don't try to act on it.
     if (m_owns_window) {
       objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
     }
