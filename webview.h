@@ -1194,7 +1194,10 @@ private:
       };
       )"");
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
-    objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+
+    if (m_owns_window) {
+      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+    }
   }
   int on_application_should_terminate(id /*delegate*/, id app) {
     dispatch([app, this] {
