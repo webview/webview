@@ -24,6 +24,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
         run: xvfb-run ./script/build.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: "Linux (${{ matrix.cxx_std }}, x64)"
+          path: "./build/library/*"
+          if-no-files-found: "error"
+          retention-days: 0 # Default, based on the repo settings.
 
   build-macos:
     strategy:
@@ -36,6 +43,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build and run tests
         run: ./script/build.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: "macOS (${{ matrix.cxx_std }}, x64)"
+          path: "./build/library/*"
+          if-no-files-found: "error"
+          retention-days: 0 # Default, based on the repo settings.
 
   build-windows-msvc:
     strategy:
@@ -51,13 +65,20 @@ jobs:
       - name: Build and run tests
         run: ./script/build.bat info clean format deps check build test
         shell: cmd
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: "Windows (msvc, ${{ matrix.cxx_std }}, ${{ matrix.arch }})"
+          path: "./build/library/*"
+          if-no-files-found: "error"
+          retention-days: 0 # Default, based on the repo settings.
 
   build-windows-msys2:
     strategy:
       matrix:
         cxx_std: [c++14, c++17, c++20]
         include:
-          - { sys: mingw64, cc: gcc  , cxx: g++ }
+          - { sys: mingw64, cc: gcc, cxx: g++ }
           - { sys: clang64, cc: clang, cxx: clang++ }
     runs-on: windows-latest
     env:
@@ -121,8 +142,8 @@ jobs:
       - name: Run clang-format
         uses: DoozyX/clang-format-lint-action@v0.6
         with:
-          source: '.'
-          exclude: './script'
-          extensions: 'h,cc'
+          source: "."
+          exclude: "./script"
+          extensions: "h,cc"
           clangFormatVersion: 9
           style: file
