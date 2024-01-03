@@ -879,8 +879,9 @@ public:
     if ((wkmajor == 2 && wkminor >= 40) || wkmajor > 2) {
       if (auto fn =
               lib.get(webkit_symbols::webkit_web_view_evaluate_javascript)) {
-        fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(), js.size(), nullptr, nullptr,
-           nullptr, nullptr, nullptr);
+        fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+           static_cast<gssize>(js.size()), nullptr, nullptr, nullptr, nullptr,
+           nullptr);
       }
     } else if (auto fn =
                    lib.get(webkit_symbols::webkit_web_view_run_javascript)) {
