@@ -615,18 +615,12 @@ class native_library {
 public:
   native_library() = default;
 
-  explicit native_library(const std::string &name) {
-#ifdef _WIN32
-    m_handle = LoadLibraryW(widen_string(name).c_str());
-#else
-    m_handle = dlopen(name.c_str(), RTLD_NOW);
-#endif
-  }
+  explicit native_library(const std::string &name)
+      : m_handle{load_library(name)} {}
 
 #ifdef _WIN32
-  explicit native_library(const std::wstring &name) {
-    m_handle = LoadLibraryW(name.c_str());
-  }
+  explicit native_library(const std::wstring &name)
+      : m_handle{load_library(name)} {}
 #endif
 
   ~native_library() {
@@ -693,6 +687,20 @@ private:
   using mod_handle_t = HMODULE;
 #else
   using mod_handle_t = void *;
+#endif
+
+  static inline mod_handle_t load_library(const std::string &name) {
+#ifdef _WIN32
+    return load_library(widen_string(name));
+#else
+    return dlopen(name.c_str(), RTLD_NOW);
+#endif
+  }
+
+#ifdef _WIN32
+  static inline mod_handle_t load_library(const std::wstring &name) {
+    return LoadLibraryW(name.c_str());
+  }
 #endif
 
   mod_handle_t m_handle{};
