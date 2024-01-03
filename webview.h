@@ -646,6 +646,7 @@ public:
   template <typename Symbol>
   typename Symbol::type get(const Symbol &symbol) const {
     if (is_loaded()) {
+      // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
 #ifdef _WIN32
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -660,6 +661,7 @@ public:
       return reinterpret_cast<typename Symbol::type>(
           dlsym(m_handle, symbol.get_name()));
 #endif
+      // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
     return nullptr;
   }
