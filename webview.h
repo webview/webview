@@ -613,7 +613,7 @@ private:
 // symbols.
 class native_library {
 public:
-  native_library() {}
+  native_library() = default;
 
   explicit native_library(const std::string &name) {
 #ifdef _WIN32
