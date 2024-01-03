@@ -41,6 +41,7 @@ Checks: >
     -misc-non-private-member-variables-in-classes,
     -modernize-avoid-c-arrays,
     -modernize-pass-by-value,
+    -modernize-use-nodiscard,
     -modernize-use-override,
     -modernize-use-trailing-return-type,
     -modernize-use-using,
