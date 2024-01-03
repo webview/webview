@@ -774,7 +774,8 @@ class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)) {
-    if (!m_window) {
+    auto owns_window = !window;
+    if (owns_window) {
       if (gtk_init_check(nullptr, nullptr) == FALSE) {
         return;
       }
@@ -808,7 +809,7 @@ public:
          "external.postMessage(s);}}");
 
     gtk_container_add(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
-    gtk_widget_grab_focus(GTK_WIDGET(m_webview));
+    gtk_widget_show(GTK_WIDGET(m_webview));
 
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
@@ -819,7 +820,10 @@ public:
       webkit_settings_set_enable_developer_extras(settings, true);
     }
 
-    gtk_widget_show_all(m_window);
+    if (owns_window) {
+      gtk_widget_grab_focus(GTK_WIDGET(m_webview));
+      gtk_widget_show_all(m_window);
+    }
   }
   virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
