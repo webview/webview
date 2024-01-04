@@ -745,12 +745,138 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 //
 // ====================================================================
 //
+#include <cstdlib>
+#include <mutex>
+
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
+#include <fcntl.h>
+#include <spawn.h>
+#include <sys/wait.h>
+
 namespace webview {
 namespace detail {
+
+namespace webkit_dmabuf {
+
+namespace webkit_symbols {
+using webkit_web_view_evaluate_javascript_t =
+    void (*)(WebKitWebView *, const char *, gssize, const char *, const char *,
+             GCancellable *, GAsyncReadyCallback, gpointer);
+
+using webkit_web_view_run_javascript_t = void (*)(WebKitWebView *,
+                                                  const gchar *, GCancellable *,
+                                                  GAsyncReadyCallback,
+                                                  gpointer);
+
+constexpr auto webkit_web_view_evaluate_javascript =
+    library_symbol<webkit_web_view_evaluate_javascript_t>(
+        "webkit_web_view_evaluate_javascript");
+constexpr auto webkit_web_view_run_javascript =
+    library_symbol<webkit_web_view_run_javascript_t>(
+        "webkit_web_view_run_javascript");
+} // namespace webkit_symbols
+
+static std::mutex &get_env_mutex() {
+  static std::mutex mutex;
+  return mutex;
+}
+
+// Get environment variable. Use mutex returned by get_env_mutex().
+static inline std::string get_env(const std::string &name, std::mutex &mutex) {
+  std::lock_guard<std::mutex> lock{mutex};
+  auto *value = std::getenv(name.c_str());
+  if (value) {
+    return {value};
+  }
+  return {};
+}
+
+static inline std::string get_env(const std::string &name) {
+  return get_env(name, get_env_mutex());
+}
+
+// Set environment variable. Use mutex returned by get_env_mutex().
+static inline void set_env(const std::string &name, const std::string &value,
+                           std::mutex &mutex) {
+  std::lock_guard<std::mutex> lock{mutex};
+  ::setenv(name.c_str(), value.c_str(), 1);
+}
+
+static inline void set_env(const std::string &name, const std::string &value) {
+  return set_env(name, value, get_env_mutex());
+}
+
+static inline bool is_x11_session() {
+  return get_env("XDG_SESSION_TYPE") == "x11";
+}
+
+static inline bool is_using_nvidia_driver() {
+  static std::array<const char *, 6> cmd{"nvidia-smi",           "--query-gpu",
+                                         "driver_version",       "--format",
+                                         "csv,noheader,nounits", nullptr};
+  posix_spawn_file_actions_t actions{};
+  posix_spawn_file_actions_t *actionsp{};
+  if (posix_spawn_file_actions_init(&actions) == 0) {
+    posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null",
+                                     O_WRONLY | O_APPEND, 0);
+    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null",
+                                     O_WRONLY | O_APPEND, 0);
+    actionsp = &actions;
+  }
+  ::pid_t pid{};
+  auto spawn_err = posix_spawnp(nullptr, "nvidia-smi", actionsp, nullptr,
+                                const_cast<char *const *>(cmd.data()), nullptr);
+  if (actionsp) {
+    posix_spawn_file_actions_destroy(actionsp);
+    actionsp = nullptr;
+  }
+  if (spawn_err != 0) {
+    return false;
+  }
+  int status{};
+  if (::waitpid(pid, &status, 0) == -1) {
+    return false;
+  }
+  if (WEXITSTATUS(status) != 0) {
+    return false;
+  }
+  return true;
+}
+
+static inline bool is_webkit_dmabuf_bugged() {
+  auto wk_major = webkit_get_major_version();
+  auto wk_minor = webkit_get_minor_version();
+  // TODO: Narrow down affected WebKit version when there's a fixed version
+  auto is_affected_wk_version = wk_major == 2 && wk_minor >= 42;
+  if (!is_affected_wk_version) {
+    return false;
+  }
+  if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
+    return false;
+  }
+  if (!get_env("WEBKIT_DISABLE_COMPOSITING_MODE").empty()) {
+    return false;
+  }
+  if (!is_x11_session()) {
+    return false;
+  }
+  if (!is_using_nvidia_driver()) {
+    return false;
+  }
+  return true;
+}
+
+// See bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+static inline void apply_webkit_dmabuf_workaround() {
+  if (!is_webkit_dmabuf_bugged()) {
+    return;
+  }
+  set_env("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+}
+} // namespace webkit_dmabuf
 
 namespace webkit_symbols {
 using webkit_web_view_evaluate_javascript_t =
@@ -790,6 +916,7 @@ public:
                        }),
                        this);
     }
+    webkit_dmabuf::apply_webkit_dmabuf_workaround();
     // Initialize webview widget
     m_webview = webkit_web_view_new();
     WebKitUserContentManager *manager =
