@@ -844,7 +844,6 @@ static inline bool is_using_nvidia_driver() {
 //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
 //  - Environment variables are empty or not set:
 //    - WEBKIT_DISABLE_DMABUF_RENDERER
-//    - WEBKIT_DISABLE_COMPOSITING_MODE
 //  - Windowing system is X11.
 //  - NVIDIA GPU driver is used.
 static inline bool is_webkit_dmabuf_bugged() {
@@ -856,9 +855,6 @@ static inline bool is_webkit_dmabuf_bugged() {
     return false;
   }
   if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
-    return false;
-  }
-  if (!get_env("WEBKIT_DISABLE_COMPOSITING_MODE").empty()) {
     return false;
   }
   if (!is_x11_session()) {
