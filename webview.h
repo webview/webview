@@ -762,6 +762,7 @@ namespace detail {
 // Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
 // driver and X11.
 // See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+// Please remove all of the code in this namespace when it's no longer needed.
 namespace webkit_dmabuf {
 
 // Get mutex used to make sure we don't call getenv/setenv concurrently.
