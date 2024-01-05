@@ -759,8 +759,12 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 namespace webview {
 namespace detail {
 
+// Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
+// driver and X11.
+// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
 namespace webkit_dmabuf {
 
+// Get mutex used to make sure we don't call getenv/setenv concurrently.
 static std::mutex &get_env_mutex() {
   static std::mutex mutex;
   return mutex;
@@ -776,6 +780,7 @@ static inline std::string get_env(const std::string &name, std::mutex &mutex) {
   return {};
 }
 
+// Get environment variable.
 static inline std::string get_env(const std::string &name) {
   return get_env(name, get_env_mutex());
 }
@@ -787,14 +792,19 @@ static inline void set_env(const std::string &name, const std::string &value,
   ::setenv(name.c_str(), value.c_str(), 1);
 }
 
+// Set environment variable.
 static inline void set_env(const std::string &name, const std::string &value) {
   return set_env(name, value, get_env_mutex());
 }
 
+// Checks whether the current windowing system is X11.
 static inline bool is_x11_session() {
   return get_env("XDG_SESSION_TYPE") == "x11";
 }
 
+// Checks whether the NVIDIA GPU driver is used by querying the GPU driver
+// version using the nvidia-smi tool.
+// Returns true if the exit code of nvidia-smi is zero; otherwise false.
 static inline bool is_using_nvidia_driver() {
   static constexpr std::array<const char *, 6> cmd{
       "nvidia-smi", "--query-gpu",          "driver_version",
@@ -828,6 +838,14 @@ static inline bool is_using_nvidia_driver() {
   return true;
 }
 
+// Checks whether WebKit is affected by bug when using DMA-BUF renderer.
+// Returns true if all of the following conditions are met:
+//  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
+//  - Environment variables are empty or not set:
+//    - WEBKIT_DISABLE_DMABUF_RENDERER
+//    - WEBKIT_DISABLE_COMPOSITING_MODE
+//  - Windowing system is X11.
+//  - NVIDIA GPU driver is used.
 static inline bool is_webkit_dmabuf_bugged() {
   auto wk_major = webkit_get_major_version();
   auto wk_minor = webkit_get_minor_version();
@@ -851,7 +869,8 @@ static inline bool is_webkit_dmabuf_bugged() {
   return true;
 }
 
-// See bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+// Applies workaround for WebKit DMA-BUF bug if needed.
+// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
 static inline void apply_webkit_dmabuf_workaround() {
   if (!is_webkit_dmabuf_bugged()) {
     return;
