@@ -796,9 +796,9 @@ static inline bool is_x11_session() {
 }
 
 static inline bool is_using_nvidia_driver() {
-  static std::array<const char *, 6> cmd{"nvidia-smi",           "--query-gpu",
-                                         "driver_version",       "--format",
-                                         "csv,noheader,nounits", nullptr};
+  static constexpr std::array<const char *, 6> cmd{
+      "nvidia-smi", "--query-gpu",          "driver_version",
+      "--format",   "csv,noheader,nounits", nullptr};
   posix_spawn_file_actions_t actions{};
   posix_spawn_file_actions_t *actionsp{};
   if (posix_spawn_file_actions_init(&actions) == 0) {
