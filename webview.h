@@ -753,8 +753,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 #include <webkit2/webkit2.h>
 
 #include <fcntl.h>
-#include <spawn.h>
-#include <sys/wait.h>
+#include <sys/stat.h>
 
 namespace webview {
 namespace detail {
@@ -798,40 +797,14 @@ static inline void set_env(const std::string &name, const std::string &value) {
   return set_env(name, value, get_env_mutex());
 }
 
-// Checks whether the NVIDIA GPU driver is used by querying the GPU driver
-// version using the nvidia-smi tool.
-// Returns true if the exit code of nvidia-smi is zero; otherwise false.
+// Checks whether the NVIDIA GPU driver is used based on whether the kernel
+// module is loaded.
 static inline bool is_using_nvidia_driver() {
-  static constexpr std::array<const char *, 6> cmd{
-      "nvidia-smi", "--query-gpu",          "driver_version",
-      "--format",   "csv,noheader,nounits", nullptr};
-  posix_spawn_file_actions_t actions{};
-  posix_spawn_file_actions_t *actionsp{};
-  if (posix_spawn_file_actions_init(&actions) == 0) {
-    posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, "/dev/null",
-                                     O_WRONLY | O_APPEND, 0);
-    posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null",
-                                     O_WRONLY | O_APPEND, 0);
-    actionsp = &actions;
-  }
-  ::pid_t pid{};
-  auto spawn_err = posix_spawnp(nullptr, "nvidia-smi", actionsp, nullptr,
-                                const_cast<char *const *>(cmd.data()), nullptr);
-  if (actionsp) {
-    posix_spawn_file_actions_destroy(actionsp);
-    actionsp = nullptr;
-  }
-  if (spawn_err != 0) {
+  struct ::stat buffer;
+  if (::stat("/sys/module/nvidia", &buffer) != 0) {
     return false;
   }
-  int status{};
-  if (::waitpid(pid, &status, 0) == -1) {
-    return false;
-  }
-  if (WEXITSTATUS(status) != 0) {
-    return false;
-  }
-  return true;
+  return S_ISDIR(buffer.st_mode);
 }
 
 // Checks whether WebKit is affected by bug when using DMA-BUF renderer.
