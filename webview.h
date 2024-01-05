@@ -798,11 +798,6 @@ static inline void set_env(const std::string &name, const std::string &value) {
   return set_env(name, value, get_env_mutex());
 }
 
-// Checks whether the current windowing system is X11.
-static inline bool is_x11_session() {
-  return get_env("XDG_SESSION_TYPE") == "x11";
-}
-
 // Checks whether the NVIDIA GPU driver is used by querying the GPU driver
 // version using the nvidia-smi tool.
 // Returns true if the exit code of nvidia-smi is zero; otherwise false.
@@ -855,9 +850,6 @@ static inline bool is_webkit_dmabuf_bugged() {
     return false;
   }
   if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
-    return false;
-  }
-  if (!is_x11_session()) {
     return false;
   }
   if (!is_using_nvidia_driver()) {
