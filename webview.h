@@ -761,24 +761,6 @@ namespace detail {
 
 namespace webkit_dmabuf {
 
-namespace webkit_symbols {
-using webkit_web_view_evaluate_javascript_t =
-    void (*)(WebKitWebView *, const char *, gssize, const char *, const char *,
-             GCancellable *, GAsyncReadyCallback, gpointer);
-
-using webkit_web_view_run_javascript_t = void (*)(WebKitWebView *,
-                                                  const gchar *, GCancellable *,
-                                                  GAsyncReadyCallback,
-                                                  gpointer);
-
-constexpr auto webkit_web_view_evaluate_javascript =
-    library_symbol<webkit_web_view_evaluate_javascript_t>(
-        "webkit_web_view_evaluate_javascript");
-constexpr auto webkit_web_view_run_javascript =
-    library_symbol<webkit_web_view_run_javascript_t>(
-        "webkit_web_view_run_javascript");
-} // namespace webkit_symbols
-
 static std::mutex &get_env_mutex() {
   static std::mutex mutex;
   return mutex;
