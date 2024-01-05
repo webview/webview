@@ -759,7 +759,7 @@ namespace webview {
 namespace detail {
 
 // Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
-// driver and X11.
+// driver.
 // See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
 // Please remove all of the code in this namespace when it's no longer needed.
 namespace webkit_dmabuf {
@@ -812,7 +812,6 @@ static inline bool is_using_nvidia_driver() {
 //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
 //  - Environment variables are empty or not set:
 //    - WEBKIT_DISABLE_DMABUF_RENDERER
-//  - Windowing system is X11.
 //  - NVIDIA GPU driver is used.
 static inline bool is_webkit_dmabuf_bugged() {
   auto wk_major = webkit_get_major_version();
