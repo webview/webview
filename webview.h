@@ -764,15 +764,6 @@ namespace detail {
 // Please remove all of the code in this namespace when it's no longer needed.
 namespace webkit_dmabuf {
 
-namespace x11_symbols {
-struct Display;
-using XOpenDisplay_t = Display *(*)(char *);
-using XCloseDisplay_t = int (*)(Display *);
-
-constexpr auto XOpenDisplay = library_symbol<XOpenDisplay_t>("XOpenDisplay");
-constexpr auto XCloseDisplay = library_symbol<XCloseDisplay_t>("XCloseDisplay");
-} // namespace x11_symbols
-
 // Get mutex used to make sure we don't call getenv/setenv concurrently.
 static std::mutex &get_env_mutex() {
   static std::mutex mutex;
@@ -816,35 +807,11 @@ static inline bool is_using_nvidia_driver() {
   return S_ISDIR(buffer.st_mode);
 }
 
-// Checks whether X11 is used by attempting to connect to the X server using
-// the display pointed by the DISPLAY environment variable.
-static inline bool is_x11_display() {
-  native_library x11{"libX11.so"};
-  if (!x11.is_loaded()) {
-    return false;
-  }
-
-  auto open_fn = x11.get(x11_symbols::XOpenDisplay);
-  auto close_fn = x11.get(x11_symbols::XCloseDisplay);
-  if (!open_fn || !close_fn) {
-    return false;
-  }
-
-  auto *display = open_fn(nullptr);
-  if (!display) {
-    return false;
-  }
-
-  close_fn(display);
-  return true;
-}
-
 // Checks whether WebKit is affected by bug when using DMA-BUF renderer.
 // Returns true if all of the following conditions are met:
 //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
 //  - Environment variables are empty or not set:
 //    - WEBKIT_DISABLE_DMABUF_RENDERER
-//  - Windowing system is X11.
 //  - NVIDIA GPU driver is used.
 static inline bool is_webkit_dmabuf_bugged() {
   auto wk_major = webkit_get_major_version();
@@ -855,9 +822,6 @@ static inline bool is_webkit_dmabuf_bugged() {
     return false;
   }
   if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
-    return false;
-  }
-  if (!is_x11_display()) {
     return false;
   }
   if (!is_using_nvidia_driver()) {
