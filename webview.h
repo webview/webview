@@ -807,6 +807,20 @@ static inline bool is_using_nvidia_driver() {
   return S_ISDIR(buffer.st_mode);
 }
 
+// Checks whether Wayland is used.
+static inline bool is_wayland_display() {
+  if (!get_env("WAYLAND_DISPLAY").empty()) {
+    return true;
+  }
+  if (get_env("XDG_SESSION_TYPE") == "wayland") {
+    return true;
+  }
+  if (get_env("DESKTOP_SESSION").find("wayland") != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
 // Checks whether WebKit is affected by bug when using DMA-BUF renderer.
 // Returns true if all of the following conditions are met:
 //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
@@ -822,6 +836,9 @@ static inline bool is_webkit_dmabuf_bugged() {
     return false;
   }
   if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
+    return false;
+  }
+  if (is_wayland_display()) {
     return false;
   }
   if (!is_using_nvidia_driver()) {
