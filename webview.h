@@ -752,6 +752,10 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
+
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -807,11 +811,39 @@ static inline bool is_using_nvidia_driver() {
   return S_ISDIR(buffer.st_mode);
 }
 
+// Checks whether the windowing system is Wayland.
+static inline bool is_wayland_display() {
+  if (!get_env("WAYLAND_DISPLAY").empty()) {
+    return true;
+  }
+  if (get_env("XDG_SESSION_TYPE") == "wayland") {
+    return true;
+  }
+  if (get_env("DESKTOP_SESSION").find("wayland") != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
+// Checks whether the GDK X11 backend is used.
+// See: https://docs.gtk.org/gdk3/class.DisplayManager.html
+static inline bool is_gdk_x11_backend() {
+#ifdef GDK_WINDOWING_X11
+  auto *manager = gdk_display_manager_get();
+  auto *display = gdk_display_manager_get_default_display(manager);
+  return GDK_IS_X11_DISPLAY(display);
+#else
+  return false;
+#endif
+}
+
 // Checks whether WebKit is affected by bug when using DMA-BUF renderer.
 // Returns true if all of the following conditions are met:
 //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
 //  - Environment variables are empty or not set:
 //    - WEBKIT_DISABLE_DMABUF_RENDERER
+//  - Windowing system is not Wayland.
+//  - GDK backend is X11.
 //  - NVIDIA GPU driver is used.
 static inline bool is_webkit_dmabuf_bugged() {
   auto wk_major = webkit_get_major_version();
@@ -822,6 +854,12 @@ static inline bool is_webkit_dmabuf_bugged() {
     return false;
   }
   if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
+    return false;
+  }
+  if (is_wayland_display()) {
+    return false;
+  }
+  if (!is_gdk_x11_backend()) {
     return false;
   }
   if (!is_using_nvidia_driver()) {
