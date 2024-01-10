@@ -745,12 +745,118 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 //
 // ====================================================================
 //
+#include <cstdlib>
+
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
+
+#include <fcntl.h>
+#include <sys/stat.h>
+
 namespace webview {
 namespace detail {
+
+// Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
+// driver.
+// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+// Please remove all of the code in this namespace when it's no longer needed.
+namespace webkit_dmabuf {
+
+// Get environment variable. Not thread-safe.
+static inline std::string get_env(const std::string &name) {
+  auto *value = std::getenv(name.c_str());
+  if (value) {
+    return {value};
+  }
+  return {};
+}
+
+// Set environment variable. Not thread-safe.
+static inline void set_env(const std::string &name, const std::string &value) {
+  ::setenv(name.c_str(), value.c_str(), 1);
+}
+
+// Checks whether the NVIDIA GPU driver is used based on whether the kernel
+// module is loaded.
+static inline bool is_using_nvidia_driver() {
+  struct ::stat buffer;
+  if (::stat("/sys/module/nvidia", &buffer) != 0) {
+    return false;
+  }
+  return S_ISDIR(buffer.st_mode);
+}
+
+// Checks whether the windowing system is Wayland.
+static inline bool is_wayland_display() {
+  if (!get_env("WAYLAND_DISPLAY").empty()) {
+    return true;
+  }
+  if (get_env("XDG_SESSION_TYPE") == "wayland") {
+    return true;
+  }
+  if (get_env("DESKTOP_SESSION").find("wayland") != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
+// Checks whether the GDK X11 backend is used.
+// See: https://docs.gtk.org/gdk3/class.DisplayManager.html
+static inline bool is_gdk_x11_backend() {
+#ifdef GDK_WINDOWING_X11
+  auto *manager = gdk_display_manager_get();
+  auto *display = gdk_display_manager_get_default_display(manager);
+  return GDK_IS_X11_DISPLAY(display);
+#else
+  return false;
+#endif
+}
+
+// Checks whether WebKit is affected by bug when using DMA-BUF renderer.
+// Returns true if all of the following conditions are met:
+//  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
+//  - Environment variables are empty or not set:
+//    - WEBKIT_DISABLE_DMABUF_RENDERER
+//  - Windowing system is not Wayland.
+//  - GDK backend is X11.
+//  - NVIDIA GPU driver is used.
+static inline bool is_webkit_dmabuf_bugged() {
+  auto wk_major = webkit_get_major_version();
+  auto wk_minor = webkit_get_minor_version();
+  // TODO: Narrow down affected WebKit version when there's a fixed version
+  auto is_affected_wk_version = wk_major == 2 && wk_minor >= 42;
+  if (!is_affected_wk_version) {
+    return false;
+  }
+  if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
+    return false;
+  }
+  if (is_wayland_display()) {
+    return false;
+  }
+  if (!is_gdk_x11_backend()) {
+    return false;
+  }
+  if (!is_using_nvidia_driver()) {
+    return false;
+  }
+  return true;
+}
+
+// Applies workaround for WebKit DMA-BUF bug if needed.
+// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+static inline void apply_webkit_dmabuf_workaround() {
+  if (!is_webkit_dmabuf_bugged()) {
+    return;
+  }
+  set_env("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+}
+} // namespace webkit_dmabuf
 
 namespace webkit_symbols {
 using webkit_web_view_evaluate_javascript_t =
@@ -790,6 +896,7 @@ public:
                        }),
                        this);
     }
+    webkit_dmabuf::apply_webkit_dmabuf_workaround();
     // Initialize webview widget
     m_webview = webkit_web_view_new();
     WebKitUserContentManager *manager =
