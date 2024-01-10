@@ -2757,7 +2757,9 @@ public:
 
   std::string get_url() {
     PWSTR uri;
-    m_webview->get_Source(&uri);
+    if (FAILED(m_webview->get_Source(&uri))) {
+      return {};
+    }
     std::string converted_url = narrow_string(uri);
     CoTaskMemFree(uri);
     return converted_url;
