@@ -746,7 +746,6 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 // ====================================================================
 //
 #include <cstdlib>
-#include <mutex>
 
 #include <JavaScriptCore/JavaScript.h>
 #include <gtk/gtk.h>
@@ -768,15 +767,8 @@ namespace detail {
 // Please remove all of the code in this namespace when it's no longer needed.
 namespace webkit_dmabuf {
 
-// Get mutex used to make sure we don't call getenv/setenv concurrently.
-static std::mutex &get_env_mutex() {
-  static std::mutex mutex;
-  return mutex;
-}
-
-// Get environment variable. Use mutex returned by get_env_mutex().
-static inline std::string get_env(const std::string &name, std::mutex &mutex) {
-  std::lock_guard<std::mutex> lock{mutex};
+// Get environment variable. Not thread-safe.
+static inline std::string get_env(const std::string &name) {
   auto *value = std::getenv(name.c_str());
   if (value) {
     return {value};
@@ -784,21 +776,9 @@ static inline std::string get_env(const std::string &name, std::mutex &mutex) {
   return {};
 }
 
-// Get environment variable.
-static inline std::string get_env(const std::string &name) {
-  return get_env(name, get_env_mutex());
-}
-
-// Set environment variable. Use mutex returned by get_env_mutex().
-static inline void set_env(const std::string &name, const std::string &value,
-                           std::mutex &mutex) {
-  std::lock_guard<std::mutex> lock{mutex};
-  ::setenv(name.c_str(), value.c_str(), 1);
-}
-
-// Set environment variable.
+// Set environment variable. Not thread-safe.
 static inline void set_env(const std::string &name, const std::string &value) {
-  return set_env(name, value, get_env_mutex());
+  ::setenv(name.c_str(), value.c_str(), 1);
 }
 
 // Checks whether the NVIDIA GPU driver is used based on whether the kernel
