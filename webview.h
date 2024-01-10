@@ -1243,6 +1243,22 @@ public:
     }
     objc::msg_send<void>(m_window, "center"_sel);
   }
+  std::string get_url() {
+    objc::autoreleasepool pool;
+    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+    if (!nsurl) {
+      return {};
+    }
+    auto nsstring = objc::msg_send<id>(nsurl, "absoluteString"_sel);
+    if (!nsstring) {
+      return {};
+    }
+    auto *cstring = objc::msg_send<const char *>(nsstring, "UTF8String"_sel);
+    if (!cstring) {
+      return {};
+    }
+    return {cstring};
+  }
   void navigate(const std::string &url) {
     objc::autoreleasepool pool;
 
