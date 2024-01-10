@@ -967,7 +967,11 @@ public:
   }
 
   std::string get_url() {
-    return webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+    auto *url = webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+    if (!url) {
+      return {};
+    }
+    return url;
   }
 
   void navigate(const std::string &url) {
