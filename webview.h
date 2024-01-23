@@ -152,6 +152,9 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
+#if defined(_WIN32)
+WEBVIEW_API void webview_set_geo(webview_t w, int X, int Y, int width, int height);
+#endif
 // Navigates webview to the given URL. URL may be a properly encoded data URI.
 // Examples:
 // webview_navigate(w, "https://github.com/webview/webview");
@@ -2688,6 +2691,14 @@ public:
     SetWindowTextW(m_window, widen_string(title).c_str());
   }
 
+  #if defined(_WIN32)
+  void set_geo(int X, int Y, int width, int height) {
+    if (m_controller == nullptr) {
+      return;
+    }
+    m_controller->put_Bounds({ X, Y, width + X, Y + height});
+  }
+  #endif
   void set_size(int width, int height, int hints) {
     auto style = GetWindowLong(m_window, GWL_STYLE);
     if (hints == WEBVIEW_HINT_FIXED) {
@@ -3052,6 +3063,11 @@ WEBVIEW_API void *webview_get_window(webview_t w) {
 WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
   static_cast<webview::webview *>(w)->set_title(title);
 }
+#if defined(_WIN32)
+WEBVIEW_API void webview_set_geo(webview_t w, int X, int Y, int width, int height) {
+  static_cast<webview::webview *>(w)->set_geo(X, Y, width, height);
+}
+#endif
 
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints) {
