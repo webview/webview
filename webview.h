@@ -2488,7 +2488,7 @@ public:
       return;
     }
 
-    is_m_window_external=window!=0;
+    is_m_window_external = window != 0;
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     if (!window) {
@@ -2690,7 +2690,7 @@ public:
   }
 
   void set_size(int width, int height, int hints) {
-    if(is_m_window_external){
+    if (is_m_window_external) {
       resize_widget();
       return;
     }
@@ -2879,7 +2879,7 @@ private:
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
   HWND m_window = nullptr;
-  bool is_m_window_external=false;
+  bool is_m_window_external = false;
   HWND m_message_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
