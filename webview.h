@@ -2691,7 +2691,14 @@ public:
 
   void set_size(int width, int height, int hints) {
     if (is_m_window_external) {
-      resize_widget();
+      if (m_controller == nullptr) {
+        return;
+      }
+      RECT bounds = {};
+      GetClientRect(m_window, &bounds);
+      bounds.bottom = bounds.top + height;
+      bounds.right = bounds.left + width;
+      m_controller->put_Bounds(bounds);
       return;
     }
     auto style = GetWindowLong(m_window, GWL_STYLE);
