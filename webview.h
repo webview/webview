@@ -237,6 +237,7 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 #include <cstdint>
 #include <functional>
 #include <future>
+#include <iterator>
 #include <map>
 #include <string>
 #include <utility>
