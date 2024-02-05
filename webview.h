@@ -233,6 +233,7 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <future>
@@ -457,62 +458,173 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   return -1;
 }
 
-constexpr bool is_json_special_char(unsigned int c) {
-  return c == '"' || c == '\\';
+inline size_t utf8_char_length(const std::string &s, size_t index) {
+  if (index >= s.size()) {
+    return 0;
+  }
+  auto uc = static_cast<unsigned char>(s[index]);
+  size_t length = 0;
+  if ((uc & 0x80) == 0) {
+    length = 1;
+  } else if ((uc & 0xe0) == 0xc0) {
+    length = 2;
+  } else if ((uc & 0xf0) == 0xe0) {
+    length = 3;
+  } else if ((uc & 0xf8) == 0xf0) {
+    length = 4;
+  }
+  if (length <= 1) {
+    return length;
+  }
+  auto char_begin = std::begin(s);
+  std::advance(char_begin, index);
+  auto char_end = char_begin;
+  std::advance(char_end, length);
+  for (auto it = char_begin + 1; it < char_end && it < s.end(); ++it) {
+    if ((static_cast<unsigned char>(*it) & 0xc0) != 0x80) {
+      return 0;
+    }
+  }
+  return length;
 }
 
-constexpr bool is_control_char(unsigned int c) {
-  return c <= 0x1f || (c >= 0x7f && c <= 0x9f);
+inline std::pair<std::string::const_iterator, std::string::const_iterator>
+get_utf8_char(const std::string &s, size_t index) {
+  auto char_length = utf8_char_length(s, index);
+  if (char_length <= 0 || (s.size() - index) < char_length) {
+    return {};
+  }
+  auto beg = std::begin(s);
+  std::advance(beg, index);
+  auto end = beg;
+  std::advance(end, char_length);
+  return std::make_pair(beg, end);
+}
+
+constexpr bool is_json_special_char(char c) {
+  return c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' ||
+         c == '\r' || c == '\t';
+}
+
+constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
+
+// Calculates length of output of json_escape_char()
+inline size_t calculate_json_escape_char_length(char c) {
+  if (is_json_special_char(c)) {
+    return 2; // \x
+  }
+
+  if (is_ascii_control_char(c)) {
+    return 6; // \uxxxx
+  }
+
+  return 1;
+}
+
+inline void json_escape_char(std::string &output, char c) {
+  if (is_json_special_char(c)) {
+    static constexpr char special_escape_table[256] =
+        "\0\0\0\0\0\0\0\0btn\0fr\0\0"
+        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        "\0\0\"\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+        "\0\0\0\0\0\0\0\0\0\0\0\0\\";
+    output += '\\';
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+    output += special_escape_table[static_cast<unsigned char>(c)];
+    return;
+  }
+
+  if (is_ascii_control_char(c)) {
+    // Escape as \u00xx
+    static constexpr char hex_alphabet[]{"0123456789abcdef"};
+
+    auto uc = static_cast<unsigned char>(c);
+    auto h = (uc >> 4) & 0x0f;
+    auto l = uc & 0x0f;
+
+    output += "\\u00";
+    // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+    output += hex_alphabet[h];
+    output += hex_alphabet[l];
+    // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
+    return;
+  }
+
+  // No escaping needed
+  output += c;
+}
+
+// Calculates length of output of json_escape()
+inline size_t calculate_json_escaped_length(const std::string &s,
+                                            bool add_quotes) {
+  size_t result = 0;
+
+  if (add_quotes) {
+    result += 2;
+  }
+
+  for (size_t i = 0; i < s.size();) {
+    auto utf8_char = get_utf8_char(s, i);
+    auto utf8_char_length = std::distance(utf8_char.first, utf8_char.second);
+    if (utf8_char_length == 0) {
+      result += 3; // U+FFFD
+      ++i;
+      continue;
+    }
+
+    i += utf8_char_length;
+    if (utf8_char_length > 1) {
+      result += utf8_char_length;
+      continue;
+    }
+
+    // Character is 1 byte long, escape as needed
+    result += calculate_json_escape_char_length(*utf8_char.first);
+  }
+
+  return result;
 }
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
-  constexpr char hex_alphabet[]{"0123456789abcdef"};
-  // Calculate the size of the resulting string.
-  // Add space for the double quotes.
-  auto required_length = s.size() + (add_quotes ? 2 : 0);
-  for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
-      // '\' and a single following character
-      required_length += 2;
-      continue;
-    }
-    if (is_control_char(uc)) {
-      // '\', 'u', 4 digits
-      required_length += 6;
-      continue;
-    }
-    ++required_length;
-  }
-  // Allocate memory for resulting string only once.
+  auto required_length = calculate_json_escaped_length(s, add_quotes);
+
   std::string result;
   result.reserve(required_length);
+
   if (add_quotes) {
     result += '"';
   }
-  // Copy string while escaping characters.
-  for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
-      result += '\\';
-      result += c;
+
+  for (size_t i = 0; i < s.size();) {
+    auto utf8_char = get_utf8_char(s, i);
+    auto utf8_char_length = std::distance(utf8_char.first, utf8_char.second);
+    if (utf8_char_length == 0) {
+      // Substitute invalid character with U+FFFD
+      result += "\xef\xbf\xbd";
+      ++i;
       continue;
     }
-    if (is_control_char(uc)) {
-      auto h = (uc >> 4) & 0x0f;
-      auto l = uc & 0x0f;
-      result += "\\u00";
-      // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
-      result += hex_alphabet[h];
-      result += hex_alphabet[l];
-      // NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
+
+    i += utf8_char_length;
+    if (utf8_char_length > 1) {
+      // Copy encoded character
+      std::copy(utf8_char.first, utf8_char.second, std::back_inserter(result));
       continue;
     }
-    result += c;
+
+    // Character is 1 byte long, escape as needed
+    json_escape_char(result, *utf8_char.first);
   }
+
   if (add_quotes) {
     result += '"';
   }
+
+  // Should have calculated the exact amount of memory needed
+  assert(required_length == result.size());
+
   return result;
 }
 
@@ -2986,8 +3098,8 @@ delete window._rpc[seq];
 if (result !== undefined) {
   try {
     result = JSON.parse(result);
-  } catch {
-    promise.reject(new Error("Failed to parse binding result as JSON"));
+  } catch (err) {
+    promise.reject(new Error("Failed to parse binding result as JSON: " + err));
     return;
   }
 }
