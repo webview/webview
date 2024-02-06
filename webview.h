@@ -2997,8 +2997,8 @@ delete window._rpc[seq];
 if (result !== undefined) {
   try {
     result = JSON.parse(result);
-  } catch (err) {
-    promise.reject(new Error("Failed to parse binding result as JSON: " + err));
+  } catch {
+    promise.reject(new Error("Failed to parse binding result as JSON"));
     return;
   }
 }
