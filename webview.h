@@ -457,27 +457,25 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   return -1;
 }
 
-constexpr bool is_json_special_char(unsigned int c) {
-  return c == '"' || c == '\\';
+constexpr bool is_json_special_char(char c) {
+  return c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' ||
+         c == '\r' || c == '\t';
 }
 
-constexpr bool is_control_char(unsigned int c) {
-  return c <= 0x1f || (c >= 0x7f && c <= 0x9f);
-}
+constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   constexpr char hex_alphabet[]{"0123456789abcdef"};
   // Calculate the size of the resulting string.
   // Add space for the double quotes.
-  auto required_length = s.size() + (add_quotes ? 2 : 0);
+  auto required_length = add_quotes ? 2 : 0;
   for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
+    if (is_json_special_char(c)) {
       // '\' and a single following character
       required_length += 2;
       continue;
     }
-    if (is_control_char(uc)) {
+    if (is_ascii_control_char(c)) {
       // '\', 'u', 4 digits
       required_length += 6;
       continue;
@@ -492,15 +490,27 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   }
   // Copy string while escaping characters.
   for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
+    if (is_json_special_char(c)) {
+      static constexpr char special_escape_table[256] =
+          "\0\0\0\0\0\0\0\0btn\0fr\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\"\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\\";
       result += '\\';
-      result += c;
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      result += special_escape_table[static_cast<unsigned char>(c)];
       continue;
     }
-    if (is_control_char(uc)) {
+    if (is_ascii_control_char(c)) {
+      // Escape as \u00xx
+      static constexpr char hex_alphabet[]{"0123456789abcdef"};
+
+      auto uc = static_cast<unsigned char>(c);
       auto h = (uc >> 4) & 0x0f;
       auto l = uc & 0x0f;
+
       result += "\\u00";
       // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
       result += hex_alphabet[h];
@@ -2986,8 +2996,8 @@ delete window._rpc[seq];
 if (result !== undefined) {
   try {
     result = JSON.parse(result);
-  } catch {
-    promise.reject(new Error("Failed to parse binding result as JSON"));
+  } catch (err) {
+    promise.reject(new Error("Failed to parse binding result as JSON: " + err));
     return;
   }
 }
