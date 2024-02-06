@@ -506,11 +506,9 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
     if (is_ascii_control_char(c)) {
       // Escape as \u00xx
       static constexpr char hex_alphabet[]{"0123456789abcdef"};
-
       auto uc = static_cast<unsigned char>(c);
       auto h = (uc >> 4) & 0x0f;
       auto l = uc & 0x0f;
-
       result += "\\u00";
       // NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
       result += hex_alphabet[h];
