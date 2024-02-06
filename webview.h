@@ -233,6 +233,7 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <future>
@@ -521,6 +522,8 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   if (add_quotes) {
     result += '"';
   }
+  // Should have calculated the exact amount of memory needed
+  assert(required_length == result.size());
   return result;
 }
 
