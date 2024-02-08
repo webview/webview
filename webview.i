@@ -13,7 +13,7 @@ extern void webview_run(webview_t w);
 extern void webview_terminate(webview_t w);
 extern void webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 extern void *webview_get_window(webview_t w);
-extern void *webview_get_view(webview_t w;)
+extern void *webview_get_view(webview_t w);
 extern void webview_set_title(webview_t w, const char *title);
 extern void webview_set_size(webview_t w, int width, int height, int hints);
 extern void webview_navigate(webview_t w, const char *url);
