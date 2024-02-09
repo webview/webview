@@ -113,13 +113,20 @@ typedef void *webview_t;
 // developer tools are enabled if supported by the backend. The optional window
 // parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
 // NSWindow pointer (Cocoa) or HWND (Win32). If the window handle is
-// non-null, the webview widget is embedded into the given window;
-// otherwise, a new window is created.
-// Returns null on failure. Creation can fail for various reasons such as when
-// required runtime dependencies are missing or when window creation fails.
+// non-null, the webview widget is embedded into the given window, and the
+// caller is expected to assume responsibility for the window as well as
+// application lifecycle. If the window handle is null, a new window is created
+// and both the window and application lifecycle are managed by the webview
+// instance. Returns null on failure. Creation can fail for various reasons such
+// as when required runtime dependencies are missing or when window creation
+// fails.
 // Remarks:
 // - Win32: The function also accepts a pointer to HWND (Win32) in the window
 //   parameter for backward compatibility.
+// - Win32/WebView2: CoInitializeEx should be called with
+//   COINIT_APARTMENTTHREADED before attempting to call this function with an
+//   existing window. Omitting this step may cause WebView2 initialization to
+//   fail.
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Destroys a webview and closes the native window.
@@ -2516,14 +2523,14 @@ private:
 
 class win32_edge_engine {
 public:
-  win32_edge_engine(bool debug, void *window) {
+  win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
     if (!is_webview2_available()) {
       return;
     }
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
-    if (!window) {
+    if (m_owns_window) {
       m_com_init = {COINIT_APARTMENTTHREADED};
       if (!m_com_init.is_initialized()) {
         return;
@@ -2719,9 +2726,11 @@ public:
     CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
                     nullptr, hInstance, this);
 
-    ShowWindow(m_window, SW_SHOW);
-    UpdateWindow(m_window);
-    SetFocus(m_window);
+    if (m_owns_window) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
+    }
 
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
@@ -2882,7 +2891,9 @@ private:
     m_controller->put_IsVisible(TRUE);
     ShowWindow(m_widget, SW_SHOW);
     UpdateWindow(m_widget);
-    focus_webview();
+    if (m_owns_window) {
+      focus_webview();
+    }
     return true;
   }
 
@@ -2985,6 +2996,7 @@ private:
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
+  bool m_owns_window{};
 };
 
 } // namespace detail
