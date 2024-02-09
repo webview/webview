@@ -140,11 +140,22 @@ webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 // pointer, when using a Win32 backend the pointer is a HWND pointer.
 WEBVIEW_API void *webview_get_window(webview_t w);
 
-// Returns a native handle to the underlying web view. When using a GTK backend
-// the pointer is a GtkWidget pointer, when using a Cocoa backend the pointer
-// is a WKWebView pointer, when using a Win32 backend the pointer is a
-// ICoreWebView2 pointer.
-WEBVIEW_API void *webview_get_view(webview_t w);
+// Native handle kind. The actual type depends on the backend.
+typedef enum {
+  // Top-level window. GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or HWND (Win32).
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
+  // Browser widget. GtkWidget pointer (GTK), NSView pointer (Cocoa) or HWND (Win32).
+  // Currently, this is unsupported on Win32 and NULL will be returned.
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
+  // Browser controller. WebKitWebView pointer (WebKitGTK), WKWebView pointer (Cocoa/WebKit) or
+  // ICoreWebView2Controller pointer (Win32/WebView2).
+  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
+} webview_native_handle_kind_t;
+
+// Returns a native handle of choice.
+WEBVIEW_API void *
+webview_get_native_handle(webview_t w,
+                          webview_native_handle_kind_t handle_kind);
 
 // Updates the title of the native window. Must be called from the UI thread.
 WEBVIEW_API void webview_set_title(webview_t w, const char *title);
@@ -940,7 +951,8 @@ public:
   }
   virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
-  void *view() { return (void *)m_webview; };
+  void *widget() { return (void *)m_webview; }
+  void *browser_controller() { return (void *)m_webview; };
   void run() { gtk_main(); }
   void terminate() { gtk_main_quit(); }
   void dispatch(std::function<void()> f) {
@@ -1205,7 +1217,8 @@ public:
   }
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
-  void *view() { return (void *)m_webview; }
+  void *widget() { return (void *)m_webview; }
+  void *browser_controller() { return (void *)m_webview; }
   void terminate() { stop_run_loop(); }
   void run() {
     auto app = get_shared_application();
@@ -2687,7 +2700,8 @@ public:
     }
   }
   void *window() { return (void *)m_window; }
-  void *view() { return (void *)m_webview; }
+  void *widget() { return nullptr; }
+  void *browser_controller() { return (void *)m_controller; }
   void terminate() { PostQuitMessage(0); }
   void dispatch(dispatch_fn_t f) {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
@@ -3058,8 +3072,18 @@ WEBVIEW_API void *webview_get_window(webview_t w) {
   return static_cast<webview::webview *>(w)->window();
 }
 
-WEBVIEW_API void *webview_get_view(webview_t w) {
-  return static_cast<webview::webview *>(w)->view();
+WEBVIEW_API void *webview_get_native_handle(webview_t w,
+                                            webview_native_handle_kind_t kind) {
+  switch (kind) {
+  case WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW:
+    return static_cast<webview::webview *>(w)->window();
+  case WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET:
+    return static_cast<webview::webview *>(w)->widget();
+  case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
+    return static_cast<webview::webview *>(w)->browser_controller();
+  default:
+    return nullptr;
+  }
 }
 
 WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
