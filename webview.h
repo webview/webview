@@ -109,14 +109,17 @@ extern "C" {
 
 typedef void *webview_t;
 
-// Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). The window parameter can be a
-// pointer to the native window handle. If it's non-null - then child WebView
-// is embedded into the given parent window. Otherwise a new window is created.
-// Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here. Returns null on failure. Creation can fail for various reasons
-// such as when required runtime dependencies are missing or when window creation
-// fails.
+// Creates a new webview instance. If the debug parameter is non-zero,
+// developer tools are enabled if supported by the backend. The optional window
+// parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
+// NSWindow pointer (Cocoa) or HWND (Win32). If the window handle is
+// non-null, the webview widget is embedded into the given window;
+// otherwise, a new window is created.
+// Returns null on failure. Creation can fail for various reasons such as when
+// required runtime dependencies are missing or when window creation fails.
+// Remarks:
+// - Win32: The function also accepts a pointer to HWND (Win32) in the window
+//   parameter for backward compatibility.
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Destroys a webview and closes the native window.
@@ -2603,7 +2606,9 @@ public:
       constexpr const int initial_height = 480;
       set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
-      m_window = *(static_cast<HWND *>(window));
+      m_window = IsWindow(static_cast<HWND>(window))
+                     ? static_cast<HWND>(window)
+                     : *(static_cast<HWND *>(window));
       m_dpi = get_window_dpi(m_window);
     }
 
