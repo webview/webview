@@ -2587,6 +2587,11 @@ public:
           }
           break;
         }
+        case WM_ACTIVATE:
+          if (LOWORD(wp) != WA_INACTIVE) {
+            w->focus_widget();
+          }
+          break;
         default:
           return DefWindowProcW(hwnd, msg, wp, lp);
         }
@@ -2824,6 +2829,12 @@ private:
     RECT bounds;
     GetClientRect(m_window, &bounds);
     m_controller->put_Bounds(bounds);
+  }
+
+  void focus_widget() {
+    if (m_controller) {
+      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    }
   }
 
   bool is_webview2_available() const noexcept {
