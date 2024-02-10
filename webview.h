@@ -2589,7 +2589,7 @@ public:
         }
         case WM_ACTIVATE:
           if (LOWORD(wp) != WA_INACTIVE) {
-            w->focus_widget();
+            w->focus_webview();
           }
           break;
         default:
@@ -2616,6 +2616,46 @@ public:
                      : *(static_cast<HWND *>(window));
       m_dpi = get_window_dpi(m_window);
     }
+
+    // Create a window that WebView2 will be embedded into.
+    WNDCLASSEXW widget_wc{};
+    widget_wc.cbSize = sizeof(WNDCLASSEX);
+    widget_wc.hInstance = hInstance;
+    widget_wc.lpszClassName = L"webview_widget";
+    widget_wc.lpfnWndProc =
+        +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+      win32_edge_engine *w{};
+
+      if (msg == WM_NCCREATE) {
+        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+        w->m_widget = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+      } else {
+        w = reinterpret_cast<win32_edge_engine *>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+      }
+
+      if (!w) {
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+
+      switch (msg) {
+      case WM_SIZE:
+        w->resize_webview();
+        break;
+      case WM_DESTROY:
+        w->m_widget = nullptr;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+        break;
+      default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+      return 0;
+    };
+    auto widget_atom = RegisterClassExW(&widget_wc);
+    CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
+                    0, 0, 0, 0, m_window, nullptr, hInstance, this);
 
     // Create a message-only window for internal messaging.
     WNDCLASSEXW message_wc{};
@@ -2667,9 +2707,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_window, debug, cb);
-    resize_widget();
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    embed(m_widget, debug, cb);
   }
 
   virtual ~win32_edge_engine() {
@@ -2819,19 +2857,34 @@ private:
       return false;
     }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
+    resize_webview();
+    m_controller->put_IsVisible(TRUE);
+    ShowWindow(m_widget, SW_SHOW);
+    UpdateWindow(m_widget);
+    focus_webview();
     return true;
   }
 
   void resize_widget() {
-    if (m_controller == nullptr) {
-      return;
+    if (m_widget) {
+      RECT r{};
+      if (GetClientRect(GetParent(m_widget), &r)) {
+        MoveWindow(m_widget, r.left, r.top, r.right - r.left, r.bottom - r.top,
+                   TRUE);
+      }
     }
-    RECT bounds;
-    GetClientRect(m_window, &bounds);
-    m_controller->put_Bounds(bounds);
   }
 
-  void focus_widget() {
+  void resize_webview() {
+    if (m_widget && m_controller) {
+      RECT bounds{};
+      if (GetClientRect(m_widget, &bounds)) {
+        m_controller->put_Bounds(bounds);
+      }
+    }
+  }
+
+  void focus_webview() {
     if (m_controller) {
       m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
     }
@@ -2901,6 +2954,7 @@ private:
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
   HWND m_window = nullptr;
+  HWND m_widget = nullptr;
   HWND m_message_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
