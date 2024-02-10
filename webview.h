@@ -2622,7 +2622,7 @@ public:
     widget_wc.hInstance = hInstance;
     widget_wc.lpszClassName = L"webview_widget";
     widget_wc.lpfnWndProc =
-        +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+        (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
       win32_edge_engine *w{};
 
       if (msg == WM_NCCREATE) {
@@ -2651,7 +2651,7 @@ public:
         return DefWindowProcW(hwnd, msg, wp, lp);
       }
       return 0;
-    };
+    });
     auto widget_atom = RegisterClassExW(&widget_wc);
     CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
                     0, 0, 0, 0, m_window, nullptr, hInstance, this);
