@@ -469,10 +469,9 @@ constexpr bool is_json_special_char(char c) {
 constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
-  constexpr char hex_alphabet[]{"0123456789abcdef"};
   // Calculate the size of the resulting string.
   // Add space for the double quotes.
-  auto required_length = add_quotes ? 2 : 0;
+  size_t required_length = add_quotes ? 2 : 0;
   for (auto c : s) {
     if (is_json_special_char(c)) {
       // '\' and a single following character
