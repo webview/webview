@@ -2621,8 +2621,8 @@ public:
     widget_wc.cbSize = sizeof(WNDCLASSEX);
     widget_wc.hInstance = hInstance;
     widget_wc.lpszClassName = L"webview_widget";
-    widget_wc.lpfnWndProc =
-        (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+    widget_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                          LPARAM lp) -> LRESULT {
       win32_edge_engine *w{};
 
       if (msg == WM_NCCREATE) {
