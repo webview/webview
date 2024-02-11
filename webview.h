@@ -155,9 +155,8 @@ typedef enum {
 } webview_native_handle_kind_t;
 
 // Returns a native handle of choice.
-WEBVIEW_API void *
-webview_get_native_handle(webview_t w,
-                          webview_native_handle_kind_t handle_kind);
+WEBVIEW_API void *webview_get_native_handle(webview_t w,
+                                            webview_native_handle_kind_t kind);
 
 // Updates the title of the native window. Must be called from the UI thread.
 WEBVIEW_API void webview_set_title(webview_t w, const char *title);
