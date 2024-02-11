@@ -155,6 +155,7 @@ typedef enum {
 } webview_native_handle_kind_t;
 
 // Returns a native handle of choice.
+// @since 0.11
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind);
 
