@@ -3152,13 +3152,14 @@ WEBVIEW_API void *webview_get_window(webview_t w) {
 
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind) {
+  auto *w_ = static_cast<webview::webview *>(w);
   switch (kind) {
   case WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW:
-    return static_cast<webview::webview *>(w)->window();
+    return w_->window();
   case WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET:
-    return static_cast<webview::webview *>(w)->widget();
+    return w_->widget();
   case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
-    return static_cast<webview::webview *>(w)->browser_controller();
+    return w_->browser_controller();
   default:
     return nullptr;
   }
