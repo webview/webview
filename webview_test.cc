@@ -351,25 +351,32 @@ static void test_json() {
 // =================================================================
 static void test_json_escape() {
   using webview::detail::json_escape;
-  // These constants are needed to work around a bug in MSVC
-  auto expected_0 = R"("\"")";
-  auto expected_1 = R"("\\")";
-  auto expected_2 = R"("\u0000\u001f")";
-  auto expected_3 = R"("\u007f\u009f")";
-  auto expected_4 = "\"\xa0\xff\"";
-  auto expected_5 = R"js("alert(\"gotcha\")")js";
+
+  // Simple case without need for escaping. Quotes added by default.
+  assert(json_escape("hello") == "\"hello\"");
+  // Simple case without need for escaping. Quotes explicitly not added.
+  assert(json_escape("hello", false) == "hello");
+  // Empty input should return empty output.
+  assert(json_escape("", false).empty());
   // '"' and '\' should be escaped.
-  assert(json_escape("\"") == expected_0);
-  assert(json_escape("\\") == expected_1);
-  // Control characters should be escaped.
-  assert(json_escape(std::string{0} + '\x1f') == expected_2);
-  assert(json_escape("\x7f\x9f") == expected_3);
-  // ASCII printable characters shouldn't be escaped.
-  assert(json_escape("\x20\x7e") == R"(" ~")");
-  assert(json_escape("\xa0\xff") == expected_4);
-  // Other input.
-  assert(json_escape(R"(alert("gotcha"))") == expected_5);
-  assert(json_escape("hello") == R"("hello")");
+  assert(json_escape("\"", false) == "\\\"");
+  assert(json_escape("\\", false) == "\\\\");
+  // Commonly-used characters that should be escaped.
+  assert(json_escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
+  // ASCII control characters should be escaped.
+  assert(json_escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
+  // ASCII printable characters (even DEL) shouldn't be escaped.
+  assert(json_escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
+  // Valid UTF-8.
+  assert(json_escape("\u2328", false) == "\u2328");
+  assert(json_escape("フーバー", false) == "フーバー");
+  // Replacement character for invalid characters.
+  assert(json_escape("�", false) == "�");
+  // Invalid characters should be replaced with '�' but we just leave them as-is.
+  assert(json_escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
+  // JS code should not be executed (eval).
+  auto expected_gotcha = R"js(alert(\"gotcha\"))js";
+  assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {

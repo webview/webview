@@ -109,14 +109,17 @@ extern "C" {
 
 typedef void *webview_t;
 
-// Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). The window parameter can be a
-// pointer to the native window handle. If it's non-null - then child WebView
-// is embedded into the given parent window. Otherwise a new window is created.
-// Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here. Returns null on failure. Creation can fail for various reasons
-// such as when required runtime dependencies are missing or when window creation
-// fails.
+// Creates a new webview instance. If the debug parameter is non-zero,
+// developer tools are enabled if supported by the backend. The optional window
+// parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
+// NSWindow pointer (Cocoa) or HWND (Win32). If the window handle is
+// non-null, the webview widget is embedded into the given window;
+// otherwise, a new window is created.
+// Returns null on failure. Creation can fail for various reasons such as when
+// required runtime dependencies are missing or when window creation fails.
+// Remarks:
+// - Win32: The function also accepts a pointer to HWND (Win32) in the window
+//   parameter for backward compatibility.
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 // Destroys a webview and closes the native window.
@@ -135,9 +138,9 @@ WEBVIEW_API void webview_terminate(webview_t w);
 WEBVIEW_API void
 webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 
-// Returns a native window handle pointer. When using a GTK backend the pointer
-// is a GtkWindow pointer, when using a Cocoa backend the pointer is a NSWindow
-// pointer, when using a Win32 backend the pointer is a HWND pointer.
+// Returns the native handle of the window associated with the webview instance.
+// The handle can be a GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or
+// HWND (Win32).
 WEBVIEW_API void *webview_get_window(webview_t w);
 
 // Native handle kind. The actual type depends on the backend.
@@ -250,6 +253,7 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <future>
@@ -474,27 +478,24 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
   return -1;
 }
 
-constexpr bool is_json_special_char(unsigned int c) {
-  return c == '"' || c == '\\';
+constexpr bool is_json_special_char(char c) {
+  return c == '"' || c == '\\' || c == '\b' || c == '\f' || c == '\n' ||
+         c == '\r' || c == '\t';
 }
 
-constexpr bool is_control_char(unsigned int c) {
-  return c <= 0x1f || (c >= 0x7f && c <= 0x9f);
-}
+constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
-  constexpr char hex_alphabet[]{"0123456789abcdef"};
   // Calculate the size of the resulting string.
   // Add space for the double quotes.
-  auto required_length = s.size() + (add_quotes ? 2 : 0);
+  size_t required_length = add_quotes ? 2 : 0;
   for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
+    if (is_json_special_char(c)) {
       // '\' and a single following character
       required_length += 2;
       continue;
     }
-    if (is_control_char(uc)) {
+    if (is_ascii_control_char(c)) {
       // '\', 'u', 4 digits
       required_length += 6;
       continue;
@@ -509,13 +510,23 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   }
   // Copy string while escaping characters.
   for (auto c : s) {
-    auto uc = static_cast<unsigned char>(c);
-    if (is_json_special_char(uc)) {
+    if (is_json_special_char(c)) {
+      static constexpr char special_escape_table[256] =
+          "\0\0\0\0\0\0\0\0btn\0fr\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\"\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+          "\0\0\0\0\0\0\0\0\0\0\0\0\\";
       result += '\\';
-      result += c;
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+      result += special_escape_table[static_cast<unsigned char>(c)];
       continue;
     }
-    if (is_control_char(uc)) {
+    if (is_ascii_control_char(c)) {
+      // Escape as \u00xx
+      static constexpr char hex_alphabet[]{"0123456789abcdef"};
+      auto uc = static_cast<unsigned char>(c);
       auto h = (uc >> 4) & 0x0f;
       auto l = uc & 0x0f;
       result += "\\u00";
@@ -530,6 +541,8 @@ inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   if (add_quotes) {
     result += '"';
   }
+  // Should have calculated the exact amount of memory needed
+  assert(required_length == result.size());
   return result;
 }
 
@@ -2594,6 +2607,11 @@ public:
           }
           break;
         }
+        case WM_ACTIVATE:
+          if (LOWORD(wp) != WA_INACTIVE) {
+            w->focus_webview();
+          }
+          break;
         default:
           return DefWindowProcW(hwnd, msg, wp, lp);
         }
@@ -2613,9 +2631,51 @@ public:
       constexpr const int initial_height = 480;
       set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
-      m_window = *(static_cast<HWND *>(window));
+      m_window = IsWindow(static_cast<HWND>(window))
+                     ? static_cast<HWND>(window)
+                     : *(static_cast<HWND *>(window));
       m_dpi = get_window_dpi(m_window);
     }
+
+    // Create a window that WebView2 will be embedded into.
+    WNDCLASSEXW widget_wc{};
+    widget_wc.cbSize = sizeof(WNDCLASSEX);
+    widget_wc.hInstance = hInstance;
+    widget_wc.lpszClassName = L"webview_widget";
+    widget_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                          LPARAM lp) -> LRESULT {
+      win32_edge_engine *w{};
+
+      if (msg == WM_NCCREATE) {
+        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+        w->m_widget = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+      } else {
+        w = reinterpret_cast<win32_edge_engine *>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+      }
+
+      if (!w) {
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+
+      switch (msg) {
+      case WM_SIZE:
+        w->resize_webview();
+        break;
+      case WM_DESTROY:
+        w->m_widget = nullptr;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+        break;
+      default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+      return 0;
+    });
+    auto widget_atom = RegisterClassExW(&widget_wc);
+    CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
+                    0, 0, 0, 0, m_window, nullptr, hInstance, this);
 
     // Create a message-only window for internal messaging.
     WNDCLASSEXW message_wc{};
@@ -2667,9 +2727,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_window, debug, cb);
-    resize_widget();
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    embed(m_widget, debug, cb);
   }
 
   virtual ~win32_edge_engine() {
@@ -2821,16 +2879,37 @@ private:
       return false;
     }
     init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
+    resize_webview();
+    m_controller->put_IsVisible(TRUE);
+    ShowWindow(m_widget, SW_SHOW);
+    UpdateWindow(m_widget);
+    focus_webview();
     return true;
   }
 
   void resize_widget() {
-    if (m_controller == nullptr) {
-      return;
+    if (m_widget) {
+      RECT r{};
+      if (GetClientRect(GetParent(m_widget), &r)) {
+        MoveWindow(m_widget, r.left, r.top, r.right - r.left, r.bottom - r.top,
+                   TRUE);
+      }
     }
-    RECT bounds;
-    GetClientRect(m_window, &bounds);
-    m_controller->put_Bounds(bounds);
+  }
+
+  void resize_webview() {
+    if (m_widget && m_controller) {
+      RECT bounds{};
+      if (GetClientRect(m_widget, &bounds)) {
+        m_controller->put_Bounds(bounds);
+      }
+    }
+  }
+
+  void focus_webview() {
+    if (m_controller) {
+      m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
+    }
   }
 
   bool is_webview2_available() const noexcept {
@@ -2897,6 +2976,7 @@ private:
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
   HWND m_window = nullptr;
+  HWND m_widget = nullptr;
   HWND m_message_window = nullptr;
   POINT m_minsz = POINT{0, 0};
   POINT m_maxsz = POINT{0, 0};
