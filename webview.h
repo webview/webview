@@ -148,7 +148,6 @@ typedef enum {
   // Top-level window. GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or HWND (Win32).
   WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
   // Browser widget. GtkWidget pointer (GTK), NSView pointer (Cocoa) or HWND (Win32).
-  // Currently, this is unsupported on Win32 and NULL will be returned.
   WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
   // Browser controller. WebKitWebView pointer (WebKitGTK), WKWebView pointer (Cocoa/WebKit) or
   // ICoreWebView2Controller pointer (Win32/WebView2).
@@ -2758,7 +2757,7 @@ public:
     }
   }
   void *window() { return (void *)m_window; }
-  void *widget() { return nullptr; }
+  void *widget() { return (void *)m_widget; }
   void *browser_controller() { return (void *)m_controller; }
   void terminate() { PostQuitMessage(0); }
   void dispatch(dispatch_fn_t f) {
