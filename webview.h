@@ -2759,16 +2759,27 @@ public:
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
   void run() {
+    m_running_main_loop = true;
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
+    m_running_main_loop = false;
   }
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_widget; }
   void *browser_controller() { return (void *)m_controller; }
-  void terminate() { PostQuitMessage(0); }
+  void terminate() {
+    // Prevent unintentionally posting the quit message multiple times in the
+    // following scenario:
+    // 1. Run loop starts.
+    // 2. User code requests the run loop to stop.
+    // 3. Destructor of this class wants to stop the run loop.
+    if (m_running_main_loop) {
+      PostQuitMessage(0);
+    }
+  }
   void dispatch(dispatch_fn_t f) {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
@@ -2862,13 +2873,20 @@ private:
     m_com_handler->try_create_environment();
 
     // Pump the message loop until WebView2 has finished initialization.
+    m_running_main_loop = true;
+    bool got_quit_msg = false;
     MSG msg;
     while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
       if (msg.message == WM_QUIT) {
-        return false;
+        got_quit_msg = true;
+        break;
       }
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
+    }
+    m_running_main_loop = false;
+    if (got_quit_msg) {
+      return false;
     }
     if (!m_controller || !m_webview) {
       return false;
@@ -2997,6 +3015,7 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
+  bool m_running_main_loop{};
 };
 
 } // namespace detail
