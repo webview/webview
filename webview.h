@@ -2564,6 +2564,7 @@ public:
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
           GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
 
+      // Create a top-level window.
       WNDCLASSEXW wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
       wc.cbSize = sizeof(WNDCLASSEX);
@@ -2598,15 +2599,14 @@ public:
           DestroyWindow(hwnd);
           break;
         case WM_DESTROY:
+          w->m_window = nullptr;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
           if (w->dec_window_count() <= 0) {
             w->terminate();
           }
           break;
         case WM_GETMINMAXINFO: {
           auto lpmmi = (LPMINMAXINFO)lp;
-          if (w == nullptr) {
-            return 0;
-          }
           if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
             lpmmi->ptMaxSize = w->m_maxsz;
             lpmmi->ptMaxTrackSize = w->m_maxsz;
@@ -2773,6 +2773,20 @@ public:
     if (m_controller) {
       m_controller->Release();
       m_controller = nullptr;
+    }
+    if (m_message_window) {
+      DestroyWindow(m_message_window);
+      m_message_window = nullptr;
+    }
+    if (m_widget) {
+      DestroyWindow(m_widget);
+      m_widget = nullptr;
+    }
+    if (m_window) {
+      if (m_owns_window) {
+        DestroyWindow(m_window);
+      }
+      m_window = nullptr;
     }
   }
 
