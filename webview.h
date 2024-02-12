@@ -1008,6 +1008,19 @@ public:
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
+  void
+  add_scheme_handler(const std::string &scheme,
+                     std::function<void(const std::string &, void *)> callback,
+                     void *arg) {
+    auto view = WEBKIT_WEB_VIEW(m_webview);
+    auto context = webkit_web_view_get_context(view);
+
+    scheme_handlers.insert({scheme, {.arg = arg, .fkt = callback}});
+    webkit_web_context_register_uri_scheme(
+        context, scheme.c_str(), scheme_handler, static_cast<gpointer>(this),
+        nullptr);
+  }
+
   void set_html(const std::string &html) {
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
                               nullptr);
@@ -1042,6 +1055,30 @@ public:
 
 private:
   virtual void on_message(const std::string &msg) = 0;
+
+  struct handler_t {
+    void *arg;
+    std::function<void(const std::string &, void *)> fkt;
+  };
+
+  std::map<std::string, handler_t> scheme_handlers;
+
+  void scheme_handler_call(const std::string &scheme, const std::string &url) {
+    auto handler = scheme_handlers.find(scheme);
+    if (handler != scheme_handlers.end()) {
+      const auto &arg = handler->second;
+      arg.fkt(url, arg.arg);
+    }
+  }
+
+  static void scheme_handler(WebKitURISchemeRequest *request,
+                             gpointer user_data) {
+    auto _this = static_cast<gtk_webkit_engine *>(user_data);
+
+    auto scheme = webkit_uri_scheme_request_get_scheme(request);
+    auto uri = webkit_uri_scheme_request_get_uri(request);
+    _this->scheme_handler_call(scheme, uri);
+  }
 
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
