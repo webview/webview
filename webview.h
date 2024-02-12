@@ -923,9 +923,8 @@ constexpr auto webkit_web_view_run_javascript =
 class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)) {
-    auto owns_window = !window;
-    if (owns_window) {
+      : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
+    if (m_owns_window) {
       if (gtk_init_check(nullptr, nullptr) == FALSE) {
         return;
       }
@@ -971,16 +970,30 @@ public:
       webkit_settings_set_enable_developer_extras(settings, true);
     }
 
-    if (owns_window) {
+    if (m_owns_window) {
       gtk_widget_grab_focus(GTK_WIDGET(m_webview));
       gtk_widget_show_all(m_window);
     }
   }
+
   gtk_webkit_engine(const gtk_webkit_engine &) = delete;
   gtk_webkit_engine &operator=(const gtk_webkit_engine &) = delete;
   gtk_webkit_engine(gtk_webkit_engine &&) = delete;
   gtk_webkit_engine &operator=(gtk_webkit_engine &&) = delete;
-  virtual ~gtk_webkit_engine() = default;
+
+  virtual ~gtk_webkit_engine() {
+    if (m_webview) {
+      gtk_widget_destroy(GTK_WIDGET(m_webview));
+      m_webview = nullptr;
+    }
+    if (m_window) {
+      if (m_owns_window) {
+        gtk_window_close(GTK_WINDOW(m_window));
+      }
+      m_window = nullptr;
+    }
+  }
+
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
   void *browser_controller() { return (void *)m_webview; };
@@ -1117,8 +1130,9 @@ private:
     return 0;
   }
 
-  GtkWidget *m_window;
-  GtkWidget *m_webview;
+  bool m_owns_window{};
+  GtkWidget *m_window{};
+  GtkWidget *m_webview{};
 };
 
 } // namespace detail
