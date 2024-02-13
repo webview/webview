@@ -1246,25 +1246,53 @@ public:
       if (delegate) {
         create_window();
       } else {
-        delegate = create_app_delegate();
-        objc_setAssociatedObject(delegate, "webview", (id)this,
+        m_app_delegate = create_app_delegate();
+        objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                                  OBJC_ASSOCIATION_ASSIGN);
-        objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
+        objc::msg_send<void>(app, "setDelegate:"_sel, m_app_delegate);
 
         // Start the main run loop so that the app delegate gets the
         // NSApplicationDidFinishLaunchingNotification notification after the run
         // loop has started in order to perform further initialization.
         // We need to return from this constructor so this run loop is only
         // temporary.
-        objc::msg_send<void>(app, "run"_sel);
+        // Skip the main loop if this isn't the first instance of this class
+        // because the launch event is only sent once. Instead, proceed to
+        // create a window.
+        if (get_and_set_is_first_instance()) {
+          objc::msg_send<void>(app, "run"_sel);
+        } else {
+          create_window();
+        }
       }
     }
   }
+
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
   cocoa_wkwebview_engine &operator=(const cocoa_wkwebview_engine &) = delete;
   cocoa_wkwebview_engine(cocoa_wkwebview_engine &&) = delete;
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
-  virtual ~cocoa_wkwebview_engine() = default;
+
+  virtual ~cocoa_wkwebview_engine() {
+    if (m_window) {
+      if (m_webview) {
+        if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
+          objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
+        }
+        m_webview = nullptr;
+      }
+      objc::msg_send<void>(m_window, "close"_sel);
+      m_window = nullptr;
+    }
+    if (m_app_delegate) {
+      auto app = get_shared_application();
+      objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
+      // Make sure to release the delegate we created.
+      objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
+      m_app_delegate = nullptr;
+    }
+  }
+
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
   void *browser_controller() { return (void *)m_webview; }
@@ -1370,20 +1398,14 @@ private:
                         return w->on_application_should_terminate(self, sender);
                       }),
                       "i@:@");
-      // If the library was not initialized with an existing window then the user
-      // is likely managing the application lifecycle and we would not get the
-      // "applicationDidFinishLaunching:" message and therefore do not need to
-      // add this method.
-      if (m_owns_window) {
-        class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
-                        (IMP)(+[](id self, SEL, id notification) {
-                          auto app =
-                              objc::msg_send<id>(notification, "object"_sel);
-                          auto w = get_associated_webview(self);
-                          w->on_application_did_finish_launching(self, app);
-                        }),
-                        "v@:@");
-      }
+      class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+                      (IMP)(+[](id self, SEL, id notification) {
+                        auto app =
+                            objc::msg_send<id>(notification, "object"_sel);
+                        auto w = get_associated_webview(self);
+                        w->on_application_did_finish_launching(self, app);
+                      }),
+                      "v@:@");
       objc_registerClassPair(cls);
     }
     return objc::msg_send<id>((id)cls, "new"_sel);
@@ -1625,12 +1647,21 @@ private:
         type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
     objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
   }
+  static bool get_and_set_is_first_instance() noexcept {
+    static std::atomic_bool first{true};
+    bool temp = first;
+    if (temp) {
+      first = false;
+    }
+    return temp;
+  }
 
-  bool m_debug;
-  id m_window;
-  id m_webview;
-  id m_manager;
-  bool m_owns_window;
+  bool m_debug{};
+  id m_app_delegate{};
+  id m_window{};
+  id m_webview{};
+  id m_manager{};
+  bool m_owns_window{};
 };
 
 } // namespace detail
