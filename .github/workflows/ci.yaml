@@ -122,7 +122,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.16
         with:
           source: '.'
-          exclude: './script'
+          exclude: './build'
           extensions: 'h,cc'
           clangFormatVersion: 9
           style: file
