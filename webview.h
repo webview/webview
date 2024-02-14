@@ -1480,6 +1480,8 @@ private:
     create_window();
   }
   void create_window() {
+    objc::autoreleasepool arp;
+
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
@@ -1491,6 +1493,8 @@ private:
 
     // Webview
     auto config = objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
+    objc::msg_send<void>(config, "autorelease"_sel);
+
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
     m_webview = objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 
