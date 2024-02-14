@@ -2683,7 +2683,7 @@ public:
       }
       return 0;
     });
-    auto widget_atom = RegisterClassExW(&widget_wc);
+    RegisterClassExW(&widget_wc);
     CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
                     0, 0, 0, 0, m_window, nullptr, hInstance, this);
 
