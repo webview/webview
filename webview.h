@@ -900,7 +900,30 @@ protected:
     context.callback(seq, args, context.arg);
   }
 
+  virtual void on_window_created() { inc_window_count(); }
+
+  virtual void on_window_destroyed() {
+    if (dec_window_count() <= 0) {
+      terminate();
+    }
+  }
+
 private:
+  static std::atomic_uint &window_ref_count() {
+    static std::atomic_uint ref_count{0};
+    return ref_count;
+  }
+
+  static unsigned int inc_window_count() { return ++window_ref_count(); }
+
+  static unsigned int dec_window_count() {
+    auto &count = window_ref_count();
+    if (count > 0) {
+      return --count;
+    }
+    return 0;
+  }
+
   std::map<std::string, binding_ctx_t> bindings;
 };
 
@@ -1081,13 +1104,11 @@ public:
         return;
       }
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-      inc_window_count();
+      on_window_created();
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
                          auto *w = static_cast<gtk_webkit_engine *>(arg);
-                         if (dec_window_count() <= 0) {
-                           w->terminate();
-                         }
+                         w->on_window_destroyed();
                        }),
                        this);
     }
@@ -1263,21 +1284,6 @@ private:
     }
 
     return loaded_lib;
-  }
-
-  static std::atomic_uint &window_ref_count() {
-    static std::atomic_uint ref_count{0};
-    return ref_count;
-  }
-
-  static unsigned int inc_window_count() { return ++window_ref_count(); }
-
-  static unsigned int dec_window_count() {
-    auto &count = window_ref_count();
-    if (count > 0) {
-      return --count;
-    }
-    return 0;
   }
 
   bool m_owns_window{};
@@ -2795,9 +2801,7 @@ public:
         case WM_DESTROY:
           w->m_window = nullptr;
           SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-          if (w->dec_window_count() <= 0) {
-            w->terminate();
-          }
+          w->on_window_destroyed();
           break;
         case WM_GETMINMAXINFO: {
           auto lpmmi = (LPMINMAXINFO)lp;
@@ -2847,7 +2851,7 @@ public:
       if (m_window == nullptr) {
         return;
       }
-      inc_window_count();
+      on_window_created();
 
       m_dpi = get_window_dpi(m_window);
       constexpr const int initial_width = 640;
@@ -3211,21 +3215,6 @@ private:
     if (lstrcmpW(area, L"ImmersiveColorSet") == 0) {
       apply_window_theme(m_window);
     }
-  }
-
-  static std::atomic_uint &window_ref_count() {
-    static std::atomic_uint ref_count{0};
-    return ref_count;
-  }
-
-  static unsigned int inc_window_count() { return ++window_ref_count(); }
-
-  static unsigned int dec_window_count() {
-    auto &count = window_ref_count();
-    if (count > 0) {
-      return --count;
-    }
-    return 0;
   }
 
   // The app is expected to call CoInitializeEx before
