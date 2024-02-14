@@ -968,6 +968,10 @@ public:
       gtk_widget_show_all(m_window);
     }
   }
+  gtk_webkit_engine(const gtk_webkit_engine &) = delete;
+  gtk_webkit_engine &operator=(const gtk_webkit_engine &) = delete;
+  gtk_webkit_engine(gtk_webkit_engine &&) = delete;
+  gtk_webkit_engine &operator=(gtk_webkit_engine &&) = delete;
   virtual ~gtk_webkit_engine() = default;
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
@@ -1234,6 +1238,10 @@ public:
       }
     }
   }
+  cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
+  cocoa_wkwebview_engine &operator=(const cocoa_wkwebview_engine &) = delete;
+  cocoa_wkwebview_engine(cocoa_wkwebview_engine &&) = delete;
+  cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
   virtual ~cocoa_wkwebview_engine() = default;
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
