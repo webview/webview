@@ -1395,12 +1395,12 @@ public:
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
-      create_window();
+      set_up_window();
     } else {
       // Only set the app delegate if it hasn't already been set.
       auto delegate = objc::msg_send<id>(app, "delegate"_sel);
       if (delegate) {
-        create_window();
+        set_up_window();
       } else {
         m_app_delegate = create_app_delegate();
         objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
@@ -1418,7 +1418,7 @@ public:
         if (get_and_set_is_first_instance()) {
           objc::msg_send<void>(app, "run"_sel);
         } else {
-          create_window();
+          set_up_window();
         }
       }
     }
@@ -1684,11 +1684,9 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
-    create_window();
+    set_up_window();
   }
-  void create_window() {
-    objc::autoreleasepool arp;
-
+  void set_up_window() {
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
@@ -1698,7 +1696,17 @@ private:
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
     }
 
-    // Webview
+    set_up_web_view();
+
+    objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
+
+    if (m_owns_window) {
+      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+    }
+  }
+  void set_up_web_view() {
+    objc::autoreleasepool arp;
+
     auto config = objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
     objc::msg_send<void>(config, "autorelease"_sel);
 
@@ -1773,11 +1781,6 @@ private:
         },
       };
       )"");
-    objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
-
-    if (m_owns_window) {
-      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
-    }
   }
   int on_application_should_terminate(id /*delegate*/, id app) {
     dispatch([app, this] {
