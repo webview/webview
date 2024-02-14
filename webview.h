@@ -672,8 +672,16 @@ public:
 
   native_library(const native_library &other) = delete;
   native_library &operator=(const native_library &other) = delete;
-  native_library(native_library &&other) = default;
-  native_library &operator=(native_library &&other) = default;
+  native_library(native_library &&other) { *this = std::move(other); }
+
+  native_library &operator=(native_library &&other) {
+    if (this == &other) {
+      return *this;
+    }
+    m_handle = other.m_handle;
+    other.m_handle = nullptr;
+    return *this;
+  }
 
   // Returns true if the library is currently loaded; otherwise false.
   operator bool() const { return is_loaded(); }
@@ -1744,6 +1752,9 @@ public:
   com_init_wrapper(com_init_wrapper &&other) { *this = std::move(other); }
 
   com_init_wrapper &operator=(com_init_wrapper &&other) {
+    if (this == &other) {
+      return *this;
+    }
     m_initialized = std::exchange(other.m_initialized, false);
     return *this;
   }
