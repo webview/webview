@@ -189,6 +189,24 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 // Example: webview_set_html(w, "<h1>Hello</h1>");
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
+// Go back
+WEBVIEW_API void webview_go_back(webview_t w);
+
+// Go forward
+WEBVIEW_API void webview_go_forward(webview_t w);
+
+// Reload page
+WEBVIEW_API void webview_reload(webview_t w);
+
+// Stop loading page
+WEBVIEW_API void webview_stop(webview_t w);
+
+// Get current page title
+WEBVIEW_API char *webview_get_title(webview_t w);
+
+// Get current page URL
+WEBVIEW_API char *webview_get_url(webview_t w);
+
 // Injects JavaScript code at the initialization of the new page. Every time
 // the webview will open a new page - this initialization code will be
 // executed. It is guaranteed that code is executed before window.onload.
@@ -1038,6 +1056,32 @@ public:
                               nullptr);
   }
 
+  void go_back() {
+      if (webkit_web_view_can_go_back(WEBKIT_WEB_VIEW(m_webview)))
+          webkit_web_view_go_back(WEBKIT_WEB_VIEW(m_webview));
+  }
+
+  void go_forward() {
+      if (webkit_web_view_can_go_forward(WEBKIT_WEB_VIEW(m_webview)))
+          webkit_web_view_go_forward(WEBKIT_WEB_VIEW(m_webview));
+  }
+
+  void reload() {
+      webkit_web_view_reload(WEBKIT_WEB_VIEW(m_webview));
+  }
+
+  void stop() {
+      webkit_web_view_stop_loading(WEBKIT_WEB_VIEW(m_webview));
+  }
+
+  char *get_title() {
+      return webkit_web_view_get_title(WEBKIT_WEB_VIEW(m_webview));
+  }
+
+  char *get_url() {
+      return webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+  }
+
   void init(const std::string &js) {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
@@ -1356,6 +1400,34 @@ public:
                                             "stringWithUTF8String:"_sel,
                                             html.c_str()),
                          nullptr);
+  }
+  void go_back() {
+      if (((bool (*)(id, SEL))objc_msgSend)(
+                  m_webview, "canGoBack:"_sel))
+          ((void (*)(id, SEL))objc_msgSend)(
+              m_webview, "goBack:"_sel);
+  }
+  void go_forward() {
+    if (((bool (*)(id, SEL))objc_msgSend)(
+                m_webview, "canGoForward:"_sel))
+        ((void (*)(id, SEL))objc_msgSend)(
+            m_webview, "goForward:"_sel);
+  }
+  void reload() {
+    ((void (*)(id, SEL))objc_msgSend)(
+        m_webview, "reload:"_sel);
+  }
+  void stop() {
+    ((void (*)(id, SEL))objc_msgSend)(
+        m_webview, "stopLoading:"_sel);
+  }
+  char *get_title() {
+    return ((char *(*)(id, SEL))objc_msgSend)(
+        m_webview, "title:"_sel);
+  }
+  char *get_url() {
+    return ((char *(*)(id, SEL))objc_msgSend)(
+        m_webview, "url:"_sel);
   }
   void init(const std::string &js) {
     // Equivalent Obj-C:
@@ -2917,6 +2989,46 @@ public:
     m_webview->NavigateToString(widen_string(html).c_str());
   }
 
+  void go_back() {
+    BOOL canGoBack = FALSE;
+    m_webview->get_CanGoBack(&canGoBack);
+    if (canGoBack)
+        m_webview->GoBack();
+  }
+
+  void go_forward() {
+    BOOL canGoForward = FALSE;
+    m_webview->get_CanGoForward(&canGoForward);
+    if (canGoForward)
+        m_webview->GoForward();
+  }
+
+  void reload() {
+    m_webview->Reload();
+  }
+
+  void stop() {
+    m_webview->Stop();
+  }
+
+  char *get_title() {
+    LPWSTR wtitle;
+    m_webview->get_DocumentTitle(&wtitle);
+    int length = WideCharToMultiByte(CP_UTF8, 0, wtitle, -1, 0, 0, NULL, NULL);
+    char *title = new char[length];
+    WideCharToMultiByte(CP_UTF8, 0, wtitle, -1, title, length, NULL, NULL);
+    return title;
+  }
+
+  char *get_url() {
+    LPWSTR wurl;
+    m_webview->get_Source(&wurl);
+    int length = WideCharToMultiByte(CP_UTF8, 0, wurl, -1, 0, 0, NULL, NULL);
+    char *url = new char[length];
+    WideCharToMultiByte(CP_UTF8, 0, wurl, -1, url, length, NULL, NULL);
+    return url;
+  }
+
 private:
   bool embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
@@ -3294,6 +3406,30 @@ WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
 
 WEBVIEW_API void webview_set_html(webview_t w, const char *html) {
   static_cast<webview::webview *>(w)->set_html(html);
+}
+
+WEBVIEW_API void webview_go_back(webview_t w) {
+  static_cast<webview::webview *>(w)->go_back();
+}
+
+WEBVIEW_API void webview_go_forward(webview_t w) {
+  static_cast<webview::webview *>(w)->go_forward();
+}
+
+WEBVIEW_API void webview_reload(webview_t w) {
+  static_cast<webview::webview *>(w)->reload();
+}
+
+WEBVIEW_API void webview_stop(webview_t w, const char *url) {
+  static_cast<webview::webview *>(w)->stop();
+}
+
+WEBVIEW_API char *webview_get_title(webview_t w) {
+  return static_cast<webview::webview *>(w)->get_title();
+}
+
+WEBVIEW_API char *webview_get_url(webview_t w) {
+  return static_cast<webview::webview *>(w)->get_url();
 }
 
 WEBVIEW_API void webview_init(webview_t w, const char *js) {
