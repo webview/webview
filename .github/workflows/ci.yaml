@@ -19,7 +19,7 @@ jobs:
           sudo update-alternatives --remove-all clang-format
           sudo update-alternatives --remove-all clang-tidy
           sudo update-alternatives --force --install /usr/bin/clang clang /usr/bin/clang-15 1500 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-15 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-15 --slave /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
       - name: Build and run tests
@@ -33,7 +33,7 @@ jobs:
     env:
       CXX_STD: ${{ matrix.cxx_std }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build and run tests
         run: ./script/build.sh
 
@@ -47,7 +47,7 @@ jobs:
       CXX_STD: ${{ matrix.cxx_std }}
       TARGET_ARCH: ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build and run tests
         run: ./script/build.bat info clean format deps check build test
         shell: cmd
@@ -68,7 +68,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
@@ -93,7 +93,7 @@ jobs:
       CXX_STD: ${{ matrix.cxx_std }}
       PATCH_MSWEBVIEW2: 1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install mingw-w64 -y
       - name: Build
@@ -105,7 +105,7 @@ jobs:
       matrix:
         language: [csharp, java, python, ruby]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate bindings with SWIG
         run: |
           mkdir -p "build/bindings/${{ matrix.language }}" \
@@ -117,12 +117,12 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run clang-format
-        uses: DoozyX/clang-format-lint-action@v0.6
+        uses: DoozyX/clang-format-lint-action@v0.16
         with:
           source: '.'
-          exclude: './script'
+          exclude: './build'
           extensions: 'h,cc'
           clangFormatVersion: 9
           style: file
