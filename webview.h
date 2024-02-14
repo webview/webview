@@ -752,6 +752,158 @@ private:
   mod_handle_t m_handle{};
 };
 
+class engine_base {
+public:
+  virtual ~engine_base() = default;
+
+  void navigate(const std::string &url) {
+    if (url.empty()) {
+      navigate_impl("about:blank");
+      return;
+    }
+    navigate_impl(url);
+  }
+
+  using binding_t = std::function<void(std::string, std::string, void *)>;
+  class binding_ctx_t {
+  public:
+    binding_ctx_t(binding_t callback, void *arg)
+        : callback(callback), arg(arg) {}
+    // This function is called upon execution of the bound JS function
+    binding_t callback;
+    // This user-supplied argument is passed to the callback
+    void *arg;
+  };
+
+  using sync_binding_t = std::function<std::string(std::string)>;
+
+  // Synchronous bind
+  void bind(const std::string &name, sync_binding_t fn) {
+    auto wrapper = [this, fn](const std::string &seq, const std::string &req,
+                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
+    bind(name, wrapper, nullptr);
+  }
+
+  // Asynchronous bind
+  void bind(const std::string &name, binding_t fn, void *arg) {
+    // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
+    if (bindings.count(name) > 0) {
+      return;
+    }
+    bindings.emplace(name, binding_ctx_t(fn, arg));
+    auto js = "(function() { var name = '" + name + "';" + R""(
+      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
+      window[name] = function() {
+        var seq = RPC.nextSeq++;
+        var promise = new Promise(function(resolve, reject) {
+          RPC[seq] = {
+            resolve: resolve,
+            reject: reject,
+          };
+        });
+        window.external.invoke(JSON.stringify({
+          id: seq,
+          method: name,
+          params: Array.prototype.slice.call(arguments),
+        }));
+        return promise;
+      }
+    })())"";
+    init(js);
+    eval(js);
+  }
+
+  void unbind(const std::string &name) {
+    auto found = bindings.find(name);
+    if (found != bindings.end()) {
+      auto js = "delete window['" + name + "'];";
+      init(js);
+      eval(js);
+      bindings.erase(found);
+    }
+  }
+
+  void resolve(const std::string &seq, int status, const std::string &result) {
+    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
+    dispatch(std::bind(
+        [seq, status, this](std::string escaped_result) {
+          std::string js;
+          js += "(function(){var seq = \"";
+          js += seq;
+          js += "\";\n";
+          js += "var status = ";
+          js += std::to_string(status);
+          js += ";\n";
+          js += "var result = ";
+          js += escaped_result;
+          js += R"js(;
+var promise = window._rpc[seq];
+delete window._rpc[seq];
+if (result !== undefined) {
+  try {
+    result = JSON.parse(result);
+  } catch {
+    promise.reject(new Error("Failed to parse binding result as JSON"));
+    return;
+  }
+}
+if (status === 0) {
+  promise.resolve(result);
+} else {
+  promise.reject(result);
+}
+})())js";
+          eval(js);
+        },
+        result.empty() ? "undefined" : json_escape(result)));
+  }
+
+  void *window() { return window_impl(); }
+  void *widget() { return widget_impl(); }
+  void *browser_controller() { return browser_controller_impl(); };
+  void run() { run_impl(); }
+  void terminate() { terminate_impl(); }
+  void dispatch(std::function<void()> f) { dispatch_impl(f); }
+  void set_title(const std::string &title) { set_title_impl(title); }
+
+  void set_size(int width, int height, int hints) {
+    set_size_impl(width, height, hints);
+  }
+
+  void set_html(const std::string &html) { set_html_impl(html); }
+  void init(const std::string &js) { init_impl(js); }
+  void eval(const std::string &js) { eval_impl(js); }
+
+protected:
+  virtual void navigate_impl(const std::string &url) = 0;
+  virtual void *window_impl() = 0;
+  virtual void *widget_impl() = 0;
+  virtual void *browser_controller_impl() = 0;
+  virtual void run_impl() = 0;
+  virtual void terminate_impl() = 0;
+  virtual void dispatch_impl(std::function<void()> f) = 0;
+  virtual void set_title_impl(const std::string &title) = 0;
+  virtual void set_size_impl(int width, int height, int hints) = 0;
+  virtual void set_html_impl(const std::string &html) = 0;
+  virtual void init_impl(const std::string &js) = 0;
+  virtual void eval_impl(const std::string &js) = 0;
+
+  virtual void on_message(const std::string &msg) {
+    auto seq = json_parse(msg, "id", 0);
+    auto name = json_parse(msg, "method", 0);
+    auto args = json_parse(msg, "params", 0);
+    auto found = bindings.find(name);
+    if (found == bindings.end()) {
+      return;
+    }
+    const auto &context = found->second;
+    context.callback(seq, args, context.arg);
+  }
+
+private:
+  std::map<std::string, binding_ctx_t> bindings;
+};
+
 } // namespace detail
 
 WEBVIEW_DEPRECATED_PRIVATE
@@ -920,7 +1072,7 @@ constexpr auto webkit_web_view_run_javascript =
         "webkit_web_view_run_javascript");
 } // namespace webkit_symbols
 
-class gtk_webkit_engine {
+class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
@@ -994,12 +1146,12 @@ public:
     }
   }
 
-  void *window() { return (void *)m_window; }
-  void *widget() { return (void *)m_webview; }
-  void *browser_controller() { return (void *)m_webview; };
-  void run() { gtk_main(); }
-  void terminate() { gtk_main_quit(); }
-  void dispatch(std::function<void()> f) {
+  void *window_impl() override { return (void *)m_window; }
+  void *widget_impl() override { return (void *)m_webview; }
+  void *browser_controller_impl() override { return (void *)m_webview; };
+  void run_impl() override { gtk_main(); }
+  void terminate_impl() override { gtk_main_quit(); }
+  void dispatch_impl(std::function<void()> f) override {
     g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *f) -> int {
                       (*static_cast<dispatch_fn_t *>(f))();
                       return G_SOURCE_REMOVE;
@@ -1008,11 +1160,11 @@ public:
                     [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
   }
 
-  void set_title(const std::string &title) {
+  void set_title_impl(const std::string &title) override {
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
   }
 
-  void set_size(int width, int height, int hints) {
+  void set_size_impl(int width, int height, int hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_window_resize(GTK_WINDOW(m_window), width, height);
@@ -1029,16 +1181,16 @@ public:
     }
   }
 
-  void navigate(const std::string &url) {
+  void navigate_impl(const std::string &url) override {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
   }
 
-  void set_html(const std::string &html) {
+  void set_html_impl(const std::string &html) override {
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
                               nullptr);
   }
 
-  void init(const std::string &js) {
+  void init_impl(const std::string &js) override {
     WebKitUserContentManager *manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkit_user_content_manager_add_script(
@@ -1048,7 +1200,7 @@ public:
                                nullptr, nullptr));
   }
 
-  void eval(const std::string &js) {
+  void eval_impl(const std::string &js) override {
     auto &lib = get_webkit_library();
     auto wkmajor = webkit_get_major_version();
     auto wkminor = webkit_get_minor_version();
@@ -1066,8 +1218,6 @@ public:
   }
 
 private:
-  virtual void on_message(const std::string &msg) = 0;
-
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
 #if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
@@ -1231,7 +1381,7 @@ inline id operator"" _str(const char *s, std::size_t) {
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
 }
 
-class cocoa_wkwebview_engine {
+class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
@@ -1293,15 +1443,15 @@ public:
     }
   }
 
-  void *window() { return (void *)m_window; }
-  void *widget() { return (void *)m_webview; }
-  void *browser_controller() { return (void *)m_webview; }
-  void terminate() { stop_run_loop(); }
-  void run() {
+  void *window_impl() override { return (void *)m_window; }
+  void *widget_impl() override { return (void *)m_webview; }
+  void *browser_controller_impl() override { return (void *)m_webview; };
+  void terminate_impl() override { stop_run_loop(); }
+  void run_impl() override {
     auto app = get_shared_application();
     objc::msg_send<void>(app, "run"_sel);
   }
-  void dispatch(std::function<void()> f) {
+  void dispatch_impl(std::function<void()> f) override {
     dispatch_async_f(dispatch_get_main_queue(), new dispatch_fn_t(f),
                      (dispatch_function_t)([](void *arg) {
                        auto f = static_cast<dispatch_fn_t *>(arg);
@@ -1309,13 +1459,13 @@ public:
                        delete f;
                      }));
   }
-  void set_title(const std::string &title) {
+  void set_title_impl(const std::string &title) override {
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
                                             title.c_str()));
   }
-  void set_size(int width, int height, int hints) {
+  void set_size_impl(int width, int height, int hints) override {
     auto style = static_cast<NSWindowStyleMask>(
         NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable);
@@ -1337,7 +1487,7 @@ public:
     }
     objc::msg_send<void>(m_window, "center"_sel);
   }
-  void navigate(const std::string &url) {
+  void navigate_impl(const std::string &url) override {
     objc::autoreleasepool pool;
 
     auto nsurl = objc::msg_send<id>(
@@ -1349,7 +1499,7 @@ public:
         m_webview, "loadRequest:"_sel,
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
-  void set_html(const std::string &html) {
+  void set_html_impl(const std::string &html) override {
     objc::autoreleasepool pool;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
                          objc::msg_send<id>("NSString"_cls,
@@ -1357,7 +1507,7 @@ public:
                                             html.c_str()),
                          nullptr);
   }
-  void init(const std::string &js) {
+  void init_impl(const std::string &js) override {
     // Equivalent Obj-C:
     // [m_manager addUserScript:[[WKUserScript alloc] initWithSource:[NSString stringWithUTF8String:js.c_str()] injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES]]
     objc::msg_send<void>(
@@ -1369,7 +1519,7 @@ public:
                                               js.c_str()),
                            WKUserScriptInjectionTimeAtDocumentStart, YES));
   }
-  void eval(const std::string &js) {
+  void eval_impl(const std::string &js) override {
     objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
@@ -1378,7 +1528,6 @@ public:
   }
 
 private:
-  virtual void on_message(const std::string &msg) = 0;
   id create_app_delegate() {
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
@@ -2589,7 +2738,7 @@ private:
   unsigned int m_attempts = 0;
 };
 
-class win32_edge_engine {
+class win32_edge_engine : public engine_base {
 public:
   win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
     if (!is_webview2_available()) {
@@ -2840,7 +2989,7 @@ public:
   win32_edge_engine(win32_edge_engine &&other) = delete;
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
-  void run() {
+  void run_impl() {
     m_running_main_loop = true;
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
@@ -2849,10 +2998,10 @@ public:
     }
     m_running_main_loop = false;
   }
-  void *window() { return (void *)m_window; }
-  void *widget() { return (void *)m_widget; }
-  void *browser_controller() { return (void *)m_controller; }
-  void terminate() {
+  void *window_impl() override { return (void *)m_window; }
+  void *widget_impl() override { return (void *)m_widget; }
+  void *browser_controller_impl() override { return (void *)m_controller; }
+  void terminate_impl() override {
     // Prevent unintentionally posting the quit message multiple times in the
     // following scenario:
     // 1. Run loop starts.
@@ -2862,15 +3011,15 @@ public:
       PostQuitMessage(0);
     }
   }
-  void dispatch(dispatch_fn_t f) {
+  void dispatch_impl(dispatch_fn_t f) override {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
 
-  void set_title(const std::string &title) {
+  void set_title_impl(const std::string &title) override {
     SetWindowTextW(m_window, widen_string(title).c_str());
   }
 
-  void set_size(int width, int height, int hints) {
+  void set_size_impl(int width, int height, int hints) override {
     auto style = GetWindowLong(m_window, GWL_STYLE);
     if (hints == WEBVIEW_HINT_FIXED) {
       style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
@@ -2898,22 +3047,22 @@ public:
     }
   }
 
-  void navigate(const std::string &url) {
+  void navigate_impl(const std::string &url) override {
     auto wurl = widen_string(url);
     m_webview->Navigate(wurl.c_str());
   }
 
-  void init(const std::string &js) {
+  void init_impl(const std::string &js) override {
     auto wjs = widen_string(js);
     m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
   }
 
-  void eval(const std::string &js) {
+  void eval_impl(const std::string &js) override {
     auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
   }
 
-  void set_html(const std::string &html) {
+  void set_html_impl(const std::string &html) override {
     m_webview->NavigateToString(widen_string(html).c_str());
   }
 
@@ -3079,8 +3228,6 @@ private:
     return 0;
   }
 
-  virtual void on_message(const std::string &msg) = 0;
-
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
@@ -3109,129 +3256,7 @@ using browser_engine = detail::win32_edge_engine;
 #endif /* WEBVIEW_GTK, WEBVIEW_COCOA, WEBVIEW_EDGE */
 
 namespace webview {
-
-class webview : public browser_engine {
-public:
-  webview(bool debug = false, void *wnd = nullptr)
-      : browser_engine(debug, wnd) {}
-
-  void navigate(const std::string &url) {
-    if (url.empty()) {
-      browser_engine::navigate("about:blank");
-      return;
-    }
-    browser_engine::navigate(url);
-  }
-
-  using binding_t = std::function<void(std::string, std::string, void *)>;
-  class binding_ctx_t {
-  public:
-    binding_ctx_t(binding_t callback, void *arg)
-        : callback(callback), arg(arg) {}
-    // This function is called upon execution of the bound JS function
-    binding_t callback;
-    // This user-supplied argument is passed to the callback
-    void *arg;
-  };
-
-  using sync_binding_t = std::function<std::string(std::string)>;
-
-  // Synchronous bind
-  void bind(const std::string &name, sync_binding_t fn) {
-    auto wrapper = [this, fn](const std::string &seq, const std::string &req,
-                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
-    bind(name, wrapper, nullptr);
-  }
-
-  // Asynchronous bind
-  void bind(const std::string &name, binding_t fn, void *arg) {
-    // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
-    if (bindings.count(name) > 0) {
-      return;
-    }
-    bindings.emplace(name, binding_ctx_t(fn, arg));
-    auto js = "(function() { var name = '" + name + "';" + R""(
-      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
-      window[name] = function() {
-        var seq = RPC.nextSeq++;
-        var promise = new Promise(function(resolve, reject) {
-          RPC[seq] = {
-            resolve: resolve,
-            reject: reject,
-          };
-        });
-        window.external.invoke(JSON.stringify({
-          id: seq,
-          method: name,
-          params: Array.prototype.slice.call(arguments),
-        }));
-        return promise;
-      }
-    })())"";
-    init(js);
-    eval(js);
-  }
-
-  void unbind(const std::string &name) {
-    auto found = bindings.find(name);
-    if (found != bindings.end()) {
-      auto js = "delete window['" + name + "'];";
-      init(js);
-      eval(js);
-      bindings.erase(found);
-    }
-  }
-
-  void resolve(const std::string &seq, int status, const std::string &result) {
-    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-    dispatch(std::bind(
-        [seq, status, this](std::string escaped_result) {
-          std::string js;
-          js += "(function(){var seq = \"";
-          js += seq;
-          js += "\";\n";
-          js += "var status = ";
-          js += std::to_string(status);
-          js += ";\n";
-          js += "var result = ";
-          js += escaped_result;
-          js += R"js(;
-var promise = window._rpc[seq];
-delete window._rpc[seq];
-if (result !== undefined) {
-  try {
-    result = JSON.parse(result);
-  } catch {
-    promise.reject(new Error("Failed to parse binding result as JSON"));
-    return;
-  }
-}
-if (status === 0) {
-  promise.resolve(result);
-} else {
-  promise.reject(result);
-}
-})())js";
-          eval(js);
-        },
-        result.empty() ? "undefined" : detail::json_escape(result)));
-  }
-
-private:
-  void on_message(const std::string &msg) {
-    auto seq = detail::json_parse(msg, "id", 0);
-    auto name = detail::json_parse(msg, "method", 0);
-    auto args = detail::json_parse(msg, "params", 0);
-    auto found = bindings.find(name);
-    if (found == bindings.end()) {
-      return;
-    }
-    const auto &context = found->second;
-    context.callback(seq, args, context.arg);
-  }
-
-  std::map<std::string, binding_ctx_t> bindings;
-};
+using webview = browser_engine;
 } // namespace webview
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
