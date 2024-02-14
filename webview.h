@@ -923,9 +923,8 @@ constexpr auto webkit_web_view_run_javascript =
 class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)) {
-    auto owns_window = !window;
-    if (owns_window) {
+      : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
+    if (m_owns_window) {
       if (gtk_init_check(nullptr, nullptr) == FALSE) {
         return;
       }
@@ -971,16 +970,30 @@ public:
       webkit_settings_set_enable_developer_extras(settings, true);
     }
 
-    if (owns_window) {
+    if (m_owns_window) {
       gtk_widget_grab_focus(GTK_WIDGET(m_webview));
       gtk_widget_show_all(m_window);
     }
   }
+
   gtk_webkit_engine(const gtk_webkit_engine &) = delete;
   gtk_webkit_engine &operator=(const gtk_webkit_engine &) = delete;
   gtk_webkit_engine(gtk_webkit_engine &&) = delete;
   gtk_webkit_engine &operator=(gtk_webkit_engine &&) = delete;
-  virtual ~gtk_webkit_engine() = default;
+
+  virtual ~gtk_webkit_engine() {
+    if (m_webview) {
+      gtk_widget_destroy(GTK_WIDGET(m_webview));
+      m_webview = nullptr;
+    }
+    if (m_window) {
+      if (m_owns_window) {
+        gtk_window_close(GTK_WINDOW(m_window));
+      }
+      m_window = nullptr;
+    }
+  }
+
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
   void *browser_controller() { return (void *)m_webview; };
@@ -1117,8 +1130,9 @@ private:
     return 0;
   }
 
-  GtkWidget *m_window;
-  GtkWidget *m_webview;
+  bool m_owns_window{};
+  GtkWidget *m_window{};
+  GtkWidget *m_webview{};
 };
 
 } // namespace detail
@@ -1232,25 +1246,53 @@ public:
       if (delegate) {
         create_window();
       } else {
-        delegate = create_app_delegate();
-        objc_setAssociatedObject(delegate, "webview", (id)this,
+        m_app_delegate = create_app_delegate();
+        objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                                  OBJC_ASSOCIATION_ASSIGN);
-        objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
+        objc::msg_send<void>(app, "setDelegate:"_sel, m_app_delegate);
 
         // Start the main run loop so that the app delegate gets the
         // NSApplicationDidFinishLaunchingNotification notification after the run
         // loop has started in order to perform further initialization.
         // We need to return from this constructor so this run loop is only
         // temporary.
-        objc::msg_send<void>(app, "run"_sel);
+        // Skip the main loop if this isn't the first instance of this class
+        // because the launch event is only sent once. Instead, proceed to
+        // create a window.
+        if (get_and_set_is_first_instance()) {
+          objc::msg_send<void>(app, "run"_sel);
+        } else {
+          create_window();
+        }
       }
     }
   }
+
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
   cocoa_wkwebview_engine &operator=(const cocoa_wkwebview_engine &) = delete;
   cocoa_wkwebview_engine(cocoa_wkwebview_engine &&) = delete;
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
-  virtual ~cocoa_wkwebview_engine() = default;
+
+  virtual ~cocoa_wkwebview_engine() {
+    if (m_window) {
+      if (m_webview) {
+        if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
+          objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
+        }
+        m_webview = nullptr;
+      }
+      objc::msg_send<void>(m_window, "close"_sel);
+      m_window = nullptr;
+    }
+    if (m_app_delegate) {
+      auto app = get_shared_application();
+      objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
+      // Make sure to release the delegate we created.
+      objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
+      m_app_delegate = nullptr;
+    }
+  }
+
   void *window() { return (void *)m_window; }
   void *widget() { return (void *)m_webview; }
   void *browser_controller() { return (void *)m_webview; }
@@ -1356,20 +1398,14 @@ private:
                         return w->on_application_should_terminate(self, sender);
                       }),
                       "i@:@");
-      // If the library was not initialized with an existing window then the user
-      // is likely managing the application lifecycle and we would not get the
-      // "applicationDidFinishLaunching:" message and therefore do not need to
-      // add this method.
-      if (m_owns_window) {
-        class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
-                        (IMP)(+[](id self, SEL, id notification) {
-                          auto app =
-                              objc::msg_send<id>(notification, "object"_sel);
-                          auto w = get_associated_webview(self);
-                          w->on_application_did_finish_launching(self, app);
-                        }),
-                        "v@:@");
-      }
+      class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+                      (IMP)(+[](id self, SEL, id notification) {
+                        auto app =
+                            objc::msg_send<id>(notification, "object"_sel);
+                        auto w = get_associated_webview(self);
+                        w->on_application_did_finish_launching(self, app);
+                      }),
+                      "v@:@");
       objc_registerClassPair(cls);
     }
     return objc::msg_send<id>((id)cls, "new"_sel);
@@ -1611,12 +1647,21 @@ private:
         type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
     objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
   }
+  static bool get_and_set_is_first_instance() noexcept {
+    static std::atomic_bool first{true};
+    bool temp = first;
+    if (temp) {
+      first = false;
+    }
+    return temp;
+  }
 
-  bool m_debug;
-  id m_window;
-  id m_webview;
-  id m_manager;
-  bool m_owns_window;
+  bool m_debug{};
+  id m_app_delegate{};
+  id m_window{};
+  id m_webview{};
+  id m_manager{};
+  bool m_owns_window{};
 };
 
 } // namespace detail
@@ -2564,6 +2609,7 @@ public:
           hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
           GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
 
+      // Create a top-level window.
       WNDCLASSEXW wc;
       ZeroMemory(&wc, sizeof(WNDCLASSEX));
       wc.cbSize = sizeof(WNDCLASSEX);
@@ -2598,15 +2644,14 @@ public:
           DestroyWindow(hwnd);
           break;
         case WM_DESTROY:
+          w->m_window = nullptr;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
           if (w->dec_window_count() <= 0) {
             w->terminate();
           }
           break;
         case WM_GETMINMAXINFO: {
           auto lpmmi = (LPMINMAXINFO)lp;
-          if (w == nullptr) {
-            return 0;
-          }
           if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
             lpmmi->ptMaxSize = w->m_maxsz;
             lpmmi->ptMaxTrackSize = w->m_maxsz;
@@ -2773,6 +2818,20 @@ public:
     if (m_controller) {
       m_controller->Release();
       m_controller = nullptr;
+    }
+    if (m_message_window) {
+      DestroyWindow(m_message_window);
+      m_message_window = nullptr;
+    }
+    if (m_widget) {
+      DestroyWindow(m_widget);
+      m_widget = nullptr;
+    }
+    if (m_window) {
+      if (m_owns_window) {
+        DestroyWindow(m_window);
+      }
+      m_window = nullptr;
     }
   }
 
