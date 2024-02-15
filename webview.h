@@ -1437,8 +1437,13 @@ public:
         }
         m_webview = nullptr;
       }
+      objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
       objc::msg_send<void>(m_window, "close"_sel);
       m_window = nullptr;
+    }
+    if (m_window_delegate) {
+      objc::msg_send<void>(m_window_delegate, "release"_sel, nullptr);
+      m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
       auto app = get_shared_application();
@@ -1546,13 +1551,7 @@ private:
       class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
       class_addMethod(cls,
                       "applicationShouldTerminateAfterLastWindowClosed:"_sel,
-                      (IMP)(+[](id, SEL, id) -> BOOL { return YES; }), "c@:@");
-      class_addMethod(cls, "applicationShouldTerminate:"_sel,
-                      (IMP)(+[](id self, SEL, id sender) -> int {
-                        auto w = get_associated_webview(self);
-                        return w->on_application_should_terminate(self, sender);
-                      }),
-                      "i@:@");
+                      (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
       class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
                       (IMP)(+[](id self, SEL, id notification) {
                         auto app =
@@ -1636,6 +1635,25 @@ private:
     }
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
+  static id create_window_delegate() {
+    constexpr auto class_name = "WebviewNSWindowDelegate";
+    // Avoid crash due to registering same class twice
+    auto cls = objc_lookUpClass(class_name);
+    if (!cls) {
+      cls = objc_allocateClassPair((Class) "NSObject"_cls, class_name, 0);
+      class_addProtocol(cls, objc_getProtocol("NSWindowDelegate"));
+      class_addMethod(cls, "windowWillClose:"_sel,
+                      (IMP)(+[](id self, SEL, id notification) {
+                        auto window =
+                            objc::msg_send<id>(notification, "object"_sel);
+                        auto w = get_associated_webview(self);
+                        w->on_window_will_close(self, window);
+                      }),
+                      "v@:@");
+      objc_registerClassPair(cls);
+    }
+    return objc::msg_send<id>((id)cls, "new"_sel);
+  }
   static id get_shared_application() {
     return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
   }
@@ -1686,6 +1704,10 @@ private:
 
     set_up_window();
   }
+  void on_window_will_close(id /*delegate*/, id window) {
+    m_window = nullptr;
+    dispatch([this] { on_window_destroyed(); });
+  }
   void set_up_window() {
     // Main window
     if (m_owns_window) {
@@ -1694,6 +1716,13 @@ private:
       m_window = objc::msg_send<id>(
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
+
+      auto m_window_delegate = create_window_delegate();
+      objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
+                               OBJC_ASSOCIATION_ASSIGN);
+      objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
+
+      on_window_created();
     }
 
     set_up_web_view();
@@ -1782,15 +1811,6 @@ private:
       };
       )"");
   }
-  int on_application_should_terminate(id /*delegate*/, id app) {
-    dispatch([app, this] {
-      // Don't terminate the application.
-      objc::msg_send<void>(app, "replyToApplicationShouldTerminate:"_sel, NO);
-      // Instead stop the run loop.
-      stop_run_loop();
-    });
-    return 2 /*NSTerminateLater*/;
-  }
   void stop_run_loop() {
     auto app = get_shared_application();
     // Request the run loop to stop. This doesn't immediately stop the loop.
@@ -1816,6 +1836,7 @@ private:
 
   bool m_debug{};
   id m_app_delegate{};
+  id m_window_delegate{};
   id m_window{};
   id m_webview{};
   id m_manager{};
