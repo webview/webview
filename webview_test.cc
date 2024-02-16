@@ -379,6 +379,41 @@ static void test_json_escape() {
   assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
+// =================================================================
+// TEST: ensure that c_string_new() works.
+// =================================================================
+static void test_c_string() {
+  using namespace webview::detail;
+
+  {
+    auto *s = c_string_new(0);
+    assert(std::string{""} == s);
+    c_string_free(s);
+  }
+
+  {
+    unsigned int length = 1;
+    auto *s = c_string_new("", &length);
+    assert(length == 0);
+    assert(std::string{""} == s);
+    c_string_free(s);
+  }
+
+  {
+    unsigned int length = 0;
+    auto *s = c_string_new("abc", &length);
+    assert(length == 3);
+    assert(std::string{"abc"} == s);
+    c_string_free(s);
+  }
+
+  {
+    auto *s = c_string_new("abc", nullptr);
+    assert(std::string{"abc"} == s);
+    c_string_free(s);
+  }
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -480,7 +515,8 @@ int main(int argc, char *argv[]) {
       {"json_escape", test_json_escape},
       {"sync_bind", test_sync_bind},
       {"binding_result_must_be_json", test_binding_result_must_be_json},
-      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js}};
+      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
+      {"c_string", test_c_string}};
 #if _WIN32
   all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",

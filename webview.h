@@ -224,6 +224,17 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 // @since 0.10
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
+// Get the current URL.
+// Returns a null-terminated copy of the current URL. The length can optionally
+// be returned in "out_length". Caller is responsible for releasing the string
+// using webview_string_free().
+// @since 0.11
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length);
+
+// Free the string pointed by "str".
+// @since 0.11
+WEBVIEW_API void webview_string_free(char *str);
+
 #ifdef __cplusplus
 }
 
@@ -632,6 +643,25 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   }
   return "";
 }
+
+inline char *c_string_new(unsigned int length) {
+  const size_t mem_needed = length + sizeof(char);
+  auto *s = static_cast<char *>(std::malloc(mem_needed));
+  std::memset(s, 0, mem_needed);
+  return s;
+}
+
+inline char *c_string_new(const std::string &from, unsigned int *out_length) {
+  char *result = c_string_new(from.size());
+  std::copy(from.begin(), from.end(), result);
+  result[from.size()] = 0;
+  if (out_length) {
+    *out_length = static_cast<unsigned int>(from.size());
+  }
+  return result;
+}
+
+inline void c_string_free(char *s) { std::free(s); }
 
 // Holds a symbol name and associated type for code clarity.
 template <typename T> class library_symbol {
@@ -3404,6 +3434,17 @@ WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
+
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length) {
+  using webview::detail::c_string_new;
+  if (!w) {
+    return nullptr;
+  }
+  const auto &url = static_cast<webview::webview *>(w)->get_url();
+  return c_string_new(url, out_length);
+}
+
+WEBVIEW_API void webview_string_free(char *str) { std::free(str); }
 
 #endif /* WEBVIEW_HEADER */
 #endif /* __cplusplus */
