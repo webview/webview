@@ -109,6 +109,8 @@ extern "C" {
 
 typedef void *webview_t;
 
+typedef void *(webview_allocator_t)(unsigned int size);
+
 // Creates a new webview instance. If the debug parameter is non-zero,
 // developer tools are enabled if supported by the backend. The optional window
 // parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
@@ -227,9 +229,10 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 // Get the current URL.
 // Returns a null-terminated copy of the current URL. The length can optionally
 // be returned in "out_length". Caller is responsible for releasing the string
-// using webview_string_free().
+// using webview_string_free(). An optional allocator can be provided.
 // @since 0.11
-WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length);
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
+                                  webview_allocator_t allocator);
 
 // Free the string pointed by "str".
 // @since 0.11
@@ -293,6 +296,8 @@ namespace webview {
 using dispatch_fn_t = std::function<void()>;
 
 namespace detail {
+
+using allocator_t = std::function<void *(unsigned int)>;
 
 // The library's version information.
 constexpr const webview_version_info_t library_version_info{
@@ -644,15 +649,21 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
-inline char *c_string_new(unsigned int length) {
+inline char *c_string_new(unsigned int length, allocator_t allocator = {}) {
+  if (!allocator) {
+    allocator = [&] (unsigned int size) {
+      return std::malloc(size);
+    };
+  }
   const size_t mem_needed = length + sizeof(char);
-  auto *s = static_cast<char *>(std::malloc(mem_needed));
+  auto *s = static_cast<char *>(allocator(mem_needed));
   std::memset(s, 0, mem_needed);
   return s;
 }
 
-inline char *c_string_new(const std::string &from, unsigned int *out_length) {
-  char *result = c_string_new(from.size());
+inline char *c_string_new(const std::string &from, unsigned int *out_length,
+                          allocator_t allocator = {}) {
+  char *result = c_string_new(from.size(), allocator);
   std::copy(from.begin(), from.end(), result);
   result[from.size()] = 0;
   if (out_length) {
@@ -3435,13 +3446,14 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
-WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length) {
-  using webview::detail::c_string_new;
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
+                                  webview_allocator_t allocator) {
+  using namespace webview::detail;
   if (!w) {
     return nullptr;
   }
   const auto &url = static_cast<webview::webview *>(w)->get_url();
-  return c_string_new(url, out_length);
+  return c_string_new(url, out_length, allocator ? allocator : allocator_t{});
 }
 
 WEBVIEW_API void webview_string_free(char *str) { std::free(str); }

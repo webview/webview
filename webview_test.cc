@@ -15,6 +15,7 @@
 #include <iostream>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 // =================================================================
 // TEST: start app loop and terminate it.
@@ -411,6 +412,20 @@ static void test_c_string() {
     auto *s = c_string_new("abc", nullptr);
     assert(std::string{"abc"} == s);
     c_string_free(s);
+  }
+
+  // Custom allocator.
+  {
+    std::vector<char> v;
+    assert(v.empty());
+    auto *s = c_string_new("abc", nullptr, [&] (unsigned int size) {
+      v.resize(size);
+      return v.data();
+    });
+    assert(v.size() == 4); // Includes null-character
+    assert(s == v.data());
+    assert(std::string{"abc"} == s);
+    // Do not call c_string_free()
   }
 }
 
