@@ -228,8 +228,9 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 
 // Get the current URL.
 // Returns a null-terminated copy of the current URL. The length can optionally
-// be returned in "out_length". Caller is responsible for releasing the string
-// using webview_string_free(). An optional allocator can be provided.
+// be returned in "out_length". If an allocator is provided then caller assumes
+// responsibility for deallocation; otherwise, caller should release the
+// returned string using webview_string_free().
 // @since 0.11
 WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
                                   webview_allocator_t allocator);
