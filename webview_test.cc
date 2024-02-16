@@ -418,7 +418,7 @@ static void test_c_string() {
   {
     std::vector<char> v;
     assert(v.empty());
-    auto *s = c_string_new("abc", nullptr, [&] (unsigned int size) {
+    auto *s = c_string_new("abc", nullptr, [&](unsigned int size) {
       v.resize(size);
       return v.data();
     });

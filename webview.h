@@ -652,9 +652,7 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 
 inline char *c_string_new(unsigned int length, allocator_t allocator = {}) {
   if (!allocator) {
-    allocator = [&] (unsigned int size) {
-      return std::malloc(size);
-    };
+    allocator = [&](unsigned int size) { return std::malloc(size); };
   }
   const size_t mem_needed = length + sizeof(char);
   auto *s = static_cast<char *>(allocator(mem_needed));
