@@ -1378,6 +1378,11 @@ private:
   id m_pool{};
 };
 
+inline id autoreleased(id object) {
+  msg_send<void>(object, sel_registerName("autorelease"));
+  return object;
+}
+
 } // namespace objc
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
@@ -1453,6 +1458,7 @@ public:
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
 
   virtual ~cocoa_wkwebview_engine() {
+    objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
         if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
@@ -1485,6 +1491,8 @@ public:
       // Needed for the window to close immediately.
       deplete_run_loop_event_queue();
     }
+    // TODO: Figure out why m_manager is still alive after the autoreleasepool
+    // has been drained.
   }
 
   void *window_impl() override { return (void *)m_window; }
@@ -1504,12 +1512,16 @@ public:
                      }));
   }
   void set_title_impl(const std::string &title) override {
+    objc::autoreleasepool arp;
+
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
                                             title.c_str()));
   }
   void set_size_impl(int width, int height, int hints) override {
+    objc::autoreleasepool arp;
+
     auto style = static_cast<NSWindowStyleMask>(
         NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable);
@@ -1532,7 +1544,7 @@ public:
     objc::msg_send<void>(m_window, "center"_sel);
   }
   void navigate_impl(const std::string &url) override {
-    objc::autoreleasepool pool;
+    objc::autoreleasepool arp;
 
     auto nsurl = objc::msg_send<id>(
         "NSURL"_cls, "URLWithString:"_sel,
@@ -1544,7 +1556,7 @@ public:
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
   }
   void set_html_impl(const std::string &html) override {
-    objc::autoreleasepool pool;
+    objc::autoreleasepool arp;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
@@ -1552,18 +1564,17 @@ public:
                          nullptr);
   }
   void init_impl(const std::string &js) override {
-    // Equivalent Obj-C:
-    // [m_manager addUserScript:[[WKUserScript alloc] initWithSource:[NSString stringWithUTF8String:js.c_str()] injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES]]
-    objc::msg_send<void>(
-        m_manager, "addUserScript:"_sel,
-        objc::msg_send<id>(objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
-                           "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-                           objc::msg_send<id>("NSString"_cls,
-                                              "stringWithUTF8String:"_sel,
-                                              js.c_str()),
-                           WKUserScriptInjectionTimeAtDocumentStart, YES));
+    objc::autoreleasepool arp;
+    auto script = objc::autoreleased(objc::msg_send<id>(
+        objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
+        "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                           js.c_str()),
+        WKUserScriptInjectionTimeAtDocumentStart, YES));
+    objc::msg_send<void>(m_manager, "addUserScript:"_sel, script);
   }
   void eval_impl(const std::string &js) override {
+    objc::autoreleasepool arp;
     objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
@@ -1573,6 +1584,7 @@ public:
 
 private:
   id create_app_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1598,6 +1610,7 @@ private:
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
   id create_script_message_handler() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKScriptMessageHandler";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1620,6 +1633,7 @@ private:
     return instance;
   }
   static id create_webkit_ui_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKUIDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1669,6 +1683,7 @@ private:
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
   static id create_window_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewNSWindowDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1744,6 +1759,8 @@ private:
     dispatch([this] { on_window_destroyed(); });
   }
   void set_up_window() {
+    objc::autoreleasepool arp;
+
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
@@ -1771,43 +1788,39 @@ private:
   void set_up_web_view() {
     objc::autoreleasepool arp;
 
-    auto config = objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
-    objc::msg_send<void>(config, "autorelease"_sel);
+    auto config = objc::autoreleased(
+        objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel));
 
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
     m_webview = objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 
+    auto preferences = objc::msg_send<id>(config, "preferences"_sel);
+    auto yes_value =
+        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES);
+
     if (m_debug) {
       // Equivalent Obj-C:
       // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
-      objc::msg_send<id>(
-          objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-          objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-          "developerExtrasEnabled"_str);
+      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                         "developerExtrasEnabled"_str);
     }
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "fullScreenEnabled"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "fullScreenEnabled"_str);
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "javaScriptCanAccessClipboard"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "javaScriptCanAccessClipboard"_str);
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "DOMPasteAllowed"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "DOMPasteAllowed"_str);
 
-    auto ui_delegate = create_webkit_ui_delegate();
+    auto ui_delegate = objc::autoreleased(create_webkit_ui_delegate());
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
@@ -1834,7 +1847,8 @@ private:
 #endif
     }
 
-    auto script_message_handler = create_script_message_handler();
+    auto script_message_handler =
+        objc::autoreleased(create_script_message_handler());
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "external"_str);
 
@@ -1847,6 +1861,7 @@ private:
       )"");
   }
   void stop_run_loop() {
+    objc::autoreleasepool arp;
     auto app = get_shared_application();
     // Request the run loop to stop. This doesn't immediately stop the loop.
     objc::msg_send<void>(app, "stop:"_sel, nullptr);
