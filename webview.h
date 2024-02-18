@@ -1443,8 +1443,11 @@ public:
         m_webview = nullptr;
       }
       if (m_owns_window) {
+        // Replace delegate to avoid callbacks and other bad things during
+        // destruction.
         objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
         objc::msg_send<void>(m_window, "close"_sel);
+        on_window_destroyed(true);
       }
       m_window = nullptr;
     }
