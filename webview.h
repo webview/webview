@@ -902,9 +902,11 @@ protected:
 
   virtual void on_window_created() { inc_window_count(); }
 
-  virtual void on_window_destroyed() {
+  virtual void on_window_destroyed(bool skip_termination = false) {
     if (dec_window_count() <= 0) {
-      terminate();
+      if (!skip_termination) {
+        terminate();
+      }
     }
   }
 
@@ -1108,6 +1110,9 @@ public:
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
                          auto *w = static_cast<gtk_webkit_engine *>(arg);
+                         // Widget destroyed along with window.
+                         w->m_webview = nullptr;
+                         w->m_window = nullptr;
                          w->on_window_destroyed();
                        }),
                        this);
@@ -1161,9 +1166,16 @@ public:
     }
     if (m_window) {
       if (m_owns_window) {
+        // Disconnect handlers to avoid callbacks invoked during destruction.
+        g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
         gtk_window_close(GTK_WINDOW(m_window));
+        on_window_destroyed(true);
       }
       m_window = nullptr;
+    }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
     }
   }
 
@@ -1171,7 +1183,9 @@ public:
   void *widget_impl() override { return (void *)m_webview; }
   void *browser_controller_impl() override { return (void *)m_webview; };
   void run_impl() override { gtk_main(); }
-  void terminate_impl() override { gtk_main_quit(); }
+  void terminate_impl() override {
+    dispatch_impl([] { gtk_main_quit(); });
+  }
   void dispatch_impl(std::function<void()> f) override {
     g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *f) -> int {
                       (*static_cast<dispatch_fn_t *>(f))();
@@ -1284,6 +1298,15 @@ private:
     }
 
     return loaded_lib;
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      gtk_main_iteration();
+    }
   }
 
   bool m_owns_window{};
@@ -1435,22 +1458,32 @@ public:
         if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
           objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
         }
+        objc::msg_send<void>(m_webview, "release"_sel);
         m_webview = nullptr;
       }
-      objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
-      objc::msg_send<void>(m_window, "close"_sel);
+      if (m_owns_window) {
+        // Replace delegate to avoid callbacks and other bad things during
+        // destruction.
+        objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
+        objc::msg_send<void>(m_window, "close"_sel);
+        on_window_destroyed(true);
+      }
       m_window = nullptr;
     }
     if (m_window_delegate) {
-      objc::msg_send<void>(m_window_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_window_delegate, "release"_sel);
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
       auto app = get_shared_application();
       objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
       // Make sure to release the delegate we created.
-      objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
+    }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
     }
   }
 
@@ -1705,6 +1738,8 @@ private:
     set_up_window();
   }
   void on_window_will_close(id /*delegate*/, id window) {
+    // Widget destroyed along with window.
+    m_webview = nullptr;
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
@@ -1717,7 +1752,7 @@ private:
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
 
-      auto m_window_delegate = create_window_delegate();
+      m_window_delegate = create_window_delegate();
       objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                                OBJC_ASSOCIATION_ASSIGN);
       objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
@@ -1832,6 +1867,27 @@ private:
       first = false;
     }
     return temp;
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    objc::autoreleasepool arp;
+    auto app = get_shared_application();
+    bool done{};
+    dispatch([&] { done = true; });
+    auto mask = NSUIntegerMax; // NSEventMaskAny
+    // NSDefaultRunLoopMode
+    auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                                   "kCFRunLoopDefaultMode");
+    while (!done) {
+      objc::autoreleasepool arp;
+      auto event = objc::msg_send<id>(
+          app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+          nullptr, mode, YES);
+      if (event) {
+        objc::msg_send<void>(app, "sendEvent:"_sel, event);
+      }
+    }
   }
 
   bool m_debug{};
@@ -2996,9 +3052,17 @@ public:
       m_controller->Release();
       m_controller = nullptr;
     }
-    if (m_message_window) {
-      DestroyWindow(m_message_window);
-      m_message_window = nullptr;
+    // Replace wndproc to avoid callbacks and other bad things during
+    // destruction.
+    auto wndproc = reinterpret_cast<LONG_PTR>(
+        +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        });
+    if (m_widget) {
+      SetWindowLongPtrW(m_widget, GWLP_WNDPROC, wndproc);
+    }
+    if (m_window && m_owns_window) {
+      SetWindowLongPtrW(m_window, GWLP_WNDPROC, wndproc);
     }
     if (m_widget) {
       DestroyWindow(m_widget);
@@ -3007,8 +3071,20 @@ public:
     if (m_window) {
       if (m_owns_window) {
         DestroyWindow(m_window);
+        on_window_destroyed(true);
       }
       m_window = nullptr;
+    }
+    if (m_owns_window) {
+      // Not strictly needed for windows to close immediately but aligns
+      // behavior across backends.
+      deplete_run_loop_event_queue();
+    }
+    // We need the message window in order to deplete the event queue.
+    if (m_message_window) {
+      SetWindowLongPtrW(m_message_window, GWLP_WNDPROC, wndproc);
+      DestroyWindow(m_message_window);
+      m_message_window = nullptr;
     }
   }
 
@@ -3018,27 +3094,16 @@ public:
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
   void run_impl() {
-    m_running_main_loop = true;
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
   }
   void *window_impl() override { return (void *)m_window; }
   void *widget_impl() override { return (void *)m_widget; }
   void *browser_controller_impl() override { return (void *)m_controller; }
-  void terminate_impl() override {
-    // Prevent unintentionally posting the quit message multiple times in the
-    // following scenario:
-    // 1. Run loop starts.
-    // 2. User code requests the run loop to stop.
-    // 3. Destructor of this class wants to stop the run loop.
-    if (m_running_main_loop) {
-      PostQuitMessage(0);
-    }
-  }
+  void terminate_impl() override { PostQuitMessage(0); }
   void dispatch_impl(dispatch_fn_t f) override {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
@@ -3132,7 +3197,6 @@ private:
     m_com_handler->try_create_environment();
 
     // Pump the message loop until WebView2 has finished initialization.
-    m_running_main_loop = true;
     bool got_quit_msg = false;
     MSG msg;
     while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
@@ -3143,7 +3207,6 @@ private:
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
     if (got_quit_msg) {
       return false;
     }
@@ -3241,6 +3304,19 @@ private:
     }
   }
 
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      MSG msg;
+      if (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+  }
+
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
@@ -3257,7 +3333,6 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
-  bool m_running_main_loop{};
 };
 
 } // namespace detail
