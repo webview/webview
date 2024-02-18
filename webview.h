@@ -1458,6 +1458,7 @@ public:
         if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
           objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
         }
+        objc::msg_send<void>(m_webview, "release"_sel);
         m_webview = nullptr;
       }
       if (m_owns_window) {
