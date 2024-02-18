@@ -22,9 +22,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+/// @file webview.h
+
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+/**
+ * Used to specify function linkage such as extern, inline, etc.
+ *
+ * When @c WEBVIEW_API is not already defined, the defaults are as follows:
+ *
+ * - @c inline when compiling C++ code.
+ * - @c extern when compiling C code.
+ *
+ * The following macros can be used to automatically set an appropriate
+ * value for @c WEBVIEW_API:
+ *
+ * - Define @c WEBVIEW_BUILD_SHARED when building a shared library.
+ * - Define @c WEBVIEW_SHARED when using a shared library.
+ * - Define @c WEBVIEW_STATIC when building or using a static library.
+ */
 #ifndef WEBVIEW_API
 #if defined(WEBVIEW_SHARED) || defined(WEBVIEW_BUILD_SHARED)
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -43,185 +61,306 @@
 #endif
 #endif
 
+/// @name Version
+/// @{
+
 #ifndef WEBVIEW_VERSION_MAJOR
-// The current library major version.
+/// The current library major version.
 #define WEBVIEW_VERSION_MAJOR 0
 #endif
 
 #ifndef WEBVIEW_VERSION_MINOR
-// The current library minor version.
+/// The current library minor version.
 #define WEBVIEW_VERSION_MINOR 11
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
-// The current library patch version.
+/// The current library patch version.
 #define WEBVIEW_VERSION_PATCH 0
 #endif
 
 #ifndef WEBVIEW_VERSION_PRE_RELEASE
-// SemVer 2.0.0 pre-release labels prefixed with "-".
+/// SemVer 2.0.0 pre-release labels prefixed with "-".
 #define WEBVIEW_VERSION_PRE_RELEASE ""
 #endif
 
 #ifndef WEBVIEW_VERSION_BUILD_METADATA
-// SemVer 2.0.0 build metadata prefixed with "+".
+/// SemVer 2.0.0 build metadata prefixed with "+".
 #define WEBVIEW_VERSION_BUILD_METADATA ""
 #endif
 
-// Utility macro for stringifying a macro argument.
+/// @}
+
+
+/// @name Used internally
+/// @{
+
+/// Utility macro for stringifying a macro argument.
 #define WEBVIEW_STRINGIFY(x) #x
 
-// Utility macro for stringifying the result of a macro argument expansion.
+/// Utility macro for stringifying the result of a macro argument expansion.
 #define WEBVIEW_EXPAND_AND_STRINGIFY(x) WEBVIEW_STRINGIFY(x)
 
-// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+/// @}
+
+/// @name Version
+/// @{
+
+/// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
 #define WEBVIEW_VERSION_NUMBER                                                 \
   WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-// Holds the elements of a MAJOR.MINOR.PATCH version number.
+/// @}
+
+/// Holds the elements of a MAJOR.MINOR.PATCH version number.
 typedef struct {
-  // Major version.
+  /// Major version.
   unsigned int major;
-  // Minor version.
+  /// Minor version.
   unsigned int minor;
-  // Patch version.
+  /// Patch version.
   unsigned int patch;
 } webview_version_t;
 
-// Holds the library's version information.
+/// Holds the library's version information.
 typedef struct {
-  // The elements of the version number.
+  /// The elements of the version number.
   webview_version_t version;
-  // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+  /// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
   char version_number[32];
-  // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
-  // an empty string.
+  /// SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
+  /// an empty string.
   char pre_release[48];
-  // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
+  /// SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
   char build_metadata[48];
 } webview_version_info_t;
+
+/// Pointer to a webview instance.
+typedef void *webview_t;
+
+/// Native handle kind. The actual type depends on the backend.
+typedef enum {
+  /// Top-level window. @c GtkWindow pointer (GTK), @c NSWindow pointer (Cocoa)
+  /// or @c HWND (Win32).
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
+  /// Browser widget. @c GtkWidget pointer (GTK), @c NSView pointer (Cocoa) or
+  /// @c HWND (Win32).
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
+  /// Browser controller. @c WebKitWebView pointer (WebKitGTK), @c WKWebView
+  /// pointer (Cocoa/WebKit) or @c ICoreWebView2Controller pointer
+  /// (Win32/WebView2).
+  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
+} webview_native_handle_kind_t;
+
+/// @name Window size hints
+/// @{
+
+/// Width and height are default size.
+#define WEBVIEW_HINT_NONE 0
+/// Width and height are minimum bounds
+#define WEBVIEW_HINT_MIN 1
+/// Width and height are maximum bounds
+#define WEBVIEW_HINT_MAX 2
+/// Window size can not be changed by a user
+#define WEBVIEW_HINT_FIXED 3
+
+/// @}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void *webview_t;
-
-// Creates a new webview instance. If the debug parameter is non-zero,
-// developer tools are enabled if supported by the backend. The optional window
-// parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
-// NSWindow pointer (Cocoa) or HWND (Win32). If the window handle is
-// non-null, the webview widget is embedded into the given window, and the
-// caller is expected to assume responsibility for the window as well as
-// application lifecycle. If the window handle is null, a new window is created
-// and both the window and application lifecycle are managed by the webview
-// instance. Returns null on failure. Creation can fail for various reasons such
-// as when required runtime dependencies are missing or when window creation
-// fails.
-// Remarks:
-// - Win32: The function also accepts a pointer to HWND (Win32) in the window
-//   parameter for backward compatibility.
-// - Win32/WebView2: CoInitializeEx should be called with
-//   COINIT_APARTMENTTHREADED before attempting to call this function with an
-//   existing window. Omitting this step may cause WebView2 initialization to
-//   fail.
+/**
+ * Creates a new webview instance.
+ *
+ * @param debug Enable developer tools if supported by the backend.
+ * @param window Optional native window handle, i.e. @c GtkWindow pointer
+ *        @c NSWindow pointer (Cocoa) or @c HWND (Win32). If non-null,
+ *        the webview widget is embedded into the given window, and the
+ *        caller is expected to assume responsibility for the window as
+ *        well as application lifecycle. If the window handle is null,
+ *        a new window is created and both the window and application
+ *        lifecycle are managed by the webview instance.
+ * @remark Win32: The function also accepts a pointer to @c HWND (Win32) in the
+ *         window parameter for backward compatibility.
+ * @remark Win32/WebView2: @c CoInitializeEx should be called with
+ *         @c COINIT_APARTMENTTHREADED before attempting to call this function
+ *         with an existing window. Omitting this step may cause WebView2
+ *         initialization to fail.
+ * @return @c NULL on failure. Creation can fail for various reasons such
+ *         as when required runtime dependencies are missing or when window
+ *         creation fails.
+ */
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
-// Destroys a webview and closes the native window.
+/**
+ * Destroys a webview instance and closes the native window.
+ *
+ * @param w The webview instance.
+ */
 WEBVIEW_API void webview_destroy(webview_t w);
 
-// Runs the main loop until it's terminated. After this function exits - you
-// must destroy the webview.
+/**
+ * Runs the main loop until it's terminated.
+ *
+ * @param w The webview instance.
+ */
 WEBVIEW_API void webview_run(webview_t w);
 
-// Stops the main loop. It is safe to call this function from another other
-// background thread.
+/**
+ * Stops the main loop. It is safe to call this function from another other
+ * background thread.
+ *
+ * @param w The webview instance.
+ */
 WEBVIEW_API void webview_terminate(webview_t w);
 
-// Posts a function to be executed on the main thread. You normally do not need
-// to call this function, unless you want to tweak the native window.
+/**
+ * Schedules a function to be invoked on the thread with the run/event loop.
+ * Use this function e.g. to interact with the library or native handles.
+ *
+ * @param w The webview instance.
+ * @param fn The function to be invoked.
+ * @param arg An optional argument passed along to the callback function.
+ */
 WEBVIEW_API void
 webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
 
-// Returns the native handle of the window associated with the webview instance.
-// The handle can be a GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or
-// HWND (Win32).
+/**
+ * Returns the native handle of the window associated with the webview instance.
+ * The handle can be a @c GtkWindow pointer (GTK), @c NSWindow pointer (Cocoa)
+ * or @c HWND (Win32).
+ *
+ * @param w The webview instance.
+ * @return The handle of the native window.
+ */
 WEBVIEW_API void *webview_get_window(webview_t w);
 
-// Native handle kind. The actual type depends on the backend.
-typedef enum {
-  // Top-level window. GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or HWND (Win32).
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
-  // Browser widget. GtkWidget pointer (GTK), NSView pointer (Cocoa) or HWND (Win32).
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
-  // Browser controller. WebKitWebView pointer (WebKitGTK), WKWebView pointer (Cocoa/WebKit) or
-  // ICoreWebView2Controller pointer (Win32/WebView2).
-  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
-} webview_native_handle_kind_t;
-
-// Returns a native handle of choice.
-// @since 0.11
+/**
+ * Get a native handle of choice.
+ *
+ * @param w The webview instance.
+ * @param kind The kind of handle to retrieve.
+ * @return The native handle or @c NULL.
+ * @since 0.11
+ */
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind);
 
-// Updates the title of the native window. Must be called from the UI thread.
+/**
+ * Updates the title of the native window.
+ *
+ * @param w The webview instance.
+ * @param title The new title.
+ */
 WEBVIEW_API void webview_set_title(webview_t w, const char *title);
 
-// Window size hints
-#define WEBVIEW_HINT_NONE 0  // Width and height are default size
-#define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
-#define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
-#define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
-// Updates the size of the native window. See WEBVIEW_HINT constants.
+/**
+ * Updates the size of the native window.
+ *
+ * @param w The webview instance.
+ * @param width New width.
+ * @param height New height.
+ * @param hints Size hints.
+ */
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
                                   int hints);
 
-// Navigates webview to the given URL. URL may be a properly encoded data URI.
-// Examples:
-// webview_navigate(w, "https://github.com/webview/webview");
-// webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
-// webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
+/**
+ * Navigates webview to the given URL. URL may be a properly encoded data URI.
+ *
+ * Example:
+ * @code{.c}
+ * webview_navigate(w, "https://github.com/webview/webview");
+ * webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
+ * webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
+ * @endcode
+ *
+ * @param w The webview instance.
+ * @param url URL.
+ */
 WEBVIEW_API void webview_navigate(webview_t w, const char *url);
 
-// Set webview HTML directly.
-// Example: webview_set_html(w, "<h1>Hello</h1>");
+/**
+ * Load HTML content into the webview.
+ *
+ * Example:
+ * @code{.c}
+ * webview_set_html(w, "<h1>Hello</h1>");
+ * @endcode
+ *
+ * @param w The webview instance.
+ * @param html HTML content.
+ */
 WEBVIEW_API void webview_set_html(webview_t w, const char *html);
 
-// Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a new page - this initialization code will be
-// executed. It is guaranteed that code is executed before window.onload.
+/**
+ * Injects JavaScript code to be executed immediately upon loading a page.
+ * The code will be executed before @c window.onload.
+ *
+ * @param w The webview instance.
+ * @param js JS content.
+ */
 WEBVIEW_API void webview_init(webview_t w, const char *js);
 
-// Evaluates arbitrary JavaScript code. Evaluation happens asynchronously, also
-// the result of the expression is ignored. Use RPC bindings if you want to
-// receive notifications about the results of the evaluation.
+/**
+ * Evaluates arbitrary JavaScript code.
+ *
+ * Use bindings if you need to communicate the result of the evaluation.
+ *
+ * @param w The webview instance.
+ * @param js JS content.
+ */
 WEBVIEW_API void webview_eval(webview_t w, const char *js);
 
-// Binds a native C callback so that it will appear under the given name as a
-// global JavaScript function. Internally it uses webview_init(). The callback
-// receives a sequential request id, a request string and a user-provided
-// argument pointer. The request string is a JSON array of all the arguments
-// passed to the JavaScript function.
+/**
+ * Binds a function pointer to a new global JavaScript function.
+ *
+ * Internally, JS glue code is injected to create the JS function by the
+ * given name. The callback function is passed a sequential request
+ * identifier, a request string and a user-provided argument. The request
+ * string is a JSON array of the arguments passed to the JS function.
+ *
+ * @param w The webview instance.
+ * @param name Name of the JS function.
+ * @param fn Callback function.
+ * @param arg User argument.
+ */
 WEBVIEW_API void webview_bind(webview_t w, const char *name,
                               void (*fn)(const char *seq, const char *req,
                                          void *arg),
                               void *arg);
 
-// Removes a native C callback that was previously set by webview_bind.
+/**
+ * Removes a binding created with webview_bind().
+ *
+ * @param w The webview instance.
+ * @param name Name of the binding.
+ */
 WEBVIEW_API void webview_unbind(webview_t w, const char *name);
 
-// Responds to a binding call from the JS side. The ID/sequence number must
-// match the value passed to the binding handler in order to respond to the
-// call and complete the promise on the JS side. A status of zero resolves
-// the promise, and any other value rejects it. The result must either be a
-// valid JSON value or an empty string for the primitive JS value "undefined".
+/**
+ * Responds to a binding call from the JS side.
+ *
+ * @param w The webview instance.
+ * @param seq The sequence number of the binding call. Pass along the value
+ *            received in the binding handler (see webview_bind()).
+ * @param status A status of zero tells the JS side that the binding call was
+ *               succesful; any other value indicates an error.
+ * @param result The result of the binding call to be returned to the JS side.
+ *               This must either be a valid JSON value or an empty string for
+ *               the primitive JS value @c undefined.
+ */
 WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
                                 const char *result);
 
-// Get the library's version information.
-// @since 0.10
+/**
+ * Get the library's version information.
+ *
+ * @since 0.10
+ */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
 #ifdef __cplusplus
