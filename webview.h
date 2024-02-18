@@ -1110,6 +1110,9 @@ public:
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
                          auto *w = static_cast<gtk_webkit_engine *>(arg);
+                         // Widget destroyed along with window.
+                         w->m_webview = nullptr;
+                         w->m_window = nullptr;
                          w->on_window_destroyed();
                        }),
                        this);
