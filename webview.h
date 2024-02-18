@@ -1170,6 +1170,10 @@ public:
       }
       m_window = nullptr;
     }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
+    }
   }
 
   void *window_impl() override { return (void *)m_window; }
@@ -1291,6 +1295,15 @@ private:
     }
 
     return loaded_lib;
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      gtk_main_iteration();
+    }
   }
 
   bool m_owns_window{};
@@ -1463,6 +1476,10 @@ public:
       // Make sure to release the delegate we created.
       objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
       m_app_delegate = nullptr;
+    }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
     }
   }
 
@@ -1844,6 +1861,27 @@ private:
       first = false;
     }
     return temp;
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    objc::autoreleasepool arp;
+    auto app = get_shared_application();
+    bool done{};
+    dispatch([&] { done = true; });
+    auto mask = NSUIntegerMax; // NSEventMaskAny
+    // NSDefaultRunLoopMode
+    auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                                   "kCFRunLoopDefaultMode");
+    while (!done) {
+      objc::autoreleasepool arp;
+      auto event = objc::msg_send<id>(
+          app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+          nullptr, mode, YES);
+      if (event) {
+        objc::msg_send<void>(app, "sendEvent:"_sel, event);
+      }
+    }
   }
 
   bool m_debug{};
@@ -3038,6 +3076,11 @@ public:
       }
       m_window = nullptr;
     }
+    if (m_owns_window) {
+      // Not strictly needed for windows to close immediately but aligns
+      // behavior across backends.
+      deplete_run_loop_event_queue();
+    }
   }
 
   win32_edge_engine(const win32_edge_engine &other) = delete;
@@ -3253,6 +3296,19 @@ private:
     // Detect light/dark mode change in system.
     if (lstrcmpW(area, L"ImmersiveColorSet") == 0) {
       apply_window_theme(m_window);
+    }
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      MSG msg;
+      if (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
     }
   }
 
