@@ -1442,8 +1442,10 @@ public:
         }
         m_webview = nullptr;
       }
-      objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
-      objc::msg_send<void>(m_window, "close"_sel);
+      if (m_owns_window) {
+        objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
+        objc::msg_send<void>(m_window, "close"_sel);
+      }
       m_window = nullptr;
     }
     if (m_window_delegate) {
