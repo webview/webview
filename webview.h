@@ -902,9 +902,11 @@ protected:
 
   virtual void on_window_created() { inc_window_count(); }
 
-  virtual void on_window_destroyed() {
+  virtual void on_window_destroyed(bool skip_termination = false) {
     if (dec_window_count() <= 0) {
-      terminate();
+      if (!skip_termination) {
+        terminate();
+      }
     }
   }
 
