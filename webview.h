@@ -91,7 +91,6 @@
 
 /// @}
 
-
 /// @name Used internally
 /// @{
 
