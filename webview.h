@@ -1470,14 +1470,14 @@ public:
       m_window = nullptr;
     }
     if (m_window_delegate) {
-      objc::msg_send<void>(m_window_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_window_delegate, "release"_sel);
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
       auto app = get_shared_application();
       objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
       // Make sure to release the delegate we created.
-      objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
     }
     if (m_owns_window) {
