@@ -1176,7 +1176,9 @@ public:
   void *widget_impl() override { return (void *)m_webview; }
   void *browser_controller_impl() override { return (void *)m_webview; };
   void run_impl() override { gtk_main(); }
-  void terminate_impl() override { gtk_main_quit(); }
+  void terminate_impl() override {
+    dispatch_impl([] { gtk_main_quit(); });
+  }
   void dispatch_impl(std::function<void()> f) override {
     g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *f) -> int {
                       (*static_cast<dispatch_fn_t *>(f))();
