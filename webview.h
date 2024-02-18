@@ -1163,7 +1163,10 @@ public:
     }
     if (m_window) {
       if (m_owns_window) {
+        // Disconnect handlers to avoid callbacks invoked during destruction.
+        g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
         gtk_window_close(GTK_WINDOW(m_window));
+        on_window_destroyed(true);
       }
       m_window = nullptr;
     }
