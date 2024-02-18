@@ -3006,6 +3006,21 @@ public:
       m_controller->Release();
       m_controller = nullptr;
     }
+    // Replace wndproc to avoid callbacks and other bad things during
+    // destruction.
+    auto wndproc = reinterpret_cast<LONG_PTR>(
+        +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        });
+    if (m_message_window) {
+      SetWindowLongPtrW(m_message_window, GWLP_WNDPROC, wndproc);
+    }
+    if (m_widget) {
+      SetWindowLongPtrW(m_widget, GWLP_WNDPROC, wndproc);
+    }
+    if (m_window && m_owns_window) {
+      SetWindowLongPtrW(m_window, GWLP_WNDPROC, wndproc);
+    }
     if (m_message_window) {
       DestroyWindow(m_message_window);
       m_message_window = nullptr;
@@ -3017,6 +3032,7 @@ public:
     if (m_window) {
       if (m_owns_window) {
         DestroyWindow(m_window);
+        on_window_destroyed(true);
       }
       m_window = nullptr;
     }
@@ -3028,27 +3044,16 @@ public:
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
   void run_impl() {
-    m_running_main_loop = true;
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
   }
   void *window_impl() override { return (void *)m_window; }
   void *widget_impl() override { return (void *)m_widget; }
   void *browser_controller_impl() override { return (void *)m_controller; }
-  void terminate_impl() override {
-    // Prevent unintentionally posting the quit message multiple times in the
-    // following scenario:
-    // 1. Run loop starts.
-    // 2. User code requests the run loop to stop.
-    // 3. Destructor of this class wants to stop the run loop.
-    if (m_running_main_loop) {
-      PostQuitMessage(0);
-    }
-  }
+  void terminate_impl() override { PostQuitMessage(0); }
   void dispatch_impl(dispatch_fn_t f) override {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
   }
@@ -3142,7 +3147,6 @@ private:
     m_com_handler->try_create_environment();
 
     // Pump the message loop until WebView2 has finished initialization.
-    m_running_main_loop = true;
     bool got_quit_msg = false;
     MSG msg;
     while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
@@ -3153,7 +3157,6 @@ private:
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
     if (got_quit_msg) {
       return false;
     }
@@ -3267,7 +3270,6 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
-  bool m_running_main_loop{};
 };
 
 } // namespace detail
