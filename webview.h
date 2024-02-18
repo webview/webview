@@ -3055,18 +3055,11 @@ public:
         +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
           return DefWindowProcW(hwnd, msg, wp, lp);
         });
-    if (m_message_window) {
-      SetWindowLongPtrW(m_message_window, GWLP_WNDPROC, wndproc);
-    }
     if (m_widget) {
       SetWindowLongPtrW(m_widget, GWLP_WNDPROC, wndproc);
     }
     if (m_window && m_owns_window) {
       SetWindowLongPtrW(m_window, GWLP_WNDPROC, wndproc);
-    }
-    if (m_message_window) {
-      DestroyWindow(m_message_window);
-      m_message_window = nullptr;
     }
     if (m_widget) {
       DestroyWindow(m_widget);
@@ -3083,6 +3076,12 @@ public:
       // Not strictly needed for windows to close immediately but aligns
       // behavior across backends.
       deplete_run_loop_event_queue();
+    }
+    // We need the message window in order to deplete the event queue.
+    if (m_message_window) {
+      SetWindowLongPtrW(m_message_window, GWLP_WNDPROC, wndproc);
+      DestroyWindow(m_message_window);
+      m_message_window = nullptr;
     }
   }
 
