@@ -153,19 +153,17 @@ typedef enum {
   WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
 } webview_native_handle_kind_t;
 
-/// @name Window size hints
-/// @{
-
-/// Width and height are default size.
-#define WEBVIEW_HINT_NONE 0
-/// Width and height are minimum bounds
-#define WEBVIEW_HINT_MIN 1
-/// Width and height are maximum bounds
-#define WEBVIEW_HINT_MAX 2
-/// Window size can not be changed by a user
-#define WEBVIEW_HINT_FIXED 3
-
-/// @}
+/// Window size hints
+typedef enum {
+  /// Width and height are default size.
+  WEBVIEW_HINT_NONE,
+  /// Width and height are minimum bounds.
+  WEBVIEW_HINT_MIN,
+  /// Width and height are maximum bounds.
+  WEBVIEW_HINT_MAX,
+  /// Window size can not be changed by a user.
+  WEBVIEW_HINT_FIXED
+} webview_hint_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -265,7 +263,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title);
  * @param hints Size hints.
  */
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints);
+                                  webview_hint_t hints);
 
 /**
  * Navigates webview to the given URL. URL may be a properly encoded data URI.
@@ -1004,7 +1002,7 @@ if (status === 0) {
   void dispatch(std::function<void()> f) { dispatch_impl(f); }
   void set_title(const std::string &title) { set_title_impl(title); }
 
-  void set_size(int width, int height, int hints) {
+  void set_size(int width, int height, webview_hint_t hints) {
     set_size_impl(width, height, hints);
   }
 
@@ -1021,7 +1019,7 @@ protected:
   virtual void terminate_impl() = 0;
   virtual void dispatch_impl(std::function<void()> f) = 0;
   virtual void set_title_impl(const std::string &title) = 0;
-  virtual void set_size_impl(int width, int height, int hints) = 0;
+  virtual void set_size_impl(int width, int height, webview_hint_t hints) = 0;
   virtual void set_html_impl(const std::string &html) = 0;
   virtual void init_impl(const std::string &js) = 0;
   virtual void eval_impl(const std::string &js) = 0;
@@ -1337,7 +1335,7 @@ public:
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
   }
 
-  void set_size_impl(int width, int height, int hints) override {
+  void set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_window_resize(GTK_WINDOW(m_window), width, height);
@@ -1657,7 +1655,7 @@ public:
                                             "stringWithUTF8String:"_sel,
                                             title.c_str()));
   }
-  void set_size_impl(int width, int height, int hints) override {
+  void set_size_impl(int width, int height, webview_hint_t hints) override {
     objc::autoreleasepool arp;
 
     auto style = static_cast<NSWindowStyleMask>(
@@ -3265,7 +3263,7 @@ public:
     SetWindowTextW(m_window, widen_string(title).c_str());
   }
 
-  void set_size_impl(int width, int height, int hints) override {
+  void set_size_impl(int width, int height, webview_hint_t hints) override {
     auto style = GetWindowLong(m_window, GWL_STYLE);
     if (hints == WEBVIEW_HINT_FIXED) {
       style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
@@ -3550,7 +3548,7 @@ WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
 }
 
 WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints) {
+                                  webview_hint_t hints) {
   static_cast<webview::webview *>(w)->set_size(width, height, hints);
 }
 

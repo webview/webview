@@ -39,7 +39,7 @@ static void cb_terminate(webview_t w, void *arg) {
 static void test_c_api() {
   webview_t w;
   w = webview_create(false, nullptr);
-  webview_set_size(w, 480, 320, 0);
+  webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_title(w, "Test");
   webview_set_html(w, "set_html ok");
   webview_navigate(w, "data:text/plain,navigate%20ok");
