@@ -60,4 +60,7 @@ CheckOptions:
   # We use short parameters like "w"
   - key:   readability-identifier-length.MinimumParameterNameLength
     value: 1
+  # We have many value variables that aren't declared as const.
+  - key:   misc-const-correctness.AnalyzeValues
+    value: 0
 HeaderFilterRegex: webview\.h$
