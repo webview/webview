@@ -13,12 +13,41 @@
 // Only used to suppress warnings caused by unused parameters.
 #define UNUSED(x) (void)x
 
+typedef struct {
+  void *arg;
+  void (*next_fn)(void *);
+  void (*free_fn)(void *);
+} start_routine_wrapper_arg_t;
+
+#ifdef _WIN32
+DWORD __stdcall start_routine_wrapper(void *wrapper_arg) {
+  start_routine_wrapper_arg_t *arg = (start_routine_wrapper_arg_t *)wrapper_arg;
+  arg->next_fn(arg->arg);
+  arg->free_fn(wrapper_arg);
+  return 0;
+}
+#else
+void *start_routine_wrapper(void *wrapper_arg) {
+  start_routine_wrapper_arg_t *arg = (start_routine_wrapper_arg_t *)wrapper_arg;
+  arg->next_fn(arg->arg);
+  arg->free_fn(wrapper_arg);
+  return NULL;
+}
+#endif
+
 // Creates a thread with the given start routine and argument passed to
 // the start routine. Returns 0 on success and -1 on failure.
-int thread_create(void *(*start_routine)(void *), void *arg) {
+int thread_create(void (*start_routine)(void *), void *arg) {
+  start_routine_wrapper_arg_t *wrapper_arg =
+      (start_routine_wrapper_arg_t *)malloc(
+          sizeof(start_routine_wrapper_arg_t));
+  wrapper_arg->arg = arg;
+  wrapper_arg->next_fn = start_routine;
+  wrapper_arg->free_fn = free;
+
 #ifdef _WIN32
-  HANDLE thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)start_routine,
-                               arg, 0, NULL);
+  HANDLE thread =
+      CreateThread(NULL, 0, start_routine_wrapper, wrapper_arg, 0, NULL);
   if (thread) {
     CloseHandle(thread);
     return 0;
@@ -26,7 +55,7 @@ int thread_create(void *(*start_routine)(void *), void *arg) {
   return -1;
 #else
   pthread_t thread;
-  int error = pthread_create(&thread, NULL, start_routine, arg);
+  int error = pthread_create(&thread, NULL, start_routine_wrapper, wrapper_arg);
   if (error == 0) {
     pthread_detach(thread);
     return 0;
@@ -111,7 +140,7 @@ void compute_thread_params_free(compute_thread_params_t *p) {
   free(p);
 }
 
-void *compute_thread_proc(void *arg) {
+void compute_thread_proc(void *arg) {
   compute_thread_params_t *params = (compute_thread_params_t *)arg;
   // Simulate load.
   thread_sleep(1);
@@ -119,7 +148,6 @@ void *compute_thread_proc(void *arg) {
   const char *result = "42";
   webview_return(params->w, params->seq, 0, result);
   compute_thread_params_free(params);
-  return NULL;
 }
 
 void compute(const char *seq, const char *req, void *arg) {
