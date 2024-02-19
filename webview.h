@@ -1888,7 +1888,7 @@ private:
 
     set_up_window();
   }
-  void on_window_will_close(id /*delegate*/, id window) {
+  void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
     m_webview = nullptr;
     m_window = nullptr;
