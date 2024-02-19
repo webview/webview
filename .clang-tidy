@@ -1,5 +1,7 @@
 ---
 # We should aim to fix the code and re-enable most of the rules here.
+# The following were disabled due to false positives:
+# - clang-analyzer-cplusplus.NewDeleteLeaks: Finds a leak inside std::function (clang-tidy 15.0.7)
 Checks: >
     bugprone-*,
     cert-*,
@@ -18,6 +20,7 @@ Checks: >
     -clang-analyzer-core.CallAndMessage,
     -clang-analyzer-optin.cplusplus.UninitializedObject,
     -clang-analyzer-security.insecureAPI.strcpy,
+    -clang-analyzer-cplusplus.NewDeleteLeaks,
     -clang-diagnostic-unused-parameter,
     -cppcoreguidelines-avoid-c-arrays,
     -cppcoreguidelines-avoid-magic-numbers,

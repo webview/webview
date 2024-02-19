@@ -808,9 +808,9 @@ public:
 
   native_library(const native_library &other) = delete;
   native_library &operator=(const native_library &other) = delete;
-  native_library(native_library &&other) { *this = std::move(other); }
+  native_library(native_library &&other) noexcept { *this = std::move(other); }
 
-  native_library &operator=(native_library &&other) {
+  native_library &operator=(native_library &&other) noexcept {
     if (this == &other) {
       return *this;
     }
@@ -1141,7 +1141,7 @@ static inline void set_env(const std::string &name, const std::string &value) {
 // Checks whether the NVIDIA GPU driver is used based on whether the kernel
 // module is loaded.
 static inline bool is_using_nvidia_driver() {
-  struct ::stat buffer;
+  struct ::stat buffer {};
   if (::stat("/sys/module/nvidia", &buffer) != 0) {
     return false;
   }
@@ -1168,7 +1168,7 @@ static inline bool is_gdk_x11_backend() {
 #ifdef GDK_WINDOWING_X11
   auto *manager = gdk_display_manager_get();
   auto *display = gdk_display_manager_get_default_display(manager);
-  return GDK_IS_X11_DISPLAY(display);
+  return GDK_IS_X11_DISPLAY(display); // NOLINT(misc-const-correctness)
 #else
   return false;
 #endif
@@ -1236,7 +1236,7 @@ constexpr auto webkit_web_view_run_javascript =
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
+      : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
     if (m_owns_window) {
       if (gtk_init_check(nullptr, nullptr) == FALSE) {
         return;
