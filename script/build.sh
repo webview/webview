@@ -102,9 +102,13 @@ task_check() {
         return 0
     fi
     echo "Linting..."
-    clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Check library's header file(s) using the header filter specified the .clang-tidy file.
+    # Specify a source file that will not trigger any warnings.
+    clang-tidy "${project_dir}/webview.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Only check source files here to avoid checking the header(s) again.
+    clang-tidy -header-filter="" "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
 task_build() {
