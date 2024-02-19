@@ -808,9 +808,9 @@ public:
 
   native_library(const native_library &other) = delete;
   native_library &operator=(const native_library &other) = delete;
-  native_library(native_library &&other) { *this = std::move(other); }
+  native_library(native_library &&other) noexcept { *this = std::move(other); }
 
-  native_library &operator=(native_library &&other) {
+  native_library &operator=(native_library &&other) noexcept {
     if (this == &other) {
       return *this;
     }
@@ -972,23 +972,23 @@ public:
           js += ";\n";
           js += "var result = ";
           js += escaped_result;
-          js += R"js(;
-var promise = window._rpc[seq];
-delete window._rpc[seq];
-if (result !== undefined) {
-  try {
-    result = JSON.parse(result);
-  } catch {
-    promise.reject(new Error("Failed to parse binding result as JSON"));
-    return;
-  }
-}
-if (status === 0) {
-  promise.resolve(result);
-} else {
-  promise.reject(result);
-}
-})())js";
+          js += ";\
+var promise = window._rpc[seq];\
+delete window._rpc[seq];\
+if (result !== undefined) {\
+  try {\
+    result = JSON.parse(result);\
+  } catch {\
+    promise.reject(new Error(\"Failed to parse binding result as JSON\"));\
+    return;\
+  }\
+}\
+if (status === 0) {\
+  promise.resolve(result);\
+} else {\
+  promise.reject(result);\
+}\
+})()";
           eval(js);
         },
         result.empty() ? "undefined" : json_escape(result)));
@@ -1141,7 +1141,7 @@ static inline void set_env(const std::string &name, const std::string &value) {
 // Checks whether the NVIDIA GPU driver is used based on whether the kernel
 // module is loaded.
 static inline bool is_using_nvidia_driver() {
-  struct ::stat buffer;
+  struct ::stat buffer {};
   if (::stat("/sys/module/nvidia", &buffer) != 0) {
     return false;
   }
@@ -1168,7 +1168,7 @@ static inline bool is_gdk_x11_backend() {
 #ifdef GDK_WINDOWING_X11
   auto *manager = gdk_display_manager_get();
   auto *display = gdk_display_manager_get_default_display(manager);
-  return GDK_IS_X11_DISPLAY(display);
+  return GDK_IS_X11_DISPLAY(display); // NOLINT(misc-const-correctness)
 #else
   return false;
 #endif
@@ -1236,7 +1236,7 @@ constexpr auto webkit_web_view_run_javascript =
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
+      : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
     if (m_owns_window) {
       if (gtk_init_check(nullptr, nullptr) == FALSE) {
         return;
@@ -1888,7 +1888,7 @@ private:
 
     set_up_window();
   }
-  void on_window_will_close(id /*delegate*/, id window) {
+  void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
     m_webview = nullptr;
     m_window = nullptr;
@@ -3244,7 +3244,7 @@ public:
   win32_edge_engine(win32_edge_engine &&other) = delete;
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
-  void run_impl() {
+  void run_impl() override {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
       TranslateMessage(&msg);
