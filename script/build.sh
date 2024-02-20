@@ -296,9 +296,10 @@ if [[ "${target_os}" == "linux" ]]; then
     pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
+    cxx_link_flags+=(-ldl) || exit 1
 elif [[ "${target_os}" == "macos" ]]; then
     shared_lib_suffix=.dylib
-    cxx_link_flags+=(-framework WebKit)
+    cxx_link_flags+=(-framework WebKit -ldl)
     macos_target_version=10.9
     c_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
     cxx_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
