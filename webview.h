@@ -3139,8 +3139,9 @@ public:
     m_cb(controller, webview);
     return S_OK;
   }
-  HRESULT STDMETHODCALLTYPE Invoke(
-      ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2WebMessageReceivedEventArgs *args) {
     LPWSTR message{};
     auto res = args->TryGetWebMessageAsString(&message);
     if (SUCCEEDED(res)) {
