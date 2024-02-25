@@ -288,7 +288,7 @@ static void test_bidir_comms() {
     switch (i) {
     case 0:
       assert(msg == "loaded");
-      w->eval("window.external.invoke('exiting ' + window.x)");
+      w->eval("window.__webview__.post('exiting ' + window.x)");
       break;
     case 1:
       assert(msg == "exiting 42");
@@ -301,7 +301,7 @@ static void test_bidir_comms() {
   browser.init(R"(
     window.x = 42;
     window.onload = () => {
-      window.external.invoke('loaded');
+      window.__webview__.post('loaded');
     };
   )");
   browser.navigate("data:text/html,%3Chtml%3Ehello%3C%2Fhtml%3E");
