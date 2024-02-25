@@ -890,16 +890,16 @@ private:
 
 class user_script {
 public:
-  struct impl;
+  class impl;
 
   user_script(const std::string &code, std::unique_ptr<impl> &&impl)
       : m_code{code}, m_impl{std::move(impl)} {}
 
   user_script(const user_script &other) = delete;
   user_script &operator=(const user_script &other) = delete;
-  user_script(user_script &&other) { *this = std::move(other); }
+  user_script(user_script &&other) noexcept { *this = std::move(other); }
 
-  user_script &operator=(user_script &&other) {
+  user_script &operator=(user_script &&other) noexcept {
     if (this == &other) {
       return *this;
     }
@@ -1550,8 +1550,8 @@ protected:
     return script;
   }
 
-  void
-  remove_all_user_scripts_impl(const std::list<user_script> &scripts) override {
+  void remove_all_user_scripts_impl(
+      const std::list<user_script> & /*scripts*/) override {
     webkit_user_content_manager_remove_all_scripts(m_user_content_manager);
   }
 
@@ -1924,8 +1924,8 @@ protected:
     return script;
   }
 
-  void
-  remove_all_user_scripts_impl(const std::list<user_script> &scripts) override {
+  void remove_all_user_scripts_impl(
+      const std::list<user_script> & /*scripts*/) override {
     objc::autoreleasepool arp;
     // Removing scripts decreases the retain count of each script.
     objc::msg_send<id>(m_manager, "removeAllUserScripts"_sel);
