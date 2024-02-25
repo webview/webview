@@ -934,14 +934,12 @@ public:
   using binding_t = std::function<void(std::string, std::string, void *)>;
   class binding_ctx_t {
   public:
-    binding_ctx_t(binding_t callback, void *arg, bool internal = false)
-        : callback(callback), arg(arg), internal(internal) {}
+    binding_ctx_t(binding_t callback, void *arg)
+        : callback(callback), arg(arg) {}
     // This function is called upon execution of the bound JS function
     binding_t callback;
     // This user-supplied argument is passed to the callback
     void *arg;
-    // Set to true if this binding is internal and protected from being unbound
-    bool internal;
   };
 
   using sync_binding_t = std::function<std::string(std::string)>;
@@ -971,7 +969,7 @@ window.__webview__.onBind(" +
 
   void unbind(const std::string &name) {
     auto found = bindings.find(name);
-    if (found == bindings.end() || found->second.internal) {
+    if (found == bindings.end()) {
       return;
     }
     bindings.erase(found);
@@ -1140,9 +1138,6 @@ protected:
     std::string js_names = "[";
     bool first = true;
     for (const auto &binding : bindings) {
-      if (binding.second.internal) {
-        continue;
-      }
       if (first) {
         first = false;
       } else {
