@@ -22,9 +22,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+/// @file webview.h
+
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+/**
+ * Used to specify function linkage such as extern, inline, etc.
+ *
+ * When @c WEBVIEW_API is not already defined, the defaults are as follows:
+ *
+ * - @c inline when compiling C++ code.
+ * - @c extern when compiling C code.
+ *
+ * The following macros can be used to automatically set an appropriate
+ * value for @c WEBVIEW_API:
+ *
+ * - Define @c WEBVIEW_BUILD_SHARED when building a shared library.
+ * - Define @c WEBVIEW_SHARED when using a shared library.
+ * - Define @c WEBVIEW_STATIC when building or using a static library.
+ */
 #ifndef WEBVIEW_API
 #if defined(WEBVIEW_SHARED) || defined(WEBVIEW_BUILD_SHARED)
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -43,187 +61,357 @@
 #endif
 #endif
 
+/// @name Version
+/// @{
+
 #ifndef WEBVIEW_VERSION_MAJOR
-// The current library major version.
+/// The current library major version.
 #define WEBVIEW_VERSION_MAJOR 0
 #endif
 
 #ifndef WEBVIEW_VERSION_MINOR
-// The current library minor version.
+/// The current library minor version.
 #define WEBVIEW_VERSION_MINOR 11
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
-// The current library patch version.
+/// The current library patch version.
 #define WEBVIEW_VERSION_PATCH 0
 #endif
 
 #ifndef WEBVIEW_VERSION_PRE_RELEASE
-// SemVer 2.0.0 pre-release labels prefixed with "-".
+/// SemVer 2.0.0 pre-release labels prefixed with "-".
 #define WEBVIEW_VERSION_PRE_RELEASE ""
 #endif
 
 #ifndef WEBVIEW_VERSION_BUILD_METADATA
-// SemVer 2.0.0 build metadata prefixed with "+".
+/// SemVer 2.0.0 build metadata prefixed with "+".
 #define WEBVIEW_VERSION_BUILD_METADATA ""
 #endif
 
-// Utility macro for stringifying a macro argument.
+/// @}
+
+/// @name Used internally
+/// @{
+
+/// Utility macro for stringifying a macro argument.
 #define WEBVIEW_STRINGIFY(x) #x
 
-// Utility macro for stringifying the result of a macro argument expansion.
+/// Utility macro for stringifying the result of a macro argument expansion.
 #define WEBVIEW_EXPAND_AND_STRINGIFY(x) WEBVIEW_STRINGIFY(x)
 
-// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+/// @}
+
+/// @name Version
+/// @{
+
+/// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
 #define WEBVIEW_VERSION_NUMBER                                                 \
   WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
   "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
       WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-// Holds the elements of a MAJOR.MINOR.PATCH version number.
+/// @}
+
+/// Holds the elements of a MAJOR.MINOR.PATCH version number.
 typedef struct {
-  // Major version.
+  /// Major version.
   unsigned int major;
-  // Minor version.
+  /// Minor version.
   unsigned int minor;
-  // Patch version.
+  /// Patch version.
   unsigned int patch;
 } webview_version_t;
 
-// Holds the library's version information.
+/// Holds the library's version information.
 typedef struct {
-  // The elements of the version number.
+  /// The elements of the version number.
   webview_version_t version;
-  // SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+  /// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
   char version_number[32];
-  // SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
-  // an empty string.
+  /// SemVer 2.0.0 pre-release labels prefixed with "-" if specified, otherwise
+  /// an empty string.
   char pre_release[48];
-  // SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
+  /// SemVer 2.0.0 build metadata prefixed with "+", otherwise an empty string.
   char build_metadata[48];
 } webview_version_info_t;
+
+/// Pointer to a webview instance.
+typedef void *webview_t;
+
+/// Allocator function.
+typedef void *(webview_allocator_t)(unsigned int size);
+
+/// Native handle kind. The actual type depends on the backend.
+typedef enum {
+  /// Top-level window. @c GtkWindow pointer (GTK), @c NSWindow pointer (Cocoa)
+  /// or @c HWND (Win32).
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
+  /// Browser widget. @c GtkWidget pointer (GTK), @c NSView pointer (Cocoa) or
+  /// @c HWND (Win32).
+  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
+  /// Browser controller. @c WebKitWebView pointer (WebKitGTK), @c WKWebView
+  /// pointer (Cocoa/WebKit) or @c ICoreWebView2Controller pointer
+  /// (Win32/WebView2).
+  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
+} webview_native_handle_kind_t;
+
+/// Window size hints
+typedef enum {
+  /// Width and height are default size.
+  WEBVIEW_HINT_NONE,
+  /// Width and height are minimum bounds.
+  WEBVIEW_HINT_MIN,
+  /// Width and height are maximum bounds.
+  WEBVIEW_HINT_MAX,
+  /// Window size can not be changed by a user.
+  WEBVIEW_HINT_FIXED
+} webview_hint_t;
+
+/// @name Errors
+/// @{
+
+/**
+ * @brief Error codes returned to callers of the API.
+ *
+ * The following codes are commonly used in the library:
+ * - @c WEBVIEW_ERROR_OK
+ * - @c WEBVIEW_ERROR_UNSPECIFIED
+ * - @c WEBVIEW_ERROR_INVALID_ARGUMENT
+ * - @c WEBVIEW_ERROR_INVALID_STATE
+ *
+ * With the exception of @c WEBVIEW_ERROR_OK which is normally expected,
+ * the other common codes do not normally need to be handled specifically.
+ * Refer to specific functions regarding handling of other codes.
+ */
+typedef enum {
+  /// Missing dependency.
+  WEBVIEW_ERROR_MISSING_DEPENDENCY = -5,
+  /// Operation canceled.
+  WEBVIEW_ERROR_CANCELED = -4,
+  /// Invalid state detected.
+  WEBVIEW_ERROR_INVALID_STATE = -3,
+  /// One or more invalid arguments have been specified e.g. in a function call.
+  WEBVIEW_ERROR_INVALID_ARGUMENT = -2,
+  /// An unspecified error occurred. A more specific error code may be needed.
+  WEBVIEW_ERROR_UNSPECIFIED = -1,
+  /// OK/Success. Functions that return error codes will typically return this
+  /// to signify successful operations.
+  WEBVIEW_ERROR_OK = 0,
+  /// Signifies that something already exists.
+  WEBVIEW_ERROR_DUPLICATE = 1,
+  /// Signifies that something does not exist.
+  WEBVIEW_ERROR_NOT_FOUND = 2
+} webview_error_t;
+
+/// @brief Evaluates to @c TRUE for error codes indicating success or
+///        additional information.
+#define WEBVIEW_SUCCEEDED(error) ((int)(error) >= 0)
+
+/// Evaluates to @c TRUE if the given error code indicates failure.
+#define WEBVIEW_FAILED(error) ((int)(error) < 0)
+
+/// @}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void *webview_t;
-
-typedef void *(webview_allocator_t)(unsigned int size);
-
-// Creates a new webview instance. If the debug parameter is non-zero,
-// developer tools are enabled if supported by the backend. The optional window
-// parameter can be a native window handle, i.e. GtkWindow pointer (GTK),
-// NSWindow pointer (Cocoa) or HWND (Win32). If the window handle is
-// non-null, the webview widget is embedded into the given window, and the
-// caller is expected to assume responsibility for the window as well as
-// application lifecycle. If the window handle is null, a new window is created
-// and both the window and application lifecycle are managed by the webview
-// instance. Returns null on failure. Creation can fail for various reasons such
-// as when required runtime dependencies are missing or when window creation
-// fails.
-// Remarks:
-// - Win32: The function also accepts a pointer to HWND (Win32) in the window
-//   parameter for backward compatibility.
-// - Win32/WebView2: CoInitializeEx should be called with
-//   COINIT_APARTMENTTHREADED before attempting to call this function with an
-//   existing window. Omitting this step may cause WebView2 initialization to
-//   fail.
+/**
+ * Creates a new webview instance.
+ *
+ * @param debug Enable developer tools if supported by the backend.
+ * @param window Optional native window handle, i.e. @c GtkWindow pointer
+ *        @c NSWindow pointer (Cocoa) or @c HWND (Win32). If non-null,
+ *        the webview widget is embedded into the given window, and the
+ *        caller is expected to assume responsibility for the window as
+ *        well as application lifecycle. If the window handle is null,
+ *        a new window is created and both the window and application
+ *        lifecycle are managed by the webview instance.
+ * @remark Win32: The function also accepts a pointer to @c HWND (Win32) in the
+ *         window parameter for backward compatibility.
+ * @remark Win32/WebView2: @c CoInitializeEx should be called with
+ *         @c COINIT_APARTMENTTHREADED before attempting to call this function
+ *         with an existing window. Omitting this step may cause WebView2
+ *         initialization to fail.
+ * @return @c NULL on failure. Creation can fail for various reasons such
+ *         as when required runtime dependencies are missing or when window
+ *         creation fails.
+ * @retval WEBVIEW_ERROR_MISSING_DEPENDENCY
+ *         May be returned if WebView2 is unavailable on Windows.
+ */
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
-// Destroys a webview and closes the native window.
-WEBVIEW_API void webview_destroy(webview_t w);
+/**
+ * Destroys a webview instance and closes the native window.
+ *
+ * @param w The webview instance.
+ */
+WEBVIEW_API webview_error_t webview_destroy(webview_t w);
 
-// Runs the main loop until it's terminated. After this function exits - you
-// must destroy the webview.
-WEBVIEW_API void webview_run(webview_t w);
+/**
+ * Runs the main loop until it's terminated.
+ *
+ * @param w The webview instance.
+ */
+WEBVIEW_API webview_error_t webview_run(webview_t w);
 
-// Stops the main loop. It is safe to call this function from another other
-// background thread.
-WEBVIEW_API void webview_terminate(webview_t w);
+/**
+ * Stops the main loop. It is safe to call this function from another other
+ * background thread.
+ *
+ * @param w The webview instance.
+ */
+WEBVIEW_API webview_error_t webview_terminate(webview_t w);
 
-// Posts a function to be executed on the main thread. You normally do not need
-// to call this function, unless you want to tweak the native window.
-WEBVIEW_API void
-webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), void *arg);
+/**
+ * Schedules a function to be invoked on the thread with the run/event loop.
+ * Use this function e.g. to interact with the library or native handles.
+ *
+ * @param w The webview instance.
+ * @param fn The function to be invoked.
+ * @param arg An optional argument passed along to the callback function.
+ */
+WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
+                                             void (*fn)(webview_t w, void *arg),
+                                             void *arg);
 
-// Returns the native handle of the window associated with the webview instance.
-// The handle can be a GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or
-// HWND (Win32).
+/**
+ * Returns the native handle of the window associated with the webview instance.
+ * The handle can be a @c GtkWindow pointer (GTK), @c NSWindow pointer (Cocoa)
+ * or @c HWND (Win32).
+ *
+ * @param w The webview instance.
+ * @return The handle of the native window.
+ */
 WEBVIEW_API void *webview_get_window(webview_t w);
 
-// Native handle kind. The actual type depends on the backend.
-typedef enum {
-  // Top-level window. GtkWindow pointer (GTK), NSWindow pointer (Cocoa) or HWND (Win32).
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
-  // Browser widget. GtkWidget pointer (GTK), NSView pointer (Cocoa) or HWND (Win32).
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
-  // Browser controller. WebKitWebView pointer (WebKitGTK), WKWebView pointer (Cocoa/WebKit) or
-  // ICoreWebView2Controller pointer (Win32/WebView2).
-  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
-} webview_native_handle_kind_t;
-
-// Returns a native handle of choice.
-// @since 0.11
+/**
+ * Get a native handle of choice.
+ *
+ * @param w The webview instance.
+ * @param kind The kind of handle to retrieve.
+ * @return The native handle or @c NULL.
+ * @since 0.11
+ */
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind);
 
-// Updates the title of the native window. Must be called from the UI thread.
-WEBVIEW_API void webview_set_title(webview_t w, const char *title);
+/**
+ * Updates the title of the native window.
+ *
+ * @param w The webview instance.
+ * @param title The new title.
+ */
+WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
 
-// Window size hints
-#define WEBVIEW_HINT_NONE 0  // Width and height are default size
-#define WEBVIEW_HINT_MIN 1   // Width and height are minimum bounds
-#define WEBVIEW_HINT_MAX 2   // Width and height are maximum bounds
-#define WEBVIEW_HINT_FIXED 3 // Window size can not be changed by a user
-// Updates the size of the native window. See WEBVIEW_HINT constants.
-WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints);
+/**
+ * Updates the size of the native window.
+ *
+ * @param w The webview instance.
+ * @param width New width.
+ * @param height New height.
+ * @param hints Size hints.
+ */
+WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
+                                             webview_hint_t hints);
 
-// Navigates webview to the given URL. URL may be a properly encoded data URI.
-// Examples:
-// webview_navigate(w, "https://github.com/webview/webview");
-// webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
-// webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
-WEBVIEW_API void webview_navigate(webview_t w, const char *url);
+/**
+ * Navigates webview to the given URL. URL may be a properly encoded data URI.
+ *
+ * Example:
+ * @code{.c}
+ * webview_navigate(w, "https://github.com/webview/webview");
+ * webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
+ * webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
+ * @endcode
+ *
+ * @param w The webview instance.
+ * @param url URL.
+ */
+WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url);
 
-// Set webview HTML directly.
-// Example: webview_set_html(w, "<h1>Hello</h1>");
-WEBVIEW_API void webview_set_html(webview_t w, const char *html);
+/**
+ * Load HTML content into the webview.
+ *
+ * Example:
+ * @code{.c}
+ * webview_set_html(w, "<h1>Hello</h1>");
+ * @endcode
+ *
+ * @param w The webview instance.
+ * @param html HTML content.
+ */
+WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html);
 
-// Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a new page - this initialization code will be
-// executed. It is guaranteed that code is executed before window.onload.
-WEBVIEW_API void webview_init(webview_t w, const char *js);
+/**
+ * Injects JavaScript code to be executed immediately upon loading a page.
+ * The code will be executed before @c window.onload.
+ *
+ * @param w The webview instance.
+ * @param js JS content.
+ */
+WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js);
 
-// Evaluates arbitrary JavaScript code. Evaluation happens asynchronously, also
-// the result of the expression is ignored. Use RPC bindings if you want to
-// receive notifications about the results of the evaluation.
-WEBVIEW_API void webview_eval(webview_t w, const char *js);
+/**
+ * Evaluates arbitrary JavaScript code.
+ *
+ * Use bindings if you need to communicate the result of the evaluation.
+ *
+ * @param w The webview instance.
+ * @param js JS content.
+ */
+WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js);
 
-// Binds a native C callback so that it will appear under the given name as a
-// global JavaScript function. Internally it uses webview_init(). The callback
-// receives a sequential request id, a request string and a user-provided
-// argument pointer. The request string is a JSON array of all the arguments
-// passed to the JavaScript function.
-WEBVIEW_API void webview_bind(webview_t w, const char *name,
-                              void (*fn)(const char *seq, const char *req,
-                                         void *arg),
-                              void *arg);
+/**
+ * Binds a function pointer to a new global JavaScript function.
+ *
+ * Internally, JS glue code is injected to create the JS function by the
+ * given name. The callback function is passed a request identifier,
+ * a request string and a user-provided argument. The request string is
+ * a JSON array of the arguments passed to the JS function.
+ *
+ * @param w The webview instance.
+ * @param name Name of the JS function.
+ * @param fn Callback function.
+ * @param arg User argument.
+ * @retval WEBVIEW_ERROR_DUPLICATE
+ *         A binding already exists with the specified name.
+ */
+WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
+                                         void (*fn)(const char *id,
+                                                    const char *req, void *arg),
+                                         void *arg);
 
-// Removes a native C callback that was previously set by webview_bind.
-WEBVIEW_API void webview_unbind(webview_t w, const char *name);
+/**
+ * Removes a binding created with webview_bind().
+ *
+ * @param w The webview instance.
+ * @param name Name of the binding.
+ * @retval WEBVIEW_ERROR_NOT_FOUND No binding exists with the specified name.
+ */
+WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 
-// Responds to a binding call from the JS side. The ID/sequence number must
-// match the value passed to the binding handler in order to respond to the
-// call and complete the promise on the JS side. A status of zero resolves
-// the promise, and any other value rejects it. The result must either be a
-// valid JSON value or an empty string for the primitive JS value "undefined".
-WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
-                                const char *result);
+/**
+ * Responds to a binding call from the JS side.
+ *
+ * @param w The webview instance.
+ * @param id The identifier of the binding call. Pass along the value received
+ *           in the binding handler (see webview_bind()).
+ * @param status A status of zero tells the JS side that the binding call was
+ *               succesful; any other value indicates an error.
+ * @param result The result of the binding call to be returned to the JS side.
+ *               This must either be a valid JSON value or an empty string for
+ *               the primitive JS value @c undefined.
+ */
+WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
+                                           int status, const char *result);
 
-// Get the library's version information.
-// @since 0.10
+/**
+ * Get the library's version information.
+ *
+ * @since 0.10
+ */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
 // Get the current URL.
@@ -278,8 +466,12 @@ WEBVIEW_API void webview_string_free(char *str);
 #include <cstdint>
 #include <functional>
 #include <future>
+#include <list>
 #include <map>
+#include <new>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -293,8 +485,212 @@ WEBVIEW_API void webview_string_free(char *str);
 #endif
 
 namespace webview {
+namespace detail {
+
+class bad_access : public std::exception {};
+
+template <typename T> class optional {
+public:
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
+  optional() = default;
+
+  optional(const T &other) noexcept : m_has_data{true} {
+    new (&m_data) T{other};
+  }
+
+  optional(T &&other) noexcept : m_has_data{true} {
+    new (&m_data) T{std::move(other)};
+  }
+
+  optional(const optional<T> &other) noexcept { *this = other; }
+
+  optional &operator=(const optional<T> &other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    m_has_data = other.has_value();
+    if (m_has_data) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      new (&m_data) T{*reinterpret_cast<const T *>(&other.m_data)};
+    }
+    return *this;
+  }
+
+  optional(optional<T> &&other) noexcept { *this = std::move(other); }
+
+  optional &operator=(optional<T> &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    m_has_data = other.has_value();
+    if (m_has_data) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      new (&m_data) T{std::move(*reinterpret_cast<T *>(&other.m_data))};
+    }
+    return *this;
+  }
+
+  ~optional() {
+    if (m_has_data) {
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      reinterpret_cast<T *>(&m_data)->~T();
+    }
+  }
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  const T &get() const {
+    if (!m_has_data) {
+      throw bad_access{};
+    }
+    return *reinterpret_cast<const T *>(&m_data);
+  }
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  T &get() {
+    if (!m_has_data) {
+      throw bad_access{};
+    }
+    return *reinterpret_cast<T *>(&m_data);
+  }
+
+  bool has_value() const { return m_has_data; }
+
+private:
+  // NOLINTNEXTLINE(bugprone-sizeof-expression): pointer to aggregate is OK
+  typename std::aligned_storage<sizeof(T), alignof(T)>::type m_data;
+  bool m_has_data{};
+};
+
+template <> class optional<void> {};
+
+template <typename Value, typename Error, typename Exception>
+class basic_result {
+public:
+  using value_type = Value;
+  using error_type = Error;
+  using exception_type = Exception;
+
+  basic_result() : basic_result(value_type{}) {}
+
+  basic_result(const value_type &value) : m_value{value} {}
+  basic_result(value_type &&value) : m_value{std::forward<value_type>(value)} {}
+
+  basic_result(const error_type &error) : m_error{error} {}
+  basic_result(error_type &&error) : m_error{std::forward<error_type>(error)} {}
+
+  bool ok() const { return has_value() && !has_error(); }
+  bool has_value() const { return m_value.has_value(); }
+  bool has_error() const { return m_error.has_value(); }
+
+  void ensure_ok() {
+    if (!ok()) {
+      throw exception_type{error()};
+    }
+  }
+
+  const value_type &value() const {
+    if (!has_value()) {
+      throw bad_access{};
+    }
+    return m_value.get();
+  }
+
+  const error_type &error() const {
+    if (!has_error()) {
+      throw bad_access{};
+    }
+    return m_error.get();
+  }
+
+private:
+  optional<value_type> m_value;
+  optional<error_type> m_error;
+};
+
+template <typename Error, typename Exception>
+class basic_result<void, Error, Exception> {
+public:
+  using value_type = void;
+  using error_type = Error;
+  using exception_type = Exception;
+
+  basic_result() = default;
+
+  basic_result(error_type &&error) : m_error{std::forward<error_type>(error)} {}
+
+  bool ok() const { return !has_error(); }
+
+  bool has_error() const { return m_error.has_value(); }
+
+  void ensure_ok() {
+    if (!ok()) {
+      throw exception_type{error()};
+    }
+  }
+
+  const error_type &error() const {
+    if (!has_error()) {
+      throw bad_access{};
+    }
+    return m_error.get();
+  }
+
+private:
+  optional<error_type> m_error;
+};
+
+} // namespace detail
 
 using dispatch_fn_t = std::function<void()>;
+
+class error_info {
+public:
+  error_info(webview_error_t code, const std::string &message = {}) noexcept
+      : m_code{code}, m_message{message} {}
+  error_info() = default;
+
+  webview_error_t code() const { return m_code; }
+  const std::string &message() const { return m_message; }
+
+private:
+  webview_error_t m_code{WEBVIEW_ERROR_UNSPECIFIED};
+  std::string m_message;
+};
+
+class exception : public std::exception {
+public:
+  exception(webview_error_t code, const std::string &message,
+            std::exception_ptr cause) noexcept
+      : exception{error_info{code, message}, cause} {}
+
+  exception(webview_error_t code, const std::string &message) noexcept
+      : exception{error_info{code, message}} {}
+
+  exception(const error_info &error, std::exception_ptr cause) noexcept
+      : m_error{error},
+        // NOLINTNEXTLINE(bugprone-throw-keyword-missing)
+        m_cause{cause} {}
+
+  exception(const error_info &error) noexcept : m_error{error} {}
+
+  exception() = default;
+
+  const error_info &error() const { return m_error; }
+  std::exception_ptr cause() const { return m_cause; }
+
+  const char *what() const noexcept override {
+    return m_error.message().c_str();
+  }
+
+private:
+  error_info m_error{WEBVIEW_ERROR_UNSPECIFIED};
+  std::exception_ptr m_cause;
+};
+
+template <typename T>
+using result = detail::basic_result<T, error_info, exception>;
+
+using noresult = detail::basic_result<void, error_info, exception>;
 
 namespace detail {
 
@@ -712,9 +1108,9 @@ public:
 
   native_library(const native_library &other) = delete;
   native_library &operator=(const native_library &other) = delete;
-  native_library(native_library &&other) { *this = std::move(other); }
+  native_library(native_library &&other) noexcept { *this = std::move(other); }
 
-  native_library &operator=(native_library &&other) {
+  native_library &operator=(native_library &&other) noexcept {
     if (this == &other) {
       return *this;
     }
@@ -792,16 +1188,77 @@ private:
   mod_handle_t m_handle{};
 };
 
+template <typename WorkFn, typename ResultFn>
+webview_error_t api_filter(WorkFn &&do_work, ResultFn &&put_result) noexcept {
+  try {
+    auto result = do_work();
+    if (result.ok()) {
+      put_result(result.value());
+      return WEBVIEW_ERROR_OK;
+    }
+    return result.error().code();
+  } catch (const exception &e) {
+    return e.error().code();
+  } catch (...) {
+    return WEBVIEW_ERROR_UNSPECIFIED;
+  }
+}
+
+template <typename WorkFn>
+webview_error_t api_filter(WorkFn &&do_work) noexcept {
+  try {
+    auto result = do_work();
+    if (result.ok()) {
+      return WEBVIEW_ERROR_OK;
+    }
+    return result.error().code();
+  } catch (const exception &e) {
+    return e.error().code();
+  } catch (...) {
+    return WEBVIEW_ERROR_UNSPECIFIED;
+  }
+}
+
+class user_script {
+public:
+  class impl;
+
+  user_script(const std::string &code, std::unique_ptr<impl> &&impl)
+      : m_code{code}, m_impl{std::move(impl)} {}
+
+  user_script(const user_script &other) = delete;
+  user_script &operator=(const user_script &other) = delete;
+  user_script(user_script &&other) noexcept { *this = std::move(other); }
+
+  user_script &operator=(user_script &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    m_code = std::move(other.m_code);
+    m_impl = std::move(other.m_impl);
+    return *this;
+  }
+
+  const std::string &get_code() const { return m_code; }
+
+  impl &get_impl() { return *m_impl; }
+
+  const impl &get_impl() const { return *m_impl; }
+
+private:
+  std::string m_code;
+  std::unique_ptr<impl> m_impl;
+};
+
 class engine_base {
 public:
   virtual ~engine_base() = default;
 
-  void navigate(const std::string &url) {
+  noresult navigate(const std::string &url) {
     if (url.empty()) {
-      navigate_impl("about:blank");
-      return;
+      return navigate_impl("about:blank");
     }
-    navigate_impl(url);
+    return navigate_impl(url);
   }
 
   using binding_t = std::function<void(std::string, std::string, void *)>;
@@ -818,120 +1275,231 @@ public:
   using sync_binding_t = std::function<std::string(std::string)>;
 
   // Synchronous bind
-  void bind(const std::string &name, sync_binding_t fn) {
-    auto wrapper = [this, fn](const std::string &seq, const std::string &req,
-                              void * /*arg*/) { resolve(seq, 0, fn(req)); };
-    bind(name, wrapper, nullptr);
+  noresult bind(const std::string &name, sync_binding_t fn) {
+    auto wrapper = [this, fn](const std::string &id, const std::string &req,
+                              void * /*arg*/) { resolve(id, 0, fn(req)); };
+    return bind(name, wrapper, nullptr);
   }
 
   // Asynchronous bind
-  void bind(const std::string &name, binding_t fn, void *arg) {
+  noresult bind(const std::string &name, binding_t fn, void *arg) {
     // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
     if (bindings.count(name) > 0) {
-      return;
+      return error_info{WEBVIEW_ERROR_DUPLICATE};
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
-    auto js = "(function() { var name = '" + name + "';" + R""(
-      var RPC = window._rpc = (window._rpc || {nextSeq: 1});
-      window[name] = function() {
-        var seq = RPC.nextSeq++;
-        var promise = new Promise(function(resolve, reject) {
-          RPC[seq] = {
-            resolve: resolve,
-            reject: reject,
-          };
-        });
-        window.external.invoke(JSON.stringify({
-          id: seq,
-          method: name,
-          params: Array.prototype.slice.call(arguments),
-        }));
-        return promise;
-      }
-    })())"";
-    init(js);
-    eval(js);
+    replace_bind_script();
+    // Notify that a binding was created if the init script has already
+    // set things up.
+    eval("if (window.__webview__) {\n\
+window.__webview__.onBind(" +
+         json_escape(name) + ")\n\
+}");
+    return {};
   }
 
-  void unbind(const std::string &name) {
+  noresult unbind(const std::string &name) {
     auto found = bindings.find(name);
-    if (found != bindings.end()) {
-      auto js = "delete window['" + name + "'];";
-      init(js);
-      eval(js);
-      bindings.erase(found);
+    if (found == bindings.end()) {
+      return error_info{WEBVIEW_ERROR_NOT_FOUND};
     }
+    bindings.erase(found);
+    replace_bind_script();
+    // Notify that a binding was created if the init script has already
+    // set things up.
+    eval("if (window.__webview__) {\n\
+window.__webview__.onUnbind(" +
+         json_escape(name) + ")\n\
+}");
+    return {};
   }
 
-  void resolve(const std::string &seq, int status, const std::string &result) {
+  noresult resolve(const std::string &id, int status,
+                   const std::string &result) {
     // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-    dispatch(std::bind(
-        [seq, status, this](std::string escaped_result) {
-          std::string js;
-          js += "(function(){var seq = \"";
-          js += seq;
-          js += "\";\n";
-          js += "var status = ";
-          js += std::to_string(status);
-          js += ";\n";
-          js += "var result = ";
-          js += escaped_result;
-          js += R"js(;
-var promise = window._rpc[seq];
-delete window._rpc[seq];
-if (result !== undefined) {
-  try {
-    result = JSON.parse(result);
-  } catch {
-    promise.reject(new Error("Failed to parse binding result as JSON"));
-    return;
-  }
-}
-if (status === 0) {
-  promise.resolve(result);
-} else {
-  promise.reject(result);
-}
-})())js";
+    return dispatch(std::bind(
+        [id, status, this](std::string escaped_result) {
+          std::string js = "window.__webview__.onReply(" + json_escape(id) +
+                           ", " + std::to_string(status) + ", " +
+                           escaped_result + ")";
           eval(js);
         },
         result.empty() ? "undefined" : json_escape(result)));
   }
 
-  void *window() { return window_impl(); }
-  void *widget() { return widget_impl(); }
-  void *browser_controller() { return browser_controller_impl(); };
-  void run() { run_impl(); }
-  void terminate() { terminate_impl(); }
-  void dispatch(std::function<void()> f) { dispatch_impl(f); }
-  void set_title(const std::string &title) { set_title_impl(title); }
+  result<void *> window() { return window_impl(); }
+  result<void *> widget() { return widget_impl(); }
+  result<void *> browser_controller() { return browser_controller_impl(); };
+  noresult run() { return run_impl(); }
+  noresult terminate() { return terminate_impl(); }
+  noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
+  noresult set_title(const std::string &title) { return set_title_impl(title); }
 
-  void set_size(int width, int height, int hints) {
-    set_size_impl(width, height, hints);
+  noresult set_size(int width, int height, webview_hint_t hints) {
+    return set_size_impl(width, height, hints);
   }
 
-  void set_html(const std::string &html) { set_html_impl(html); }
-  void init(const std::string &js) { init_impl(js); }
-  void eval(const std::string &js) { eval_impl(js); }
-  std::string get_url() { return get_url_impl(); }
+  result<std::string> get_url() { return get_url_impl(); }
+
+  noresult set_html(const std::string &html) { return set_html_impl(html); }
+
+  noresult init(const std::string &js) {
+    add_user_script(js);
+    return {};
+  }
+
+  noresult eval(const std::string &js) { return eval_impl(js); }
 
 protected:
-  virtual void navigate_impl(const std::string &url) = 0;
-  virtual void *window_impl() = 0;
-  virtual void *widget_impl() = 0;
-  virtual void *browser_controller_impl() = 0;
-  virtual void run_impl() = 0;
-  virtual void terminate_impl() = 0;
-  virtual void dispatch_impl(std::function<void()> f) = 0;
-  virtual void set_title_impl(const std::string &title) = 0;
-  virtual void set_size_impl(int width, int height, int hints) = 0;
-  virtual void set_html_impl(const std::string &html) = 0;
-  virtual void init_impl(const std::string &js) = 0;
-  virtual void eval_impl(const std::string &js) = 0;
-  virtual std::string get_url_impl() = 0;
+  virtual noresult navigate_impl(const std::string &url) = 0;
+  virtual result<void *> window_impl() = 0;
+  virtual result<void *> widget_impl() = 0;
+  virtual result<void *> browser_controller_impl() = 0;
+  virtual noresult run_impl() = 0;
+  virtual noresult terminate_impl() = 0;
+  virtual noresult dispatch_impl(std::function<void()> f) = 0;
+  virtual noresult set_title_impl(const std::string &title) = 0;
+  virtual noresult set_size_impl(int width, int height,
+                                 webview_hint_t hints) = 0;
+  virtual result<std::string> get_url_impl() = 0;
+  virtual noresult set_html_impl(const std::string &html) = 0;
+  virtual noresult eval_impl(const std::string &js) = 0;
+
+  virtual user_script *add_user_script(const std::string &js) {
+    return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
+                                                  add_user_script_impl(js)));
+  }
+
+  virtual user_script add_user_script_impl(const std::string &js) = 0;
+
+  virtual void
+  remove_all_user_scripts_impl(const std::list<user_script> &scripts) = 0;
+
+  virtual bool are_user_scripts_equal_impl(const user_script &first,
+                                           const user_script &second) = 0;
+
+  virtual user_script *replace_user_script(const user_script &old_script,
+                                           const std::string &new_script_code) {
+    remove_all_user_scripts_impl(m_user_scripts);
+    user_script *old_script_ptr{};
+    for (auto &script : m_user_scripts) {
+      auto is_old_script = are_user_scripts_equal_impl(script, old_script);
+      script = add_user_script_impl(is_old_script ? new_script_code
+                                                  : script.get_code());
+      if (is_old_script) {
+        old_script_ptr = std::addressof(script);
+      }
+    }
+    return old_script_ptr;
+  }
+
+  void replace_bind_script() {
+    if (m_bind_script) {
+      m_bind_script = replace_user_script(*m_bind_script, create_bind_script());
+    } else {
+      m_bind_script = add_user_script(create_bind_script());
+    }
+  }
+
+  void add_init_script(const std::string &post_fn) {
+    add_user_script(create_init_script(post_fn));
+  }
+
+  std::string create_init_script(const std::string &post_fn) {
+    auto js = std::string{} + "(function() {\n\
+  'use strict';\n\
+  function generateId() {\n\
+    var crypto = window.crypto || window.msCrypto;\n\
+    var bytes = new Uint8Array(16);\n\
+    crypto.getRandomValues(bytes);\n\
+    return Array.prototype.slice.call(bytes).map(function(n) {\n\
+      return n.toString(16).padStart(2, '0');\n\
+    }).join('');\n\
+  }\n\
+  var Webview = (function() {\n\
+    var _promises = {};\n\
+    function Webview_() {}\n\
+    Webview_.prototype.post = function(message) {\n\
+      return (" +
+              post_fn + ")(message);\n\
+    };\n\
+    Webview_.prototype.call = function(method) {\n\
+      var _id = generateId();\n\
+      var _params = Array.prototype.slice.call(arguments, 1);\n\
+      var promise = new Promise(function(resolve, reject) {\n\
+        _promises[_id] = { resolve, reject };\n\
+      });\n\
+      this.post(JSON.stringify({\n\
+        id: _id,\n\
+        method: method,\n\
+        params: _params\n\
+      }));\n\
+      return promise;\n\
+    };\n\
+    Webview_.prototype.onReply = function(id, status, result) {\n\
+      var promise = _promises[id];\n\
+      if (result !== undefined) {\n\
+        try {\n\
+          result = JSON.parse(result);\n\
+        } catch {\n\
+          promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
+          return;\n\
+        }\n\
+      }\n\
+      if (status === 0) {\n\
+        promise.resolve(result);\n\
+      } else {\n\
+        promise.reject(result);\n\
+      }\n\
+    };\n\
+    Webview_.prototype.onBind = function(name) {\n\
+      if (Object.hasOwn(window, name)) {\n\
+        throw new Error('Property \"' + name + '\" already exists');\n\
+      }\n\
+      window[name] = (function() {\n\
+        var params = [name].concat(Array.prototype.slice.call(arguments));\n\
+        return Webview_.prototype.call.apply(this, params);\n\
+      }).bind(this);\n\
+    };\n\
+    Webview_.prototype.onUnbind = function(name) {\n\
+      if (!Object.hasOwn(window, name)) {\n\
+        throw new Error('Property \"' + name + '\" does not exist');\n\
+      }\n\
+      delete window[name];\n\
+    };\n\
+    return Webview_;\n\
+  })();\n\
+  window.__webview__ = new Webview();\n\
+})()";
+    return js;
+  }
+
+  std::string create_bind_script() {
+    std::string js_names = "[";
+    bool first = true;
+    for (const auto &binding : bindings) {
+      if (first) {
+        first = false;
+      } else {
+        js_names += ",";
+      }
+      js_names += json_escape(binding.first);
+    }
+    js_names += "]";
+
+    auto js = std::string{} + "(function() {\n\
+  'use strict';\n\
+  var methods = " +
+              js_names + ";\n\
+  methods.forEach(function(name) {\n\
+    window.__webview__.onBind(name);\n\
+  });\n\
+})()";
+    return js;
+  }
 
   virtual void on_message(const std::string &msg) {
-    auto seq = json_parse(msg, "id", 0);
+    auto id = json_parse(msg, "id", 0);
     auto name = json_parse(msg, "method", 0);
     auto args = json_parse(msg, "params", 0);
     auto found = bindings.find(name);
@@ -939,14 +1507,16 @@ protected:
       return;
     }
     const auto &context = found->second;
-    context.callback(seq, args, context.arg);
+    dispatch([=] { context.callback(id, args, context.arg); });
   }
 
   virtual void on_window_created() { inc_window_count(); }
 
-  virtual void on_window_destroyed() {
+  virtual void on_window_destroyed(bool skip_termination = false) {
     if (dec_window_count() <= 0) {
-      terminate();
+      if (!skip_termination) {
+        terminate();
+      }
     }
   }
 
@@ -967,6 +1537,8 @@ private:
   }
 
   std::map<std::string, binding_ctx_t> bindings;
+  user_script *m_bind_script{};
+  std::list<user_script> m_user_scripts;
 };
 
 } // namespace detail
@@ -1045,7 +1617,7 @@ static inline void set_env(const std::string &name, const std::string &value) {
 // Checks whether the NVIDIA GPU driver is used based on whether the kernel
 // module is loaded.
 static inline bool is_using_nvidia_driver() {
-  struct ::stat buffer;
+  struct ::stat buffer {};
   if (::stat("/sys/module/nvidia", &buffer) != 0) {
     return false;
   }
@@ -1072,7 +1644,7 @@ static inline bool is_gdk_x11_backend() {
 #ifdef GDK_WINDOWING_X11
   auto *manager = gdk_display_manager_get();
   auto *display = gdk_display_manager_get_default_display(manager);
-  return GDK_IS_X11_DISPLAY(display);
+  return GDK_IS_X11_DISPLAY(display); // NOLINT(misc-const-correctness)
 #else
   return false;
 #endif
@@ -1137,19 +1709,41 @@ constexpr auto webkit_web_view_run_javascript =
         "webkit_web_view_run_javascript");
 } // namespace webkit_symbols
 
+class user_script::impl {
+public:
+  impl(WebKitUserScript *script) : m_script{script} {
+    webkit_user_script_ref(script);
+  }
+
+  ~impl() { webkit_user_script_unref(m_script); }
+
+  impl(const impl &) = delete;
+  impl &operator=(const impl &) = delete;
+  impl(impl &&) = delete;
+  impl &operator=(impl &&) = delete;
+
+  WebKitUserScript *get_native() const { return m_script; }
+
+private:
+  WebKitUserScript *m_script{};
+};
+
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window)
-      : m_window(static_cast<GtkWidget *>(window)), m_owns_window{!window} {
+      : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
     if (m_owns_window) {
-      if (gtk_init_check(nullptr, nullptr) == FALSE) {
-        return;
+      if (!gtk_init_check(nullptr, nullptr)) {
+        throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
       }
       m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
       on_window_created();
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
                          auto *w = static_cast<gtk_webkit_engine *>(arg);
+                         // Widget destroyed along with window.
+                         w->m_webview = nullptr;
+                         w->m_window = nullptr;
                          w->on_window_destroyed();
                        }),
                        this);
@@ -1157,9 +1751,9 @@ public:
     webkit_dmabuf::apply_webkit_dmabuf_workaround();
     // Initialize webview widget
     m_webview = webkit_web_view_new();
-    WebKitUserContentManager *manager =
+    WebKitUserContentManager *manager = m_user_content_manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
-    g_signal_connect(manager, "script-message-received::external",
+    g_signal_connect(manager, "script-message-received::__webview__",
                      G_CALLBACK(+[](WebKitUserContentManager *,
                                     WebKitJavascriptResult *r, gpointer arg) {
                        auto *w = static_cast<gtk_webkit_engine *>(arg);
@@ -1169,9 +1763,10 @@ public:
                      }),
                      this);
     webkit_user_content_manager_register_script_message_handler(manager,
-                                                                "external");
-    init("window.external={invoke:function(s){window.webkit.messageHandlers."
-         "external.postMessage(s);}}");
+                                                                "__webview__");
+    add_init_script("function(message) {\n\
+  return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
+}");
 
     gtk_container_add(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
     gtk_widget_show(GTK_WIDGET(m_webview));
@@ -1203,31 +1798,66 @@ public:
     }
     if (m_window) {
       if (m_owns_window) {
+        // Disconnect handlers to avoid callbacks invoked during destruction.
+        g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
         gtk_window_close(GTK_WINDOW(m_window));
+        on_window_destroyed(true);
       }
       m_window = nullptr;
     }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
+    }
   }
 
-  void *window_impl() override { return (void *)m_window; }
-  void *widget_impl() override { return (void *)m_webview; }
-  void *browser_controller_impl() override { return (void *)m_webview; };
-  void run_impl() override { gtk_main(); }
-  void terminate_impl() override { gtk_main_quit(); }
-  void dispatch_impl(std::function<void()> f) override {
+protected:
+  result<void *> window_impl() override {
+    if (m_window) {
+      return m_window;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  result<void *> widget_impl() override {
+    if (m_webview) {
+      return m_webview;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  result<void *> browser_controller_impl() override {
+    if (m_webview) {
+      return m_webview;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  noresult run_impl() override {
+    gtk_main();
+    return {};
+  }
+
+  noresult terminate_impl() override {
+    return dispatch_impl([] { gtk_main_quit(); });
+  }
+
+  noresult dispatch_impl(std::function<void()> f) override {
     g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *f) -> int {
                       (*static_cast<dispatch_fn_t *>(f))();
                       return G_SOURCE_REMOVE;
                     }),
                     new std::function<void()>(f),
                     [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
+    return {};
   }
 
-  void set_title_impl(const std::string &title) override {
+  noresult set_title_impl(const std::string &title) override {
     gtk_window_set_title(GTK_WINDOW(m_window), title.c_str());
+    return {};
   }
 
-  void set_size_impl(int width, int height, int hints) override {
+  noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_window_resize(GTK_WINDOW(m_window), width, height);
@@ -1242,36 +1872,33 @@ public:
       // This defines either MIN_SIZE, or MAX_SIZE, but not both:
       gtk_window_set_geometry_hints(GTK_WINDOW(m_window), nullptr, &g, h);
     }
+    return {};
   }
 
-  std::string get_url_impl() override {
+  result<std::string> get_url_impl() override {
     auto *url = webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
     if (!url) {
       return {};
     }
-    return url;
+    return {url};
   }
 
-  void navigate_impl(const std::string &url) override {
+  noresult navigate_impl(const std::string &url) override {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
+    return {};
   }
 
-  void set_html_impl(const std::string &html) override {
+  noresult set_html_impl(const std::string &html) override {
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
                               nullptr);
+    return {};
   }
 
-  void init_impl(const std::string &js) override {
-    WebKitUserContentManager *manager =
-        webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
-    webkit_user_content_manager_add_script(
-        manager,
-        webkit_user_script_new(js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
-                               WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START,
-                               nullptr, nullptr));
-  }
-
-  void eval_impl(const std::string &js) override {
+  noresult eval_impl(const std::string &js) override {
+    // URI is null before content has begun loading.
+    if (!webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview))) {
+      return {};
+    }
     auto &lib = get_webkit_library();
     auto wkmajor = webkit_get_major_version();
     auto wkminor = webkit_get_minor_version();
@@ -1286,6 +1913,30 @@ public:
                    lib.get(webkit_symbols::webkit_web_view_run_javascript)) {
       fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(), nullptr, nullptr, nullptr);
     }
+    return {};
+  }
+
+  user_script add_user_script_impl(const std::string &js) override {
+    auto *wk_script = webkit_user_script_new(
+        js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
+        WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, nullptr, nullptr);
+    webkit_user_content_manager_add_script(m_user_content_manager, wk_script);
+    user_script script{js, std::unique_ptr<user_script::impl>{
+                               new user_script::impl{wk_script}}};
+    webkit_user_script_unref(wk_script);
+    return script;
+  }
+
+  void remove_all_user_scripts_impl(
+      const std::list<user_script> & /*scripts*/) override {
+    webkit_user_content_manager_remove_all_scripts(m_user_content_manager);
+  }
+
+  bool are_user_scripts_equal_impl(const user_script &first,
+                                   const user_script &second) override {
+    auto *wk_first = first.get_impl().get_native();
+    auto *wk_second = second.get_impl().get_native();
+    return wk_first == wk_second;
   }
 
 private:
@@ -1336,9 +1987,19 @@ private:
     return loaded_lib;
   }
 
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      gtk_main_iteration();
+    }
+  }
+
   bool m_owns_window{};
   GtkWidget *m_window{};
   GtkWidget *m_webview{};
+  WebKitUserContentManager *m_user_content_manager{};
 };
 
 } // namespace detail
@@ -1405,6 +2066,11 @@ private:
   id m_pool{};
 };
 
+inline id autoreleased(id object) {
+  msg_send<void>(object, sel_registerName("autorelease"));
+  return object;
+}
+
 } // namespace objc
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
@@ -1437,11 +2103,30 @@ inline id operator"" _str(const char *s, std::size_t) {
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
 }
 
+class user_script::impl {
+public:
+  impl(id script) : m_script{script} {
+    objc::msg_send<void>(script, "retain"_sel);
+  }
+
+  ~impl() { objc::msg_send<void>(m_script, "release"_sel); }
+
+  impl(const impl &) = delete;
+  impl &operator=(const impl &) = delete;
+  impl(impl &&) = delete;
+  impl &operator=(impl &&) = delete;
+
+  id get_native() const { return m_script; }
+
+private:
+  id m_script{};
+};
+
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_debug{debug}, m_window{static_cast<id>(window)}, m_owns_window{
-                                                               !window} {
+      : m_debug{debug}, m_window{static_cast<id>(window)},
+        m_owns_window{!window} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -1480,53 +2165,99 @@ public:
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
 
   virtual ~cocoa_wkwebview_engine() {
+    objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
         if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
           objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
         }
+        objc::msg_send<void>(m_webview, "release"_sel);
         m_webview = nullptr;
       }
-      objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
-      objc::msg_send<void>(m_window, "close"_sel);
+      if (m_owns_window) {
+        // Replace delegate to avoid callbacks and other bad things during
+        // destruction.
+        objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
+        objc::msg_send<void>(m_window, "close"_sel);
+        on_window_destroyed(true);
+      }
       m_window = nullptr;
     }
     if (m_window_delegate) {
-      objc::msg_send<void>(m_window_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_window_delegate, "release"_sel);
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
       auto app = get_shared_application();
       objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
       // Make sure to release the delegate we created.
-      objc::msg_send<void>(m_app_delegate, "release"_sel, nullptr);
+      objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
     }
+    if (m_owns_window) {
+      // Needed for the window to close immediately.
+      deplete_run_loop_event_queue();
+    }
+    // TODO: Figure out why m_manager is still alive after the autoreleasepool
+    // has been drained.
   }
 
-  void *window_impl() override { return (void *)m_window; }
-  void *widget_impl() override { return (void *)m_webview; }
-  void *browser_controller_impl() override { return (void *)m_webview; };
-  void terminate_impl() override { stop_run_loop(); }
-  void run_impl() override {
+protected:
+  result<void *> window_impl() override {
+    if (m_window) {
+      return m_window;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  result<void *> widget_impl() override {
+    if (m_webview) {
+      return m_webview;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  result<void *> browser_controller_impl() override {
+    if (m_webview) {
+      return m_webview;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+
+  noresult terminate_impl() override {
+    stop_run_loop();
+    return {};
+  }
+
+  noresult run_impl() override {
     auto app = get_shared_application();
     objc::msg_send<void>(app, "run"_sel);
+    return {};
   }
-  void dispatch_impl(std::function<void()> f) override {
+
+  noresult dispatch_impl(std::function<void()> f) override {
     dispatch_async_f(dispatch_get_main_queue(), new dispatch_fn_t(f),
                      (dispatch_function_t)([](void *arg) {
                        auto f = static_cast<dispatch_fn_t *>(arg);
                        (*f)();
                        delete f;
                      }));
+    return {};
   }
-  void set_title_impl(const std::string &title) override {
+
+  noresult set_title_impl(const std::string &title) override {
+    objc::autoreleasepool arp;
+
     objc::msg_send<void>(m_window, "setTitle:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
                                             title.c_str()));
+
+    return {};
   }
-  void set_size_impl(int width, int height, int hints) override {
+  noresult set_size_impl(int width, int height, webview_hint_t hints) override {
+    objc::autoreleasepool arp;
+
     auto style = static_cast<NSWindowStyleMask>(
         NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
         NSWindowStyleMaskMiniaturizable);
@@ -1547,9 +2278,11 @@ public:
                            CGRectMake(0, 0, width, height), YES, NO);
     }
     objc::msg_send<void>(m_window, "center"_sel);
+
+    return {};
   }
 
-  std::string get_url_impl() override {
+  result<std::string> get_url_impl() override {
     objc::autoreleasepool pool;
     auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
     if (!nsurl) {
@@ -1563,11 +2296,11 @@ public:
     if (!cstring) {
       return {};
     }
-    return {cstring};
+    return cstring;
   }
 
-  void navigate_impl(const std::string &url) override {
-    objc::autoreleasepool pool;
+  noresult navigate_impl(const std::string &url) override {
+    objc::autoreleasepool arp;
 
     auto nsurl = objc::msg_send<id>(
         "NSURL"_cls, "URLWithString:"_sel,
@@ -1577,37 +2310,66 @@ public:
     objc::msg_send<void>(
         m_webview, "loadRequest:"_sel,
         objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
+
+    return {};
   }
-  void set_html_impl(const std::string &html) override {
-    objc::autoreleasepool pool;
+  noresult set_html_impl(const std::string &html) override {
+    objc::autoreleasepool arp;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
                                             html.c_str()),
                          nullptr);
+    return {};
   }
-  void init_impl(const std::string &js) override {
-    // Equivalent Obj-C:
-    // [m_manager addUserScript:[[WKUserScript alloc] initWithSource:[NSString stringWithUTF8String:js.c_str()] injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES]]
-    objc::msg_send<void>(
-        m_manager, "addUserScript:"_sel,
-        objc::msg_send<id>(objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
-                           "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-                           objc::msg_send<id>("NSString"_cls,
-                                              "stringWithUTF8String:"_sel,
-                                              js.c_str()),
-                           WKUserScriptInjectionTimeAtDocumentStart, YES));
-  }
-  void eval_impl(const std::string &js) override {
+  noresult eval_impl(const std::string &js) override {
+    objc::autoreleasepool arp;
+    // URI is null before content has begun loading.
+    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+    if (!nsurl) {
+      return {};
+    }
     objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
                          objc::msg_send<id>("NSString"_cls,
                                             "stringWithUTF8String:"_sel,
                                             js.c_str()),
                          nullptr);
+    return {};
+  }
+
+  user_script add_user_script_impl(const std::string &js) override {
+    objc::autoreleasepool arp;
+    auto wk_script = objc::msg_send<id>(
+        objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
+        "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                           js.c_str()),
+        WKUserScriptInjectionTimeAtDocumentStart, YES);
+    // Script is retained when added.
+    objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
+    user_script script{js, std::unique_ptr<user_script::impl>{
+                               new user_script::impl{wk_script}}};
+    objc::msg_send<void>(wk_script, "release"_sel);
+    return script;
+  }
+
+  void remove_all_user_scripts_impl(
+      const std::list<user_script> & /*scripts*/) override {
+    objc::autoreleasepool arp;
+    // Removing scripts decreases the retain count of each script.
+    objc::msg_send<id>(m_manager, "removeAllUserScripts"_sel);
+  }
+
+  bool are_user_scripts_equal_impl(const user_script &first,
+                                   const user_script &second) override {
+    auto *wk_first = first.get_impl().get_native();
+    auto *wk_second = second.get_impl().get_native();
+    return wk_first == wk_second;
   }
 
 private:
   id create_app_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1633,6 +2395,7 @@ private:
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
   id create_script_message_handler() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKScriptMessageHandler";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1655,6 +2418,7 @@ private:
     return instance;
   }
   static id create_webkit_ui_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKUIDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1704,6 +2468,7 @@ private:
     return objc::msg_send<id>((id)cls, "new"_sel);
   }
   static id create_window_delegate() {
+    objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewNSWindowDelegate";
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
@@ -1772,11 +2537,15 @@ private:
 
     set_up_window();
   }
-  void on_window_will_close(id /*delegate*/, id window) {
+  void on_window_will_close(id /*delegate*/, id /*window*/) {
+    // Widget destroyed along with window.
+    m_webview = nullptr;
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
   void set_up_window() {
+    objc::autoreleasepool arp;
+
     // Main window
     if (m_owns_window) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
@@ -1785,7 +2554,7 @@ private:
           m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
           CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
 
-      auto m_window_delegate = create_window_delegate();
+      m_window_delegate = create_window_delegate();
       objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                                OBJC_ASSOCIATION_ASSIGN);
       objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
@@ -1804,43 +2573,39 @@ private:
   void set_up_web_view() {
     objc::autoreleasepool arp;
 
-    auto config = objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
-    objc::msg_send<void>(config, "autorelease"_sel);
+    auto config = objc::autoreleased(
+        objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel));
 
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
     m_webview = objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 
+    auto preferences = objc::msg_send<id>(config, "preferences"_sel);
+    auto yes_value =
+        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES);
+
     if (m_debug) {
       // Equivalent Obj-C:
       // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
-      objc::msg_send<id>(
-          objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-          objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-          "developerExtrasEnabled"_str);
+      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                         "developerExtrasEnabled"_str);
     }
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "fullScreenEnabled"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "fullScreenEnabled"_str);
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "javaScriptCanAccessClipboard"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "javaScriptCanAccessClipboard"_str);
 
     // Equivalent Obj-C:
     // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
-    objc::msg_send<id>(
-        objc::msg_send<id>(config, "preferences"_sel), "setValue:forKey:"_sel,
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES),
-        "DOMPasteAllowed"_str);
+    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                       "DOMPasteAllowed"_str);
 
-    auto ui_delegate = create_webkit_ui_delegate();
+    auto ui_delegate = objc::autoreleased(create_webkit_ui_delegate());
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
@@ -1867,19 +2632,17 @@ private:
 #endif
     }
 
-    auto script_message_handler = create_script_message_handler();
+    auto script_message_handler =
+        objc::autoreleased(create_script_message_handler());
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
-                         script_message_handler, "external"_str);
+                         script_message_handler, "__webview__"_str);
 
-    init(R""(
-      window.external = {
-        invoke: function(s) {
-          window.webkit.messageHandlers.external.postMessage(s);
-        },
-      };
-      )"");
+    add_init_script("function(message) {\n\
+  return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
+}");
   }
   void stop_run_loop() {
+    objc::autoreleasepool arp;
     auto app = get_shared_application();
     // Request the run loop to stop. This doesn't immediately stop the loop.
     objc::msg_send<void>(app, "stop:"_sel, nullptr);
@@ -1900,6 +2663,27 @@ private:
       first = false;
     }
     return temp;
+  }
+
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    objc::autoreleasepool arp;
+    auto app = get_shared_application();
+    bool done{};
+    dispatch([&] { done = true; });
+    auto mask = NSUIntegerMax; // NSEventMaskAny
+    // NSDefaultRunLoopMode
+    auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                                   "kCFRunLoopDefaultMode");
+    while (!done) {
+      objc::autoreleasepool arp;
+      auto event = objc::msg_send<id>(
+          app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+          nullptr, mode, YES);
+      if (event) {
+        objc::msg_send<void>(app, "sendEvent:"_sel, event);
+      }
+    }
   }
 
   bool m_debug{};
@@ -2013,8 +2797,13 @@ std::wstring get_file_version_string(const std::wstring &file_path) noexcept {
   return std::wstring(version, version_length);
 }
 
-// A wrapper around COM library initialization. Calls CoInitializeEx in the
-// constructor and CoUninitialize in the destructor.
+/**
+ * A wrapper around COM library initialization. Calls CoInitializeEx in the
+ * constructor and CoUninitialize in the destructor.
+ *
+ * @exception exception Thrown if CoInitializeEx has already been called with a
+ * different concurrency model.
+ */
 class com_init_wrapper {
 public:
   com_init_wrapper() = default;
@@ -2029,6 +2818,13 @@ public:
     case S_FALSE:
       m_initialized = true;
       break;
+    case RPC_E_CHANGED_MODE:
+      throw exception{
+          WEBVIEW_ERROR_INVALID_STATE,
+          "CoInitializeEx already called with a different concurrency model"};
+    default:
+      throw exception{WEBVIEW_ERROR_UNSPECIFIED,
+                      "Unexpected result from CoInitializeEx"};
     }
   }
 
@@ -2050,8 +2846,6 @@ public:
     m_initialized = std::exchange(other.m_initialized, false);
     return *this;
   }
-
-  bool is_initialized() const { return m_initialized; }
 
 private:
   bool m_initialized = false;
@@ -2418,6 +3212,12 @@ static constexpr IID IID_ICoreWebView2WebMessageReceivedEventHandler{
     0x00E6,
     0x49FA,
     {0x8E, 0x07, 0x89, 0x8E, 0xA0, 0x1E, 0xCB, 0xD2}};
+static constexpr IID
+    IID_ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler{
+        0xB99369F3,
+        0x9B11,
+        0x47B5,
+        {0xBC, 0x6F, 0x8E, 0x78, 0x95, 0xFC, 0xEA, 0x17}};
 
 #if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
 enum class webview2_runtime_type { installed = 0, embedded = 1 };
@@ -2666,8 +3466,31 @@ static constexpr auto message_received =
 static constexpr auto permission_requested =
     cast_info_t<ICoreWebView2PermissionRequestedEventHandler>{
         IID_ICoreWebView2PermissionRequestedEventHandler};
+
+static constexpr auto add_script_to_execute_on_document_created_completed =
+    cast_info_t<
+        ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler>{
+        IID_ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler};
 } // namespace cast_info
 } // namespace mswebview2
+
+// Checks whether the specified IID equals the IID of the specified type and
+// if so casts the "this" pointer to T and returns it. Returns nullptr on
+// mismatching IIDs.
+// If ppv is specified then the pointer will also be assigned to *ppv.
+template <typename From, typename To>
+To *cast_if_equal_iid(From *from, REFIID riid, const cast_info_t<To> &info,
+                      LPVOID *ppv = nullptr) noexcept {
+  To *ptr = nullptr;
+  if (IsEqualIID(riid, info.iid)) {
+    ptr = static_cast<To *>(from);
+    ptr->AddRef();
+  }
+  if (ppv) {
+    *ppv = ptr;
+  }
+  return ptr;
+}
 
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
@@ -2712,10 +3535,10 @@ public:
     // that it is the only interface requested in this case. None have been
     // observed to be requested when using the official WebView2 loader.
 
-    if (cast_if_equal_iid(riid, controller_completed, ppv) ||
-        cast_if_equal_iid(riid, environment_completed, ppv) ||
-        cast_if_equal_iid(riid, message_received, ppv) ||
-        cast_if_equal_iid(riid, permission_requested, ppv)) {
+    if (cast_if_equal_iid(this, riid, controller_completed, ppv) ||
+        cast_if_equal_iid(this, riid, environment_completed, ppv) ||
+        cast_if_equal_iid(this, riid, message_received, ppv) ||
+        cast_if_equal_iid(this, riid, permission_requested, ppv)) {
       return S_OK;
     }
 
@@ -2755,12 +3578,14 @@ public:
     m_cb(controller, webview);
     return S_OK;
   }
-  HRESULT STDMETHODCALLTYPE Invoke(
-      ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
-    LPWSTR message;
-    args->TryGetWebMessageAsString(&message);
-    m_msgCb(narrow_string(message));
-    sender->PostWebMessageAsString(message);
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2WebMessageReceivedEventArgs *args) {
+    LPWSTR message{};
+    auto res = args->TryGetWebMessageAsString(&message);
+    if (SUCCEEDED(res)) {
+      m_msgCb(narrow_string(message));
+    }
 
     CoTaskMemFree(message);
     return S_OK;
@@ -2774,24 +3599,6 @@ public:
       args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
     }
     return S_OK;
-  }
-
-  // Checks whether the specified IID equals the IID of the specified type and
-  // if so casts the "this" pointer to T and returns it. Returns nullptr on
-  // mismatching IIDs.
-  // If ppv is specified then the pointer will also be assigned to *ppv.
-  template <typename T>
-  T *cast_if_equal_iid(REFIID riid, const cast_info_t<T> &info,
-                       LPVOID *ppv = nullptr) noexcept {
-    T *ptr = nullptr;
-    if (IsEqualIID(riid, info.iid)) {
-      ptr = static_cast<T *>(this);
-      ptr->AddRef();
-    }
-    if (ppv) {
-      *ppv = ptr;
-    }
-    return ptr;
   }
 
   // Set the function that will perform the initiating logic for creating
@@ -2836,20 +3643,88 @@ private:
   unsigned int m_attempts = 0;
 };
 
+class webview2_user_script_added_handler
+    : public ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler {
+public:
+  using callback_fn = std::function<void(HRESULT errorCode, LPCWSTR id)>;
+
+  webview2_user_script_added_handler(callback_fn cb) : m_cb{cb} {}
+
+  virtual ~webview2_user_script_added_handler() = default;
+  webview2_user_script_added_handler(
+      const webview2_user_script_added_handler &other) = delete;
+  webview2_user_script_added_handler &
+  operator=(const webview2_user_script_added_handler &other) = delete;
+  webview2_user_script_added_handler(
+      webview2_user_script_added_handler &&other) = delete;
+  webview2_user_script_added_handler &
+  operator=(webview2_user_script_added_handler &&other) = delete;
+
+  ULONG STDMETHODCALLTYPE AddRef() { return ++m_ref_count; }
+  ULONG STDMETHODCALLTYPE Release() {
+    if (m_ref_count > 1) {
+      return --m_ref_count;
+    }
+    delete this;
+    return 0;
+  }
+
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv) {
+    using namespace mswebview2::cast_info;
+
+    if (!ppv) {
+      return E_POINTER;
+    }
+
+    if (cast_if_equal_iid(this, riid,
+                          add_script_to_execute_on_document_created_completed,
+                          ppv)) {
+      return S_OK;
+    }
+
+    return E_NOINTERFACE;
+  }
+
+  HRESULT STDMETHODCALLTYPE Invoke(HRESULT res, LPCWSTR id) {
+    m_cb(res, id);
+    return S_OK;
+  }
+
+private:
+  callback_fn m_cb;
+  std::atomic<ULONG> m_ref_count{1};
+};
+
+class user_script::impl {
+public:
+  impl(const std::wstring &id, const std::wstring &code)
+      : m_id{id}, m_code{code} {}
+
+  impl(const impl &) = delete;
+  impl &operator=(const impl &) = delete;
+  impl(impl &&) = delete;
+  impl &operator=(impl &&) = delete;
+
+  const std::wstring &get_id() const { return m_id; }
+  const std::wstring &get_code() const { return m_code; }
+
+private:
+  std::wstring m_id;
+  std::wstring m_code;
+};
+
 class win32_edge_engine : public engine_base {
 public:
   win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
     if (!is_webview2_available()) {
-      return;
+      throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
+                      "WebView2 is unavailable"};
     }
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
     if (m_owns_window) {
       m_com_init = {COINIT_APARTMENTTHREADED};
-      if (!m_com_init.is_initialized()) {
-        return;
-      }
       enable_dpi_awareness();
 
       HICON icon = (HICON)LoadImage(
@@ -2940,8 +3815,8 @@ public:
 
       CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                     CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
-      if (m_window == nullptr) {
-        return;
+      if (!m_window) {
+        throw exception{WEBVIEW_ERROR_INVALID_STATE, "Window is null"};
       }
       on_window_created();
 
@@ -2995,6 +3870,9 @@ public:
     RegisterClassExW(&widget_wc);
     CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
                     0, 0, 0, 0, m_window, nullptr, hInstance, this);
+    if (!m_widget) {
+      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Widget window is null"};
+    }
 
     // Create a message-only window for internal messaging.
     WNDCLASSEXW message_wc{};
@@ -3038,6 +3916,9 @@ public:
     RegisterClassExW(&message_wc);
     CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
                     nullptr, hInstance, this);
+    if (!m_message_window) {
+      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
+    }
 
     if (m_owns_window) {
       ShowWindow(m_window, SW_SHOW);
@@ -3048,7 +3929,7 @@ public:
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
-    embed(m_widget, debug, cb);
+    embed(m_widget, debug, cb).ensure_ok();
   }
 
   virtual ~win32_edge_engine() {
@@ -3064,9 +3945,17 @@ public:
       m_controller->Release();
       m_controller = nullptr;
     }
-    if (m_message_window) {
-      DestroyWindow(m_message_window);
-      m_message_window = nullptr;
+    // Replace wndproc to avoid callbacks and other bad things during
+    // destruction.
+    auto wndproc = reinterpret_cast<LONG_PTR>(
+        +[](HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) -> LRESULT {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        });
+    if (m_widget) {
+      SetWindowLongPtrW(m_widget, GWLP_WNDPROC, wndproc);
+    }
+    if (m_window && m_owns_window) {
+      SetWindowLongPtrW(m_window, GWLP_WNDPROC, wndproc);
     }
     if (m_widget) {
       DestroyWindow(m_widget);
@@ -3075,8 +3964,20 @@ public:
     if (m_window) {
       if (m_owns_window) {
         DestroyWindow(m_window);
+        on_window_destroyed(true);
       }
       m_window = nullptr;
+    }
+    if (m_owns_window) {
+      // Not strictly needed for windows to close immediately but aligns
+      // behavior across backends.
+      deplete_run_loop_event_queue();
+    }
+    // We need the message window in order to deplete the event queue.
+    if (m_message_window) {
+      SetWindowLongPtrW(m_message_window, GWLP_WNDPROC, wndproc);
+      DestroyWindow(m_message_window);
+      m_message_window = nullptr;
     }
   }
 
@@ -3085,37 +3986,48 @@ public:
   win32_edge_engine(win32_edge_engine &&other) = delete;
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
-  void run_impl() {
-    m_running_main_loop = true;
+protected:
+  noresult run_impl() override {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
+    return {};
   }
-  void *window_impl() override { return (void *)m_window; }
-  void *widget_impl() override { return (void *)m_widget; }
-  void *browser_controller_impl() override { return (void *)m_controller; }
-  void terminate_impl() override {
-    // Prevent unintentionally posting the quit message multiple times in the
-    // following scenario:
-    // 1. Run loop starts.
-    // 2. User code requests the run loop to stop.
-    // 3. Destructor of this class wants to stop the run loop.
-    if (m_running_main_loop) {
-      PostQuitMessage(0);
+  result<void *> window_impl() override {
+    if (m_window) {
+      return m_window;
     }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
   }
-  void dispatch_impl(dispatch_fn_t f) override {
+  result<void *> widget_impl() override {
+    if (m_widget) {
+      return m_widget;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+  result<void *> browser_controller_impl() override {
+    if (m_controller) {
+      return m_controller;
+    }
+    return error_info{WEBVIEW_ERROR_INVALID_STATE};
+  }
+  noresult terminate_impl() override {
+    PostQuitMessage(0);
+    return {};
+  }
+  noresult dispatch_impl(dispatch_fn_t f) override {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
+    return {};
   }
 
-  void set_title_impl(const std::string &title) override {
+  noresult set_title_impl(const std::string &title) override {
     SetWindowTextW(m_window, widen_string(title).c_str());
+    return {};
   }
 
-  void set_size_impl(int width, int height, int hints) override {
+  noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     auto style = GetWindowLong(m_window, GWL_STYLE);
     if (hints == WEBVIEW_HINT_FIXED) {
       style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
@@ -3141,24 +4053,24 @@ public:
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
+    return {};
   }
 
-  void navigate_impl(const std::string &url) override {
+  noresult navigate_impl(const std::string &url) override {
     auto wurl = widen_string(url);
     m_webview->Navigate(wurl.c_str());
+    return {};
   }
 
-  void init_impl(const std::string &js) override {
-    auto wjs = widen_string(js);
-    m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), nullptr);
-  }
-
-  void eval_impl(const std::string &js) override {
+  noresult eval_impl(const std::string &js) override {
+    // TODO: Skip if no content has begun loading yet. Can't check with
+    //       ICoreWebView2::get_Source because it returns "about:blank".
     auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
+    return {};
   }
 
-  std::string get_url_impl() override {
+  result<std::string> get_url_impl() override {
     PWSTR uri;
     if (FAILED(m_webview->get_Source(&uri))) {
       return {};
@@ -3168,12 +4080,52 @@ public:
     return converted_url;
   }
 
-  void set_html_impl(const std::string &html) override {
+  noresult set_html_impl(const std::string &html) override {
     m_webview->NavigateToString(widen_string(html).c_str());
+    return {};
+  }
+
+  user_script add_user_script_impl(const std::string &js) override {
+    auto wjs = widen_string(js);
+    std::wstring script_id;
+    bool done{};
+    webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
+      if (SUCCEEDED(res)) {
+        script_id = id;
+      }
+      done = true;
+    }};
+    auto res =
+        m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
+    if (SUCCEEDED(res)) {
+      // Sadly we need to pump the even loop in order to get the script ID.
+      while (!done) {
+        deplete_run_loop_event_queue();
+      }
+    }
+    // TODO: There's a non-zero chance that we didn't get the script ID.
+    //       We need to convey the error somehow.
+    return user_script{js, std::unique_ptr<user_script::impl>{
+                               new user_script::impl{script_id, wjs}}};
+  }
+
+  void
+  remove_all_user_scripts_impl(const std::list<user_script> &scripts) override {
+    for (const auto &script : scripts) {
+      const auto &id = script.get_impl().get_id();
+      m_webview->RemoveScriptToExecuteOnDocumentCreated(id.c_str());
+    }
+  }
+
+  bool are_user_scripts_equal_impl(const user_script &first,
+                                   const user_script &second) override {
+    const auto &first_id = first.get_impl().get_id();
+    const auto &second_id = second.get_impl().get_id();
+    return first_id == second_id;
   }
 
 private:
-  bool embed(HWND wnd, bool debug, msg_cb_t cb) {
+  noresult embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
@@ -3184,7 +4136,7 @@ private:
     wchar_t dataPath[MAX_PATH];
     if (!SUCCEEDED(
             SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, dataPath))) {
-      return false;
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "SHGetFolderPathW failed"};
     }
     wchar_t userDataFolder[MAX_PATH];
     PathCombineW(userDataFolder, dataPath, currentExeName);
@@ -3210,7 +4162,6 @@ private:
     m_com_handler->try_create_environment();
 
     // Pump the message loop until WebView2 has finished initialization.
-    m_running_main_loop = true;
     bool got_quit_msg = false;
     MSG msg;
     while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
@@ -3221,27 +4172,30 @@ private:
       TranslateMessage(&msg);
       DispatchMessageW(&msg);
     }
-    m_running_main_loop = false;
     if (got_quit_msg) {
-      return false;
+      return error_info{WEBVIEW_ERROR_CANCELED};
     }
     if (!m_controller || !m_webview) {
-      return false;
+      return error_info{WEBVIEW_ERROR_INVALID_STATE};
     }
     ICoreWebView2Settings *settings = nullptr;
     auto res = m_webview->get_Settings(&settings);
     if (res != S_OK) {
-      return false;
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "get_Settings failed"};
     }
     res = settings->put_AreDevToolsEnabled(debug ? TRUE : FALSE);
     if (res != S_OK) {
-      return false;
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED,
+                        "put_AreDevToolsEnabled failed"};
     }
     res = settings->put_IsStatusBarEnabled(FALSE);
     if (res != S_OK) {
-      return false;
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED,
+                        "put_IsStatusBarEnabled failed"};
     }
-    init("window.external={invoke:s=>window.chrome.webview.postMessage(s)}");
+    add_init_script("function(message) {\n\
+  return window.chrome.webview.postMessage(message);\n\
+}");
     resize_webview();
     m_controller->put_IsVisible(TRUE);
     ShowWindow(m_widget, SW_SHOW);
@@ -3249,7 +4203,7 @@ private:
     if (m_owns_window) {
       focus_webview();
     }
-    return true;
+    return {};
   }
 
   void resize_widget() {
@@ -3319,6 +4273,19 @@ private:
     }
   }
 
+  // Blocks while depleting the run loop of events.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    while (!done) {
+      MSG msg;
+      if (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+      }
+    }
+  }
+
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
@@ -3335,7 +4302,6 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
-  bool m_running_main_loop{};
 };
 
 } // namespace detail
@@ -3348,97 +4314,180 @@ using browser_engine = detail::win32_edge_engine;
 
 namespace webview {
 using webview = browser_engine;
+
+namespace detail {
+
+webview *cast_to_webview(void *w) {
+  if (!w) {
+    throw exception{WEBVIEW_ERROR_INVALID_ARGUMENT,
+                    "Cannot cast null pointer to webview instance"};
+  }
+  return static_cast<webview *>(w);
+}
+
+} // namespace detail
 } // namespace webview
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
-  auto w = new webview::webview(debug, wnd);
-  if (!w->window()) {
-    delete w;
-    return nullptr;
+  using namespace webview::detail;
+  webview::webview *w{};
+  auto err = api_filter(
+      [=]() -> webview::result<webview::webview *> {
+        return new webview::webview{static_cast<bool>(debug), wnd};
+      },
+      [&](webview::webview *w_) { w = w_; });
+  if (err == WEBVIEW_ERROR_OK) {
+    return w;
   }
-  return w;
+  return nullptr;
 }
 
-WEBVIEW_API void webview_destroy(webview_t w) {
-  delete static_cast<webview::webview *>(w);
+WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=]() -> webview::noresult {
+    delete cast_to_webview(w);
+    return {};
+  });
 }
 
-WEBVIEW_API void webview_run(webview_t w) {
-  static_cast<webview::webview *>(w)->run();
+WEBVIEW_API webview_error_t webview_run(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->run(); });
 }
 
-WEBVIEW_API void webview_terminate(webview_t w) {
-  static_cast<webview::webview *>(w)->terminate();
+WEBVIEW_API webview_error_t webview_terminate(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->terminate(); });
 }
 
-WEBVIEW_API void webview_dispatch(webview_t w, void (*fn)(webview_t, void *),
-                                  void *arg) {
-  static_cast<webview::webview *>(w)->dispatch([=]() { fn(w, arg); });
+WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
+                                             void (*fn)(webview_t, void *),
+                                             void *arg) {
+  using namespace webview::detail;
+  if (!fn) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->dispatch([=]() { fn(w, arg); }); });
 }
 
 WEBVIEW_API void *webview_get_window(webview_t w) {
-  return static_cast<webview::webview *>(w)->window();
+  using namespace webview::detail;
+  void *window = nullptr;
+  auto err = api_filter([=] { return cast_to_webview(w)->window(); },
+                        [&](void *value) { window = value; });
+  if (err == WEBVIEW_ERROR_OK) {
+    return window;
+  }
+  return nullptr;
 }
 
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind) {
-  auto *w_ = static_cast<webview::webview *>(w);
-  switch (kind) {
-  case WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW:
-    return w_->window();
-  case WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET:
-    return w_->widget();
-  case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
-    return w_->browser_controller();
-  default:
-    return nullptr;
-  }
-}
-
-WEBVIEW_API void webview_set_title(webview_t w, const char *title) {
-  static_cast<webview::webview *>(w)->set_title(title);
-}
-
-WEBVIEW_API void webview_set_size(webview_t w, int width, int height,
-                                  int hints) {
-  static_cast<webview::webview *>(w)->set_size(width, height, hints);
-}
-
-WEBVIEW_API void webview_navigate(webview_t w, const char *url) {
-  static_cast<webview::webview *>(w)->navigate(url);
-}
-
-WEBVIEW_API void webview_set_html(webview_t w, const char *html) {
-  static_cast<webview::webview *>(w)->set_html(html);
-}
-
-WEBVIEW_API void webview_init(webview_t w, const char *js) {
-  static_cast<webview::webview *>(w)->init(js);
-}
-
-WEBVIEW_API void webview_eval(webview_t w, const char *js) {
-  static_cast<webview::webview *>(w)->eval(js);
-}
-
-WEBVIEW_API void webview_bind(webview_t w, const char *name,
-                              void (*fn)(const char *seq, const char *req,
-                                         void *arg),
-                              void *arg) {
-  static_cast<webview::webview *>(w)->bind(
-      name,
-      [=](const std::string &seq, const std::string &req, void *arg) {
-        fn(seq.c_str(), req.c_str(), arg);
+  using namespace webview::detail;
+  void *handle{};
+  auto err = api_filter(
+      [=]() -> webview::result<void *> {
+        auto *w_ = cast_to_webview(w);
+        switch (kind) {
+        case WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW:
+          return w_->window();
+        case WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET:
+          return w_->widget();
+        case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
+          return w_->browser_controller();
+        default:
+          return webview::error_info{WEBVIEW_ERROR_INVALID_ARGUMENT};
+        }
       },
-      arg);
+      [&](void *handle_) { handle = handle_; });
+  if (err == WEBVIEW_ERROR_OK) {
+    return handle;
+  }
+  return nullptr;
 }
 
-WEBVIEW_API void webview_unbind(webview_t w, const char *name) {
-  static_cast<webview::webview *>(w)->unbind(name);
+WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title) {
+  using namespace webview::detail;
+  if (!title) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->set_title(title); });
 }
 
-WEBVIEW_API void webview_return(webview_t w, const char *seq, int status,
-                                const char *result) {
-  static_cast<webview::webview *>(w)->resolve(seq, status, result);
+WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
+                                             webview_hint_t hints) {
+  using namespace webview::detail;
+  return api_filter(
+      [=] { return cast_to_webview(w)->set_size(width, height, hints); });
+}
+
+WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {
+  using namespace webview::detail;
+  if (!url) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->navigate(url); });
+}
+
+WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html) {
+  using namespace webview::detail;
+  if (!html) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->set_html(html); });
+}
+
+WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js) {
+  using namespace webview::detail;
+  if (!js) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->init(js); });
+}
+
+WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js) {
+  using namespace webview::detail;
+  if (!js) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->eval(js); });
+}
+
+WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
+                                         void (*fn)(const char *id,
+                                                    const char *req, void *arg),
+                                         void *arg) {
+  using namespace webview::detail;
+  if (!name || !fn) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] {
+    return cast_to_webview(w)->bind(
+        name,
+        [=](const std::string &seq, const std::string &req, void *arg) {
+          fn(seq.c_str(), req.c_str(), arg);
+        },
+        arg);
+  });
+}
+
+WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name) {
+  using namespace webview::detail;
+  if (!name) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->unbind(name); });
+}
+
+WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
+                                           int status, const char *result) {
+  using namespace webview::detail;
+  if (!id || !result) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->resolve(id, status, result); });
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
@@ -3451,8 +4500,17 @@ WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
   if (!w) {
     return nullptr;
   }
-  const auto &url = static_cast<webview::webview *>(w)->get_url();
-  return c_string_new(url, out_length, allocator ? allocator : allocator_t{});
+  char *url{};
+  auto err =
+      api_filter([=] { return cast_to_webview(w)->get_url(); },
+                 [&](const std::string &url_) {
+                   url = c_string_new(url_, out_length,
+                                      allocator ? allocator : allocator_t{});
+                 });
+  if (err == WEBVIEW_ERROR_OK) {
+    return url;
+  }
+  return nullptr;
 }
 
 WEBVIEW_API void webview_string_free(char *str) { std::free(str); }

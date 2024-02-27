@@ -126,3 +126,13 @@ jobs:
           extensions: 'h,cc'
           clangFormatVersion: 9
           style: file
+
+  doxygen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
+      - run: mkdir -p build/docs
+      - name: Run Doxygen
+        run: doxygen

@@ -102,9 +102,13 @@ task_check() {
         return 0
     fi
     echo "Linting..."
-    clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Check library's header file(s) using the header filter specified the .clang-tidy file.
+    # Specify a source file that will not trigger any warnings.
+    clang-tidy "${project_dir}/webview.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Only check source files here to avoid checking the header(s) again.
+    clang-tidy -header-filter="" "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
 task_build() {
@@ -292,9 +296,10 @@ if [[ "${target_os}" == "linux" ]]; then
     pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
+    cxx_link_flags+=(-ldl) || exit 1
 elif [[ "${target_os}" == "macos" ]]; then
     shared_lib_suffix=.dylib
-    cxx_link_flags+=(-framework WebKit)
+    cxx_link_flags+=(-framework WebKit -ldl)
     macos_target_version=10.9
     c_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
     cxx_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
