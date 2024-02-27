@@ -2307,7 +2307,7 @@ protected:
     if (!cstring) {
       return {};
     }
-    return cstring;
+    return {cstring};
   }
 
   noresult navigate_impl(const std::string &url) override {
