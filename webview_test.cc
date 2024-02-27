@@ -455,6 +455,28 @@ static void test_noresult() {
   }
 }
 
+#define ASSERT_WEBVIEW_FAILED(expr) assert(WEBVIEW_FAILED(expr))
+
+static void test_bad_c_api_usage_without_crash() {
+  webview_t w{};
+  assert(webview_get_window(w) == nullptr);
+  assert(webview_get_native_handle(w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW) ==
+         nullptr);
+  ASSERT_WEBVIEW_FAILED(webview_set_size(w, 0, 0, WEBVIEW_HINT_NONE));
+  ASSERT_WEBVIEW_FAILED(webview_navigate(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_title(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_html(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_init(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_eval(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_bind(w, nullptr, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_unbind(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_return(w, nullptr, 0, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_dispatch(w, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_terminate(w));
+  ASSERT_WEBVIEW_FAILED(webview_run(w));
+  ASSERT_WEBVIEW_FAILED(webview_destroy(w));
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -559,7 +581,8 @@ int main(int argc, char *argv[]) {
       {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
       {"optional", test_optional},
       {"result", test_result},
-      {"noresult", test_noresult}};
+      {"noresult", test_noresult},
+      {"bad_c_api_usage_without_crash", test_bad_c_api_usage_without_crash}};
 #if _WIN32
   all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",

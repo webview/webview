@@ -165,8 +165,11 @@ typedef enum {
   WEBVIEW_HINT_FIXED
 } webview_hint_t;
 
+/// @name Errors
+/// @{
+
 /**
- * Error codes returned to callers of the API.
+ * @brief Error codes returned to callers of the API.
  *
  * The following codes are commonly used in the library:
  * - @c WEBVIEW_ERROR_OK
@@ -197,6 +200,16 @@ typedef enum {
   /// Signifies that something does not exist.
   WEBVIEW_ERROR_NOT_FOUND = 2
 } webview_error_t;
+
+
+/// @brief Evaluates to @c TRUE for error codes indicating success or
+///        additional information.
+#define WEBVIEW_SUCCEEDED(error) ((int)(error) >= 0)
+
+/// Evaluates to @c TRUE if the given error code indicates failure.
+#define WEBVIEW_FAILED(error) ((int)(error) < 0)
+
+/// @}
 
 #ifdef __cplusplus
 extern "C" {
