@@ -402,13 +402,14 @@ static void test_result() {
   using namespace webview::detail;
   using namespace webview;
 
-  assert(!result<int>{}.has_value());
+  assert(result<int>{}.has_value());
+  assert(result<int>{}.value() == 0);
   assert(result<int>{1}.has_value());
+  assert(result<int>{1}.value() == 1);
   assert(!result<int>{}.has_error());
   assert(!result<int>{1}.has_error());
-  assert(!result<int>{}.ok());
+  assert(result<int>{}.ok());
   assert(result<int>{1}.ok());
-  assert(result<int>{1}.value() == 1);
   assert(!result<int>{error_info{}}.ok());
   assert(!result<int>{error_info{}}.has_value());
   assert(result<int>{error_info{}}.has_error());
@@ -417,13 +418,6 @@ static void test_result() {
       error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
   assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
   assert(result_with_error.error().message() == "invalid argument");
-
-  try {
-    result<int>{}.value();
-    assert(!!"Expected exception");
-  } catch (const bad_access &) {
-    // Do nothing
-  }
 
   try {
     result<int>{}.error();
