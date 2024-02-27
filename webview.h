@@ -554,7 +554,7 @@ public:
   using error_type = Error;
   using exception_type = Exception;
 
-  basic_result() = default;
+  basic_result() : basic_result(value_type{}) {}
 
   basic_result(const value_type &value) : m_value{value} {}
   basic_result(value_type &&value) : m_value{std::forward<value_type>(value)} {}
