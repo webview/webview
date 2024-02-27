@@ -379,6 +379,104 @@ static void test_json_escape() {
   assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
+static void test_optional() {
+  using namespace webview::detail;
+
+  assert(!optional<int>{}.has_value());
+  assert(optional<int>{1}.has_value());
+  assert(optional<int>{1}.get() == 1);
+
+  try {
+    optional<int>{}.get();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+
+  assert(!optional<int>{optional<int>{}}.has_value());
+  assert(optional<int>{optional<int>{1}}.has_value());
+  assert(optional<int>{optional<int>{1}}.get() == 1);
+}
+
+static void test_result() {
+  using namespace webview::detail;
+  using namespace webview;
+
+  assert(!result<int>{}.has_value());
+  assert(result<int>{1}.has_value());
+  assert(!result<int>{}.has_error());
+  assert(!result<int>{1}.has_error());
+  assert(!result<int>{}.ok());
+  assert(result<int>{1}.ok());
+  assert(result<int>{1}.value() == 1);
+  assert(!result<int>{error_info{}}.ok());
+  assert(!result<int>{error_info{}}.has_value());
+  assert(result<int>{error_info{}}.has_error());
+
+  auto result_with_error = result<int>{
+      error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
+  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  assert(result_with_error.error().message() == "invalid argument");
+
+  try {
+    result<int>{}.value();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+
+  try {
+    result<int>{}.error();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+}
+
+static void test_noresult() {
+  using namespace webview::detail;
+  using namespace webview;
+
+  assert(!noresult{}.has_error());
+  assert(noresult{}.ok());
+  assert(!noresult{error_info{}}.ok());
+  assert(noresult{error_info{}}.has_error());
+
+  auto result_with_error =
+      noresult{error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
+  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  assert(result_with_error.error().message() == "invalid argument");
+
+  try {
+    noresult{}.error();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+}
+
+#define ASSERT_WEBVIEW_FAILED(expr) assert(WEBVIEW_FAILED(expr))
+
+static void test_bad_c_api_usage_without_crash() {
+  webview_t w{};
+  assert(webview_get_window(w) == nullptr);
+  assert(webview_get_native_handle(w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW) ==
+         nullptr);
+  ASSERT_WEBVIEW_FAILED(webview_set_size(w, 0, 0, WEBVIEW_HINT_NONE));
+  ASSERT_WEBVIEW_FAILED(webview_navigate(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_title(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_html(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_init(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_eval(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_bind(w, nullptr, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_unbind(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_return(w, nullptr, 0, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_dispatch(w, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_terminate(w));
+  ASSERT_WEBVIEW_FAILED(webview_run(w));
+  ASSERT_WEBVIEW_FAILED(webview_destroy(w));
+}
+
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
   std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
   flag_running.test_and_set();
@@ -480,7 +578,11 @@ int main(int argc, char *argv[]) {
       {"json_escape", test_json_escape},
       {"sync_bind", test_sync_bind},
       {"binding_result_must_be_json", test_binding_result_must_be_json},
-      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js}};
+      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
+      {"optional", test_optional},
+      {"result", test_result},
+      {"noresult", test_noresult},
+      {"bad_c_api_usage_without_crash", test_bad_c_api_usage_without_crash}};
 #if _WIN32
   all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",
