@@ -201,7 +201,6 @@ typedef enum {
   WEBVIEW_ERROR_NOT_FOUND = 2
 } webview_error_t;
 
-
 /// @brief Evaluates to @c TRUE for error codes indicating success or
 ///        additional information.
 #define WEBVIEW_SUCCEEDED(error) ((int)(error) >= 0)
@@ -4265,7 +4264,7 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
 
 WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
   using namespace webview::detail;
-  return api_filter([=] () -> webview::noresult {
+  return api_filter([=]() -> webview::noresult {
     delete cast_to_webview(w);
     return {};
   });
