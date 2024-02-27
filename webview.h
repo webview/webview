@@ -414,18 +414,29 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
  */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
-// Get the current URL.
-// Returns a null-terminated copy of the current URL. The length can optionally
-// be returned in "out_length". If an allocator is provided then caller assumes
-// responsibility for deallocation; otherwise, caller should release the
-// returned string using webview_string_free().
-// @since 0.11
+/**
+ * Get the current URL.
+ *
+ * @param w The webview instance.
+ * @param out_length If non-null, the value pointed to will be assigned the
+                     length of the resulting string.
+ * @param allocator An optional allocator.
+ * @return A null-terminated copy of the current URL. If an allocator was
+ *         passed in then caller assumes responsibility for deallocation;
+ *         otherwise, caller should release the returned string using
+ *         webview_string_free().
+ * @since 0.11
+ */
 WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
                                   webview_allocator_t allocator);
 
-// Free the string pointed by "str".
-// @since 0.11
-WEBVIEW_API void webview_string_free(char *str);
+/**
+ * Free the string allocated by the library.
+ *
+ * @param str The string to deallocate.
+ * @since 0.11
+ */
+WEBVIEW_API webview_error_t webview_string_free(char *str);
 
 #ifdef __cplusplus
 }
@@ -4513,7 +4524,13 @@ WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
   return nullptr;
 }
 
-WEBVIEW_API void webview_string_free(char *str) { std::free(str); }
+WEBVIEW_API webview_error_t webview_string_free(char *str) {
+  using namespace webview::detail;
+  return api_filter([=]() -> webview::noresult {
+    std::free(str);
+    return {};
+  });
+}
 
 #endif /* WEBVIEW_HEADER */
 #endif /* __cplusplus */
