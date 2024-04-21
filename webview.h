@@ -462,7 +462,9 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 #include <cstring>
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #else
 #include <dlfcn.h>
