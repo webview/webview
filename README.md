@@ -334,6 +334,7 @@ Language    | Project
 ----------  | -------
 Bun         | [tr1ckydev/webview-bun](https://github.com/tr1ckydev/webview-bun)
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
+C3          | [thechampagne/webview-c3](https://github.com/thechampagne/webview-c3)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
 D           | [thechampagne/webview-d](https://github.com/thechampagne/webview-d)
 Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)

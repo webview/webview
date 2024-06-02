@@ -39,7 +39,7 @@ static void cb_terminate(webview_t w, void *arg) {
 static void test_c_api() {
   webview_t w;
   w = webview_create(false, nullptr);
-  webview_set_size(w, 480, 320, 0);
+  webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_title(w, "Test");
   webview_set_html(w, "set_html ok");
   webview_navigate(w, "data:text/plain,navigate%20ok");
@@ -288,7 +288,7 @@ static void test_bidir_comms() {
     switch (i) {
     case 0:
       assert(msg == "loaded");
-      w->eval("window.external.invoke('exiting ' + window.x)");
+      w->eval("window.__webview__.post('exiting ' + window.x)");
       break;
     case 1:
       assert(msg == "exiting 42");
@@ -301,7 +301,7 @@ static void test_bidir_comms() {
   browser.init(R"(
     window.x = 42;
     window.onload = () => {
-      window.external.invoke('loaded');
+      window.__webview__.post('loaded');
     };
   )");
   browser.navigate("data:text/html,%3Chtml%3Ehello%3C%2Fhtml%3E");
@@ -351,25 +351,124 @@ static void test_json() {
 // =================================================================
 static void test_json_escape() {
   using webview::detail::json_escape;
-  // These constants are needed to work around a bug in MSVC
-  auto expected_0 = R"("\"")";
-  auto expected_1 = R"("\\")";
-  auto expected_2 = R"("\u0000\u001f")";
-  auto expected_3 = R"("\u007f\u009f")";
-  auto expected_4 = "\"\xa0\xff\"";
-  auto expected_5 = R"js("alert(\"gotcha\")")js";
+
+  // Simple case without need for escaping. Quotes added by default.
+  assert(json_escape("hello") == "\"hello\"");
+  // Simple case without need for escaping. Quotes explicitly not added.
+  assert(json_escape("hello", false) == "hello");
+  // Empty input should return empty output.
+  assert(json_escape("", false).empty());
   // '"' and '\' should be escaped.
-  assert(json_escape("\"") == expected_0);
-  assert(json_escape("\\") == expected_1);
-  // Control characters should be escaped.
-  assert(json_escape(std::string{0} + '\x1f') == expected_2);
-  assert(json_escape("\x7f\x9f") == expected_3);
-  // ASCII printable characters shouldn't be escaped.
-  assert(json_escape("\x20\x7e") == R"(" ~")");
-  assert(json_escape("\xa0\xff") == expected_4);
-  // Other input.
-  assert(json_escape(R"(alert("gotcha"))") == expected_5);
-  assert(json_escape("hello") == R"("hello")");
+  assert(json_escape("\"", false) == "\\\"");
+  assert(json_escape("\\", false) == "\\\\");
+  // Commonly-used characters that should be escaped.
+  assert(json_escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
+  // ASCII control characters should be escaped.
+  assert(json_escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
+  // ASCII printable characters (even DEL) shouldn't be escaped.
+  assert(json_escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
+  // Valid UTF-8.
+  assert(json_escape("\u2328", false) == "\u2328");
+  assert(json_escape("フーバー", false) == "フーバー");
+  // Replacement character for invalid characters.
+  assert(json_escape("�", false) == "�");
+  // Invalid characters should be replaced with '�' but we just leave them as-is.
+  assert(json_escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
+  // JS code should not be executed (eval).
+  auto expected_gotcha = R"js(alert(\"gotcha\"))js";
+  assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
+}
+
+static void test_optional() {
+  using namespace webview::detail;
+
+  assert(!optional<int>{}.has_value());
+  assert(optional<int>{1}.has_value());
+  assert(optional<int>{1}.get() == 1);
+
+  try {
+    optional<int>{}.get();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+
+  assert(!optional<int>{optional<int>{}}.has_value());
+  assert(optional<int>{optional<int>{1}}.has_value());
+  assert(optional<int>{optional<int>{1}}.get() == 1);
+}
+
+static void test_result() {
+  using namespace webview::detail;
+  using namespace webview;
+
+  assert(result<int>{}.has_value());
+  assert(result<int>{}.value() == 0);
+  assert(result<int>{1}.has_value());
+  assert(result<int>{1}.value() == 1);
+  assert(!result<int>{}.has_error());
+  assert(!result<int>{1}.has_error());
+  assert(result<int>{}.ok());
+  assert(result<int>{1}.ok());
+  assert(!result<int>{error_info{}}.ok());
+  assert(!result<int>{error_info{}}.has_value());
+  assert(result<int>{error_info{}}.has_error());
+
+  auto result_with_error = result<int>{
+      error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
+  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  assert(result_with_error.error().message() == "invalid argument");
+
+  try {
+    result<int>{}.error();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+}
+
+static void test_noresult() {
+  using namespace webview::detail;
+  using namespace webview;
+
+  assert(!noresult{}.has_error());
+  assert(noresult{}.ok());
+  assert(!noresult{error_info{}}.ok());
+  assert(noresult{error_info{}}.has_error());
+
+  auto result_with_error =
+      noresult{error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
+  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  assert(result_with_error.error().message() == "invalid argument");
+
+  try {
+    noresult{}.error();
+    assert(!!"Expected exception");
+  } catch (const bad_access &) {
+    // Do nothing
+  }
+}
+
+#define ASSERT_WEBVIEW_FAILED(expr) assert(WEBVIEW_FAILED(expr))
+
+static void test_bad_c_api_usage_without_crash() {
+  webview_t w{};
+  assert(webview_get_window(w) == nullptr);
+  assert(webview_get_native_handle(w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW) ==
+         nullptr);
+  ASSERT_WEBVIEW_FAILED(webview_set_size(w, 0, 0, WEBVIEW_HINT_NONE));
+  ASSERT_WEBVIEW_FAILED(webview_navigate(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_title(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_set_html(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_init(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_eval(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_bind(w, nullptr, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_unbind(w, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_return(w, nullptr, 0, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_dispatch(w, nullptr, nullptr));
+  ASSERT_WEBVIEW_FAILED(webview_terminate(w));
+  ASSERT_WEBVIEW_FAILED(webview_run(w));
+  ASSERT_WEBVIEW_FAILED(webview_destroy(w));
 }
 
 static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
@@ -473,7 +572,11 @@ int main(int argc, char *argv[]) {
       {"json_escape", test_json_escape},
       {"sync_bind", test_sync_bind},
       {"binding_result_must_be_json", test_binding_result_must_be_json},
-      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js}};
+      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
+      {"optional", test_optional},
+      {"result", test_result},
+      {"noresult", test_noresult},
+      {"bad_c_api_usage_without_crash", test_bad_c_api_usage_without_crash}};
 #if _WIN32
   all_tests.emplace("parse_version", test_parse_version);
   all_tests.emplace("win32_narrow_wide_string_conversion",
