@@ -332,6 +332,7 @@ For example, the library does not attempt to support user interaction features l
 
 Language    | Project
 ----------  | -------
+Ada         | [thechampagne/webview-ada](https://github.com/thechampagne/webview-ada)
 Bun         | [tr1ckydev/webview-bun](https://github.com/tr1ckydev/webview-bun)
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
 C3          | [thechampagne/webview-c3](https://github.com/thechampagne/webview-c3)
