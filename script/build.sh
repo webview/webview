@@ -306,7 +306,7 @@ elif [[ "${target_os}" == "macos" ]]; then
 elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
     shared_lib_suffix=.dll
-    cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+    cxx_compile_flags+=(-isystem "${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
     cxx_compile_flags+=("--include=${project_dir}/webview_mingw_support.h")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
 fi
