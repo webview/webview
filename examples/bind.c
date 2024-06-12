@@ -171,7 +171,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine,
   (void)lpCmdLine;
   (void)nCmdShow;
 #else
-int main() {
+int main(void) {
 #endif
   webview_t w = webview_create(0, NULL);
   context_t context = {.w = w, .count = 0};
