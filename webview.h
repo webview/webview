@@ -861,10 +861,11 @@ inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
       } else if (action == JSON_ACTION_END ||
                  action == JSON_ACTION_END_STRUCT) {
         if (*value != nullptr && index == 0) {
-          *valuesz = (size_t)(s + 1 - *value);
+          *valuesz = static_cast<size_t>(s + 1 - *value);
           return 0;
         } else if (keysz > 0 && k != nullptr) {
-          if (keysz == (size_t)(s - k - 1) && memcmp(key, k + 1, keysz) == 0) {
+          if (keysz == static_cast<size_t>(s - k - 1) &&
+              memcmp(key, k + 1, keysz) == 0) {
             index = 0;
           } else {
             index = 2;
@@ -1184,8 +1185,8 @@ class user_script {
 public:
   class impl;
 
-  user_script(const std::string &code, std::unique_ptr<impl> &&impl)
-      : m_code{code}, m_impl{std::move(impl)} {}
+  user_script(const std::string &code, std::unique_ptr<impl> &&impl_)
+      : m_code{code}, m_impl{std::move(impl_)} {}
 
   user_script(const user_script &other) = delete;
   user_script &operator=(const user_script &other) = delete;
@@ -1226,11 +1227,18 @@ public:
   class binding_ctx_t {
   public:
     binding_ctx_t(binding_t callback, void *arg)
-        : callback(callback), arg(arg) {}
+        : m_callback(callback), m_arg(arg) {}
+    void call(std::string id, std::string args) const {
+      if (m_callback) {
+        m_callback(id, args, m_arg);
+      }
+    }
+
+  private:
     // This function is called upon execution of the bound JS function
-    binding_t callback;
+    binding_t m_callback;
     // This user-supplied argument is passed to the callback
-    void *arg;
+    void *m_arg;
   };
 
   using sync_binding_t = std::function<std::string(std::string)>;
@@ -1290,7 +1298,7 @@ window.__webview__.onUnbind(" +
 
   result<void *> window() { return window_impl(); }
   result<void *> widget() { return widget_impl(); }
-  result<void *> browser_controller() { return browser_controller_impl(); };
+  result<void *> browser_controller() { return browser_controller_impl(); }
   noresult run() { return run_impl(); }
   noresult terminate() { return terminate_impl(); }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
@@ -1465,7 +1473,7 @@ protected:
       return;
     }
     const auto &context = found->second;
-    dispatch([=] { context.callback(id, args, context.arg); });
+    dispatch([=] { context.call(id, args); });
   }
 
   virtual void on_window_created() { inc_window_count(); }
@@ -1801,12 +1809,12 @@ protected:
   }
 
   noresult dispatch_impl(std::function<void()> f) override {
-    g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *f) -> int {
-                      (*static_cast<dispatch_fn_t *>(f))();
+    g_idle_add_full(G_PRIORITY_HIGH_IDLE, (GSourceFunc)([](void *fn) -> int {
+                      (*static_cast<dispatch_fn_t *>(fn))();
                       return G_SOURCE_REMOVE;
                     }),
                     new std::function<void()>(f),
-                    [](void *f) { delete static_cast<dispatch_fn_t *>(f); });
+                    [](void *fn) { delete static_cast<dispatch_fn_t *>(fn); });
     return {};
   }
 
@@ -2608,7 +2616,7 @@ private:
     auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                                    "kCFRunLoopDefaultMode");
     while (!done) {
-      objc::autoreleasepool arp;
+      objc::autoreleasepool arp2;
       auto event = objc::msg_send<id>(
           app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
           nullptr, mode, YES);
@@ -4387,8 +4395,8 @@ WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
   return api_filter([=] {
     return cast_to_webview(w)->bind(
         name,
-        [=](const std::string &seq, const std::string &req, void *arg) {
-          fn(seq.c_str(), req.c_str(), arg);
+        [=](const std::string &seq, const std::string &req, void *arg_) {
+          fn(seq.c_str(), req.c_str(), arg_);
         },
         arg);
   });
