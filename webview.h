@@ -1889,6 +1889,11 @@ protected:
     return wk_first == wk_second;
   }
 
+  template <class T, typename... Types>
+  void add_event_listener(const char *event, T (*f)(Types...)) {
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), event, G_CALLBACK(f), this);
+  }
+
 private:
   static char *get_string_from_js_result(WebKitJavascriptResult *r) {
     char *s;
@@ -4044,6 +4049,10 @@ protected:
     const auto &first_id = first.get_impl().get_id();
     const auto &second_id = second.get_impl().get_id();
     return first_id == second_id;
+  }
+
+  ICoreWebView2 *get_native_webview() {
+    return m_webview;
   }
 
 private:
