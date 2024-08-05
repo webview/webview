@@ -30,7 +30,7 @@ Your compiler must support minimum C++11 except for platforms that require a mor
 
 ### Linux and BSD
 
-The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding how to install those those.
+The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding how to install those, and if needed, specify the APIs to use with the [compile-time options](#compile-time-options) `WEBVIEW_WEBKITGTK_API` and `WEBVIEW_GTK_API`.
 
 #### Packages
 
@@ -290,7 +290,7 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 * Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
 * Microsoft Edge Insider (preview) channels are not supported.
 
-The following compile-time options can be used to change how the library integrates the WebView2 loader:
+The following [compile-time options](#compile-time-options) can be used to change how the library integrates the WebView2 loader:
 
 * `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=<1|0>` - Enables or disables the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
 * `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=<1|0>` - Enables or disables explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
