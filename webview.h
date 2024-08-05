@@ -1853,15 +1853,15 @@ protected:
   }
 
   noresult run_impl() override {
-    m_quit = false;
-    while (!m_quit) {
+    m_stop_run_loop = false;
+    while (!m_stop_run_loop) {
       g_main_context_iteration(nullptr, TRUE);
     }
     return {};
   }
 
   noresult terminate_impl() override {
-    return dispatch_impl([&] { m_quit = true; });
+    return dispatch_impl([&] { m_stop_run_loop = true; });
   }
 
   noresult dispatch_impl(std::function<void()> f) override {
@@ -2030,7 +2030,7 @@ private:
   GtkWidget *m_window{};
   GtkWidget *m_webview{};
   WebKitUserContentManager *m_user_content_manager{};
-  bool m_quit{};
+  bool m_stop_run_loop{};
 };
 
 } // namespace detail
