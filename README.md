@@ -330,14 +330,15 @@ Variable     | Description
 
 Only `build.sh`:
 
-Variable     | Description
------------- | --------------------------------------------------------------
-`HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
-`TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
-`CC`         | C compiler executable.
-`CXX`        | C++ compiler executable.
-`LIB_PREFIX` | Library name prefix.
-`PKGCONFIG`  | Alternative `pkgconfig` executable.
+Variable        | Description
+--------------- | --------------------------------------------------------------
+`HOST_OS`       | Host operating system (`linux`, `macos`, `windows`).
+`TARGET_OS`     | Target operating system for cross-compilation (see `HOST_OS`).
+`CC`            | C compiler executable.
+`CXX`           | C++ compiler executable.
+`LIB_PREFIX`    | Library name prefix.
+`PKGCONFIG`     | Alternative `pkgconfig` executable.
+`WEBKITGTK_API` | WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0. This will also automatically decide the GTK API. Uses the latest known and available API by default.
 
 ### Cross-compilation
 
