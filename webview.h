@@ -1920,24 +1920,16 @@ protected:
     if (!webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview))) {
       return {};
     }
-    auto &lib = get_webkit_library();
-    auto wkmajor = webkit_get_major_version();
-    auto wkminor = webkit_get_minor_version();
-    if ((wkmajor == 2 && wkminor >= 40) || wkmajor > 2) {
-      if (auto fn =
-              lib.get(webkit_symbols::webkit_web_view_evaluate_javascript)) {
-        fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
-           static_cast<gssize>(js.size()), nullptr, nullptr, nullptr, nullptr,
-           nullptr);
-        return {};
-      }
-    } else if (auto fn =
-                   lib.get(webkit_symbols::webkit_web_view_run_javascript)) {
-      fn(WEBKIT_WEB_VIEW(m_webview), js.c_str(), nullptr, nullptr, nullptr);
-      return {};
-    }
-    return error_info{WEBVIEW_ERROR_UNSPECIFIED,
-                      "No underlying implementation found for eval()"};
+#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 40) ||               \
+    WEBKIT_MAJOR_VERSION > 2
+    webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                        static_cast<gssize>(js.size()), nullptr,
+                                        nullptr, nullptr, nullptr, nullptr);
+#else
+    webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(m_webview), js.c_str(),
+                                   nullptr, nullptr, nullptr);
+#endif
+    return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
@@ -1987,35 +1979,6 @@ private:
     return s;
   }
 #endif
-
-  static const native_library &get_webkit_library() {
-    static const native_library non_loaded_lib;
-    static native_library loaded_lib;
-
-    if (loaded_lib.is_loaded()) {
-      return loaded_lib;
-    }
-
-    constexpr std::array<const char *, 3> lib_names{
-        "libwebkitgtk-6.0.so", "libwebkit2gtk-4.1.so", "libwebkit2gtk-4.0.so"};
-    auto found =
-        std::find_if(lib_names.begin(), lib_names.end(), [](const char *name) {
-          return native_library::is_loaded(name);
-        });
-
-    if (found == lib_names.end()) {
-      return non_loaded_lib;
-    }
-
-    loaded_lib = native_library(*found);
-
-    auto loaded = loaded_lib.is_loaded();
-    if (!loaded) {
-      return non_loaded_lib;
-    }
-
-    return loaded_lib;
-  }
 
   // Blocks while depleting the run loop of events.
   void deplete_run_loop_event_queue() {
