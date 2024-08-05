@@ -2033,8 +2033,6 @@ private:
   bool m_quit{};
 };
 
-using gtk_webkit_engine = gtk_webkit_engine;
-
 } // namespace detail
 
 using browser_engine = detail::gtk_webkit_engine;
