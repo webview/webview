@@ -32,7 +32,19 @@ Your compiler must support minimum C++11 except for platforms that require a mor
 
 The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding how to install those those.
 
-Debian-based systems:
+Debian-based systems with GTK 4 and WebKit2GTK 6.0:
+
+* Packages:
+  * Development: `apt install libgtk-4-dev libwebkitgtk-6.0-dev`
+  * Production: `apt install libgtk-4-1 libwebkitgtk-6.0-4`
+
+Debian-based systems with GTK 3 and WebKit2GTK 4.1 (libsoup 3):
+
+* Packages:
+  * Development: `apt install libgtk-3-dev libwebkit2gtk-4.1-dev`
+  * Production: `apt install libgtk-3-0 libwebkit2gtk-4.1-0`
+
+Debian-based systems with GTK 3 and WebKit2GTK 4.0 (libsoup 2):
 
 * Packages:
   * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`

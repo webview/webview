@@ -168,8 +168,11 @@ task_info() {
     echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
     echo "-- C++ linker flags: ${cxx_link_flags[@]}"
     if [[ "${target_os}" == "linux" ]]; then
-        echo "-- pkg-config: ${pkgconfig_exe}"
+        echo "-- pkg-config: Executable: ${pkgconfig_exe}"
+        echo "-- pkg-config: Libraries: ${pkgconfig_libs[@]}"
     fi
+    echo "-- WebKitGTK API: ${webkitgtk_api}"
+    echo "-- GTK API: ${gtk_api}"
 }
 
 run_task() {
@@ -256,6 +259,50 @@ if [[ ! -z "${PKGCONFIG+x}" ]]; then
     pkgconfig_exe=${PKGCONFIG}
 fi
 
+# Detect WebKitGTK API
+if [[ ! -z "${WEBKITGTK_API+x}" ]]; then
+    webkitgtk_api=${WEBKITGTK_API}
+elif [[ "${target_os}" == "linux" ]]; then
+    if "${pkgconfig_exe}" --exists webkitgtk-6.0; then
+        webkitgtk_api=0x600
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.1; then
+        webkitgtk_api=0x401
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.0; then
+        webkitgtk_api=0x400
+    else
+        echo "ERROR: Unable to detect WebKitGTK API." >&2
+        exit 1
+    fi
+fi
+
+# WebKitGTK library
+if [[ "${target_os}" == "linux" ]]; then
+    if [[ "${webkitgtk_api}" == 0x600 ]]; then
+        pkgconfig_libs+=(webkitgtk-6.0 javascriptcoregtk-6.0)
+    elif [[ "${webkitgtk_api}" == 0x401 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.1)
+    elif [[ "${webkitgtk_api}" == 0x400 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.0)
+    else
+        echo "ERROR: Unable to detect WebKitGTK library." >&2
+        exit 1
+    fi
+fi
+
+# GTK library
+if [[ "${target_os}" == "linux" ]]; then
+    if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
+        pkgconfig_libs+=(gtk4 x11)
+        gtk_api=0x400
+    elif [[ "${webkitgtk_api}" -ge 0x400 ]]; then
+        pkgconfig_libs+=(gtk+-3.0)
+        gtk_api=0x300
+    else
+        echo "ERROR: Unable to detect GTK API/library." >&2
+        exit 1
+    fi
+fi
+
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
 
 # Default build directory unless overridden
@@ -269,7 +316,7 @@ external_dir=${build_dir}/external
 libs_dir=${external_dir}/libs
 tools_dir=${external_dir}/tools
 warning_flags=(-Wall -Wextra -pedantic)
-common_compile_flags=("${warning_flags[@]}" "-I${project_dir}")
+common_compile_flags=("${warning_flags[@]}" "-I${project_dir}" "-DWEBVIEW_WEBKITGTK_API=${webkitgtk_api}" "-DWEBVIEW_GTK_API=${gtk_api}")
 common_link_flags=("${warning_flags[@]}")
 c_compile_flags=()
 c_link_flags=()
@@ -293,7 +340,6 @@ cxx_compile_flags+=("-std=${cxx_std}")
 
 if [[ "${target_os}" == "linux" ]]; then
     shared_lib_suffix=.so
-    pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=(-ldl) || exit 1
