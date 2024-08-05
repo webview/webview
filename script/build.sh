@@ -292,7 +292,7 @@ fi
 # GTK library
 if [[ "${target_os}" == "linux" ]]; then
     if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
-        pkgconfig_libs+=(gtk4 x11)
+        pkgconfig_libs+=(gtk4)
         gtk_api=0x400
     elif [[ "${webkitgtk_api}" -ge 0x400 ]]; then
         pkgconfig_libs+=(gtk+-3.0)
