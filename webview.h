@@ -308,7 +308,7 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  * Remarks:
  * - Using WEBVIEW_HINT_MIN and WEBVIEW_HINT_MAX for setting window bounds is
  *   not supported with GTK 4 because X11-specific functions such as
- *   gtk_window_set_geometry_hints was removed. These flags do nothing when
+ *   gtk_window_set_geometry_hints were removed. These flags do nothing when
  *   using GTK 4.
  *
  * @param w The webview instance.
