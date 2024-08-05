@@ -259,11 +259,11 @@ if [[ ! -z "${PKGCONFIG+x}" ]]; then
     pkgconfig_exe=${PKGCONFIG}
 fi
 
-# Detect WebKitGTK API
-if [[ ! -z "${WEBKITGTK_API+x}" ]]; then
-    webkitgtk_api=${WEBKITGTK_API}
-elif [[ "${target_os}" == "linux" ]]; then
-    if "${pkgconfig_exe}" --exists webkitgtk-6.0; then
+if [[ "${target_os}" == "linux" ]]; then
+    # Detect WebKitGTK API
+    if [[ ! -z "${WEBKITGTK_API+x}" ]]; then
+        webkitgtk_api=${WEBKITGTK_API}
+    elif "${pkgconfig_exe}" --exists webkitgtk-6.0; then
         webkitgtk_api=0x600
     elif "${pkgconfig_exe}" --exists webkit2gtk-4.1; then
         webkitgtk_api=0x401
@@ -273,10 +273,8 @@ elif [[ "${target_os}" == "linux" ]]; then
         echo "ERROR: Unable to detect WebKitGTK API." >&2
         exit 1
     fi
-fi
 
-# WebKitGTK library
-if [[ "${target_os}" == "linux" ]]; then
+    # WebKitGTK library
     if [[ "${webkitgtk_api}" == 0x600 ]]; then
         pkgconfig_libs+=(webkitgtk-6.0 javascriptcoregtk-6.0)
     elif [[ "${webkitgtk_api}" == 0x401 ]]; then
@@ -287,10 +285,8 @@ if [[ "${target_os}" == "linux" ]]; then
         echo "ERROR: Unable to detect WebKitGTK library." >&2
         exit 1
     fi
-fi
 
-# GTK library
-if [[ "${target_os}" == "linux" ]]; then
+    # GTK library
     if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
         pkgconfig_libs+=(gtk4)
         gtk_api=0x400
