@@ -55,8 +55,8 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
     * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
     * Production: `dnf install gtk3 webkit2gtk4.0`
 * FreeBSD:
-  * GTK 3: `pkg install webkit2-gtk4`
-  * GTK 4: `pkg install webkit2-gtk3`
+  * GTK 4: `pkg install webkit2-gtk4`
+  * GTK 3: `pkg install webkit2-gtk3`
 
 #### BSD
 
