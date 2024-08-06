@@ -2126,6 +2126,11 @@ public:
     objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
+        if (auto ui_delegate =
+                objc::msg_send<id>(m_webview, "UIDelegate"_sel)) {
+          objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, nullptr);
+          objc::msg_send<void>(ui_delegate, "release"_sel);
+        }
         if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
           objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
         }
@@ -2545,9 +2550,11 @@ private:
     objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
                        "DOMPasteAllowed"_str);
 
-    auto ui_delegate = objc::autoreleased(create_webkit_ui_delegate());
+    auto ui_delegate = create_webkit_ui_delegate();
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
+    objc_setAssociatedObject(ui_delegate, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
 
     if (m_debug) {
