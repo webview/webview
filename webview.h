@@ -1744,7 +1744,9 @@ public:
 
   static void window_remove_child(GtkWindow *window, GtkWidget *widget) {
 #if WEBVIEW_GTK_API >= 0x400
-    gtk_window_set_child(window, nullptr);
+    if (gtk_window_get_child(window) == widget) {
+      gtk_window_set_child(window, nullptr);
+    }
 #else
     gtk_container_remove(GTK_CONTAINER(window), widget);
 #endif
@@ -1877,19 +1879,18 @@ public:
       }
       m_window = gtk_compat::window_new();
       on_window_created();
+      auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
+        auto *w = static_cast<gtk_webkit_engine *>(arg);
+        w->m_window = nullptr;
+        w->on_window_destroyed();
+      };
       g_signal_connect(G_OBJECT(m_window), "destroy",
-                       G_CALLBACK(+[](GtkWidget *, gpointer arg) {
-                         auto *w = static_cast<gtk_webkit_engine *>(arg);
-                         // Widget destroyed along with window.
-                         w->m_webview = nullptr;
-                         w->m_window = nullptr;
-                         w->on_window_destroyed();
-                       }),
-                       this);
+                       G_CALLBACK(on_window_destroy), this);
     }
     webkit_dmabuf::apply_webkit_dmabuf_workaround();
     // Initialize webview widget
     m_webview = webkit_web_view_new();
+    g_object_ref_sink(m_webview);
     WebKitUserContentManager *manager = m_user_content_manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkitgtk_compat::connect_script_message_received(
@@ -1928,14 +1929,18 @@ public:
 
   virtual ~gtk_webkit_engine() {
     if (m_window) {
-      gtk_compat::window_remove_child(GTK_WINDOW(m_window),
-                                      GTK_WIDGET(m_webview));
       if (m_owns_window) {
         // Disconnect handlers to avoid callbacks invoked during destruction.
         g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
         gtk_window_close(GTK_WINDOW(m_window));
         on_window_destroyed(true);
+      } else {
+        gtk_compat::window_remove_child(GTK_WINDOW(m_window),
+                                        GTK_WIDGET(m_webview));
       }
+    }
+    if (m_webview) {
+      g_object_unref(m_webview);
     }
     if (m_owns_window) {
       // Needed for the window to close immediately.
