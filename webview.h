@@ -306,10 +306,10 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  * Updates the size of the native window.
  *
  * Remarks:
- * - Using WEBVIEW_HINT_MIN and WEBVIEW_HINT_MAX for setting window bounds is
- *   not supported with GTK 4 because X11-specific functions such as
- *   gtk_window_set_geometry_hints were removed. These flags do nothing when
- *   using GTK 4.
+ * - Using WEBVIEW_HINT_MAX for setting the maximum window size is not
+ *   supported with GTK 4 because X11-specific functions such as
+ *   gtk_window_set_geometry_hints were removed. This option has no effect
+ *   when using GTK 4.
  *
  * @param w The webview instance.
  * @param width New width.
@@ -1748,22 +1748,6 @@ public:
 #endif
   }
 
-  static void window_set_min_size(GtkWindow *window, int width, int height) {
-// X11-specific features are available in GTK 3 but not GTK 4
-#if GTK_MAJOR_VERSION < 4
-    GdkGeometry g{};
-    g.min_width = width;
-    g.min_height = height;
-    GdkWindowHints h = GDK_HINT_MIN_SIZE;
-    gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
-#else
-    // Avoid "unused parameter" warnings
-    (void)window;
-    (void)width;
-    (void)height;
-#endif
-  }
-
   static void window_set_max_size(GtkWindow *window, int width, int height) {
 // X11-specific features are available in GTK 3 but not GTK 4
 #if GTK_MAJOR_VERSION < 4
@@ -1987,10 +1971,8 @@ protected:
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
-    } else if (hints == WEBVIEW_HINT_FIXED) {
+    } else if (hints == WEBVIEW_HINT_FIXED || hints == WEBVIEW_HINT_MIN) {
       gtk_widget_set_size_request(m_window, width, height);
-    } else if (hints == WEBVIEW_HINT_MIN) {
-      gtk_compat::window_set_min_size(GTK_WINDOW(m_window), width, height);
     } else if (hints == WEBVIEW_HINT_MAX) {
       gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
     }
