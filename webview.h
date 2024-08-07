@@ -1546,27 +1546,26 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 //
 #include <cstdlib>
 
-// Default WebKitGTK API
-#ifndef WEBVIEW_WEBKITGTK_API
-#define WEBVIEW_WEBKITGTK_API 0x400
-#endif
-
-#if WEBVIEW_WEBKITGTK_API >= 0x600
 #include <gtk/gtk.h>
+
+#if GTK_MAJOR_VERSION >= 4
+
 #include <jsc/jsc.h>
 #include <webkit/webkit.h>
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/x11/gdkx.h>
 #endif
-#elif WEBVIEW_WEBKITGTK_API >= 0x400
+
+#elif GTK_MAJOR_VERSION >= 3
+
 #include <JavaScriptCore/JavaScript.h>
-#include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
+
 #endif
 
 #include <fcntl.h>
@@ -1795,7 +1794,7 @@ public:
  */
 class webkitgtk_compat {
 public:
-#if WEBVIEW_WEBKITGTK_API >= 0x600
+#if GTK_MAJOR_VERSION >= 4
   using wk_handler_js_value_t = JSCValue;
 #else
   using wk_handler_js_value_t = WebKitJavascriptResult;
@@ -1832,7 +1831,7 @@ public:
     return s;
   }
 
-#if WEBVIEW_WEBKITGTK_API < 0x600
+#if GTK_MAJOR_VERSION < 4
   static std::string get_string_from_js_result(WebKitJavascriptResult *r) {
 #if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
     WEBKIT_MAJOR_VERSION > 2
@@ -1855,7 +1854,7 @@ public:
 
   static void user_content_manager_register_script_message_handler(
       WebKitUserContentManager *manager, const gchar *name) {
-#if WEBVIEW_WEBKITGTK_API >= 0x600
+#if GTK_MAJOR_VERSION >= 4
     webkit_user_content_manager_register_script_message_handler(manager, name,
                                                                 nullptr);
 #else
@@ -2058,7 +2057,7 @@ protected:
   }
 
 private:
-#if WEBVIEW_WEBKITGTK_API >= 0x600
+#if GTK_MAJOR_VERSION >= 4
   static char *get_string_from_js_result(JSCValue *r) {
     return jsc_value_to_string(r);
   }
