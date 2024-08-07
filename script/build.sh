@@ -170,9 +170,9 @@ task_info() {
     if [[ "${target_os}" == "linux" ]]; then
         echo "-- pkg-config: Executable: ${pkgconfig_exe}"
         echo "-- pkg-config: Libraries: ${pkgconfig_libs[@]}"
+        echo "-- WebKitGTK API: ${webkitgtk_api}"
+        echo "-- GTK: ${gtk_version}"
     fi
-    echo "-- WebKitGTK API: ${webkitgtk_api}"
-    echo "-- GTK: ${gtk_version}"
 }
 
 run_task() {
