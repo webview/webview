@@ -1756,6 +1756,11 @@ public:
     g.min_height = height;
     GdkWindowHints h = GDK_HINT_MIN_SIZE;
     gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
+#else
+    // Avoid "unused parameter" warnings
+    (void)window;
+    (void)width;
+    (void)height;
 #endif
   }
 
