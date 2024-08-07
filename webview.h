@@ -1767,6 +1767,11 @@ public:
     g.max_height = height;
     GdkWindowHints h = GDK_HINT_MAX_SIZE;
     gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
+#else
+    // Avoid "unused parameter" warnings
+    (void)window;
+    (void)width;
+    (void)height;
 #endif
   }
 };
@@ -1797,7 +1802,7 @@ public:
       (*handler)(manager, get_string_from_js_result(r));
     };
 
-    auto deleter = +[](gpointer data, GClosure *closure) {
+    auto deleter = +[](gpointer data, GClosure *) {
       delete static_cast<on_script_message_received_t *>(data);
     };
 
