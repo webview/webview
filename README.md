@@ -30,7 +30,7 @@ Your compiler must support minimum C++11 except for platforms that require a mor
 
 ### Linux and BSD
 
-The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding how to install those, and if needed, specify the APIs to use with the [compile-time options](#compile-time-options) `WEBVIEW_WEBKITGTK_API` and `WEBVIEW_GTK_API`.
+The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding which packages to install, and if needed, specify the WebKitGTK API to use with the [compile-time option](#compile-time-options) `WEBVIEW_WEBKITGTK_API`.
 
 #### Packages
 
@@ -210,7 +210,6 @@ Name                   | Description
 `WEBVIEW_COCOA`        | Compile with Cocoa/WebKit.
 `WEBVIEW_EDGE`         | Compile with Win32/WebView2.
 `WEBVIEW_WEBKITGTK_API`| WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0.
-`WEBVIEW_GTK_API`      | GTK API to interface with, e.g. `0x300` for 3.0 or `0x400` for 4.0.
 
 ## App Distribution
 

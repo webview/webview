@@ -1551,11 +1551,6 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 #define WEBVIEW_WEBKITGTK_API 0x400
 #endif
 
-// Default GTK API
-#ifndef WEBVIEW_GTK_API
-#define WEBVIEW_GTK_API 0x300
-#endif
-
 #if WEBVIEW_WEBKITGTK_API >= 0x600
 #include <gtk/gtk.h>
 #include <jsc/jsc.h>
@@ -1719,7 +1714,7 @@ private:
 class gtk_compat {
 public:
   static gboolean init_check() {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     return gtk_init_check();
 #else
     return gtk_init_check(nullptr, nullptr);
@@ -1727,7 +1722,7 @@ public:
   }
 
   static GtkWidget *window_new() {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     return gtk_window_new();
 #else
     return gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1735,7 +1730,7 @@ public:
   }
 
   static void window_set_child(GtkWindow *window, GtkWidget *widget) {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     gtk_window_set_child(window, widget);
 #else
     gtk_container_add(GTK_CONTAINER(window), widget);
@@ -1743,7 +1738,7 @@ public:
   }
 
   static void window_remove_child(GtkWindow *window, GtkWidget *widget) {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     if (gtk_window_get_child(window) == widget) {
       gtk_window_set_child(window, nullptr);
     }
@@ -1753,7 +1748,7 @@ public:
   }
 
   static void widget_set_visible(GtkWidget *widget, bool visible) {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     gtk_widget_set_visible(widget, visible ? TRUE : FALSE);
 #else
     if (visible) {
@@ -1765,7 +1760,7 @@ public:
   }
 
   static void window_set_size(GtkWindow *window, int width, int height) {
-#if WEBVIEW_GTK_API >= 0x400
+#if GTK_MAJOR_VERSION >= 4
     gtk_window_set_default_size(window, width, height);
 #else
     gtk_window_resize(window, width, height);
@@ -1774,7 +1769,7 @@ public:
 
   static void window_set_min_size(GtkWindow *window, int width, int height) {
 // X11-specific features are available in GTK 3 but not GTK 4
-#if WEBVIEW_GTK_API < 0x400
+#if GTK_MAJOR_VERSION < 4
     GdkGeometry g{};
     g.min_width = width;
     g.min_height = height;
@@ -1785,7 +1780,7 @@ public:
 
   static void window_set_max_size(GtkWindow *window, int width, int height) {
 // X11-specific features are available in GTK 3 but not GTK 4
-#if WEBVIEW_GTK_API < 0x400
+#if GTK_MAJOR_VERSION < 4
     GdkGeometry g{};
     g.max_width = width;
     g.max_height = height;

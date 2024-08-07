@@ -312,7 +312,7 @@ external_dir=${build_dir}/external
 libs_dir=${external_dir}/libs
 tools_dir=${external_dir}/tools
 warning_flags=(-Wall -Wextra -pedantic)
-common_compile_flags=("${warning_flags[@]}" "-I${project_dir}" "-DWEBVIEW_WEBKITGTK_API=${webkitgtk_api}" "-DWEBVIEW_GTK_API=${gtk_api}")
+common_compile_flags=("${warning_flags[@]}" "-I${project_dir}" "-DWEBVIEW_WEBKITGTK_API=${webkitgtk_api}")
 common_link_flags=("${warning_flags[@]}")
 c_compile_flags=()
 c_link_flags=()
