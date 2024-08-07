@@ -336,7 +336,7 @@ Variable        | Description
 `CXX`           | C++ compiler executable.
 `LIB_PREFIX`    | Library name prefix.
 `PKGCONFIG`     | Alternative `pkgconfig` executable.
-`WEBKITGTK_API` | WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0. This will also automatically decide the GTK API. Uses the latest known and available API by default.
+`WEBKITGTK_API` | WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0. This will also automatically decide the GTK version. Uses the latest known and available API by default.
 
 ### Cross-compilation
 

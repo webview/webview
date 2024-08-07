@@ -172,7 +172,7 @@ task_info() {
         echo "-- pkg-config: Libraries: ${pkgconfig_libs[@]}"
     fi
     echo "-- WebKitGTK API: ${webkitgtk_api}"
-    echo "-- GTK API: ${gtk_api}"
+    echo "-- GTK: ${gtk_version}"
 }
 
 run_task() {
@@ -289,12 +289,12 @@ if [[ "${target_os}" == "linux" ]]; then
     # GTK library
     if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
         pkgconfig_libs+=(gtk4)
-        gtk_api=0x400
+        gtk_version=0x400
     elif [[ "${webkitgtk_api}" -ge 0x400 ]]; then
         pkgconfig_libs+=(gtk+-3.0)
-        gtk_api=0x300
+        gtk_version=0x300
     else
-        echo "ERROR: Unable to detect GTK API/library." >&2
+        echo "ERROR: Unable to detect GTK version/library." >&2
         exit 1
     fi
 fi
