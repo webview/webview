@@ -1713,30 +1713,95 @@ private:
   WebKitUserScript *m_script{};
 };
 
+/**
+ * GTK compatibility helper class.
+ */
+class gtk_compat {
+public:
+  static gboolean init_check() {
+#if WEBVIEW_GTK_API >= 0x400
+    return gtk_init_check();
+#else
+    return gtk_init_check(nullptr, nullptr);
+#endif
+  }
+
+  static GtkWidget *window_new() {
+#if WEBVIEW_GTK_API >= 0x400
+    return gtk_window_new();
+#else
+    return gtk_window_new(GTK_WINDOW_TOPLEVEL);
+#endif
+  }
+
+  static void window_set_child(GtkWindow *window, GtkWidget *widget) {
+#if WEBVIEW_GTK_API >= 0x400
+    gtk_window_set_child(window, widget);
+#else
+    gtk_container_add(GTK_CONTAINER(window), widget);
+#endif
+  }
+
+  static void window_remove_child(GtkWindow *window, GtkWidget *widget) {
+#if WEBVIEW_GTK_API >= 0x400
+    gtk_window_set_child(window, nullptr);
+#else
+    gtk_container_remove(GTK_CONTAINER(window), widget);
+#endif
+  }
+
+  static void widget_set_visible(GtkWidget *widget, bool visible) {
+#if WEBVIEW_GTK_API >= 0x400
+    gtk_widget_set_visible(widget, visible ? TRUE : FALSE);
+#else
+    if (visible) {
+      gtk_widget_show(widget);
+    } else {
+      gtk_widget_hide(widget);
+    }
+#endif
+  }
+
+  static void window_set_size(GtkWindow *window, int width, int height) {
+#if WEBVIEW_GTK_API >= 0x400
+    gtk_window_set_default_size(window, width, height);
+#else
+    gtk_window_resize(window, width, height);
+#endif
+  }
+
+  static void window_set_min_size(GtkWindow *window, int width, int height) {
+// X11-specific features are available in GTK 3 but not GTK 4
+#if WEBVIEW_GTK_API < 0x400
+    GdkGeometry g{};
+    g.min_width = width;
+    g.min_height = height;
+    GdkWindowHints h = GDK_HINT_MIN_SIZE;
+    gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
+#endif
+  }
+
+  static void window_set_max_size(GtkWindow *window, int width, int height) {
+// X11-specific features are available in GTK 3 but not GTK 4
+#if WEBVIEW_GTK_API < 0x400
+    GdkGeometry g{};
+    g.max_width = width;
+    g.max_height = height;
+    GdkWindowHints h = GDK_HINT_MAX_SIZE;
+    gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
+#endif
+  }
+};
+
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window)
       : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
     if (m_owns_window) {
-#if WEBVIEW_GTK_API >= 0x400
-      auto init_check_result = gtk_init_check();
-#else
-      auto init_check_result = gtk_init_check(nullptr, nullptr);
-#endif
-      if (!init_check_result) {
+      if (!gtk_compat::init_check()) {
         throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
       }
-#if WEBVIEW_GTK_API >= 0x400
-      if (!gtk_init_check()) {
-        throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
-      }
-      m_window = gtk_window_new();
-#else
-      if (!gtk_init_check(nullptr, nullptr)) {
-        throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
-      }
-      m_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
+      m_window = gtk_compat::window_new();
       on_window_created();
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(+[](GtkWidget *, gpointer arg) {
@@ -1778,13 +1843,8 @@ public:
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
 
-#if WEBVIEW_GTK_API >= 0x400
-    gtk_window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
-    gtk_widget_set_visible(GTK_WIDGET(m_webview), TRUE);
-#else
-    gtk_container_add(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
-    gtk_widget_show(GTK_WIDGET(m_webview));
-#endif
+    gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
+    gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
 
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
@@ -1797,11 +1857,7 @@ public:
 
     if (m_owns_window) {
       gtk_widget_grab_focus(GTK_WIDGET(m_webview));
-#if WEBVIEW_GTK_API >= 0x400
-      gtk_widget_set_visible(GTK_WIDGET(m_window), TRUE);
-#else
-      gtk_widget_show_all(m_window);
-#endif
+      gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
     }
   }
 
@@ -1812,11 +1868,8 @@ public:
 
   virtual ~gtk_webkit_engine() {
     if (m_window) {
-#if WEBVIEW_GTK_API >= 0x400
-      gtk_window_set_child(GTK_WINDOW(m_window), nullptr);
-#else
-      gtk_container_remove(GTK_CONTAINER(m_window), GTK_WIDGET(m_webview));
-#endif
+      gtk_compat::window_remove_child(GTK_WINDOW(m_window),
+                                      GTK_WIDGET(m_webview));
       if (m_owns_window) {
         // Disconnect handlers to avoid callbacks invoked during destruction.
         g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
@@ -1882,26 +1935,15 @@ protected:
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
-#if WEBVIEW_GTK_API >= 0x400
-      gtk_window_set_default_size(GTK_WINDOW(m_window), width, height);
-#else
-      gtk_window_resize(GTK_WINDOW(m_window), width, height);
-#endif
+      gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
     } else if (hints == WEBVIEW_HINT_FIXED) {
       gtk_widget_set_size_request(m_window, width, height);
-    } else {
-// X11-specific features are available in GTK 3 but not GTK 4
-#if WEBVIEW_GTK_API < 0x400
-      GdkGeometry g;
-      g.min_width = g.max_width = width;
-      g.min_height = g.max_height = height;
-      GdkWindowHints h =
-          (hints == WEBVIEW_HINT_MIN ? GDK_HINT_MIN_SIZE : GDK_HINT_MAX_SIZE);
-      // This defines either MIN_SIZE, or MAX_SIZE, but not both:
-      gtk_window_set_geometry_hints(GTK_WINDOW(m_window), nullptr, &g, h);
-#endif
+    } else if (hints == WEBVIEW_HINT_MIN) {
+      gtk_compat::window_set_min_size(GTK_WINDOW(m_window), width, height);
+    } else if (hints == WEBVIEW_HINT_MAX) {
+      gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
     }
-    return {};
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
   }
 
   noresult navigate_impl(const std::string &url) override {
