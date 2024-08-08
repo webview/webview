@@ -168,7 +168,10 @@ task_info() {
     echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
     echo "-- C++ linker flags: ${cxx_link_flags[@]}"
     if [[ "${target_os}" == "linux" ]]; then
-        echo "-- pkg-config: ${pkgconfig_exe}"
+        echo "-- pkg-config: Executable: ${pkgconfig_exe}"
+        echo "-- pkg-config: Libraries: ${pkgconfig_libs[@]}"
+        echo "-- WebKitGTK API: ${webkitgtk_api}"
+        echo "-- GTK: ${gtk_version}"
     fi
 }
 
@@ -256,6 +259,46 @@ if [[ ! -z "${PKGCONFIG+x}" ]]; then
     pkgconfig_exe=${PKGCONFIG}
 fi
 
+if [[ "${target_os}" == "linux" ]]; then
+    # Detect WebKitGTK API
+    if [[ ! -z "${WEBKITGTK_API+x}" ]]; then
+        webkitgtk_api=${WEBKITGTK_API}
+    elif "${pkgconfig_exe}" --exists webkitgtk-6.0; then
+        webkitgtk_api=0x600
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.1; then
+        webkitgtk_api=0x401
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.0; then
+        webkitgtk_api=0x400
+    else
+        echo "ERROR: Unable to detect WebKitGTK API." >&2
+        exit 1
+    fi
+
+    # WebKitGTK library
+    if [[ "${webkitgtk_api}" == 0x600 ]]; then
+        pkgconfig_libs+=(webkitgtk-6.0 javascriptcoregtk-6.0)
+    elif [[ "${webkitgtk_api}" == 0x401 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.1)
+    elif [[ "${webkitgtk_api}" == 0x400 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.0)
+    else
+        echo "ERROR: Unable to detect WebKitGTK library." >&2
+        exit 1
+    fi
+
+    # GTK library
+    if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
+        pkgconfig_libs+=(gtk4)
+        gtk_version=0x400
+    elif [[ "${webkitgtk_api}" -ge 0x400 ]]; then
+        pkgconfig_libs+=(gtk+-3.0)
+        gtk_version=0x300
+    else
+        echo "ERROR: Unable to detect GTK version/library." >&2
+        exit 1
+    fi
+fi
+
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
 
 # Default build directory unless overridden
@@ -293,7 +336,6 @@ cxx_compile_flags+=("-std=${cxx_std}")
 
 if [[ "${target_os}" == "linux" ]]; then
     shared_lib_suffix=.so
-    pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=(-ldl) || exit 1

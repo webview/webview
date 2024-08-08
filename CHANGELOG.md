@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New compile-time options for controlling `WEBVIEW_API` ([#893](https://github.com/webview/webview/pull/893))
+- Support for WebKitGTK API 6.0 and GTK 4 ([#1125](https://github.com/webview/webview/pull/1125)).
 
 ### Changed
 

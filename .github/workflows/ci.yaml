@@ -6,6 +6,7 @@ jobs:
     strategy:
       matrix:
         cxx_std: [c++11, c++14, c++17, c++20]
+        webkitgtk-package: [libwebkit2gtk-4.0-dev, libwebkit2gtk-4.1-dev, libwebkitgtk-6.0-dev]
     runs-on: ubuntu-22.04
     env:
       CXX_STD: ${{ matrix.cxx_std }}
@@ -21,7 +22,7 @@ jobs:
           sudo update-alternatives --force --install /usr/bin/clang clang /usr/bin/clang-15 1500 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-15 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-15 --slave /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15
       - uses: actions/checkout@v4
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install libwebkit2gtk-4.0-dev xvfb -y
+        run: sudo apt-get update && sudo apt-get install "${{ matrix.webkitgtk-package }}" xvfb -y
       - name: Build and run tests
         run: xvfb-run ./script/build.sh
 
