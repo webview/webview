@@ -15,6 +15,7 @@
 #include <iostream>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 // =================================================================
 // TEST: start app loop and terminate it.
@@ -379,6 +380,55 @@ static void test_json_escape() {
   assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
+// =================================================================
+// TEST: ensure that c_string_new() works.
+// =================================================================
+static void test_c_string() {
+  using namespace webview::detail;
+
+  {
+    auto *s = c_string_new(0);
+    assert(std::string{""} == s);
+    c_string_free(s);
+  }
+
+  {
+    unsigned int length = 1;
+    auto *s = c_string_new("", &length);
+    assert(length == 0);
+    assert(std::string{""} == s);
+    c_string_free(s);
+  }
+
+  {
+    unsigned int length = 0;
+    auto *s = c_string_new("abc", &length);
+    assert(length == 3);
+    assert(std::string{"abc"} == s);
+    c_string_free(s);
+  }
+
+  {
+    auto *s = c_string_new("abc", nullptr);
+    assert(std::string{"abc"} == s);
+    c_string_free(s);
+  }
+
+  // Custom allocator.
+  {
+    std::vector<char> v;
+    assert(v.empty());
+    auto *s = c_string_new("abc", nullptr, [&](unsigned int size) {
+      v.resize(size);
+      return v.data();
+    });
+    assert(v.size() == 4); // Includes null-character
+    assert(s == v.data());
+    assert(std::string{"abc"} == s);
+    // Do not call c_string_free()
+  }
+}
+
 static void test_optional() {
   using namespace webview::detail;
 
@@ -573,6 +623,7 @@ int main(int argc, char *argv[]) {
       {"sync_bind", test_sync_bind},
       {"binding_result_must_be_json", test_binding_result_must_be_json},
       {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
+      {"c_string", test_c_string},
       {"optional", test_optional},
       {"result", test_result},
       {"noresult", test_noresult},

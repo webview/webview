@@ -139,6 +139,9 @@ typedef struct {
 /// Pointer to a webview instance.
 typedef void *webview_t;
 
+/// Allocator function.
+typedef void *(webview_allocator_t)(unsigned int size);
+
 /// Native handle kind. The actual type depends on the backend.
 typedef enum {
   /// Top-level window. @c GtkWindow pointer (GTK), @c NSWindow pointer (Cocoa)
@@ -417,6 +420,30 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
  */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
+/**
+ * Get the current URL.
+ *
+ * @param w The webview instance.
+ * @param out_length If non-null, the value pointed to will be assigned the
+                     length of the resulting string.
+ * @param allocator An optional allocator.
+ * @return A null-terminated copy of the current URL. If an allocator was
+ *         passed in then caller assumes responsibility for deallocation;
+ *         otherwise, caller should release the returned string using
+ *         webview_string_free().
+ * @since 0.11
+ */
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
+                                  webview_allocator_t allocator);
+
+/**
+ * Free the string allocated by the library.
+ *
+ * @param str The string to deallocate.
+ * @since 0.11
+ */
+WEBVIEW_API webview_error_t webview_string_free(char *str);
+
 #ifdef __cplusplus
 }
 
@@ -685,6 +712,8 @@ using result = detail::basic_result<T, error_info, exception>;
 using noresult = detail::basic_result<void, error_info, exception>;
 
 namespace detail {
+
+using allocator_t = std::function<void *(unsigned int)>;
 
 // The library's version information.
 constexpr const webview_version_info_t library_version_info{
@@ -1037,6 +1066,29 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
+inline char *c_string_new(unsigned int length, allocator_t allocator = {}) {
+  if (!allocator) {
+    allocator = [&](unsigned int size) { return std::malloc(size); };
+  }
+  const size_t mem_needed = length + sizeof(char);
+  auto *s = static_cast<char *>(allocator(mem_needed));
+  std::memset(s, 0, mem_needed);
+  return s;
+}
+
+inline char *c_string_new(const std::string &from, unsigned int *out_length,
+                          allocator_t allocator = {}) {
+  char *result = c_string_new(from.size(), allocator);
+  std::copy(from.begin(), from.end(), result);
+  result[from.size()] = 0;
+  if (out_length) {
+    *out_length = static_cast<unsigned int>(from.size());
+  }
+  return result;
+}
+
+inline void c_string_free(char *s) { std::free(s); }
+
 // Holds a symbol name and associated type for code clarity.
 template <typename T> class library_symbol {
 public:
@@ -1314,6 +1366,8 @@ window.__webview__.onUnbind(" +
     return set_size_impl(width, height, hints);
   }
 
+  result<std::string> get_url() { return get_url_impl(); }
+
   noresult set_html(const std::string &html) { return set_html_impl(html); }
 
   noresult init(const std::string &js) {
@@ -1334,6 +1388,7 @@ protected:
   virtual noresult set_title_impl(const std::string &title) = 0;
   virtual noresult set_size_impl(int width, int height,
                                  webview_hint_t hints) = 0;
+  virtual result<std::string> get_url_impl() = 0;
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
 
@@ -1987,6 +2042,14 @@ protected:
     return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
   }
 
+  result<std::string> get_url_impl() override {
+    auto *url = webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview));
+    if (!url) {
+      return {};
+    }
+    return {url};
+  }
+
   noresult navigate_impl(const std::string &url) override {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
     return {};
@@ -2363,6 +2426,24 @@ protected:
 
     return {};
   }
+
+  result<std::string> get_url_impl() override {
+    objc::autoreleasepool pool;
+    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+    if (!nsurl) {
+      return {};
+    }
+    auto nsstring = objc::msg_send<id>(nsurl, "absoluteString"_sel);
+    if (!nsstring) {
+      return {};
+    }
+    auto *cstring = objc::msg_send<const char *>(nsstring, "UTF8String"_sel);
+    if (!cstring) {
+      return {};
+    }
+    return {cstring};
+  }
+
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;
 
@@ -4136,6 +4217,16 @@ protected:
     return {};
   }
 
+  result<std::string> get_url_impl() override {
+    PWSTR uri;
+    if (FAILED(m_webview->get_Source(&uri))) {
+      return {};
+    }
+    std::string converted_url = narrow_string(uri);
+    CoTaskMemFree(uri);
+    return converted_url;
+  }
+
   noresult set_html_impl(const std::string &html) override {
     m_webview->NavigateToString(widen_string(html).c_str());
     return {};
@@ -4548,6 +4639,33 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
 
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
+}
+
+WEBVIEW_API char *webview_get_url(webview_t w, unsigned int *out_length,
+                                  webview_allocator_t allocator) {
+  using namespace webview::detail;
+  if (!w) {
+    return nullptr;
+  }
+  char *url{};
+  auto err =
+      api_filter([=] { return cast_to_webview(w)->get_url(); },
+                 [&](const std::string &url_) {
+                   url = c_string_new(url_, out_length,
+                                      allocator ? allocator : allocator_t{});
+                 });
+  if (err == WEBVIEW_ERROR_OK) {
+    return url;
+  }
+  return nullptr;
+}
+
+WEBVIEW_API webview_error_t webview_string_free(char *str) {
+  using namespace webview::detail;
+  return api_filter([=]() -> webview::noresult {
+    std::free(str);
+    return {};
+  });
 }
 
 #endif /* WEBVIEW_HEADER */
