@@ -104,9 +104,13 @@ task_check() {
         return 0
     fi
     echo "Linting..."
-    clang-tidy "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
-    clang-tidy "${project_dir}/tests/core_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Check library's header file(s) using the header filter specified the .clang-tidy file.
+    # Specify a source file that will not trigger any warnings.
+    clang-tidy "${project_dir}/webview.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    # Only check source files here to avoid checking the header(s) again.
+    clang-tidy -header-filter="" "${project_dir}/examples/basic.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/examples/bind.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
+    clang-tidy -header-filter="" "${project_dir}/webview_test.cc" -- "${cxx_compile_flags[@]}" "${cxx_link_flags[@]}" || return 1
 }
 
 task_build() {
@@ -166,7 +170,10 @@ task_info() {
     echo "-- C++ compiler flags: ${cxx_compile_flags[@]}"
     echo "-- C++ linker flags: ${cxx_link_flags[@]}"
     if [[ "${target_os}" == "linux" ]]; then
-        echo "-- pkg-config: ${pkgconfig_exe}"
+        echo "-- pkg-config: Executable: ${pkgconfig_exe}"
+        echo "-- pkg-config: Libraries: ${pkgconfig_libs[@]}"
+        echo "-- WebKitGTK API: ${webkitgtk_api}"
+        echo "-- GTK: ${gtk_version}"
     fi
 }
 
@@ -254,6 +261,46 @@ if [[ ! -z "${PKGCONFIG+x}" ]]; then
     pkgconfig_exe=${PKGCONFIG}
 fi
 
+if [[ "${target_os}" == "linux" ]]; then
+    # Detect WebKitGTK API
+    if [[ ! -z "${WEBKITGTK_API+x}" ]]; then
+        webkitgtk_api=${WEBKITGTK_API}
+    elif "${pkgconfig_exe}" --exists webkitgtk-6.0; then
+        webkitgtk_api=0x600
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.1; then
+        webkitgtk_api=0x401
+    elif "${pkgconfig_exe}" --exists webkit2gtk-4.0; then
+        webkitgtk_api=0x400
+    else
+        echo "ERROR: Unable to detect WebKitGTK API." >&2
+        exit 1
+    fi
+
+    # WebKitGTK library
+    if [[ "${webkitgtk_api}" == 0x600 ]]; then
+        pkgconfig_libs+=(webkitgtk-6.0 javascriptcoregtk-6.0)
+    elif [[ "${webkitgtk_api}" == 0x401 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.1)
+    elif [[ "${webkitgtk_api}" == 0x400 ]]; then
+        pkgconfig_libs+=(webkit2gtk-4.0)
+    else
+        echo "ERROR: Unable to detect WebKitGTK library." >&2
+        exit 1
+    fi
+
+    # GTK library
+    if [[ "${webkitgtk_api}" -ge 0x600 ]]; then
+        pkgconfig_libs+=(gtk4)
+        gtk_version=0x400
+    elif [[ "${webkitgtk_api}" -ge 0x400 ]]; then
+        pkgconfig_libs+=(gtk+-3.0)
+        gtk_version=0x300
+    else
+        echo "ERROR: Unable to detect GTK version/library." >&2
+        exit 1
+    fi
+fi
+
 project_dir=$(dirname "$(dirname "$(unix_realpath_wrapper "${BASH_SOURCE[0]}")")") || exit 1
 
 # Default build directory unless overridden
@@ -291,20 +338,20 @@ cxx_compile_flags+=("-std=${cxx_std}")
 
 if [[ "${target_os}" == "linux" ]]; then
     shared_lib_suffix=.so
-    pkgconfig_libs=(gtk+-3.0 webkit2gtk-4.0)
     cxx_compile_flags+=($("${pkgconfig_exe}" --cflags "${pkgconfig_libs[@]}")) || exit 1
     cxx_link_flags+=($("${pkgconfig_exe}" --libs "${pkgconfig_libs[@]}")) || exit 1
+    cxx_link_flags+=(-ldl) || exit 1
 elif [[ "${target_os}" == "macos" ]]; then
     shared_lib_suffix=.dylib
-    cxx_link_flags+=(-framework WebKit)
+    cxx_link_flags+=(-framework WebKit -ldl)
     macos_target_version=10.9
     c_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
     cxx_compile_flags+=("-mmacosx-version-min=${macos_target_version}")
 elif [[ "${target_os}" == "windows" ]]; then
     exe_suffix=.exe
     shared_lib_suffix=.dll
-    cxx_compile_flags+=("-I${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
-    cxx_compile_flags+=("--include=${project_dir}/include/webview/detail/mingw_support.h")
+    cxx_compile_flags+=(-isystem "${libs_dir}/Microsoft.Web.WebView2.${mswebview2_version}/build/native/include")
+    cxx_compile_flags+=("--include=${project_dir}/webview_mingw_support.h")
     cxx_link_flags+=(-mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
 fi
 

@@ -30,23 +30,36 @@ Your compiler must support minimum C++11 except for platforms that require a mor
 
 ### Linux and BSD
 
-The [GTK][gtk] and [WebKit2GTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding how to install those those.
+The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development and distribution. You need to check your package repositories regarding which packages to install.
 
-Debian-based systems:
+#### Packages
 
-* Packages:
-  * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
-  * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
+* Debian:
+  * WebKitGTK 6.0, GTK 4:
+    * Development: `apt install libgtk-4-dev libwebkitgtk-6.0-dev`
+    * Production: `apt install libgtk-4-1 libwebkitgtk-6.0-4`
+  * WebKitGTK 4.1, GTK 3, libsoup 3:
+    * Development: `apt install libgtk-3-dev libwebkit2gtk-4.1-dev`
+    * Production: `apt install libgtk-3-0 libwebkit2gtk-4.1-0`
+  * WebKitGTK 4.0, GTK 3, libsoup 2:
+    * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
+    * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
+* Fedora:
+  * WebKitGTK 6.0, GTK 4:
+    * Development: `dnf install gtk3-devel webkitgtk6.0-devel`
+    * Production: `dnf install gtk3 webkitgtk6.0`
+  * WebKitGTK 4.1, GTK 3, libsoup 3:
+    * Development: `dnf install gtk3-devel webkit2gtk4.1-devel`
+    * Production: `dnf install gtk3 webkit2gtk4.1`
+  * WebKitGTK 4.0, GTK 3, libsoup 2:
+    * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
+    * Production: `dnf install gtk3 webkit2gtk4.0`
+* FreeBSD:
+  * GTK 4: `pkg install webkit2-gtk4`
+  * GTK 3: `pkg install webkit2-gtk3`
 
-Fedora-based systems:
+#### BSD
 
-* Packages:
-  * Development: `dnf install gtk3-devel webkit2gtk4.0-devel`
-  * Production: `dnf install gtk3 webkit2gtk4.0`
-
-BSD-based systems:
-
-* FreeBSD packages: `pkg install webkit2-gtk3`
 * Execution on BSD-based systems may require adding the `wxallowed` option (see [mount(8)](https://man.openbsd.org/mount.8))  to your fstab to bypass [W^X](https://en.wikipedia.org/wiki/W%5EX "write xor execute") memory protection for your executable. Please see if it works without disabling this security feature first.
 
 ### Windows
@@ -110,7 +123,7 @@ Build and run the example:
 
 ```sh
 # Linux
-g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && ./build/basic
+g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1) -o build/basic && ./build/basic
 # macOS
 g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
 # Windows/MinGW
@@ -140,9 +153,9 @@ Build the library and example, then run it:
 
 ```sh
 # Linux
-g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.0) -o build/webview.o
+g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o $(pkg-config --libs gtk+-3.0 webkit2gtk-4.0) -o build/basic && build/basic
+g++ build/basic.o build/webview.o $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -o build/basic && build/basic
 # macOS
 g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC -o build/webview.o
 gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
@@ -188,6 +201,14 @@ Name                   | Description
 `WEBVIEW_BUILD_SHARED` | Modifies `WEBVIEW_API` for building a shared library.
 `WEBVIEW_SHARED`       | Modifies `WEBVIEW_API` for using a shared library.
 `WEBVIEW_STATIC`       | Modifies `WEBVIEW_API` for building or using a static library.
+
+#### Backend Selection
+
+Name                   | Description
+----                   | -----------
+`WEBVIEW_GTK`          | Compile with GTK/WebKitGTK.
+`WEBVIEW_COCOA`        | Compile with Cocoa/WebKit.
+`WEBVIEW_EDGE`         | Compile with Win32/WebView2.
 
 ## App Distribution
 
@@ -267,7 +288,7 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 * Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
 * Microsoft Edge Insider (preview) channels are not supported.
 
-The following compile-time options can be used to change how the library integrates the WebView2 loader:
+The following [compile-time options](#compile-time-options) can be used to change how the library integrates the WebView2 loader:
 
 * `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=<1|0>` - Enables or disables the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
 * `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=<1|0>` - Enables or disables explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
@@ -309,14 +330,15 @@ Variable     | Description
 
 Only `build.sh`:
 
-Variable     | Description
------------- | --------------------------------------------------------------
-`HOST_OS`    | Host operating system (`linux`, `macos`, `windows`).
-`TARGET_OS`  | Target operating system for cross-compilation (see `HOST_OS`).
-`CC`         | C compiler executable.
-`CXX`        | C++ compiler executable.
-`LIB_PREFIX` | Library name prefix.
-`PKGCONFIG`  | Alternative `pkgconfig` executable.
+Variable        | Description
+--------------- | --------------------------------------------------------------
+`HOST_OS`       | Host operating system (`linux`, `macos`, `windows`).
+`TARGET_OS`     | Target operating system for cross-compilation (see `HOST_OS`).
+`CC`            | C compiler executable.
+`CXX`           | C++ compiler executable.
+`LIB_PREFIX`    | Library name prefix.
+`PKGCONFIG`     | Alternative `pkgconfig` executable.
+`WEBKITGTK_API` | WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0. This will also automatically decide the GTK version. Uses the latest known and available API by default.
 
 ### CMake
 
@@ -362,8 +384,10 @@ For example, the library does not attempt to support user interaction features l
 
 Language    | Project
 ----------  | -------
+Ada         | [thechampagne/webview-ada](https://github.com/thechampagne/webview-ada)
 Bun         | [tr1ckydev/webview-bun](https://github.com/tr1ckydev/webview-bun)
 C#          | [webview/webview_csharp](https://github.com/webview/webview_csharp)
+C3          | [thechampagne/webview-c3](https://github.com/thechampagne/webview-c3)
 Crystal     | [naqvis/webview](https://github.com/naqvis/webview)
 D           | [thechampagne/webview-d](https://github.com/thechampagne/webview-d)
 Deno        | [webview/webview_deno](https://github.com/webview/webview_deno)

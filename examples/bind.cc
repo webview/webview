@@ -1,30 +1,40 @@
 #include "webview.h"
 
 #include <chrono>
+#include <iostream>
 #include <string>
 #include <thread>
 
 constexpr const auto html =
-    R"html(<button id="increment">Tap me</button>
-<div>You tapped <span id="count">0</span> time(s).</div>
-<button id="compute">Compute</button>
-<div>Result of computation: <span id="compute-result">0</span></div>
-<script>
-  const [incrementElement, countElement, computeElement, computeResultElement] =
-    document.querySelectorAll("#increment, #count, #compute, #compute-result");
-  document.addEventListener("DOMContentLoaded", () => {
-    incrementElement.addEventListener("click", () => {
-      window.increment().then(result => {
-        countElement.textContent = result.count;
-      });
-    });
-    computeElement.addEventListener("click", () => {
-      computeElement.disabled = true;
-      window.compute(6, 7).then(result => {
-        computeResultElement.textContent = result;
-        computeElement.disabled = false;
-      });
-    });
+    R"html(
+<div>
+  <button id="increment">+</button>
+  <button id="decrement">−</button>
+  <span>Counter: <span id="counterResult">0</span></span>
+</div>
+<hr />
+<div>
+  <button id="compute">Compute</button>
+  <span>Result: <span id="computeResult">(not started)</span></span>
+</div>
+<script type="module">
+  const getElements = ids => Object.assign({}, ...ids.map(
+    id => ({ [id]: document.getElementById(id) })));
+  const ui = getElements([
+    "increment", "decrement", "counterResult", "compute",
+    "computeResult"
+  ]);
+  ui.increment.addEventListener("click", async () => {
+    ui.counterResult.textContent = await window.count(1);
+  });
+  ui.decrement.addEventListener("click", async () => {
+    ui.counterResult.textContent = await window.count(-1);
+  });
+  ui.compute.addEventListener("click", async () => {
+    ui.compute.disabled = true;
+    ui.computeResult.textContent = "(pending)";
+    ui.computeResult.textContent = await window.compute(6, 7);
+    ui.compute.disabled = false;
   });
 </script>)html";
 
@@ -34,37 +44,41 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 #else
 int main() {
 #endif
-  unsigned int count = 0;
-  webview::webview w(false, nullptr);
-  w.set_title("Bind Example");
-  w.set_size(480, 320, WEBVIEW_HINT_NONE);
+  try {
+    long count = 0;
 
-  // A binding that increments a value and immediately returns the new value.
-  w.bind("increment", [&](const std::string & /*req*/) -> std::string {
-    auto count_string = std::to_string(++count);
-    return "{\"count\": " + count_string + "}";
-  });
+    webview::webview w(true, nullptr);
+    w.set_title("Bind Example");
+    w.set_size(480, 320, WEBVIEW_HINT_NONE);
 
-  // An binding that creates a new thread and returns the result at a later time.
-  w.bind(
-      "compute",
-      [&](const std::string &seq, const std::string &req, void * /*arg*/) {
-        // Create a thread and forget about it for the sake of simplicity.
-        std::thread([&, seq, req] {
-          // Simulate load.
-          std::this_thread::sleep_for(std::chrono::seconds(1));
-          // json_parse() is an implementation detail and is only used here
-          // to provide a working example.
-          auto left = std::stoll(webview::detail::json_parse(req, "", 0));
-          auto right = std::stoll(webview::detail::json_parse(req, "", 1));
-          auto result = std::to_string(left * right);
-          w.resolve(seq, 0, result);
-        }).detach();
-      },
-      nullptr);
+    // A binding that counts up or down and immediately returns the new value.
+    w.bind("count", [&](const std::string &req) -> std::string {
+      // Imagine that req is properly parsed or use your own JSON parser.
+      auto direction = std::stol(req.substr(1, req.size() - 1));
+      return std::to_string(count += direction);
+    });
 
-  w.set_html(html);
-  w.run();
+    // A binding that creates a new thread and returns the result at a later time.
+    w.bind(
+        "compute",
+        [&](const std::string &id, const std::string &req, void * /*arg*/) {
+          // Create a thread and forget about it for the sake of simplicity.
+          std::thread([&, id, req] {
+            // Simulate load.
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            // Imagine that req is properly parsed or use your own JSON parser.
+            const auto *result = "42";
+            w.resolve(id, 0, result);
+          }).detach();
+        },
+        nullptr);
+
+    w.set_html(html);
+    w.run();
+  } catch (const webview::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
 
   return 0;
 }

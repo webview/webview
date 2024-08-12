@@ -1,20 +1,6 @@
 name: CMake
 on: [push, pull_request]
 jobs:
-  # Initial checks
-  checks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run clang-format
-        uses: DoozyX/clang-format-lint-action@v0.6
-        with:
-          source: '.'
-          exclude: './script'
-          extensions: 'h,cc'
-          clangFormatVersion: 9
-          style: file
-
   # Main CMake jobs
   cmake-main:
     runs-on: ubuntu-latest
@@ -34,7 +20,7 @@ jobs:
       matrix:
         language: [csharp, java, python, ruby]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Generate bindings with SWIG
         run: |
           mkdir -p "build/bindings/${{ matrix.language }}" \
@@ -425,3 +411,26 @@ jobs:
           generator-platform: ${{ matrix.generator-platform }}
           test: ${{ matrix.test }}
           test-coverage: false
+
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run clang-format
+        uses: DoozyX/clang-format-lint-action@v0.16
+        with:
+          source: '.'
+          exclude: './build'
+          extensions: 'h,cc'
+          clangFormatVersion: 9
+          style: file
+
+  doxygen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
+      - run: mkdir -p build/docs
+      - name: Run Doxygen
+        run: doxygen
