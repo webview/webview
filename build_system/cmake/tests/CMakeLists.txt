@@ -7,7 +7,7 @@ if(MSVC)
 endif()
 
 # Add core tests
-add_executable(webview_core_tests "${WEBVIEW_TEST_DIR}/core_test.cc")
+add_executable(webview_core_tests "${WEBVIEW_TEST_DIR}/core_tests.cc")
 target_link_libraries(webview_core_tests PRIVATE webview_core_headers webview_test_driver Threads::Threads)
 list(APPEND TEST_TARGETS webview_core_tests)
 webview_discover_tests(webview_core_tests)
