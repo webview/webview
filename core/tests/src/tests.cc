@@ -8,13 +8,8 @@
 
 #include "webview/core/webview.h"
 
-#undef NDEBUG
 #include <cassert>
 #include <cstdint>
-#include <cstring>
-#include <iostream>
-#include <thread>
-#include <unordered_map>
 
 TEST_CASE("Start app loop and terminate it") {
   webview::webview w(false, nullptr);
@@ -260,7 +255,6 @@ struct test_webview : webview::browser_engine {
 
 TEST_CASE("Ensure that JS code can call native code and vice versa") {
   test_webview browser([](test_webview *w, int i, const std::string &msg) {
-    std::cout << msg << std::endl;
     switch (i) {
     case 0:
       REQUIRE(msg == "loaded");
