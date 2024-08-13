@@ -1,4 +1,4 @@
-//bin/echo; [ $(uname) = "Darwin" ] && FLAGS="-framework Webkit" || FLAGS="$(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0)" ; c++ "$0" $FLAGS -std=c++11 -Wall -Wextra -pedantic -g -o webview_test && ./webview_test ; exit
+#include "webview/testing.hpp"
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2
@@ -16,27 +16,23 @@
 #include <thread>
 #include <unordered_map>
 
-// =================================================================
-// TEST: start app loop and terminate it.
-// =================================================================
-static void test_terminate() {
+TEST_CASE("Start app loop and terminate it") {
   webview::webview w(false, nullptr);
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
 
-// =================================================================
-// TEST: use C API to create a window, run app and terminate it.
-// =================================================================
 static void cb_assert_arg(webview_t w, void *arg) {
-  assert(w != nullptr);
-  assert(memcmp(arg, "arg", 3) == 0);
+  REQUIRE(w != nullptr);
+  REQUIRE(memcmp(arg, "arg", 3) == 0);
 }
+
 static void cb_terminate(webview_t w, void *arg) {
-  assert(arg == nullptr);
+  REQUIRE(arg == nullptr);
   webview_terminate(w);
 }
-static void test_c_api() {
+
+TEST_CASE("Use C API to create a window, run app and terminate it") {
   webview_t w;
   w = webview_create(false, nullptr);
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
@@ -49,11 +45,7 @@ static void test_c_api() {
   webview_destroy(w);
 }
 
-// =================================================================
-// TEST: use C API to test binding and unbinding.
-// =================================================================
-
-static void test_c_api_bind() {
+TEST_CASE("Use C API to test binding and unbinding") {
   struct context_t {
     webview_t w;
     unsigned int number;
@@ -68,7 +60,7 @@ static void test_c_api_bind() {
     std::string req_(req);
     // Bind and increment number.
     if (req_ == "[0]") {
-      assert(context->number == 0);
+      REQUIRE(context->number == 0);
       webview_bind(context->w, "increment", increment, context);
       webview_eval(context->w,
                    "try{window.increment().then(r => window.test(1))"
@@ -79,7 +71,7 @@ static void test_c_api_bind() {
     }
     // Unbind and make sure that we cannot increment even if we try.
     if (req_ == "[1]") {
-      assert(context->number == 1);
+      REQUIRE(context->number == 1);
       webview_unbind(context->w, "increment");
       webview_eval(context->w,
                    "try{window.increment().then(r => window.test(2))"
@@ -90,7 +82,7 @@ static void test_c_api_bind() {
     }
     // Number should not have changed but we can bind again and change the number.
     if (req_ == "[2,1]") {
-      assert(context->number == 1);
+      REQUIRE(context->number == 1);
       webview_bind(context->w, "increment", increment, context);
       webview_eval(context->w,
                    "try{window.increment().then(r => window.test(3))"
@@ -101,11 +93,11 @@ static void test_c_api_bind() {
     }
     // Finish test.
     if (req_ == "[3]") {
-      assert(context->number == 2);
+      REQUIRE(context->number == 2);
       webview_terminate(context->w);
       return;
     }
-    assert(!"Should not reach here");
+    REQUIRE(!"Should not reach here");
   };
   auto html = "<script>\n"
               "  window.test(0);\n"
@@ -121,11 +113,7 @@ static void test_c_api_bind() {
   webview_run(w);
 }
 
-// =================================================================
-// TEST: test synchronous binding and unbinding.
-// =================================================================
-
-static void test_sync_bind() {
+TEST_CASE("Test synchronous binding and unbinding") {
   auto make_call_js = [](unsigned int result) {
     std::string js;
     js += "try{window.increment().then(r => window.test(";
@@ -147,14 +135,14 @@ static void test_sync_bind() {
     };
     // Bind and increment number.
     if (req == "[0]") {
-      assert(number == 0);
+      REQUIRE(number == 0);
       w.bind("increment", increment);
       w.eval(make_call_js(1));
       return "";
     }
     // Unbind and make sure that we cannot increment even if we try.
     if (req == "[1]") {
-      assert(number == 1);
+      REQUIRE(number == 1);
       w.unbind("increment");
       w.eval(make_call_js(2));
       return "";
@@ -162,18 +150,18 @@ static void test_sync_bind() {
     // We should have gotten an error on the JS side.
     // Number should not have changed but we can bind again and change the number.
     if (req == "[2,1]") {
-      assert(number == 1);
+      REQUIRE(number == 1);
       w.bind("increment", increment);
       w.eval(make_call_js(3));
       return "";
     }
     // Finish test.
     if (req == "[3]") {
-      assert(number == 2);
+      REQUIRE(number == 2);
       w.terminate();
       return "";
     }
-    assert(!"Should not reach here");
+    REQUIRE(!"Should not reach here");
     return "";
   };
   auto html = "<script>\n"
@@ -188,10 +176,7 @@ static void test_sync_bind() {
   w.run();
 }
 
-// =================================================================
-// TEST: the string returned from a binding call must be JSON.
-// =================================================================
-static void test_binding_result_must_be_json() {
+TEST_CASE("The string returned from a binding call must be JSON") {
   constexpr auto html =
       R"html(<script>
   try {
@@ -210,9 +195,9 @@ static void test_binding_result_must_be_json() {
   });
 
   w.bind("endTest", [&](const std::string &req) -> std::string {
-    assert(req != "[2]");
-    assert(req != "[1]");
-    assert(req == "[0]");
+    REQUIRE(req != "[2]");
+    REQUIRE(req != "[1]");
+    REQUIRE(req == "[0]");
     w.terminate();
     return "";
   });
@@ -221,10 +206,7 @@ static void test_binding_result_must_be_json() {
   w.run();
 }
 
-// =================================================================
-// TEST: the string returned of a binding call must not be JS.
-// =================================================================
-static void test_binding_result_must_not_be_js() {
+TEST_CASE("The string returned of a binding call must not be JS") {
   constexpr const auto html =
       R"html(<script>
   try {
@@ -244,9 +226,9 @@ static void test_binding_result_must_not_be_js() {
   });
 
   w.bind("endTest", [&](const std::string &req) -> std::string {
-    assert(req != "[0]");
-    assert(req != "[2]");
-    assert(req == "[1]");
+    REQUIRE(req != "[0]");
+    REQUIRE(req != "[2]");
+    REQUIRE(req == "[1]");
     w.terminate();
     return "";
   });
@@ -255,25 +237,19 @@ static void test_binding_result_must_not_be_js() {
   w.run();
 }
 
-// =================================================================
-// TEST: webview_version().
-// =================================================================
-static void test_c_api_version() {
+TEST_CASE("webview_version()") {
   auto vi = webview_version();
-  assert(vi);
-  assert(vi->version.major == 1);
-  assert(vi->version.minor == 2);
-  assert(vi->version.patch == 3);
-  assert(std::string(vi->version_number) == "1.2.3");
-  assert(std::string(vi->pre_release) == "-test");
-  assert(std::string(vi->build_metadata) == "+gaabbccd");
+  REQUIRE(vi);
+  REQUIRE(vi->version.major == 1);
+  REQUIRE(vi->version.minor == 2);
+  REQUIRE(vi->version.patch == 3);
+  REQUIRE(std::string(vi->version_number) == "1.2.3");
+  REQUIRE(std::string(vi->pre_release) == "-test");
+  REQUIRE(std::string(vi->build_metadata) == "+gaabbccd");
   // The function should return the same pointer when called again.
-  assert(webview_version() == vi);
+  REQUIRE(webview_version() == vi);
 }
 
-// =================================================================
-// TEST: ensure that JS code can call native code and vice versa.
-// =================================================================
 struct test_webview : webview::browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
   test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
@@ -282,20 +258,20 @@ struct test_webview : webview::browser_engine {
   cb_t m_cb;
 };
 
-static void test_bidir_comms() {
+TEST_CASE("Ensure that JS code can call native code and vice versa") {
   test_webview browser([](test_webview *w, int i, const std::string &msg) {
     std::cout << msg << std::endl;
     switch (i) {
     case 0:
-      assert(msg == "loaded");
+      REQUIRE(msg == "loaded");
       w->eval("window.__webview__.post('exiting ' + window.x)");
       break;
     case 1:
-      assert(msg == "exiting 42");
+      REQUIRE(msg == "exiting 42");
       w->terminate();
       break;
     default:
-      assert(0);
+      REQUIRE(0);
     }
   });
   browser.init(R"(
@@ -308,154 +284,148 @@ static void test_bidir_comms() {
   browser.run();
 }
 
-// =================================================================
-// TEST: ensure that JSON parsing works.
-// =================================================================
-static void test_json() {
+TEST_CASE("Ensure that JSON parsing works") {
   auto J = webview::detail::json_parse;
   // Valid input with expected output
-  assert(J(R"({"foo":"bar"})", "foo", -1) == "bar");
-  assert(J(R"({"foo":""})", "foo", -1).empty());
-  assert(J(R"({"foo":{}")", "foo", -1) == "{}");
-  assert(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
-  assert(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
-  assert(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
+  REQUIRE(J(R"({"foo":"bar"})", "foo", -1) == "bar");
+  REQUIRE(J(R"({"foo":""})", "foo", -1).empty());
+  REQUIRE(J(R"({"foo":{}")", "foo", -1) == "{}");
+  REQUIRE(J(R"({"foo": {"bar": 1}})", "foo", -1) == R"({"bar": 1})");
+  REQUIRE(J(R"(["foo", "bar", "baz"])", "", 0) == "foo");
+  REQUIRE(J(R"(["foo", "bar", "baz"])", "", 2) == "baz");
   // Valid UTF-8 with expected output
-  assert(J(R"({"フー":"バー"})", "フー", -1) == "バー");
-  assert(J(R"(["フー", "バー", "バズ"])", "", 2) == "バズ");
+  REQUIRE(J(R"({"フー":"バー"})", "フー", -1) == "バー");
+  REQUIRE(J(R"(["フー", "バー", "バズ"])", "", 2) == "バズ");
   // Invalid input with valid output - should probably fail
-  assert(J(R"({"foo":"bar")", "foo", -1) == "bar");
+  REQUIRE(J(R"({"foo":"bar")", "foo", -1) == "bar");
   // Valid input with other invalid parameters - should fail
-  assert(J(R"([])", "", 0).empty());
-  assert(J(R"({})", "foo", -1).empty());
-  assert(J(R"(["foo", "bar", "baz"])", "", -1).empty());
-  assert(J(R"(["foo"])", "", 1234).empty());
-  assert(J(R"(["foo"])", "", -1234).empty());
+  REQUIRE(J(R"([])", "", 0).empty());
+  REQUIRE(J(R"({})", "foo", -1).empty());
+  REQUIRE(J(R"(["foo", "bar", "baz"])", "", -1).empty());
+  REQUIRE(J(R"(["foo"])", "", 1234).empty());
+  REQUIRE(J(R"(["foo"])", "", -1234).empty());
   // Invalid input - should fail
-  assert(J("", "", 0).empty());
-  assert(J("", "foo", -1).empty());
-  assert(J(R"({"foo":")", "foo", -1).empty());
-  assert(J(R"({"foo":{)", "foo", -1).empty());
-  assert(J(R"({"foo":{")", "foo", -1).empty());
-  assert(J(R"(}")", "foo", -1).empty());
-  assert(J(R"({}}")", "foo", -1).empty());
-  assert(J(R"("foo)", "foo", -1).empty());
-  assert(J(R"(foo)", "foo", -1).empty());
-  assert(J(R"({{[[""foo""]]}})", "", 1234).empty());
-  assert(J("bad", "", 0).empty());
-  assert(J("bad", "foo", -1).empty());
+  REQUIRE(J("", "", 0).empty());
+  REQUIRE(J("", "foo", -1).empty());
+  REQUIRE(J(R"({"foo":")", "foo", -1).empty());
+  REQUIRE(J(R"({"foo":{)", "foo", -1).empty());
+  REQUIRE(J(R"({"foo":{")", "foo", -1).empty());
+  REQUIRE(J(R"(}")", "foo", -1).empty());
+  REQUIRE(J(R"({}}")", "foo", -1).empty());
+  REQUIRE(J(R"("foo)", "foo", -1).empty());
+  REQUIRE(J(R"(foo)", "foo", -1).empty());
+  REQUIRE(J(R"({{[[""foo""]]}})", "", 1234).empty());
+  REQUIRE(J("bad", "", 0).empty());
+  REQUIRE(J("bad", "foo", -1).empty());
 }
 
-// =================================================================
-// TEST: ensure that JSON escaping works.
-// =================================================================
-static void test_json_escape() {
+TEST_CASE("Ensure that JSON escaping works") {
   using webview::detail::json_escape;
 
   // Simple case without need for escaping. Quotes added by default.
-  assert(json_escape("hello") == "\"hello\"");
+  REQUIRE(json_escape("hello") == "\"hello\"");
   // Simple case without need for escaping. Quotes explicitly not added.
-  assert(json_escape("hello", false) == "hello");
+  REQUIRE(json_escape("hello", false) == "hello");
   // Empty input should return empty output.
-  assert(json_escape("", false).empty());
+  REQUIRE(json_escape("", false).empty());
   // '"' and '\' should be escaped.
-  assert(json_escape("\"", false) == "\\\"");
-  assert(json_escape("\\", false) == "\\\\");
+  REQUIRE(json_escape("\"", false) == "\\\"");
+  REQUIRE(json_escape("\\", false) == "\\\\");
   // Commonly-used characters that should be escaped.
-  assert(json_escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
+  REQUIRE(json_escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
   // ASCII control characters should be escaped.
-  assert(json_escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
+  REQUIRE(json_escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
   // ASCII printable characters (even DEL) shouldn't be escaped.
-  assert(json_escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
+  REQUIRE(json_escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
   // Valid UTF-8.
-  assert(json_escape("\u2328", false) == "\u2328");
-  assert(json_escape("フーバー", false) == "フーバー");
+  REQUIRE(json_escape("\u2328", false) == "\u2328");
+  REQUIRE(json_escape("フーバー", false) == "フーバー");
   // Replacement character for invalid characters.
-  assert(json_escape("�", false) == "�");
+  REQUIRE(json_escape("�", false) == "�");
   // Invalid characters should be replaced with '�' but we just leave them as-is.
-  assert(json_escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
+  REQUIRE(json_escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
   // JS code should not be executed (eval).
   auto expected_gotcha = R"js(alert(\"gotcha\"))js";
-  assert(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
+  REQUIRE(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
-static void test_optional() {
+TEST_CASE("optional class") {
   using namespace webview::detail;
 
-  assert(!optional<int>{}.has_value());
-  assert(optional<int>{1}.has_value());
-  assert(optional<int>{1}.get() == 1);
+  REQUIRE(!optional<int>{}.has_value());
+  REQUIRE(optional<int>{1}.has_value());
+  REQUIRE(optional<int>{1}.get() == 1);
 
   try {
     optional<int>{}.get();
-    assert(!!"Expected exception");
+    REQUIRE(!!"Expected exception");
   } catch (const bad_access &) {
     // Do nothing
   }
 
-  assert(!optional<int>{optional<int>{}}.has_value());
-  assert(optional<int>{optional<int>{1}}.has_value());
-  assert(optional<int>{optional<int>{1}}.get() == 1);
+  REQUIRE(!optional<int>{optional<int>{}}.has_value());
+  REQUIRE(optional<int>{optional<int>{1}}.has_value());
+  REQUIRE(optional<int>{optional<int>{1}}.get() == 1);
 }
 
-static void test_result() {
+TEST_CASE("result class") {
   using namespace webview::detail;
   using namespace webview;
 
-  assert(result<int>{}.has_value());
-  assert(result<int>{}.value() == 0);
-  assert(result<int>{1}.has_value());
-  assert(result<int>{1}.value() == 1);
-  assert(!result<int>{}.has_error());
-  assert(!result<int>{1}.has_error());
-  assert(result<int>{}.ok());
-  assert(result<int>{1}.ok());
-  assert(!result<int>{error_info{}}.ok());
-  assert(!result<int>{error_info{}}.has_value());
-  assert(result<int>{error_info{}}.has_error());
+  REQUIRE(result<int>{}.has_value());
+  REQUIRE(result<int>{}.value() == 0);
+  REQUIRE(result<int>{1}.has_value());
+  REQUIRE(result<int>{1}.value() == 1);
+  REQUIRE(!result<int>{}.has_error());
+  REQUIRE(!result<int>{1}.has_error());
+  REQUIRE(result<int>{}.ok());
+  REQUIRE(result<int>{1}.ok());
+  REQUIRE(!result<int>{error_info{}}.ok());
+  REQUIRE(!result<int>{error_info{}}.has_value());
+  REQUIRE(result<int>{error_info{}}.has_error());
 
   auto result_with_error = result<int>{
       error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
-  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
-  assert(result_with_error.error().message() == "invalid argument");
+  REQUIRE(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  REQUIRE(result_with_error.error().message() == "invalid argument");
 
   try {
     result<int>{}.error();
-    assert(!!"Expected exception");
+    REQUIRE(!!"Expected exception");
   } catch (const bad_access &) {
     // Do nothing
   }
 }
 
-static void test_noresult() {
+TEST_CASE("noresult class") {
   using namespace webview::detail;
   using namespace webview;
 
-  assert(!noresult{}.has_error());
-  assert(noresult{}.ok());
-  assert(!noresult{error_info{}}.ok());
-  assert(noresult{error_info{}}.has_error());
+  REQUIRE(!noresult{}.has_error());
+  REQUIRE(noresult{}.ok());
+  REQUIRE(!noresult{error_info{}}.ok());
+  REQUIRE(noresult{error_info{}}.has_error());
 
   auto result_with_error =
       noresult{error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "invalid argument"}};
-  assert(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
-  assert(result_with_error.error().message() == "invalid argument");
+  REQUIRE(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
+  REQUIRE(result_with_error.error().message() == "invalid argument");
 
   try {
     noresult{}.error();
-    assert(!!"Expected exception");
+    REQUIRE(!!"Expected exception");
   } catch (const bad_access &) {
     // Do nothing
   }
 }
 
-#define ASSERT_WEBVIEW_FAILED(expr) assert(WEBVIEW_FAILED(expr))
+#define ASSERT_WEBVIEW_FAILED(expr) REQUIRE(WEBVIEW_FAILED(expr))
 
-static void test_bad_c_api_usage_without_crash() {
+TEST_CASE("Bad C API usage without crash") {
   webview_t w{};
-  assert(webview_get_window(w) == nullptr);
-  assert(webview_get_native_handle(w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW) ==
-         nullptr);
+  REQUIRE(webview_get_window(w) == nullptr);
+  REQUIRE(webview_get_native_handle(w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW) ==
+          nullptr);
   ASSERT_WEBVIEW_FAILED(webview_set_size(w, 0, 0, WEBVIEW_HINT_NONE));
   ASSERT_WEBVIEW_FAILED(webview_navigate(w, nullptr));
   ASSERT_WEBVIEW_FAILED(webview_set_title(w, nullptr));
@@ -471,145 +441,68 @@ static void test_bad_c_api_usage_without_crash() {
   ASSERT_WEBVIEW_FAILED(webview_destroy(w));
 }
 
-static void run_with_timeout(std::function<void()> fn, int timeout_ms) {
-  std::atomic_flag flag_running = ATOMIC_FLAG_INIT;
-  flag_running.test_and_set();
-  std::thread timeout_thread([&]() {
-    for (int i = 0; i < timeout_ms / 100; i++) {
-      if (!flag_running.test_and_set()) {
-        return;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    std::cout << "Exiting due to a timeout." << std::endl;
-    exit(1);
-  });
-  fn();
-  flag_running.clear();
-  timeout_thread.join();
-}
-
 #if _WIN32
-// =================================================================
-// TEST: ensure that version number parsing works on Windows.
-// =================================================================
-static void test_parse_version() {
+TEST_CASE("Ensure that version number parsing works on Windows") {
   using namespace webview::detail;
   auto v = parse_version("");
-  assert(v.size() == 4);
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v.size() == 4);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
   v = parse_version("1");
-  assert(v[0] == 1 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 1 && v[1] == 0 && v[2] == 0 && v[3] == 0);
   v = parse_version("0.2");
-  assert(v[0] == 0 && v[1] == 2 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 2 && v[2] == 0 && v[3] == 0);
   v = parse_version("0.0.3");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 3 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 3 && v[3] == 0);
   v = parse_version("0.0.0.4");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 4);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 4);
   v = parse_version("1.2.3.4.5");
-  assert(v.size() == 4);
-  assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+  REQUIRE(v.size() == 4);
+  REQUIRE(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
   v = parse_version("1.2.3.4.5.6");
-  assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+  REQUIRE(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
   v = parse_version("11.22.33.44");
-  assert(v[0] == 11 && v[1] == 22 && v[2] == 33 && v[3] == 44);
+  REQUIRE(v[0] == 11 && v[1] == 22 && v[2] == 33 && v[3] == 44);
   v = parse_version("0.0.0.0");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
   v = parse_version("-1.-2.-3.-4");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
   v = parse_version("a.b.c.d");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
   v = parse_version("...");
-  assert(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
+  REQUIRE(v[0] == 0 && v[1] == 0 && v[2] == 0 && v[3] == 0);
 }
 
-// =================================================================
-// TEST: ensure that narrow/wide string conversion works on Windows.
-// =================================================================
-static void test_win32_narrow_wide_string_conversion() {
+TEST_CASE("Ensure that narrow/wide string conversion works on Windows") {
   using namespace webview::detail;
-  assert(widen_string("").empty());
-  assert(narrow_string(L"").empty());
-  assert(widen_string("foo") == L"foo");
-  assert(narrow_string(L"foo") == "foo");
-  assert(widen_string("フー") == L"フー");
-  assert(narrow_string(L"フー") == "フー");
-  assert(widen_string("æøå") == L"æøå");
-  assert(narrow_string(L"æøå") == "æøå");
+  REQUIRE(widen_string("").empty());
+  REQUIRE(narrow_string(L"").empty());
+  REQUIRE(widen_string("foo") == L"foo");
+  REQUIRE(narrow_string(L"foo") == "foo");
+  REQUIRE(widen_string("フー") == L"フー");
+  REQUIRE(narrow_string(L"フー") == "フー");
+  REQUIRE(widen_string("æøå") == L"æøå");
+  REQUIRE(narrow_string(L"æøå") == "æøå");
   // Unicode number for the smiley face below: U+1F600
-  assert(widen_string("😀") == L"😀");
-  assert(narrow_string(L"😀") == "😀");
+  REQUIRE(widen_string("😀") == L"😀");
+  REQUIRE(narrow_string(L"😀") == "😀");
   // Ensure that elements of wide string are correct
   {
     auto s = widen_string("😀");
-    assert(s.size() == 2);
-    assert(static_cast<std::uint16_t>(s[0]) == 0xD83D);
-    assert(static_cast<std::uint16_t>(s[1]) == 0xDE00);
+    REQUIRE(s.size() == 2);
+    REQUIRE(static_cast<std::uint16_t>(s[0]) == 0xD83D);
+    REQUIRE(static_cast<std::uint16_t>(s[1]) == 0xDE00);
   }
   // Ensure that elements of narrow string are correct
   {
     auto s = narrow_string(L"😀");
-    assert(s.size() == 4);
-    assert(static_cast<std::uint8_t>(s[0]) == 0xf0);
-    assert(static_cast<std::uint8_t>(s[1]) == 0x9f);
-    assert(static_cast<std::uint8_t>(s[2]) == 0x98);
-    assert(static_cast<std::uint8_t>(s[3]) == 0x80);
+    REQUIRE(s.size() == 4);
+    REQUIRE(static_cast<std::uint8_t>(s[0]) == 0xf0);
+    REQUIRE(static_cast<std::uint8_t>(s[1]) == 0x9f);
+    REQUIRE(static_cast<std::uint8_t>(s[2]) == 0x98);
+    REQUIRE(static_cast<std::uint8_t>(s[3]) == 0x80);
   }
   // Null-characters must also be converted
-  assert(widen_string(std::string(2, '\0')) == std::wstring(2, L'\0'));
-  assert(narrow_string(std::wstring(2, L'\0')) == std::string(2, '\0'));
+  REQUIRE(widen_string(std::string(2, '\0')) == std::wstring(2, L'\0'));
+  REQUIRE(narrow_string(std::wstring(2, L'\0')) == std::string(2, '\0'));
 }
 #endif
-
-int main(int argc, char *argv[]) {
-  std::unordered_map<std::string, std::function<void()>> all_tests = {
-      {"terminate", test_terminate},
-      {"c_api", test_c_api},
-      {"c_api_bind", test_c_api_bind},
-      {"c_api_version", test_c_api_version},
-      {"bidir_comms", test_bidir_comms},
-      {"json", test_json},
-      {"json_escape", test_json_escape},
-      {"sync_bind", test_sync_bind},
-      {"binding_result_must_be_json", test_binding_result_must_be_json},
-      {"binding_result_must_not_be_js", test_binding_result_must_not_be_js},
-      {"optional", test_optional},
-      {"result", test_result},
-      {"noresult", test_noresult},
-      {"bad_c_api_usage_without_crash", test_bad_c_api_usage_without_crash}};
-#if _WIN32
-  all_tests.emplace("parse_version", test_parse_version);
-  all_tests.emplace("win32_narrow_wide_string_conversion",
-                    test_win32_narrow_wide_string_conversion);
-#endif
-  // Without arguments run all tests, one-by-one by forking itself.
-  // With a single argument - run the requested test
-  if (argc == 1) {
-    int failed = 0;
-    for (const auto &test : all_tests) {
-      std::cout << "TEST: " << test.first << std::endl;
-      int status = system((std::string(argv[0]) + " " + test.first).c_str());
-      if (status == 0) {
-        std::cout << "  PASS " << std::endl;
-      } else {
-        std::cout << "  FAIL: " << status << std::endl;
-        failed = 1;
-      }
-    }
-    return failed;
-  }
-
-  if (argc == 2) {
-    auto it = all_tests.find(argv[1]);
-    if (it != all_tests.end()) {
-      run_with_timeout(it->second, 60000);
-      return 0;
-    }
-  }
-  std::cout << "USAGE: " << argv[0] << " [test name]" << std::endl;
-  std::cout << "Tests: " << std::endl;
-  for (const auto &test : all_tests) {
-    std::cout << "  " << test.first << std::endl;
-  }
-  return 1;
-}

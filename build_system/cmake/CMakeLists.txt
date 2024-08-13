@@ -59,6 +59,7 @@ endif()
 
 if(WEBVIEW_BUILD_TESTS)
     include(CTest)
+    add_subdirectory(test_driver)
     add_subdirectory(tests)
 endif()
 
