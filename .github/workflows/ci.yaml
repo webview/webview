@@ -70,7 +70,7 @@ jobs:
             test-coverage: false
             apt-packages: gcc-12 g++-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: ${{ matrix.cc }}
@@ -95,7 +95,7 @@ jobs:
             toolchain-file: x86_64-w64-mingw32
             standard: 14
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
@@ -125,7 +125,7 @@ jobs:
             osx-architectures: arm64;x86_64
             distributable: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: clang
@@ -158,7 +158,7 @@ jobs:
             test-coverage: false
             msys2-system: UCRT64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: ${{ matrix.cc }}
@@ -194,7 +194,7 @@ jobs:
             generator-platform: Win32
             test: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           build-type: Debug;Release
@@ -275,7 +275,7 @@ jobs:
             standard: 20
             apt-packages: gcc-12 g++-12
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: ${{ matrix.cc }}
@@ -305,7 +305,7 @@ jobs:
             toolchain-file: x86_64-w64-mingw32
             standard: 20
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
@@ -331,7 +331,7 @@ jobs:
           - image: macos-12
             standard: 20
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: clang
@@ -386,7 +386,7 @@ jobs:
             standard: 20
             msys2-system: UCRT64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: ${{ matrix.cc }}
@@ -421,7 +421,7 @@ jobs:
             generator-platform: x64
             test: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
           cc: cl
@@ -448,7 +448,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: cmake-extra
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
