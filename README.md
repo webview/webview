@@ -295,52 +295,7 @@ The following [compile-time options](#compile-time-options) can be used to chang
 
 ## Development
 
-### Build Scripts
-
-To build the library, examples and run tests, use one of the builds scripts in the `script` directory:
-
-* `build.sh`:
-  * On Unix-based systems.
-  * On Windows in a Unix-like environment such as MSYS2.
-
-* `build.bat`:
-  * On Windows when building with Visual C++.
-
-You can specify individual tasks on the command line for these scripts:
-
-Task       | Description
----------- | ---------------------------------------
-`info`     | Displays information.
-`clean`    | Cleans the build directory.
-`format`   | Reformats code.
-`deps`     | Fetches dependencies.
-`check`    | Runs checks.
-`build`    | Builds the library, examples and tests.
-`test`     | Runs tests.
-
-Additionally, the scripts accept the following environment variables.
-
-Both scripts:
-
-Variable     | Description
------------- | ---------------------------------------------------------
-`CI`         | Changes behavior in CI environments (more strict).
-`TARGET_ARCH`| Target architecture for cross-compilation (`x64`, `x86`).
-`BUILD_DIR`  | Overrides the path of the build directory.
-
-Only `build.sh`:
-
-Variable        | Description
---------------- | --------------------------------------------------------------
-`HOST_OS`       | Host operating system (`linux`, `macos`, `windows`).
-`TARGET_OS`     | Target operating system for cross-compilation (see `HOST_OS`).
-`CC`            | C compiler executable.
-`CXX`           | C++ compiler executable.
-`LIB_PREFIX`    | Library name prefix.
-`PKGCONFIG`     | Alternative `pkgconfig` executable.
-`WEBKITGTK_API` | WebKitGTK API to interface with, e.g. `0x400` for 4.0, `0x401` for 4.1 or `0x600` for 6.0. This will also automatically decide the GTK version. Uses the latest known and available API by default.
-
-### CMake
+This project uses the CMake build system.
 
 ### Build Options
 
@@ -358,6 +313,14 @@ Option                         | Description
 ### Consumer Options
 
 These options can be used when when the webview project isn't built as part of your project.
+
+#### Linux-specific Options
+
+Option                          | Description
+------------------------------- | ------------------------
+`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` or `4.0`. This will also automatically decide the GTK version. Uses the latest known and available API by default.
+
+#### Windows-specific Options
 
 Option                          | Description
 ------------------------------- | ------------------------
