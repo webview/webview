@@ -342,11 +342,33 @@ Variable        | Description
 
 ### CMake
 
+### Build Options
+
+These options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
+
+Option                         | Description
+------------------------------ | ----------------------
+`WEBVIEW_BUILD_TESTS`          | Build tests
+`WEBVIEW_BUILD_EXAMPLES`       | Build examples
+`WEBVIEW_INSTALL_TARGETS`      | Install targets
+`WEBVIEW_BUILD_PACKAGE`        | Build package
+`WEBVIEW_BUILD_SHARED_LIBRARY` | Build shared libraries
+`WEBVIEW_BUILD_STATIC_LIBRARY` | Build static libraries
+
+### Consumer Options
+
+These options can be used when when the webview project isn't built as part of your project.
+
+Option                          | Description
+------------------------------- | ------------------------
+`WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version
+`WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2
+
 #### Building
 
 ```
-cmake -GNinja -Bbuild -Sbuild_system/cmake
-cmake --build build-profile
+cmake -G Ninja -B build -S build_system/cmake
+cmake --build build
 ```
 
 #### Generate Test Coverage
@@ -355,7 +377,7 @@ Test coverage is currently only supported with GCC/Clang. We suggest using gcovr
 
 ```
 # Build for profiling
-cmake -GNinja -Bbuild-profile -Sbuild_system/cmake -DCMAKE_BUILD_TYPE=Profile
+cmake -G Ninja -B build-profile -S build_system/cmake -D CMAKE_BUILD_TYPE=Profile
 
 # Build tests
 cmake --build build-profile --target tests
