@@ -15,7 +15,6 @@ inputs:
   build-tests-target:
     description: CMake target for building all tests
     required: true
-    default: tests
   cc:
     description: Sets CMAKE_C_COMPILER
     required: false
