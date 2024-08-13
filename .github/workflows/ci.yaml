@@ -207,7 +207,6 @@ jobs:
           test-coverage: false
           distributable: true
 
-  # Main CMake jobs
   cmake-main:
     runs-on: ubuntu-latest
     needs:
@@ -432,7 +431,6 @@ jobs:
           test: ${{ matrix.test }}
           test-coverage: false
 
-  # Extra CMake jobs
   cmake-extra:
     runs-on: ubuntu-latest
     needs:
