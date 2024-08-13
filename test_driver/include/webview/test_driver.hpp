@@ -77,7 +77,7 @@ struct auto_test_reg {
 #define TEST_CASE_INTERNAL(name, counter)                                      \
   static void MAKE_TEST_CASE_NAME(webview_test_driver_case_, counter)();       \
   namespace {                                                                  \
-  const webview::auto_test_reg                                                 \
+  const ::webview::auto_test_reg                                               \
       MAKE_TEST_CASE_NAME(webview_test_driver_case_reg_, counter){             \
           {name, MAKE_TEST_CASE_NAME(webview_test_driver_case_, counter)}};    \
   }                                                                            \
@@ -87,14 +87,14 @@ struct auto_test_reg {
 
 #define REQUIRE(condition)                                                     \
   if (!static_cast<bool>(condition)) {                                         \
-    throw webview::test_failure{                                               \
-        webview::failure_info{#condition, __FILE__, __LINE__}};                \
+    throw ::webview::test_failure{                                             \
+        ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
   }
 
 #define REQUIRE_FALSE(condition)                                               \
   if (static_cast<bool>(condition)) {                                          \
-    throw webview::test_failure{                                               \
-        webview::failure_info{#condition, __FILE__, __LINE__}};                \
+    throw ::webview::test_failure{                                             \
+        ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
   }
 
 #define SECTION(name)
