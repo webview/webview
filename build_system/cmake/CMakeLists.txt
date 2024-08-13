@@ -1,13 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Use the latest CMake policies the project has been validated against.
-set(WEBVIEW_MAX_POLICY_VERSION 3.26)
-if(CMAKE_VERSION VERSION_GREATER WEBVIEW_MAX_POLICY_VERSION)
-    cmake_policy(VERSION "${WEBVIEW_MAX_POLICY_VERSION}")
-else()
-    cmake_policy(VERSION "${CMAKE_VERSION}")
-endif()
-
 include("${CMAKE_CURRENT_LIST_DIR}/internal.cmake")
 webview_extract_version()
 
