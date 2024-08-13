@@ -1,7 +1,7 @@
 name: CMake
 on: [push, pull_request]
 jobs:
-  clang-format:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,44 +14,10 @@ jobs:
           clangFormatVersion: 9
           style: file
 
-  checks:
-    runs-on: ubuntu-latest
-    needs:
-      - clang-format
-    steps:
-      - run: echo
-
-  doxygen:
-    runs-on: ubuntu-latest
-    needs: checks
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Doxygen
-        run: sudo apt-get update && sudo apt-get install doxygen -y
-      - run: mkdir -p build/docs
-      - name: Run Doxygen
-        run: doxygen
-
-  swig:
-    needs: checks
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        language: [csharp, java, python, ruby]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Generate bindings with SWIG
-        run: |
-          mkdir -p "build/bindings/${{ matrix.language }}" \
-            && swig -Wall -Werror -c++ "-${{ matrix.language }}" \
-              -outdir "build/bindings/${{ matrix.language }}" \
-              -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
-              webview.i
-
   cmake-main-linux:
     name: cmake-main (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: checks
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -86,8 +52,8 @@ jobs:
 
   cmake-main-linux-mingw-w64:
     name: cmake-main (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: checks
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -107,8 +73,8 @@ jobs:
 
   cmake-main-macos:
     name: cmake-main (${{ matrix.image }}, macos, c++${{ matrix.standard }}, ${{ matrix.osx-architectures }})
-    runs-on: ${{ matrix.image }}
     needs: checks
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -140,8 +106,8 @@ jobs:
 
   cmake-main-windows-msys2:
     name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: checks
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -172,8 +138,8 @@ jobs:
 
   cmake-main-windows-msvc:
     name: cmake-main (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
-    runs-on: ${{ matrix.image }}
     needs: checks
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -220,8 +186,8 @@ jobs:
 
   cmake-extra-linux:
     name: cmake-extra (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: cmake-main
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -289,8 +255,8 @@ jobs:
 
   cmake-extra-linux-mingw-w64:
     name: cmake-extra (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: cmake-main
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -316,8 +282,8 @@ jobs:
 
   cmake-extra-macos:
     name: cmake-extra (${{ matrix.image }}, macos, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: cmake-main
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -342,8 +308,8 @@ jobs:
 
   cmake-extra-windows-msys2:
     name: cmake-extra (${{ matrix.msys2-system }}, ${{ matrix.image }}, win, msys2, ${{ matrix.cc }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
     needs: cmake-main
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -398,8 +364,8 @@ jobs:
 
   cmake-extra-windows-msvc:
     name: cmake-extra (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
-    runs-on: ${{ matrix.image }}
     needs: cmake-main
+    runs-on: ${{ matrix.image }}
     strategy:
       matrix:
         include:
@@ -432,19 +398,19 @@ jobs:
           test-coverage: false
 
   cmake-extra:
-    runs-on: ubuntu-latest
     needs:
       - cmake-extra-linux
       - cmake-extra-linux-mingw-w64
       - cmake-extra-macos
       - cmake-extra-windows-msys2
       - cmake-extra-windows-msvc
+    runs-on: ubuntu-latest
     steps:
       - run: echo
 
   test-coverage:
-    runs-on: ubuntu-latest
     needs: cmake-extra
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -452,3 +418,30 @@ jobs:
         with:
           python-version: '3.11'
       - uses: ./.github/workflows/coverage
+
+  doxygen:
+    needs: cmake-extra
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
+      - run: mkdir -p build/docs
+      - name: Run Doxygen
+        run: doxygen
+
+  swig:
+    needs: cmake-extra
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [csharp, java, python, ruby]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate bindings with SWIG
+        run: |
+          mkdir -p "build/bindings/${{ matrix.language }}" \
+            && swig -Wall -Werror -c++ "-${{ matrix.language }}" \
+              -outdir "build/bindings/${{ matrix.language }}" \
+              -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
+              webview.i
