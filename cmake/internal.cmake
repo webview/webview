@@ -1,12 +1,15 @@
-set(WEBVIEW_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-include("${WEBVIEW_CMAKE_DIR}/webview.cmake")
+set(WEBVIEW_CURRENT_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+include("${WEBVIEW_CURRENT_CMAKE_DIR}/webview.cmake")
+
+# Needed when we need the project directory before calling project()
+set(WEBVIEW_ROOT_DIR "${WEBVIEW_CURRENT_CMAKE_DIR}/..")
 
 macro(webview_init)
     include(CheckCXXSourceCompiles)
     include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
 
-    list(APPEND CMAKE_MODULE_PATH "${WEBVIEW_CMAKE_DIR}/modules")
+    list(APPEND CMAKE_MODULE_PATH "${WEBVIEW_CURRENT_CMAKE_DIR}/modules")
 
     if(WEBVIEW_IS_TOP_LEVEL_BUILD)
         # CMAKE_OSX_* should be set prior to the first project() or enable_language()
@@ -18,12 +21,6 @@ macro(webview_init)
 
     webview_options()
     webview_internal_options()
-
-    set(WEBVIEW_ROOT_DIR "${WEBVIEW_CMAKE_DIR}/../..")
-    set(WEBVIEW_EXAMPLE_DIR "${WEBVIEW_ROOT_DIR}/examples")
-    set(WEBVIEW_INCLUDE_DIR "${WEBVIEW_ROOT_DIR}/include")
-    set(WEBVIEW_SRC_DIR "${WEBVIEW_ROOT_DIR}/src")
-    set(WEBVIEW_TEST_DIR "${WEBVIEW_ROOT_DIR}/tests")
 
     # Version 0.x of the library can't guarantee backward compatibility.
     if(WEBVIEW_VERSION_NUMBER VERSION_LESS 1.0)
@@ -80,7 +77,7 @@ macro(webview_init)
         if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT MSVC)
             check_cxx_source_compiles("#include <EventToken.h>" HAVE_EVENTTOKEN_H)
             if(NOT HAVE_EVENTTOKEN_H)
-                configure_file("${WEBVIEW_CMAKE_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
+                configure_file("${WEBVIEW_CURRENT_CMAKE_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
                 include_directories("${CMAKE_CURRENT_BINARY_DIR}/generated/include")
             endif()
         endif()
@@ -106,7 +103,7 @@ macro(webview_init)
 endmacro()
 
 macro(webview_extract_version)
-    file(READ "${WEBVIEW_CMAKE_DIR}/../../include/webview/webview.h" WEBVIEW_H_CONTENT)
+    file(READ "${WEBVIEW_ROOT_DIR}/core/include/webview/core/webview.h" WEBVIEW_H_CONTENT)
 
     if(NOT DEFINED WEBVIEW_VERSION_MAJOR)
         string(REGEX MATCH "#define WEBVIEW_VERSION_MAJOR ([0-9]+)" WEBVIEW_VERSION_MAJOR_MATCH "${WEBVIEW_H_CONTENT}")
@@ -139,15 +136,15 @@ endmacro()
 
 macro(webview_install)
     # Install headers
-    install(DIRECTORY "${WEBVIEW_INCLUDE_DIR}/webview"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/webview"
         COMPONENT webview_development)
-    install(FILES "${WEBVIEW_INCLUDE_DIR}/webview.h"
+    install(FILES "${WEBVIEW_ROOT_DIR}/core/include/webview.h"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_development)
 
     # Install modules
-    install(DIRECTORY "${WEBVIEW_CMAKE_DIR}/modules"
+    install(DIRECTORY "${WEBVIEW_CURRENT_CMAKE_DIR}/modules"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
         COMPONENT webview_development)
 
@@ -184,7 +181,7 @@ macro(webview_install)
 
     # Install package config
     configure_package_config_file(
-        webview-config.cmake.in
+        "${WEBVIEW_CURRENT_CMAKE_DIR}/webview-config.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/webview-config.cmake"
         INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
         NO_SET_AND_CHECK_MACRO

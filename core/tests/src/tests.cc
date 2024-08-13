@@ -1,4 +1,4 @@
-#include "webview/testing.hpp"
+#include "webview/test_driver.hpp"
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2
@@ -6,7 +6,7 @@
 #define WEBVIEW_VERSION_PRE_RELEASE "-test"
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
 
-#include "webview.h"
+#include "webview/core/webview.h"
 
 #undef NDEBUG
 #include <cassert>
