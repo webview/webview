@@ -159,7 +159,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
-          toolchain-file: ${{ github.workspace }}/build_system/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
+          toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
           standard: ${{ matrix.standard }}
           generator: Ninja
           test: false
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/cmake
         with:
-          toolchain-file: ${{ github.workspace }}/build_system/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
+          toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
           standard: ${{ matrix.standard }}
           generator: Ninja
           test: false

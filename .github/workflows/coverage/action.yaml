@@ -1,11 +1,12 @@
 name: Coverage
+description: Produces test coverage reports.
 inputs:
   report-dir:
-    description: 'Coverage report output directory'
+    description: Coverage report output directory
     required: true
     default: report
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install gcovr
       run: pip install gcovr==6.0

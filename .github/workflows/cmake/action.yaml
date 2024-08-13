@@ -1,98 +1,101 @@
 name: CMake
+description: Main CMake action.
 inputs:
   apt-packages:
-    description: 'Space-deliminated names of packages to install with apt-get'
+    description: Space-deliminated names of packages to install with apt-get
     required: false
   build-dir:
-    description: 'CMake build directory'
+    description: CMake build directory
     required: true
     default: build
   build-type:
-    description: 'Semicolon-separated CMake build types (Debug, Release, etc)'
+    description: Semicolon-separated CMake build types (Debug, Release, etc)
     required: true
     default: Release
   build-tests-target:
-    description: 'CMake target for building all tests'
+    description: CMake target for building all tests
     required: true
     default: tests
   cc:
-    description: 'Sets CMAKE_C_COMPILER'
+    description: Sets CMAKE_C_COMPILER
     required: false
   cxx:
-    description: 'Sets CMAKE_CXX_COMPILER'
+    description: Sets CMAKE_CXX_COMPILER
     required: false
   distributable:
+    description: Whether build artifacts are distributable
     required: false
   gcov:
-    description: 'gcov executable (gcov-12, llvm-cov-15 gcov, etc)'
+    description: gcov executable (gcov-12, llvm-cov-15 gcov, etc)
     required: false
   gcovr-version:
-    description: 'Version of gcovr to install'
+    description: Version of gcovr to install
     required: true
     default: '6.0'
   generator:
-    description: 'CMake generator'
+    description: CMake generator
     required: true
   generator-platform:
-    description: 'Sets CMAKE_GENERATOR_PLATFORM'
+    description: Sets CMAKE_GENERATOR_PLATFORM
     required: false
   image:
-    description: 'GHA runner image name'
+    description: GHA runner image name
     required: true
   install-wrapper-cmd:
-    description: 'Wrapper command for installing the CMake package'
+    description: Wrapper command for installing the CMake package
     required: false
   msys2-system:
-    description: 'MSYS2 system (UCRT64, CLANG64, etc)'
+    description: MSYS2 system (UCRT64, CLANG64, etc)
     required: false
   osx-architectures:
-    description: 'Sets CMAKE_OSX_ARCHITECTURES'
+    description: Sets CMAKE_OSX_ARCHITECTURES
     required: false
   package-test-build-dir:
-    description: 'CMake build directory for testing the CMake package'
+    description: CMake build directory for testing the CMake package
     required: true
     default: examples/cmake/build
   package-test-source-dir:
-    description: 'CMake source directory for testing the CMake package'
+    description: CMake source directory for testing the CMake package
     required: true
     default: examples/cmake
   shell:
+    description: Shell
     required: true
     default: bash
   source-dir:
-    description: 'CMake source directory'
+    description: CMake source directory
     required: true
-    default: build_system/cmake
+    default: .
   standard:
-    description: 'C++ standard (11, 14, etc)'
+    description: C++ standard (11, 14, etc)
     required: true
   test:
-    description: 'Whether to enable tests'
+    description: Whether to enable tests
     required: true
-    default: true
+    default: 'true'
   test-build-dir:
-    description: 'CMake build directory for tests'
+    description: CMake build directory for tests
     required: true
     default: build-test
   test-build-type:
-    description: 'CMake build type for test targets'
+    description: CMake build type for test targets
     required: true
     default: Profile
   test-coverage:
-    description: 'Whether to enable test coverage'
+    description: Whether to enable test coverage
     required: false
-    default: true
+    default: 'true'
   test-coverage-name:
-    description: 'Test coverage name when enabled'
+    description: Test coverage name when enabled
     required: false
   test-wrapper-cmd:
-    description: 'Wrapper command for running tests'
+    description: Wrapper command for running tests
     required: false
   toolchain-file:
-    description: 'Sets CMAKE_TOOLCHAIN_FILE'
+    description: Sets CMAKE_TOOLCHAIN_FILE
     required: false
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'

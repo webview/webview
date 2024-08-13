@@ -1,21 +1,23 @@
 name: CMake Build
+description: CMake action for building project.
 inputs:
   build-dir:
-    description: 'CMake build directory'
+    description: CMake build directory
     required: true
     default: build
   build-type:
-    description: 'Semicolon-separated CMake build types (Debug, Release, etc)'
+    description: Semicolon-separated CMake build types (Debug, Release, etc)
     required: true
     default: Release
   shell:
+    description: Shell
     required: true
     default: bash
   target:
-    description: 'CMake target to build'
+    description: CMake target to build
     required: false
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Build
       run: |
