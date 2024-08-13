@@ -1,20 +1,39 @@
 name: CMake
 on: [push, pull_request]
 jobs:
-  # Main CMake jobs
-  cmake-main:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run clang-format
+        uses: DoozyX/clang-format-lint-action@v0.16
+        with:
+          source: '.'
+          exclude: './build'
+          extensions: 'h,cc'
+          clangFormatVersion: 9
+          style: file
+
+  checks:
     runs-on: ubuntu-latest
     needs:
-      - cmake-main-linux
-      - cmake-main-linux-mingw-w64
-      - cmake-main-macos
-      - cmake-main-windows-msys2
-      - cmake-main-windows-msvc
+      - clang-format
     steps:
       - run: echo
 
+  doxygen:
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install doxygen -y
+      - run: mkdir -p build/docs
+      - name: Run Doxygen
+        run: doxygen
+
   swig:
-    needs: cmake-main
+    needs: checks
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,17 +47,6 @@ jobs:
               -outdir "build/bindings/${{ matrix.language }}" \
               -o build/bindings/${{ matrix.language }}/${{ matrix.language }}_wrap.cpp \
               webview.i
-
-  test-coverage:
-    runs-on: ubuntu-latest
-    needs: cmake-main
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - uses: ./.github/workflows/coverage
 
   cmake-main-linux:
     name: cmake-main (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
@@ -75,6 +83,141 @@ jobs:
           test-wrapper-cmd: xvfb-run
           apt-packages: ${{ matrix.apt-packages }}
           install-wrapper-cmd: sudo
+
+  cmake-main-linux-mingw-w64:
+    name: cmake-main (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: checks
+    strategy:
+      matrix:
+        include:
+          - image: ubuntu-22.04
+            toolchain-file: x86_64-w64-mingw32
+            standard: 14
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
+          standard: ${{ matrix.standard }}
+          generator: Ninja
+          test: false
+          apt-packages: mingw-w64
+          install-wrapper-cmd: sudo
+
+  cmake-main-macos:
+    name: cmake-main (${{ matrix.image }}, macos, c++${{ matrix.standard }}, ${{ matrix.osx-architectures }})
+    runs-on: ${{ matrix.image }}
+    needs: checks
+    strategy:
+      matrix:
+        include:
+          - image: macos-12
+            standard: 11
+            test-coverage: true
+            osx-architectures: x86_64
+            distributable: false
+          - image: macos-12
+            standard: 11
+            # While we can get coverage for universal binaries, keep it simple by
+            # avoiding the need to specify the architecture to get coverage for.
+            test-coverage: false
+            osx-architectures: arm64;x86_64
+            distributable: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: clang
+          cxx: clang++
+          standard: ${{ matrix.standard }}
+          generator: Xcode
+          test-coverage: ${{ matrix.test-coverage }}
+          test-coverage-name: main_macos_cxx${{ matrix.standard }}
+          osx-architectures: ${{ matrix.osx-architectures }}
+          install-wrapper-cmd: sudo
+          distributable: ${{ matrix.distributable }}
+
+  cmake-main-windows-msys2:
+    name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
+    runs-on: ${{ matrix.image }}
+    needs: checks
+    strategy:
+      matrix:
+        include:
+          - image: windows-2022
+            cc: clang
+            cxx: clang++
+            standard: 14
+            test-coverage: true
+            msys2-system: CLANG64
+          - image: windows-2022
+            cc: gcc
+            cxx: g++
+            standard: 14
+            test-coverage: false
+            msys2-system: UCRT64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          cc: ${{ matrix.cc }}
+          cxx: ${{ matrix.cxx }}
+          standard: ${{ matrix.standard }}
+          generator: MSYS Makefiles
+          test-coverage: ${{ matrix.test-coverage }}
+          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          msys2-system: ${{ matrix.msys2-system }}
+          shell: msys2 {0}
+
+  cmake-main-windows-msvc:
+    name: cmake-main (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
+    runs-on: ${{ matrix.image }}
+    needs: checks
+    strategy:
+      matrix:
+        include:
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: ARM64
+            # Skip tests because we can't execute ARM64 binaries
+            test: false
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: x64
+            test: true
+          - image: windows-2022
+            standard: 14
+            generator: Visual Studio 17 2022
+            generator-platform: Win32
+            test: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/cmake
+        with:
+          build-type: Debug;Release
+          cc: cl
+          cxx: cl
+          standard: ${{ matrix.standard }}
+          generator: ${{ matrix.generator }}
+          generator-platform: ${{ matrix.generator-platform }}
+          test: ${{ matrix.test }}
+          test-coverage: false
+          distributable: true
+
+  # Main CMake jobs
+  cmake-main:
+    runs-on: ubuntu-latest
+    needs:
+      - cmake-main-linux
+      - cmake-main-linux-mingw-w64
+      - cmake-main-macos
+      - cmake-main-windows-msys2
+      - cmake-main-windows-msvc
+    steps:
+      - run: echo
 
   cmake-extra-linux:
     name: cmake-extra (${{ matrix.image }}, linux, ${{ matrix.cc }}, c++${{ matrix.standard }})
@@ -145,27 +288,6 @@ jobs:
           apt-packages: ${{ matrix.apt-packages }}
           install-wrapper-cmd: sudo
 
-  cmake-main-linux-mingw-w64:
-    name: cmake-main (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
-    needs: checks
-    strategy:
-      matrix:
-        include:
-          - image: ubuntu-22.04
-            toolchain-file: x86_64-w64-mingw32
-            standard: 14
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          toolchain-file: ${{ github.workspace }}/cmake/toolchains/${{ matrix.toolchain-file }}.cmake
-          standard: ${{ matrix.standard }}
-          generator: Ninja
-          test: false
-          apt-packages: mingw-w64
-          install-wrapper-cmd: sudo
-
   cmake-extra-linux-mingw-w64:
     name: cmake-extra (${{ matrix.image }}, win, ${{ matrix.toolchain-file }}, c++${{ matrix.standard }})
     runs-on: ${{ matrix.image }}
@@ -193,39 +315,6 @@ jobs:
           apt-packages: mingw-w64
           install-wrapper-cmd: sudo
 
-  cmake-main-macos:
-    name: cmake-main (${{ matrix.image }}, macos, c++${{ matrix.standard }}, ${{ matrix.osx-architectures }})
-    runs-on: ${{ matrix.image }}
-    needs: checks
-    strategy:
-      matrix:
-        include:
-          - image: macos-12
-            standard: 11
-            test-coverage: true
-            osx-architectures: x86_64
-            distributable: false
-          - image: macos-12
-            standard: 11
-            # While we can get coverage for universal binaries, keep it simple by
-            # avoiding the need to specify the architecture to get coverage for.
-            test-coverage: false
-            osx-architectures: arm64;x86_64
-            distributable: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          cc: clang
-          cxx: clang++
-          standard: ${{ matrix.standard }}
-          generator: Xcode
-          test-coverage: ${{ matrix.test-coverage }}
-          test-coverage-name: main_macos_cxx${{ matrix.standard }}
-          osx-architectures: ${{ matrix.osx-architectures }}
-          install-wrapper-cmd: sudo
-          distributable: ${{ matrix.distributable }}
-
   cmake-extra-macos:
     name: cmake-extra (${{ matrix.image }}, macos, c++${{ matrix.standard }})
     runs-on: ${{ matrix.image }}
@@ -251,38 +340,6 @@ jobs:
           generator: Xcode
           test-coverage: false
           install-wrapper-cmd: sudo
-
-  cmake-main-windows-msys2:
-    name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
-    runs-on: ${{ matrix.image }}
-    needs: checks
-    strategy:
-      matrix:
-        include:
-          - image: windows-2022
-            cc: clang
-            cxx: clang++
-            standard: 14
-            test-coverage: true
-            msys2-system: CLANG64
-          - image: windows-2022
-            cc: gcc
-            cxx: g++
-            standard: 14
-            test-coverage: false
-            msys2-system: UCRT64
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          cc: ${{ matrix.cc }}
-          cxx: ${{ matrix.cxx }}
-          standard: ${{ matrix.standard }}
-          generator: MSYS Makefiles
-          test-coverage: ${{ matrix.test-coverage }}
-          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
-          msys2-system: ${{ matrix.msys2-system }}
-          shell: msys2 {0}
 
   cmake-extra-windows-msys2:
     name: cmake-extra (${{ matrix.msys2-system }}, ${{ matrix.image }}, win, msys2, ${{ matrix.cc }}, c++${{ matrix.standard }})
@@ -340,43 +397,6 @@ jobs:
           msys2-system: ${{ matrix.msys2-system }}
           shell: msys2 {0}
 
-  cmake-main-windows-msvc:
-    name: cmake-main (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
-    runs-on: ${{ matrix.image }}
-    needs: checks
-    strategy:
-      matrix:
-        include:
-          - image: windows-2022
-            standard: 14
-            generator: Visual Studio 17 2022
-            generator-platform: ARM64
-            # Skip tests because we can't execute ARM64 binaries
-            test: false
-          - image: windows-2022
-            standard: 14
-            generator: Visual Studio 17 2022
-            generator-platform: x64
-            test: true
-          - image: windows-2022
-            standard: 14
-            generator: Visual Studio 17 2022
-            generator-platform: Win32
-            test: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/cmake
-        with:
-          build-type: Debug;Release
-          cc: cl
-          cxx: cl
-          standard: ${{ matrix.standard }}
-          generator: ${{ matrix.generator }}
-          generator-platform: ${{ matrix.generator-platform }}
-          test: ${{ matrix.test }}
-          test-coverage: false
-          distributable: true
-
   cmake-extra-windows-msvc:
     name: cmake-extra (${{ matrix.image }}, win, msvc, c++${{ matrix.standard }}, ${{ matrix.generator-platform }})
     runs-on: ${{ matrix.image }}
@@ -412,25 +432,25 @@ jobs:
           test: ${{ matrix.test }}
           test-coverage: false
 
-  clang-format:
+  # Extra CMake jobs
+  cmake-extra:
     runs-on: ubuntu-latest
+    needs:
+      - cmake-extra-linux
+      - cmake-extra-linux-mingw-w64
+      - cmake-extra-macos
+      - cmake-extra-windows-msys2
+      - cmake-extra-windows-msvc
     steps:
-      - uses: actions/checkout@v4
-      - name: Run clang-format
-        uses: DoozyX/clang-format-lint-action@v0.16
-        with:
-          source: '.'
-          exclude: './build'
-          extensions: 'h,cc'
-          clangFormatVersion: 9
-          style: file
+      - run: echo
 
-  doxygen:
+  test-coverage:
     runs-on: ubuntu-latest
+    needs: cmake-extra
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Doxygen
-        run: sudo apt-get update && sudo apt-get install doxygen -y
-      - run: mkdir -p build/docs
-      - name: Run Doxygen
-        run: doxygen
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - uses: ./.github/workflows/coverage
