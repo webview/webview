@@ -107,8 +107,8 @@ copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
 Fetch the webview library:
 
 ```sh
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/webview.cc"
+curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/core/include/webview/core/webview.h"
+curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/core/src/webview.cc"
 ```
 
 ### Getting Started with C++
@@ -116,7 +116,7 @@ curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/
 Save the basic C++ example into your project directory:
 
 ```sh
-curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/basic.cc"
+curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/examples/cc/basic/src/main.cc"
 ```
 
 Build and run the example:
@@ -146,7 +146,7 @@ cl basic.cc /std:c++14 /EHsc /Fobuild\ ^
 Save the basic C example into your project directory:
 
 ```sh
-curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/basic.c"
+curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/examples/cc/basic/src/main.cc"
 ```
 
 Build the library and example, then run it:
@@ -193,6 +193,8 @@ The examples shown here are mere pieces of a bigger picture so we encourage you 
 
 ### Compile-time Options
 
+These options can be specified as preprocessor macros to modify the build.
+
 #### C API Linkage
 
 Name                   | Description
@@ -206,9 +208,9 @@ Name                   | Description
 
 Name                   | Description
 ----                   | -----------
-`WEBVIEW_GTK`          | Compile with GTK/WebKitGTK.
-`WEBVIEW_COCOA`        | Compile with Cocoa/WebKit.
-`WEBVIEW_EDGE`         | Compile with Win32/WebView2.
+`WEBVIEW_GTK`          | Compile the GTK/WebKitGTK backend.
+`WEBVIEW_COCOA`        | Compile the Cocoa/WebKit backend.
+`WEBVIEW_EDGE`         | Compile the Win32/WebView2 backend.
 
 ## App Distribution
 
@@ -299,7 +301,7 @@ This project uses the CMake build system.
 
 ### Build Options
 
-These options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
+These CMake options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
 
 Option                         | Description
 ------------------------------ | ----------------------
@@ -310,9 +312,9 @@ Option                         | Description
 `WEBVIEW_BUILD_SHARED_LIBRARY` | Build shared libraries
 `WEBVIEW_BUILD_STATIC_LIBRARY` | Build static libraries
 
-### Consumer Options
+### Package Consumer Options
 
-These options can be used when when the webview project isn't built as part of your project.
+These options can be used when when using the webview CMake package.
 
 #### Linux-specific Options
 
@@ -324,13 +326,13 @@ Option                          | Description
 
 Option                          | Description
 ------------------------------- | ------------------------
-`WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version
-`WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2
+`WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version, e.g. `1.0.1150.38`.
+`WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2.
 
 #### Building
 
 ```
-cmake -G Ninja -B build -S build_system/cmake
+cmake -G Ninja -B build -S .
 cmake --build build
 ```
 
@@ -339,18 +341,12 @@ cmake --build build
 Test coverage is currently only supported with GCC/Clang. We suggest using gcovr for generating reports.
 
 ```
-# Build for profiling
-cmake -G Ninja -B build-profile -S build_system/cmake -D CMAKE_BUILD_TYPE=Profile
-
-# Build tests
-cmake --build build-profile --target tests
-
-# Run tests
-ctest --test-dir build-profile
+# Configure, build and run tests
+ctest --build-and-test . build-profile --build-generator Ninja --build-config Profile --test-command ctest
 
 # Generate an HTML test coverage report
 mkdir build-profile/coverage
-gcovr --filter include/ --html-details build-profile/coverage/index.html
+gcovr --filter core/include/ --html-details build-profile/coverage/index.html
 ```
 
 ### Cross-compilation
