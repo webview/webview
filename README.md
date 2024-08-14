@@ -16,7 +16,7 @@ It supports two-way JavaScript bindings (to call JavaScript from C/C++ and to ca
 
 Platform | Technologies
 -------- | ------------
-Linux    | [GTK 3][gtk], [WebKitGTK][webkitgtk]
+Linux    | [GTK][gtk], [WebKitGTK][webkitgtk]
 macOS    | Cocoa, [WebKit][webkit]
 Windows  | [Windows API][win32-api], [WebView2][ms-webview2]
 
@@ -27,6 +27,8 @@ The most up-to-date documentation is right in the source code. Improving the doc
 ## Prerequisites
 
 Your compiler must support minimum C++11 except for platforms that require a more modern version.
+
+This project uses CMake and Ninja, and while recommended for your convenience, these tools aren't required for using the library.
 
 ### Linux and BSD
 
@@ -74,9 +76,9 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-Instructions here are written for GCC when compiling C/C++ code using Unix-style command lines, and assumes that multiple commands are executed in the same shell session. Command lines for Windows use syntax specific to the Command shell but you can use any shell such as PowerShell as long as you adapt the commands accordingly. See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
+See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
-You will have a working app but you are encouraged to explore the [available examples][examples] and try the ones that go beyond the mere basics.
+You will have a working app made with C++ and CMake, but you are encouraged to explore the [available examples][examples].
 
 Start with creating a new directory structure for your project:
 
@@ -89,26 +91,63 @@ Save the example files into your project directory:
 ```sh
 curl -sSLo .gitignore "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/.gitignore"
 curl -sSLo CMakeLists.txt "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/CMakeLists.txt"
-curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/cc/basic/src/main.cc"
-curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/c/basic/src/main.c"
+curl -sSLo main.cc "https://raw.githubusercontent.com/webview/webview/master/examples/cc/basic/src/main.cc"
 ```
 
-Build the library and examples:
+Build the project:
 
 ```sh
 cmake -G Ninja -B build -S .
 cmake --build build
 ```
 
-Find the executables/library in the `build/bin` and `build/lib` directories.
+Find the executable in the `build/bin` directory.
 
-### More Examples
+## Customization
 
-The examples shown here are mere pieces of a bigger picture so we encourage you to try [other examples][examples] and explore on your own—you can follow the same procedure. Please [get in touch][issues-new] if you find any issues.
+### CMake Targets
+
+The following CMake targets are avilable:
+
+Name                    | Description
+----                    | -----------
+`webview::core_headers` | Headers only for C++.
+`webview::core_shared`  | Shared library for C.
+`webview::core_static`  | Static library for C.
+
+### CMake Options
+
+These CMake options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
+
+Option                         | Description
+------------------------------ | ----------------------
+`WEBVIEW_BUILD_TESTS`          | Build tests
+`WEBVIEW_BUILD_EXAMPLES`       | Build examples
+`WEBVIEW_INSTALL_TARGETS`      | Install targets
+`WEBVIEW_BUILD_PACKAGE`        | Build package
+`WEBVIEW_BUILD_SHARED_LIBRARY` | Build shared libraries
+`WEBVIEW_BUILD_STATIC_LIBRARY` | Build static libraries
+
+### Package Consumer Options
+
+These options can be used when when using the webview CMake package.
+
+#### Linux-specific Options
+
+Option                          | Description
+------------------------------- | ------------------------
+`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` or `4.0`. This will also automatically decide the GTK version. Uses the latest known and available API by default.
+
+#### Windows-specific Options
+
+Option                          | Description
+------------------------------- | ------------------------
+`WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version, e.g. `1.0.1150.38`.
+`WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2.
 
 ### Compile-time Options
 
-These options can be specified as preprocessor macros to modify the build.
+These options can be specified as preprocessor macros to modify the build, but are not needed when using CMake.
 
 #### C API Linkage
 
@@ -214,44 +253,14 @@ The following [compile-time options](#compile-time-options) can be used to chang
 
 This project uses the CMake build system.
 
-### Build Options
-
-These CMake options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
-
-Option                         | Description
------------------------------- | ----------------------
-`WEBVIEW_BUILD_TESTS`          | Build tests
-`WEBVIEW_BUILD_EXAMPLES`       | Build examples
-`WEBVIEW_INSTALL_TARGETS`      | Install targets
-`WEBVIEW_BUILD_PACKAGE`        | Build package
-`WEBVIEW_BUILD_SHARED_LIBRARY` | Build shared libraries
-`WEBVIEW_BUILD_STATIC_LIBRARY` | Build static libraries
-
-### Package Consumer Options
-
-These options can be used when when using the webview CMake package.
-
-#### Linux-specific Options
-
-Option                          | Description
-------------------------------- | ------------------------
-`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` or `4.0`. This will also automatically decide the GTK version. Uses the latest known and available API by default.
-
-#### Windows-specific Options
-
-Option                          | Description
-------------------------------- | ------------------------
-`WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version, e.g. `1.0.1150.38`.
-`WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2.
-
-#### Building
+### Building
 
 ```
 cmake -G Ninja -B build -S .
 cmake --build build
 ```
 
-#### Generate Test Coverage
+### Generate Test Coverage
 
 Test coverage is currently only supported with GCC/Clang. We suggest using gcovr for generating reports.
 
@@ -327,7 +336,7 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 
 [macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
 [examples]:          https://github.com/webview/webview/tree/master/examples
-[gtk]:               https://docs.gtk.org/gtk3/
+[gtk]:               https://gtk.org/
 [issues]:            https://github.com/webview/docs/issues
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
