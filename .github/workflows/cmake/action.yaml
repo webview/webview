@@ -52,11 +52,11 @@ inputs:
   package-test-build-dir:
     description: CMake build directory for testing the CMake package
     required: true
-    default: examples/cmake/build
+    default: packaging/test/build
   package-test-source-dir:
     description: CMake source directory for testing the CMake package
     required: true
-    default: examples/cmake
+    default: packaging/test
   shell:
     description: Shell
     required: true
@@ -205,7 +205,7 @@ runs:
         install-wrapper-cmd: ${{ inputs.install-wrapper-cmd }}
         shell: ${{ inputs.shell }}
 
-    - name: Configure CMake example
+    - name: Configure CMake package test
       uses: ./.github/workflows/cmake/configure
       with:
         build-dir: ${{ inputs.package-test-build-dir }}
@@ -220,7 +220,7 @@ runs:
         osx-architectures: ${{ inputs.osx-architectures }}
         shell: ${{ inputs.shell }}
 
-    - name: Build CMake example
+    - name: Build CMake package test
       uses: ./.github/workflows/cmake/build
       with:
         build-dir: ${{ inputs.package-test-build-dir }}
