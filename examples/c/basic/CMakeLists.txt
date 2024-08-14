@@ -6,5 +6,5 @@ target_link_libraries(webview_example_basic_c PRIVATE webview::core_static)
 
 if(MSVC)
     # Disable some warnings when using MSVC
-    target_compile_definitions(webview_example_bind_c PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(webview_example_basic_c PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
