@@ -82,110 +82,25 @@ Start with creating a new directory structure for your project:
 
 ```sh
 mkdir my-project && cd my-project
-mkdir build libs "libs/webview"
 ```
 
-### Windows Preparation
-
-The [WebView2 SDK][ms-webview2-sdk] is required when compiling programs:
-
-```bat
-mkdir libs\webview2
-curl -sSL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2" | tar -xf - -C libs\webview2
-```
-
-If you wish to use the official WebView2 loader (`WebView2Loader.dll`) then grab a copy of the DLL (replace `x64` with your target architecture):
-
-```bat
-copy /Y libs\webview2\build\native\x64\WebView2Loader.dll build
-```
-
-> **Note:** See the [WebView2 loader section](#ms-webview2-loader) for more options.
-
-### C/C++ Preparation
-
-Fetch the webview library:
+Save the example files into your project directory:
 
 ```sh
-curl -sSLo "libs/webview/webview.h" "https://raw.githubusercontent.com/webview/webview/master/core/include/webview/core/webview.h"
-curl -sSLo "libs/webview/webview.cc" "https://raw.githubusercontent.com/webview/webview/master/core/src/webview.cc"
+curl -sSLo .gitignore "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/.gitignore"
+curl -sSLo CMakeLists.txt "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/CMakeLists.txt"
+curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/cc/basic/src/main.cc"
+curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/c/basic/src/main.c"
 ```
 
-### Getting Started with C++
-
-Save the basic C++ example into your project directory:
+Build the library and examples:
 
 ```sh
-curl -sSLo basic.cc "https://raw.githubusercontent.com/webview/webview/master/examples/examples/cc/basic/src/main.cc"
+cmake -G Ninja -B build -S .
+cmake --build build
 ```
 
-Build and run the example:
-
-```sh
-# Linux
-g++ basic.cc -std=c++11 -Ilibs/webview $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1) -o build/basic && ./build/basic
-# macOS
-g++ basic.cc -std=c++11 -Ilibs/webview -framework WebKit -o build/basic && ./build/basic
-# Windows/MinGW
-g++ basic.cc -std=c++14 -mwindows -Ilibs/webview -Ilibs/webview2/build/native/include -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
-```
-
-#### Bonus for Visual C++
-
-Build a C++ example:
-
-```bat
-cl basic.cc /std:c++14 /EHsc /Fobuild\ ^
-    /I libs\webview ^
-    /I libs\webview2\build\native\include ^
-    /link /OUT:build\basic.exe
-```
-
-### Getting Started with C
-
-Save the basic C example into your project directory:
-
-```sh
-curl -sSLo basic.c "https://raw.githubusercontent.com/webview/webview/master/examples/examples/cc/basic/src/main.cc"
-```
-
-Build the library and example, then run it:
-
-```sh
-# Linux
-g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC $(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1) -o build/webview.o
-gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o $(pkg-config --libs gtk+-3.0 webkit2gtk-4.1) -o build/basic && build/basic
-# macOS
-g++ -c libs/webview/webview.cc -std=c++11 -DWEBVIEW_STATIC -o build/webview.o
-gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -framework WebKit -o build/basic && build/basic
-# Windows/MinGW
-g++ -c libs/webview/webview.cc -std=c++14 -DWEBVIEW_STATIC -Ilibs/webview2/build/native/include -o build/webview.o
-gcc -c basic.c -std=c99 -Ilibs/webview -o build/basic.o
-g++ build/basic.o build/webview.o -mwindows -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o build/basic.exe && "build/basic.exe"
-```
-
-#### Bonus for Visual C++
-
-Build a shared library:
-
-```bat
-cl libs\webview\webview.cc /std:c++14 /EHsc /Fobuild\ ^
-    /D WEBVIEW_BUILD_SHARED ^
-    /I libs\webview ^
-    /I libs\webview2\build\native\include ^
-    /link /DLL /OUT:build\webview.dll
-```
-
-Build a C example using the shared library:
-
-```bat
-cl basic.c build\webview.lib /EHsc /Fobuild\ ^
-    /D WEBVIEW_SHARED ^
-    /I libs\webview ^
-    /link /OUT:build\basic.exe
-```
+Find the executables/library in the `build/bin` and `build/lib` directories.
 
 ### More Examples
 
