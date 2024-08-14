@@ -194,7 +194,7 @@ macro(webview_install)
 
     install(
         FILES
-            webview.cmake
+            "${WEBVIEW_CURRENT_CMAKE_DIR}/webview.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config-version.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
