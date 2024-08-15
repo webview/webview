@@ -11,6 +11,8 @@ project(
 
 webview_init()
 
+add_subdirectory(compatibility)
+
 if(WEBVIEW_BUILD_TESTS)
     include(CTest)
     add_subdirectory(test_driver)

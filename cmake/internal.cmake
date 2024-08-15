@@ -73,15 +73,6 @@ macro(webview_init)
             add_compile_options(-Wall -Wextra -Wpedantic)
         endif()
 
-        # Workaround for missing "EventToken.h" (used by MS WebView2)
-        if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND NOT MSVC)
-            check_cxx_source_compiles("#include <EventToken.h>" HAVE_EVENTTOKEN_H)
-            if(NOT HAVE_EVENTTOKEN_H)
-                configure_file("${WEBVIEW_CURRENT_CMAKE_DIR}/compatibility/mingw/EventToken.h" "${CMAKE_CURRENT_BINARY_DIR}/generated/include/EventToken.h" COPYONLY)
-                include_directories("${CMAKE_CURRENT_BINARY_DIR}/generated/include")
-            endif()
-        endif()
-
         # Set default build type for single-config generators
         get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
         if(NOT IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
@@ -154,8 +145,13 @@ macro(webview_install)
     if(WEBVIEW_BUILD_SHARED_LIBRARY)
         list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_core_shared)
     endif()
+
     if(WEBVIEW_BUILD_STATIC_LIBRARY)
         list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_core_static)
+    endif()
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
+        list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_compat_mingw)
     endif()
 
     install(TARGETS ${WEBVIEW_INSTALL_TARGET_NAMES}
@@ -213,6 +209,7 @@ macro(webview_internal_options)
     option(WEBVIEW_BUILD_SHARED_LIBRARY "Build shared libraries" ON)
     option(WEBVIEW_BUILD_STATIC_LIBRARY "Build static libraries" ON)
     option(WEBVIEW_IS_OFFICIAL_BUILD "" OFF)
+    option(WEBVIEW_USE_COMPAT_MINGW "Use compatibility helper for MinGW" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
 endmacro()
 
 macro(webview_set_install_rpath)

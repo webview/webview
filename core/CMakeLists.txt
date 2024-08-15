@@ -10,6 +10,10 @@ target_link_libraries(webview_core_headers INTERFACE ${WEBVIEW_DEPENDENCIES})
 set_target_properties(webview_core_headers PROPERTIES
     EXPORT_NAME core_headers)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
+    target_link_libraries(webview_core_headers INTERFACE webview::compat_mingw)
+endif()
+
 # Core shared library
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview_core_shared SHARED)

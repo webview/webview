@@ -275,7 +275,14 @@ gcovr --filter core/include/ --html-details build-profile/coverage/index.html
 
 ### Cross-compilation
 
-See the CI configuration for examples.
+See CMake toolchain files in the `cmake/toolchains` directory.
+
+For example, this targets Windows x64 on Linux:
+
+```sh
+cmake -G Ninja -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
+cmake --build build
+```
 
 ## Limitations
 
