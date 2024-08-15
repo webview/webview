@@ -21,6 +21,7 @@ runs:
   steps:
     - name: Build
       run: |
+        # Build
         cmake_args=()
         if [[ ! -z "${{ inputs.target }}" ]]; then
           cmake_args+=(--target "${{ inputs.target }}")

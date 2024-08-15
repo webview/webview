@@ -21,6 +21,7 @@ runs:
   steps:
     - name: Test
       run: |
+        # Test
         wrapper_cmd=()
         if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
           wrapper_cmd+=("${{ inputs.test-wrapper-cmd }}")

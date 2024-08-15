@@ -99,6 +99,7 @@ runs:
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
+        # Install dependencies (Linux)
         sudo apt-get update
         packages=(cmake libwebkit2gtk-4.0-dev ninja-build xvfb)
         if [[ ! -z "${{ inputs.apt-packages }}" ]]; then
@@ -173,6 +174,7 @@ runs:
 
     - name: Package
       run: |
+        # Package
         args=()
         if [[ ! -z "${{ inputs.build-type }}" ]]; then
           args+=(-C "${{ inputs.build-type }}")
@@ -235,18 +237,23 @@ runs:
 
     - name: Install gcovr (MSYS2)
       if: runner.os == 'Windows' && inputs.msys2-system != ''
-      run: pip install "gcovr==${{ inputs.gcovr-version }}"
+      run: |
+        # Install gcovr (MSYS2)
+        pip install "gcovr==${{ inputs.gcovr-version }}"
       shell: msys2 {0}
 
     - name: Install gcovr (Other)
       if: runner.os != 'Windows' || inputs.msys2-system == ''
-      run: pip3 install "gcovr==${{ inputs.gcovr-version }}"
+      run: |
+        # Install gcovr (Other)
+        pip3 install "gcovr==${{ inputs.gcovr-version }}"
       shell: bash
 
     - name: Prepare test coverage artifacts
       id: prepare-test-coverage-artifacts
       if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
       run: |
+        # Prepare test coverage artifacts
         base_dir="test_coverage_${RANDOM}"
         artifact_dir="${base_dir}/coverage/${{ inputs.test-coverage-name }}"
 

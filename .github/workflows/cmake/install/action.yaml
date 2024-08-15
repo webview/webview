@@ -21,6 +21,7 @@ runs:
   steps:
     - name: Install
       run: |
+        # Install
         wrapper_cmd=()
         if [[ ! -z "${{ inputs.install-wrapper-cmd }}" ]]; then
           wrapper_cmd+=("${{ inputs.install-wrapper-cmd }}")

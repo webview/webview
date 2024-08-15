@@ -47,6 +47,7 @@ runs:
   steps:
     - name: Configure
       run: |
+        # Configure
         if [[ ! -z "${{ inputs.build-type }}" ]]; then
           configure_args=("-DCMAKE_BUILD_TYPE=${{ inputs.build-type }}")
         fi

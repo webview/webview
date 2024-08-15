@@ -9,7 +9,9 @@ runs:
   using: composite
   steps:
     - name: Install gcovr
-      run: pip install gcovr==6.0
+      run: |
+        # Install gcovr
+        pip install gcovr==6.0
       shell: bash
 
     - name: Download test coverage artifacts
@@ -19,6 +21,7 @@ runs:
 
     - name: Generate report
       run: |
+        # Generate report
         tracefile_args=()
         while read f; do
           tracefile_args+=(--add-tracefile "${f}")
