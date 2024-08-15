@@ -137,7 +137,7 @@ endmacro()
 macro(webview_install)
     # Install headers
     install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/webview"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_development)
     install(FILES "${WEBVIEW_ROOT_DIR}/core/include/webview.h"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
