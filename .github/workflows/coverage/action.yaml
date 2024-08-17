@@ -21,7 +21,7 @@ runs:
     - name: Download test coverage artifacts
       uses: actions/download-artifact@v4
       with:
-        name: test_coverage
+        pattern: test_coverage_*
 
     - name: Generate report
       run: |

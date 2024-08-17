@@ -45,7 +45,7 @@ jobs:
           standard: ${{ matrix.standard }}
           generator: Ninja
           test-coverage: ${{ matrix.test-coverage }}
-          test-coverage-name: main_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          artifacts-name: main_${{ matrix.image }}_linux_${{ matrix.cc }}_cxx${{ matrix.standard }}
           test-wrapper-cmd: xvfb-run
           apt-packages: ${{ matrix.apt-packages }}
           install-wrapper-cmd: sudo
@@ -99,10 +99,10 @@ jobs:
           standard: ${{ matrix.standard }}
           generator: Xcode
           test-coverage: ${{ matrix.test-coverage }}
-          test-coverage-name: main_macos_cxx${{ matrix.standard }}
           osx-architectures: ${{ matrix.osx-architectures }}
           install-wrapper-cmd: sudo
           distributable: ${{ matrix.distributable }}
+          artifacts-name: main_${{ matrix.image }}_macos_clang_cxx${{ matrix.standard }}_${{ matrix.osx-architectures }}
 
   cmake-main-windows-msys2:
     name: cmake-main (${{ matrix.image }}, win, msys2, ${{ matrix.msys2-system }}, ${{ matrix.cc }}, c++${{ matrix.standard }})
@@ -132,7 +132,7 @@ jobs:
           standard: ${{ matrix.standard }}
           generator: MSYS Makefiles
           test-coverage: ${{ matrix.test-coverage }}
-          test-coverage-name: main_win_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
+          artifacts-name: main_${{ matrix.image }}_msys2_${{ matrix.msys2-system }}_${{ matrix.cc }}_cxx${{ matrix.standard }}
           msys2-system: ${{ matrix.msys2-system }}
           shell: msys2 {0}
 
@@ -172,6 +172,7 @@ jobs:
           test: ${{ matrix.test }}
           test-coverage: false
           distributable: true
+          artifacts-name: main_${{ matrix.image }}_win_msvc_cxx${{ matrix.standard }}_${{ matrix.generator-platform }}
 
   cmake-main:
     runs-on: ubuntu-latest

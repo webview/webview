@@ -4,6 +4,9 @@ inputs:
   apt-packages:
     description: Space-deliminated names of packages to install with apt-get
     required: false
+  artifacts-name:
+    description: Name of artifacts
+    required: false
   build-dir:
     description: CMake build directory
     required: true
@@ -254,8 +257,7 @@ runs:
       if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
       run: |
         # Prepare test coverage artifacts
-        base_dir="test_coverage_${RANDOM}"
-        artifact_dir="${base_dir}/coverage/${{ inputs.test-coverage-name }}"
+        artifact_dir="coverage_${RANDOM}"
 
         gcovr_args=(--filter include/ --json "${artifact_dir}/coverage.json")
         if [[ ! -z "${{ inputs.gcov }}" ]]; then
@@ -265,15 +267,15 @@ runs:
         mkdir -p "${artifact_dir}"
         gcovr "${gcovr_args[@]}"
 
-        echo "upload-dir=${base_dir}" >> "${GITHUB_OUTPUT}"
-        find "${base_dir}" -type f
+        echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
+        find "${artifact_dir}" -type f
       shell: ${{ inputs.shell }}
 
     - name: Upload test coverage artifacts
       if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
       uses: actions/upload-artifact@v4
       with:
-        name: test_coverage
+        name: test_coverage_${{ inputs.artifacts-name }}
         path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
         retention-days: 1
         if-no-files-found: error
@@ -282,7 +284,7 @@ runs:
       if: matrix.distributable != '' && fromJSON(matrix.distributable)
       uses: actions/upload-artifact@v4
       with:
-        name: distributables
+        name: distributables_${{ inputs.artifacts-name }}
         path: |
           ${{ inputs.build-dir }}/*.gz
           ${{ inputs.build-dir }}/*.sha256
