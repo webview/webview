@@ -5,13 +5,17 @@ inputs:
     description: Coverage report output directory
     required: true
     default: report
+  gcovr-version:
+    description: Version of gcovr to install
+    required: true
+    default: '6.0'
 runs:
   using: composite
   steps:
     - name: Install gcovr
       run: |
         # Install gcovr
-        pip install gcovr==6.0
+        pip install "gcovr==${{ inputs.gcovr-version }}"
       shell: bash
 
     - name: Download test coverage artifacts

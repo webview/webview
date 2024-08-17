@@ -115,7 +115,7 @@ runs:
         msystem: ${{ inputs.msys2-system }}
         update: false
         install: base-devel
-        pacboy: cmake:p python:p python-pip:p python-lxml:p toolchain:p
+        pacboy: cmake:p python:p python-pip:p python-lxml:p python-markupsafe:p toolchain:p
 
     - name: Configure tests
       uses: ./.github/workflows/cmake/configure
