@@ -81,6 +81,7 @@ runs:
             .write();
 
     - name: Upload test coverage to codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
+      continue-on-error: true
       with:
         files: ${{ inputs.report-dir }}/coveralls.json
