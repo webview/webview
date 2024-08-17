@@ -52,6 +52,9 @@ inputs:
   osx-architectures:
     description: Sets CMAKE_OSX_ARCHITECTURES
     required: false
+  osx-deployment-target:
+    description: Sets CMAKE_OSX_DEPLOYMENT_TARGET
+    required: false
   package-test-build-dir:
     description: CMake build directory for testing the CMake package
     required: true
@@ -87,9 +90,6 @@ inputs:
     description: Whether to enable test coverage
     required: false
     default: 'true'
-  test-coverage-name:
-    description: Test coverage name when enabled
-    required: false
   test-wrapper-cmd:
     description: Wrapper command for running tests
     required: false
@@ -104,7 +104,7 @@ runs:
       run: |
         # Install dependencies (Linux)
         sudo apt-get update
-        packages=(cmake libwebkit2gtk-4.0-dev ninja-build xvfb)
+        packages=(cmake ninja-build xvfb)
         if [[ ! -z "${{ inputs.apt-packages }}" ]]; then
           packages+=(${{ inputs.apt-packages }})
         fi
@@ -119,6 +119,26 @@ runs:
         update: false
         install: base-devel
         pacboy: cmake:p python:p python-pip:p python-lxml:p python-markupsafe:p toolchain:p
+
+    - name: Set up Python
+      if: runner.os != 'Windows' || inputs.msys2-system == ''
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install gcovr (MSYS2)
+      if: runner.os == 'Windows' && inputs.msys2-system != ''
+      run: |
+        # Install gcovr (MSYS2)
+        pip install "gcovr==${{ inputs.gcovr-version }}"
+      shell: msys2 {0}
+
+    - name: Install gcovr (Other)
+      if: runner.os != 'Windows' || inputs.msys2-system == ''
+      run: |
+        # Install gcovr (Other)
+        pip3 install "gcovr==${{ inputs.gcovr-version }}"
+      shell: bash
 
     - name: Configure tests
       uses: ./.github/workflows/cmake/configure
@@ -153,6 +173,35 @@ runs:
         test-wrapper-cmd: ${{ inputs.test-wrapper-cmd }}
         shell: ${{ inputs.shell }}
 
+    - name: Prepare test coverage artifacts
+      id: prepare-test-coverage-artifacts
+      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
+      run: |
+        # Prepare test coverage artifacts
+        artifact_dir="${{ inputs.test-build-dir }}/coverage"
+
+        gcovr_args=(--json "${artifact_dir}/coverage.json")
+        if [[ ! -z "${{ inputs.gcov }}" ]]; then
+          gcovr_args+=(--gcov-executable "${{ inputs.gcov }}")
+        fi
+        gcovr_args+=("${{ inputs.test-build-dir }}")
+
+        mkdir -p "${artifact_dir}"
+        gcovr "${gcovr_args[@]}"
+
+        echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
+        find "${artifact_dir}" -type f
+      shell: ${{ inputs.shell }}
+
+    - name: Upload test coverage artifacts
+      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_coverage_data_${{ inputs.artifacts-name }}
+        path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
+        retention-days: 1
+        if-no-files-found: error
+
     - name: Configure project
       uses: ./.github/workflows/cmake/configure
       with:
@@ -185,6 +234,18 @@ runs:
         cpack "${args[@]}"
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
+
+    - name: Upload distributable artifacts
+      if: matrix.distributable != '' && fromJSON(matrix.distributable)
+      uses: actions/upload-artifact@v4
+      with:
+        name: distributables_${{ inputs.artifacts-name }}
+        path: |
+          ${{ inputs.build-dir }}/*.gz
+          ${{ inputs.build-dir }}/*.sha256
+          ${{ inputs.build-dir }}/*.zip
+        retention-days: 1
+        if-no-files-found: error
 
     - name: Ensure failure to configure CMake example before installing library
       uses: ./.github/workflows/cmake/configure
@@ -231,63 +292,3 @@ runs:
         build-dir: ${{ inputs.package-test-build-dir }}
         build-type: ${{ inputs.build-type }}
         shell: ${{ inputs.shell }}
-
-    - name: Set up Python (Other)
-      if: runner.os != 'Windows' || inputs.msys2-system == ''
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Install gcovr (MSYS2)
-      if: runner.os == 'Windows' && inputs.msys2-system != ''
-      run: |
-        # Install gcovr (MSYS2)
-        pip install "gcovr==${{ inputs.gcovr-version }}"
-      shell: msys2 {0}
-
-    - name: Install gcovr (Other)
-      if: runner.os != 'Windows' || inputs.msys2-system == ''
-      run: |
-        # Install gcovr (Other)
-        pip3 install "gcovr==${{ inputs.gcovr-version }}"
-      shell: bash
-
-    - name: Prepare test coverage artifacts
-      id: prepare-test-coverage-artifacts
-      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
-      run: |
-        # Prepare test coverage artifacts
-        artifact_dir="coverage_${RANDOM}"
-
-        gcovr_args=(--filter include/ --json "${artifact_dir}/coverage.json")
-        if [[ ! -z "${{ inputs.gcov }}" ]]; then
-          gcovr_args+=(--gcov-executable "${{ inputs.gcov }}")
-        fi
-
-        mkdir -p "${artifact_dir}"
-        gcovr "${gcovr_args[@]}"
-
-        echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
-        find "${artifact_dir}" -type f
-      shell: ${{ inputs.shell }}
-
-    - name: Upload test coverage artifacts
-      if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
-      uses: actions/upload-artifact@v4
-      with:
-        name: test_coverage_${{ inputs.artifacts-name }}
-        path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
-        retention-days: 1
-        if-no-files-found: error
-
-    - name: Upload distributable artifacts
-      if: matrix.distributable != '' && fromJSON(matrix.distributable)
-      uses: actions/upload-artifact@v4
-      with:
-        name: distributables_${{ inputs.artifacts-name }}
-        path: |
-          ${{ inputs.build-dir }}/*.gz
-          ${{ inputs.build-dir }}/*.sha256
-          ${{ inputs.build-dir }}/*.zip
-        retention-days: 1
-        if-no-files-found: error

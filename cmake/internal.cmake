@@ -11,12 +11,6 @@ macro(webview_init)
 
     list(APPEND CMAKE_MODULE_PATH "${WEBVIEW_CURRENT_CMAKE_DIR}/modules")
 
-    if(WEBVIEW_IS_TOP_LEVEL_BUILD)
-        # CMAKE_OSX_* should be set prior to the first project() or enable_language()
-        # Target macOS version
-        set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "")
-    endif()
-
     enable_language(C CXX)
 
     webview_options()
