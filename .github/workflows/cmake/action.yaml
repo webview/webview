@@ -271,7 +271,7 @@ runs:
 
     - name: Upload test coverage artifacts
       if: fromJSON(inputs.test) && (inputs.test-coverage == '' || fromJSON(inputs.test-coverage))
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test_coverage
         path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
@@ -280,7 +280,7 @@ runs:
 
     - name: Upload distributable artifacts
       if: matrix.distributable != '' && fromJSON(matrix.distributable)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: distributables
         path: |

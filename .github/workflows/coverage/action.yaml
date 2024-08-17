@@ -38,7 +38,7 @@ runs:
       shell: bash
 
     - name: Upload report artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test_coverage_report
         path: ${{ inputs.report-dir }}
