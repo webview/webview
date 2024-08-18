@@ -6,7 +6,7 @@ on:
         type: string
         description: gcovr version
         required: false
-        default: "7.2"
+        default: '7.2'
       report-dir:
         type: string
         description: Coverage report output directory
@@ -18,11 +18,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cxx-std: [11, 20]
+        cxx-std: [11, 14, 17, 20]
         config:
           - { image: macos-14,     toolchain: llvm,               compiler-name: clang,   cc: clang,    cxx: clang++,    gcov: llvm-cov gcov,    gen: Xcode, shell: bash }
-          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: "clang-15 clang++-15" }
-          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: "gcc-12 g++-12" }
+          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-4-dev libwebkitgtk-6.0-dev }
+          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-3-dev libwebkit2gtk-4.1-dev }
+          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-3-dev libwebkit2gtk-4.0-dev }
+          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-4-dev libwebkitgtk-6.0-dev }
+          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-3-dev libwebkit2gtk-4.1-dev }
+          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-3-dev libwebkit2gtk-4.0-dev }
+          - { image: ubuntu-20.04, toolchain: gnu,                compiler-name: gcc10,   cc: gcc-10,   cxx: g++-10,     gcov: gcov-10,          gen: Ninja, shell: bash,        apt: gcc-10 g++-10 libgtk-3-dev libwebkit2gtk-4.0-dev }
           - { image: windows-2022, toolchain: msys2-gnu-ucrt64,   compiler-name: gcc,     cc: gcc,      cxx: g++,        gcov: gcov,             gen: Ninja, shell: "msys2 {0}", msys: UCRT64 }
           - { image: windows-2022, toolchain: msys2-llvm-clang64, compiler-name: clang,   cc: clang,    cxx: clang++,    gcov: llvm-cov gcov,    gen: Ninja, shell: "msys2 {0}", msys: CLANG64 }
     defaults:
@@ -105,6 +110,7 @@ jobs:
           name: test_coverage_data
           pattern: test_coverage_data_*
           delete-merged: true
+          retention-days: 1
 
       - name: Download test coverage artifacts
         uses: actions/download-artifact@v4

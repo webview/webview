@@ -7,11 +7,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cxx-std: [11, 20]
+        cxx-std: [11, 14, 17, 20]
         config:
           - { image: macos-14,     toolchain: llvm,               compiler-name: clang,   cc: clang,    cxx: clang++,    gen: Xcode,                 multi: true,  shell: bash }
-          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gen: Ninja,                 multi: false, shell: bash,        apt: "clang-15 clang++-15" }
-          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gen: Ninja,                 multi: false, shell: bash,        apt: "gcc-12 g++-12",      package-source: true }
+          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gen: Ninja,                 multi: false, shell: bash,        apt: clang-15 clang++-15 }
+          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gen: Ninja,                 multi: false, shell: bash,        apt: gcc-12 g++-12,      package-source: true }
           - { image: windows-2022, toolchain: msys2-gnu-ucrt64,   compiler-name: gcc,     cc: gcc,      cxx: g++,        gen: Ninja,                 multi: false, shell: "msys2 {0}", msys: UCRT64 }
           - { image: windows-2022, toolchain: msys2-llvm-clang64, compiler-name: clang,   cc: clang,    cxx: clang++,    gen: Ninja,                 multi: false, shell: "msys2 {0}", msys: CLANG64 }
           - { image: windows-2019, toolchain: msvc,               compiler-name: vs2019,  cc: cl,       cxx: cl,         gen: Visual Studio 16 2019, multi: true,  shell: bash }

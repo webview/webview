@@ -60,6 +60,9 @@ macro(webview_init)
         set(CMAKE_CXX_STANDARD_REQUIRED YES)
         set(CMAKE_CXX_EXTENSIONS NO)
 
+        # Enable output of compile commands
+        set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
         # Enable compile warnings
         if(MSVC)
             add_compile_options(/W4)

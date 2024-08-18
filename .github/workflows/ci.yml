@@ -9,7 +9,7 @@ jobs:
 
   test-coverage:
     needs: check
-    uses: ./.github/workflows/coverage.yml
+    uses: ./.github/workflows/test-coverage.yml
 
   build:
     needs: test-coverage

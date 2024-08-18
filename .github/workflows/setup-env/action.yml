@@ -19,6 +19,7 @@ runs:
           ninja-build \
           python3 \
           python3-lxml \
+          python3-markupsafe \
           python3-pip \
           "${packages[@]}"
       shell: bash
@@ -34,5 +35,6 @@ runs:
           ninja:p
           python:p
           python-lxml:p
+          python-markupsafe:p
           python-pip:p
           toolchain:p
