@@ -176,21 +176,19 @@ jobs:
           install-wrapper-cmd: sudo
 
   p3-cmake-linux-ubuntu2004:
-    name: p3-cmake-linux-ubuntu2004 (${{ matrix.cc }}, c++${{ matrix.standard }}, webkitgtk${{ matrix.webkitgtk-api }})
+    name: p3-cmake-linux-ubuntu2004 (${{ matrix.config.cc }}, c++${{ matrix.standard }}, webkitgtk${{ matrix.webkitgtk-api }})
     needs: p2-cmake-linux-ubuntu2204
-    runs-on: ${{ matrix.image }}
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         standard: [11]
         webkitgtk-api: ['4.0']
-        include:
-          - image: ubuntu-20.04
-          - webkitgtk-api: '4.0'
-            apt-packages-webkitgtk: libgtk-3-dev libwebkit2gtk-4.0-dev
+        config:
           - cc: clang-12
             cxx: clang++-12
             gcov: llvm-cov-12 gcov
             apt-packages: clang-12
+            test-coverage: true
           - cc: clang-8
             cxx: clang++-8
             gcov: llvm-cov-8 gcov
@@ -200,23 +198,27 @@ jobs:
             cxx: g++-10
             gcov: gcov-10
             apt-packages: gcc-10 g++-10
+            test-coverage: true
           - cc: gcc-7
             cxx: g++-7
             gcov: gcov-7
             apt-packages: gcc-7 g++-7
             test-coverage: false
+        include:
+          - webkitgtk-api: '4.0'
+            apt-packages-webkitgtk: libgtk-3-dev libwebkit2gtk-4.0-dev
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
         with:
-          cc: ${{ matrix.cc }}
-          cxx: ${{ matrix.cxx }}
-          gcov: ${{ matrix.gcov }}
+          cc: ${{ matrix.config.cc }}
+          cxx: ${{ matrix.config.cxx }}
+          gcov: ${{ matrix.config.gcov }}
           standard: ${{ matrix.standard }}
           generator: Ninja
-          artifacts-name: p3-cmake-linux-ubuntu2004_${{ matrix.cc }}_cxx${{ matrix.standard }}_webkitgtk${{ matrix.webkitgtk-api }}
+          artifacts-name: p3-cmake-linux-ubuntu2004_${{ matrix.config.cc }}_cxx${{ matrix.standard }}_webkitgtk${{ matrix.webkitgtk-api }}
           test-wrapper-cmd: xvfb-run
-          apt-packages: ${{ matrix.apt-packages }} ${{ matrix.apt-packages-webkitgtk }}
+          apt-packages: ${{ matrix.config.apt-packages }} ${{ matrix.apt-packages-webkitgtk }}
           install-wrapper-cmd: sudo
 
   p3-cmake-macos14:
@@ -254,22 +256,28 @@ jobs:
             - UCRT64
             - MINGW64
             - MINGW32
+          # Test coverage disabled for GCC due to conflicting coverage data.
           include:
             - msys2-system: CLANG64
               cc: clang
               cxx: clang++
+              test-coverage: true
             - msys2-system: CLANG32
               cc: clang
               cxx: clang++
+              test-coverage: true
             - msys2-system: UCRT64
               cc: gcc
               cxx: g++
+              test-coverage: false
             - msys2-system: MINGW64
               cc: gcc
               cxx: g++
+              test-coverage: false
             - msys2-system: MINGW32
               cc: gcc
               cxx: g++
+              test-coverage: false
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/workflows/cmake
