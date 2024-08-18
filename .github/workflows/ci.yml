@@ -1,0 +1,16 @@
+name: CI
+on: [push, pull_request]
+defaults:
+  run:
+    shell: bash
+jobs:
+  check:
+    uses: ./.github/workflows/check.yml
+
+  test-coverage:
+    needs: check
+    uses: ./.github/workflows/coverage.yml
+
+  build:
+    needs: test-coverage
+    uses: ./.github/workflows/build.yml

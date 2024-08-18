@@ -1,0 +1,157 @@
+name: CI / Build
+on:
+  workflow_call:
+jobs:
+  package:
+    runs-on: ${{ matrix.config.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        cxx-std: [11, 20]
+        config:
+          - { image: macos-14,     toolchain: llvm,               compiler-name: clang,   cc: clang,    cxx: clang++,    gen: Xcode,                 multi: true,  shell: bash }
+          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gen: Ninja,                 multi: false, shell: bash,        apt: "clang-15 clang++-15" }
+          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gen: Ninja,                 multi: false, shell: bash,        apt: "gcc-12 g++-12",      package-source: true }
+          - { image: windows-2022, toolchain: msys2-gnu-ucrt64,   compiler-name: gcc,     cc: gcc,      cxx: g++,        gen: Ninja,                 multi: false, shell: "msys2 {0}", msys: UCRT64 }
+          - { image: windows-2022, toolchain: msys2-llvm-clang64, compiler-name: clang,   cc: clang,    cxx: clang++,    gen: Ninja,                 multi: false, shell: "msys2 {0}", msys: CLANG64 }
+          - { image: windows-2019, toolchain: msvc,               compiler-name: vs2019,  cc: cl,       cxx: cl,         gen: Visual Studio 16 2019, multi: true,  shell: bash }
+          - { image: windows-2022, toolchain: msvc,               compiler-name: vs2022,  cc: cl,       cxx: cl,         gen: Visual Studio 17 2022, multi: true,  shell: bash }
+    defaults:
+      run:
+        shell: ${{ matrix.config.shell }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        uses: ./.github/workflows/setup-env
+        with:
+          apt: ${{ matrix.config.apt }}
+          msys: ${{ matrix.config.msys }}
+
+      - name: Configure
+        run: |
+          args=()
+          if [[ ! -z "${{ matrix.config.gen_platform }}" ]]; then
+            args+=("-DCMAKE_GENERATOR_PLATFORM=${{ matrix.config.gen_platform }}")
+          fi
+          if [[ "${OSTYPE}" == darwin* ]]; then
+            args+=("-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64")
+          fi
+          cmake -G "${{ matrix.config.gen }}" -S . -B build \
+            "-DCMAKE_C_COMPILER=${{ matrix.config.cc }}" \
+            "-DCMAKE_CXX_COMPILER=${{ matrix.config.cxx }}" \
+            "-DCMAKE_CXX_STANDARD=${{ matrix.cxx-std }}" \
+            "${args[@]}"
+
+      - if: matrix.config.multi
+        name: Build Debug config (Multi-Config)
+        run: cmake --build build --config Debug
+
+      - name: Build Release config
+        run: cmake --build build --config Release
+
+      - if: matrix.config.multi
+        name: Run Debug tests (Multi-Config)
+        run: ctest -C Debug --output-on-failure
+        working-directory: build
+
+      - name: Run Release tests
+        run: ctest -C Release --output-on-failure
+        working-directory: build
+
+      - if: matrix.config.multi
+        name: Create multi-config package
+        run: cpack -C "Debug;Release" --config CPackConfig.cmake
+        working-directory: build
+
+      - if: matrix.config.multi != true
+        name: Create single-config package
+        run: cpack -C Release --config CPackConfig.cmake
+        working-directory: build
+
+      - if: matrix.config.package-source
+        name: Create source package
+        run: cpack --config CPackSourceConfig.cmake
+        working-directory: build
+
+      # CPack produces checksum files with CRLF on Windows but the CR being present can cause
+      # verification with shasum to fail on Unix-like systems.
+      # find and grep were combined to work around incompatibilities between Linux and macOS.
+      - name: Fix newlines in checksum files
+        run: |
+          while read f; do
+            sed -i.bak 's/\\r\\n/\n/g' "${f}"
+          done <<< "$(find . -type f -name "*.sha*" | grep -E '^.*\.sha[0-9]+$')"
+        working-directory: build
+
+      - name: Generate artifact name
+        id: generate-artifact-name
+        run: |
+          name=${{ matrix.config.image }}_${{ matrix.config.toolchain }}_${{ matrix.config.compiler-name }}_cxx${{ matrix.cxx-std }}
+          echo "name=${name}" >> ${GITHUB_OUTPUT}
+
+      - name: Upload distributable artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package_${{ steps.generate-artifact-name.outputs.name }}
+          path: |
+            build/*.gz
+            build/*.sha256
+            build/*.zip
+          retention-days: 1
+          if-no-files-found: error
+
+  merge-package-artifacts:
+    needs: package
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Merge package artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: package
+          pattern: package_*
+          delete-merged: true
+
+  api-docs:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install doxygen
+        run: sudo apt-get install -y doxygen
+
+      - name: Prepare output directory
+        run: mkdir -p build/docs
+
+      - name: Run doxygen
+        run: doxygen
+
+      - name: Create package (tar.gz)
+        run: tar -czvf docs.tar.gz docs
+        working-directory: build
+
+      - name: Create package (zip)
+        run: zip -r9 docs.zip docs
+        working-directory: build
+
+      - name: Generate checksum files
+        run: |
+          while read f; do
+            shasum --algorithm 256 "${f}" > "${f}.sha256"
+          done << EOF
+          $(find . -maxdepth 1 -type f -name '*.gz' -or -name '*.zip')
+          EOF
+        working-directory: build
+
+      - name: Upload distributable artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: |
+            build/*.gz
+            build/*.sha256
+            build/*.zip
+          retention-days: 1
+          if-no-files-found: error

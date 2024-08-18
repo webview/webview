@@ -1,0 +1,38 @@
+name: Set up environment
+description: Sets up the environment by checking out code, installing required packages, etc.
+inputs:
+  apt:
+    description: APT package names
+    required: false
+  msys:
+    description: MSYS2 environment
+    required: false
+runs:
+  using: composite
+  steps:
+    - if: runner.os == 'Linux'
+      name: Install packages (APT)
+      run: |
+        packages=(${{ inputs.apt }})
+        sudo apt-get install --no-install-recommends -y \
+          cmake \
+          ninja-build \
+          python3 \
+          python3-lxml \
+          python3-pip \
+          "${packages[@]}"
+      shell: bash
+    - if: runner.os == 'Windows' && inputs.msys != ''
+      name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ inputs.msys }}
+        update: false
+        install: base-devel
+        pacboy: >-
+          cmake:p
+          ninja:p
+          python:p
+          python-lxml:p
+          python-pip:p
+          toolchain:p
