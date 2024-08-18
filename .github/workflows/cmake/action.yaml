@@ -33,7 +33,7 @@ inputs:
   gcovr-version:
     description: Version of gcovr to install
     required: true
-    default: '6.0'
+    default: '7.2'
   generator:
     description: CMake generator
     required: true
