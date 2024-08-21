@@ -265,13 +265,13 @@ cmake --build build
 Test coverage is currently only supported with GCC/Clang. We suggest using gcovr for generating reports.
 
 ```
-# Configure, build and run tests
-ctest --build-and-test . build-profile --build-generator Ninja --build-config Profile --test-command ctest
-
-# Generate an HTML test coverage report
-mkdir build-profile/coverage
-gcovr --filter core/include/ --html-details build-profile/coverage/index.html
+cmake -G Ninja -B build-profile -S . -D CMAKE_BUILD_TYPE=Profile
+cmake --build build-profile
+ctest --test-dir build-profile
+gcovr
 ```
+
+See the coverage report in `build-profile/coverage`.
 
 ### Cross-compilation
 
