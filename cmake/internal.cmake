@@ -76,12 +76,9 @@ macro(webview_init)
             set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
         endif()
 
-        # Settings used when creating an official build
-        if(WEBVIEW_IS_OFFICIAL_BUILD)
-            if(MSVC AND NOT CMAKE_MSVC_RUNTIME_LIBRARY)
-                # Use static MSVC runtime library
-                set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-            endif()
+        if(WEBVIEW_USE_STATIC_MSVC_RUNTIME AND MSVC AND NOT CMAKE_MSVC_RUNTIME_LIBRARY)
+            # Use static MSVC runtime library
+            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
         endif()
 
         webview_set_install_rpath()
@@ -207,8 +204,8 @@ macro(webview_internal_options)
     option(WEBVIEW_BUILD_PACKAGE "Build package" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_SHARED_LIBRARY "Build shared libraries" ON)
     option(WEBVIEW_BUILD_STATIC_LIBRARY "Build static libraries" ON)
-    option(WEBVIEW_IS_OFFICIAL_BUILD "" OFF)
     option(WEBVIEW_USE_COMPAT_MINGW "Use compatibility helper for MinGW" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
+    option(WEBVIEW_USE_STATIC_MSVC_RUNTIME "Use static runtime library (MSVC)" OFF)
 endmacro()
 
 macro(webview_set_install_rpath)
