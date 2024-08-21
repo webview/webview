@@ -115,7 +115,7 @@ void count(const char *id, const char *req, void *arg) {
   // Imagine that params->req is properly parsed or use your own JSON parser.
   long direction = strtol(req + 1, NULL, 10);
   char result[10] = {0};
-  sprintf(result, "%ld", context->count += direction);
+  (void)sprintf(result, "%ld", context->count += direction);
   webview_return(context->w, id, 0, result);
 }
 
