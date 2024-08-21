@@ -1,4 +1,4 @@
-name: CI / Coverage
+name: CI / Test Coverage
 on:
   workflow_call:
     inputs:
@@ -7,32 +7,24 @@ on:
         description: gcovr version
         required: false
         default: '7.2'
-      report-dir:
-        type: string
-        description: Coverage report output directory
-        required: false
-        default: report
 jobs:
-  collect:
-    runs-on: ${{ matrix.config.image }}
+  test:
+    name: ${{ matrix.os }} (c++${{ matrix.cxx-std }}, ${{ matrix.tc }}, ${{ matrix.cn }}, ${{ matrix.i }}${{ matrix.name-suffix }})
+    runs-on: ${{ matrix.i }}
     strategy:
-      fail-fast: false
       matrix:
-        cxx-std: [11, 14, 17, 20]
-        config:
-          - { image: macos-14,     toolchain: llvm,               compiler-name: clang,   cc: clang,    cxx: clang++,    gcov: llvm-cov gcov,    gen: Xcode, shell: bash }
-          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-4-dev libwebkitgtk-6.0-dev }
-          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-3-dev libwebkit2gtk-4.1-dev }
-          - { image: ubuntu-22.04, toolchain: llvm,               compiler-name: clang15, cc: clang-15, cxx: clang++-15, gcov: llvm-cov-15 gcov, gen: Ninja, shell: bash,        apt: clang-15 clang++-15 libgtk-3-dev libwebkit2gtk-4.0-dev }
-          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-4-dev libwebkitgtk-6.0-dev }
-          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-3-dev libwebkit2gtk-4.1-dev }
-          - { image: ubuntu-22.04, toolchain: gnu,                compiler-name: gcc12,   cc: gcc-12,   cxx: g++-12,     gcov: gcov-12,          gen: Ninja, shell: bash,        apt: gcc-12 g++-12 libgtk-3-dev libwebkit2gtk-4.0-dev }
-          - { image: ubuntu-20.04, toolchain: gnu,                compiler-name: gcc10,   cc: gcc-10,   cxx: g++-10,     gcov: gcov-10,          gen: Ninja, shell: bash,        apt: gcc-10 g++-10 libgtk-3-dev libwebkit2gtk-4.0-dev }
-          - { image: windows-2022, toolchain: msys2-gnu-ucrt64,   compiler-name: gcc,     cc: gcc,      cxx: g++,        gcov: gcov,             gen: Ninja, shell: "msys2 {0}", msys: UCRT64 }
-          - { image: windows-2022, toolchain: msys2-llvm-clang64, compiler-name: clang,   cc: clang,    cxx: clang++,    gcov: llvm-cov gcov,    gen: Ninja, shell: "msys2 {0}", msys: CLANG64 }
-    defaults:
-      run:
-        shell: ${{ matrix.config.shell }}
+        include:
+          # cn:  compiler-name
+          # i:   image
+          # g:   generator
+          # gp:  generator-platform
+          # sh:  shell
+          # tc:  toolchain
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk6.0', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '6.0' }
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.1', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: gcc-12 g++-12, webkitgtk-api: '4.1' }
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.0', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: gcc-12 g++-12, webkitgtk-api: '4.0' }
+          - { os: macos,   i: macos-14,     cxx-std: 20, tc: llvm,               cn: clang,   cc: clang,    cxx: clang++,     g: Xcode,                 sh: bash,        name-suffix: '',               gcov: xcrun llvm-cov gcov }
+          - { os: windows, i: windows-2022, cxx-std: 20, tc: msys2-llvm-clang64, cn: clang,   cc: clang,    cxx: clang++,     g: Ninja Multi-Config,    sh: 'msys2 {0}', name-suffix: ', CLANG64',      gcov: llvm-cov gcov, msys: CLANG64 }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,55 +32,43 @@ jobs:
       - name: Set up environment
         uses: ./.github/workflows/setup-env
         with:
-          apt: ${{ matrix.config.apt }}
-          msys: ${{ matrix.config.msys }}
+          apt: ${{ matrix.apt }}
+          msys: ${{ matrix.msys }}
+          webkitgtk-api: ${{ matrix.webkitgtk-api }}
 
-      - name: Build and run tests with coverage
-        run: >
-          ctest --build-and-test . build
-          --build-generator "${{ matrix.config.gen }}"
-          --build-config Profile
-          --test-command ctest
-          --output-on-failure
-          --build-options
-          "CMAKE_C_COMPILER=${{ matrix.config.cc }}"
-          "CMAKE_CXX_COMPILER=${{ matrix.config.cxx }}"
-          "CMAKE_CXX_STANDARD=${{ matrix.cxx-std }}"
-
-      - name: Install gcovr
-        run: pip install "gcovr==${{ inputs.gcovr-version }}"
-
-      - name: Prepare test coverage artifacts
-        id: prepare-test-coverage-artifacts
+      - name: Generate artifacts name
+        id: generate-artifacts-name
         run: |
-          coverage_name="${{ matrix.config.image }}_${{ matrix.config.toolchain }}_${{ matrix.config.compiler-name }}_cxx${{ matrix.cxx-std }}"
-          base_dir="temp_${RANDOM}"
-          artifact_dir="${base_dir}/${coverage_name}"
-
-          gcovr_args=(
-            --config gcovr.ci.cfg
-            --json "${artifact_dir}/coverage.json"
-          )
-          if [[ ! -z "${{ inputs.gcov }}" ]]; then
-            gcovr_args+=(--gcov-executable "${{ inputs.gcov }}")
+          if [[ "${{ matrix.os }}" == "linux" ]]; then
+            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_webkitgtk${{ matrix.webkitgtk-api }}"
+          elif [[ "${{ matrix.os }}" == "macos" ]]; then
+            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}"
+          elif [[ "${{ matrix.os }}" == "windows" && "${{ matrix.cn }}" == "msvc" ]]; then
+            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_${{ matrix.gp }}"
+          elif [[ "${{ matrix.os }}" == "windows" && ! -z "${{ matrix.msys }}" ]]; then
+            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_${{ matrix.msys }}"
           fi
+          echo "artifacts-name=${name}" >> "${GITHUB_OUTPUT}"
+        shell: bash
 
-          mkdir -p "${artifact_dir}"
-          gcovr "${gcovr_args[@]}"
-
-          echo "upload-dir=${base_dir}" >> "${GITHUB_OUTPUT}"
-          echo "coverage-name=${coverage_name}" >> "${GITHUB_OUTPUT}"
-
-      - name: Upload test coverage artifacts
-        uses: actions/upload-artifact@v4
+      - name: CMake
+        uses: ./.github/workflows/cmake
         with:
-          name: test_coverage_data_${{ steps.prepare-test-coverage-artifacts.outputs.coverage-name }}
-          path: ${{ steps.prepare-test-coverage-artifacts.outputs.upload-dir }}
-          retention-days: 1
-          if-no-files-found: error
+          artifacts-name: ${{ steps.generate-artifacts-name.outputs.artifacts-name }}
+          build-dir: build
+          cc: ${{ matrix.cc }}
+          coverage: true
+          cxx: ${{ matrix.cxx }}
+          cxx-std: ${{ matrix.cxx-std }}
+          gcov: ${{ matrix.gcov }}
+          gcovr-version: ${{ inputs.gcovr-version }}
+          generator: ${{ matrix.g }}
+          shell: ${{ matrix.sh }}
+          source-dir: .
+          test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
 
   report:
-    needs: collect
+    needs: test
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -99,6 +79,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y
           python3
           python3-lxml
+          python3-markupsafe
           python3-pip
 
       - name: Install gcovr
@@ -111,29 +92,36 @@ jobs:
           pattern: test_coverage_data_*
           delete-merged: true
           retention-days: 1
+          separate-directories: true
 
-      - name: Download test coverage artifacts
+      - name: Download merged test coverage artifacts
         uses: actions/download-artifact@v4
         with:
           name: test_coverage_data
 
       - name: Generate report
+        id: generate-report
         run: |
           tracefile_args=()
           while read f; do
             tracefile_args+=(--add-tracefile "${f}")
           done <<< "$(find . -type f -name "coverage.json")"
-          mkdir -p "${{ inputs.report-dir }}/html"
-          gcovr --config gcovr.ci.cfg --json "${{ inputs.report-dir }}/gcovr.json" "${tracefile_args[@]}"
-          gcovr --config gcovr.ci.cfg --coveralls "${{ inputs.report-dir }}/coveralls.json" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
-          gcovr --config gcovr.ci.cfg --json-summary "${{ inputs.report-dir }}/summary.json" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
-          gcovr --config gcovr.ci.cfg --html-details "${{ inputs.report-dir }}/html/index.html" --add-tracefile "${{ inputs.report-dir }}/gcovr.json"
+
+          artifact_dir="temp_${RANDOM}/report"
+          mkdir -p "${artifact_dir}/html"
+
+          gcovr --config gcovr.ci.cfg --json "${artifact_dir}/gcovr.json" "${tracefile_args[@]}"
+          gcovr --config gcovr.ci.cfg --coveralls "${artifact_dir}/coveralls.json" --add-tracefile "${artifact_dir}/gcovr.json"
+          gcovr --config gcovr.ci.cfg --json-summary "${artifact_dir}/summary.json" --add-tracefile "${artifact_dir}/gcovr.json"
+          gcovr --config gcovr.ci.cfg --html-details "${artifact_dir}/html/index.html" --add-tracefile "${artifact_dir}/gcovr.json"
+
+          echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload report artifacts
         uses: actions/upload-artifact@v4
         with:
           name: test_coverage_report
-          path: ${{ inputs.report-dir }}
+          path: ${{ steps.generate-report.outputs.upload-dir }}
           retention-days: 1
           if-no-files-found: error
 
@@ -143,7 +131,7 @@ jobs:
           script: |
             const numberOr = (value, alternative) => Number.isNaN(value = parseInt(value)) ? alternative : value;
             const percentValue = (value, percentSymbol = "%") => numberOr(value, "-") + percentSymbol;
-            const data = require("./${{ inputs.report-dir }}/summary.json");
+            const data = require("./${{ steps.generate-report.outputs.upload-dir }}/summary.json");
             await core.summary
               .addHeading("Test Coverage Summary")
               .addTable([

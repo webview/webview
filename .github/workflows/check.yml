@@ -9,8 +9,8 @@ jobs:
       - run: sudo apt-get install --no-install-recommends -y clang-format-15
       - run: CLANG_FORMAT_EXE=clang-format-15 ./scripts/check_format.sh
 
-  lint-linux-webkitgtk:
-    name: lint (linux, webkitgtk${{ matrix.webkitgtk-api }}, c++${{ matrix.cxx-std }})
+  lint-linux:
+    name: lint-linux (c++${{ matrix.cxx-std }}, webkitgtk${{ matrix.webkitgtk-api }})
     runs-on: ubuntu-22.04
     strategy:
       matrix:
