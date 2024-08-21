@@ -23,14 +23,8 @@ inputs:
   coverage:
     description: Enable code coverage?
     required: false
-  cc:
-    description: Sets CMAKE_C_COMPILER
-    required: false
   cmake-options:
     description: Sets extra CMake options in the form A=1 (one per line)
-    required: false
-  cxx:
-    description: Sets CMAKE_CXX_COMPILER
     required: false
   cxx-std:
     description: Sets CMAKE_CXX_STANDARD
@@ -117,12 +111,6 @@ runs:
           -B "${{ inputs.build-dir }}"
           -S "${{ inputs.source-dir }}"
         )
-        if [[ ! -z "${{ inputs.cc }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_C_COMPILER=${{ inputs.cc }}")
-        fi
-        if [[ ! -z "${{ inputs.cxx }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_CXX_COMPILER=${{ inputs.cxx }}")
-        fi
         if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
           cmake_cmd+=(-D "CMAKE_CXX_STANDARD=${{ inputs.cxx-std }}")
         fi

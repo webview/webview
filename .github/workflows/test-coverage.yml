@@ -9,22 +9,26 @@ on:
         default: '7.2'
 jobs:
   test:
-    name: ${{ matrix.os }} (c++${{ matrix.cxx-std }}, ${{ matrix.tc }}, ${{ matrix.cn }}, ${{ matrix.i }}${{ matrix.name-suffix }})
+    name: ${{ matrix.os }} (c++${{ matrix.cxx-std }}, ${{ matrix.a }}, ${{ matrix.t }}${{ matrix.ces }}${{ matrix.name-suffix }})
     runs-on: ${{ matrix.i }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          # cn:  compiler-name
-          # i:   image
-          # g:   generator
-          # gp:  generator-platform
-          # sh:  shell
-          # tc:  toolchain
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk6.0', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '6.0' }
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.1', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: gcc-12 g++-12, webkitgtk-api: '4.1' }
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, tc: llvm,               cn: clang15, cc: clang-15, cxx: clang++-15,  g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.0', gcov: llvm-cov-15 gcov, test-wrapper-cmd: xvfb-run, apt: gcc-12 g++-12, webkitgtk-api: '4.0' }
-          - { os: macos,   i: macos-14,     cxx-std: 20, tc: llvm,               cn: clang,   cc: clang,    cxx: clang++,     g: Xcode,                 sh: bash,        name-suffix: '',               gcov: xcrun llvm-cov gcov }
-          - { os: windows, i: windows-2022, cxx-std: 20, tc: msys2-llvm-clang64, cn: clang,   cc: clang,    cxx: clang++,     g: Ninja Multi-Config,    sh: 'msys2 {0}', name-suffix: ', CLANG64',      gcov: llvm-cov gcov, msys: CLANG64 }
+          # os:      Target operating systme
+          # a:       Architecture
+          # i:       Image
+          # cxx-std: C++ standard
+          # ces:     CMAKE_EXECUTABLE_SUFFIX
+          # g:       CMake generator
+          # msvc-mt: Use static MSVC runtime library
+          # t:       Toolchain
+          # sh:      Shell
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk6.0', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '6.0' }
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.1', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '4.1' }
+          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.0', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '4.0' }
+          - { os: macos,   i: macos-14,     cxx-std: 20, a: universal, t: macos-llvm,         ces: '',       g: Xcode,                 sh: bash,        name-suffix: '',               gcov: xcrun llvm-cov gcov }
+          - { os: windows, i: windows-2022, cxx-std: 20, a: x86_64,    t: msys2-llvm-clang64, ces: '',       g: Ninja Multi-Config,    sh: 'msys2 {0}', name-suffix: ', CLANG64',      gcov: llvm-cov gcov,      msys: CLANG64 }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,6 +39,41 @@ jobs:
           apt: ${{ matrix.apt }}
           msys: ${{ matrix.msys }}
           webkitgtk-api: ${{ matrix.webkitgtk-api }}
+
+      - name: Generate variables
+        id: vars
+        run: |
+          if [[ "${{ matrix.os }}" == "linux" ]]; then
+            name="${{ runner.os }}_${{ matrix.i }}_cxx${{ matrix.cxx-std }}_${{ matrix.a }}_${{ matrix.t }}${{ matrix.ces }}_webkitgtk${{ matrix.webkitgtk-api }}"
+          else
+            name="${{ runner.os }}_${{ matrix.i }}_cxx${{ matrix.cxx-std }}_${{ matrix.a }}_${{ matrix.t }}${{ matrix.ces }}"
+          fi
+          echo "artifacts-name=${name}" >> "${GITHUB_OUTPUT}"
+
+          cmake_options=()
+
+          if [[ ! -z "${{ matrix.ces }}" ]]; then
+            cmake_options+=("CMAKE_EXECUTABLE_SUFFIX=${{ matrix.ces }}")
+          fi
+
+          echo "cmake-options=$(printf '%s\n' "${cmake_options[@]}")" >> "${GITHUB_OUTPUT}"
+        shell: bash
+
+      - name: CMake
+        uses: ./.github/workflows/cmake
+        with:
+          artifacts-name: ${{ steps.vars.outputs.artifacts-name }}
+          build-dir: build
+          cmake-options: ${{ steps.vars.outputs.cmake-options }}
+          coverage: true
+          cxx-std: ${{ matrix.cxx-std }}
+          gcov: ${{ matrix.gcov }}
+          gcovr-version: ${{ inputs.gcovr-version }}
+          generator: ${{ matrix.g }}
+          shell: ${{ matrix.sh }}
+          source-dir: .
+          test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
+          toolchain-file: cmake/toolchains/${{ matrix.a }}-${{ matrix.t }}.cmake
 
       - name: Generate artifacts name
         id: generate-artifacts-name
@@ -50,22 +89,6 @@ jobs:
           fi
           echo "artifacts-name=${name}" >> "${GITHUB_OUTPUT}"
         shell: bash
-
-      - name: CMake
-        uses: ./.github/workflows/cmake
-        with:
-          artifacts-name: ${{ steps.generate-artifacts-name.outputs.artifacts-name }}
-          build-dir: build
-          cc: ${{ matrix.cc }}
-          coverage: true
-          cxx: ${{ matrix.cxx }}
-          cxx-std: ${{ matrix.cxx-std }}
-          gcov: ${{ matrix.gcov }}
-          gcovr-version: ${{ inputs.gcovr-version }}
-          generator: ${{ matrix.g }}
-          shell: ${{ matrix.sh }}
-          source-dir: .
-          test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
 
   report:
     needs: test
