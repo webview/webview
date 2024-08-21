@@ -529,19 +529,19 @@ public:
     }
   }
 
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   const T &get() const {
     if (!m_has_data) {
       throw bad_access{};
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return *reinterpret_cast<const T *>(&m_data);
   }
 
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   T &get() {
     if (!m_has_data) {
       throw bad_access{};
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return *reinterpret_cast<T *>(&m_data);
   }
 
