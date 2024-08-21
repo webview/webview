@@ -16,8 +16,6 @@ while read f; do
         language_arg="--extra-arg-before=--language=c++"
     fi
     "${CLANG_TIDY_EXE}" "${language_arg}" \
-        --extra-arg "-I${project_dir}/core/include" \
-        --extra-arg "-I${project_dir}/test_driver/include" \
         -p "${build_dir}" \
         "--warnings-as-errors=*" \
         "${f}" || exit 1
