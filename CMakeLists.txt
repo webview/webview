@@ -24,6 +24,10 @@ if(WEBVIEW_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+if(WEBVIEW_BUILD_DOCS)
+    add_subdirectory(docs)
+endif()
+
 if(WEBVIEW_INSTALL_TARGETS)
     webview_install()
 endif()
