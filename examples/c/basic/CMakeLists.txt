@@ -1,6 +1,6 @@
 add_executable(webview_example_basic_c WIN32)
 target_sources(webview_example_basic_c PRIVATE src/main.c)
-target_link_libraries(webview_example_basic_c PRIVATE webview::core_static)
+target_link_libraries(webview_example_basic_c PRIVATE webview::static)
 
 if(MSVC)
     # Disable some warnings when using MSVC

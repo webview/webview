@@ -1,3 +1,3 @@
 add_executable(webview_example_basic_cc WIN32)
 target_sources(webview_example_basic_cc PRIVATE src/main.cc)
-target_link_libraries(webview_example_basic_cc PRIVATE webview::core_headers)
+target_link_libraries(webview_example_basic_cc PRIVATE webview::headers)

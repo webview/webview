@@ -109,11 +109,11 @@ Find the executable in the `build/bin` directory.
 
 The following CMake targets are avilable:
 
-Name                    | Description
-----                    | -----------
-`webview::core_headers` | Headers only for C++.
-`webview::core_shared`  | Shared library for C.
-`webview::core_static`  | Static library for C.
+Name               | Description
+----               | -----------
+`webview::headers` | Headers only for C++.
+`webview::shared`  | Shared library for C.
+`webview::static`  | Static library for C.
 
 ### CMake Options
 
