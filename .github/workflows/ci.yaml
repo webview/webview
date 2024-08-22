@@ -5,8 +5,8 @@ defaults:
     shell: bash
 jobs:
   check:
-    uses: ./.github/workflows/check.yml
+    uses: ./.github/workflows/check.yaml
 
   build:
     needs: check
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build.yaml
