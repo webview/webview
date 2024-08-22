@@ -47,22 +47,6 @@ jobs:
           msys-pacboy: ${{ matrix.msys-pacboy }}
           webkitgtk-api: ${{ matrix.webkitgtk-api }}
 
-      - name: Build artifacts name
-        uses: actions/github-script@v7
-        id: artifacts-name
-        env:
-          MATRIX: ${{ toJson(matrix) }}
-        with:
-          script: |
-            const crypto = require("node:crypto");
-            const matrix = JSON.parse(process.env.MATRIX);
-            const name = Object.entries(matrix).flatMap(kv => kv).join("_")
-            console.log(name);
-            const nameDigest = crypto.createHash("sha256").update(name).digest("hex");
-            console.log(nameDigest);
-            return nameDigest;
-          result-encoding: string
-
       - name: Build CMake options
         uses: actions/github-script@v7
         id: cmake-options
@@ -92,7 +76,7 @@ jobs:
       - name: CMake
         uses: ./.github/workflows/cmake
         with:
-          artifacts-name: ${{ steps.artifacts-name.outputs.result }}
+          artifacts-name: ${{ matrix.id }}
           build-dir: build
           docs: ${{ matrix.docs }}
           docs-target: webview_docs
