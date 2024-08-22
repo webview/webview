@@ -68,15 +68,13 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
 
 Your compiler must support C++14 and we recommend to pair it with an up-to-date Windows 10 SDK.
 
-For Visual C++ we recommend Visual Studio 2022 or later. We have a [separate section for MinGW-w64](#mingw-w64-requirements).
+For Visual C++ we recommend Visual Studio 2022 or later. There are some [requirements when using MinGW-w64](#mingw-w64-requirements).
 
 Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] installed on their system for any version of Windows before Windows 11.
 
 ## Getting Started
 
 If you are a developer of this project then please go to the [development section](#development).
-
-See the [MinGW-w64 requirements](#mingw-w64-requirements) when building on Windows.
 
 You will have a working app made with C++ and CMake, but you are encouraged to explore the [available examples][examples].
 
