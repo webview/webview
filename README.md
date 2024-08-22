@@ -140,7 +140,7 @@ These options can be used when when using the webview CMake package.
 
 Option                          | Description
 ------                          | -----------
-`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` (recommended) or `4.0`. This will also automatically decide the GTK version. Uses the latest recommended API by default if available, or the latest known and available API. Note that there can be major differences between API versions that can affect feature availability. See webview API documentation for details.
+`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` (recommended) or `4.0`. This will also automatically decide the GTK version. Uses the latest recommended API by default if available, or the latest known and available API. Note that there can be major differences between API versions that can affect feature availability. See webview API documentation for details on feature availability.
 
 #### Windows-specific Options
 
