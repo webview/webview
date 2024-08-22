@@ -30,7 +30,7 @@ jobs:
 
   build:
     needs: load-matrix
-    name: ${{ matrix.job-type }} (${{ matrix.os }}, c++${{ matrix.cxx-std }}, ${{ matrix.arch }}, ${{ matrix.toolchain }}${{ matrix.toolchain-executable-suffix }}${{ matrix.job-name-suffix }})
+    name: ${{ matrix.job-type }} (${{ matrix.id }}, ${{ matrix.os }}, c++${{ matrix.cxx-std }}, ${{ matrix.arch }}, ${{ matrix.toolchain }}${{ matrix.toolchain-executable-suffix }}${{ matrix.job-name-suffix }})
     runs-on: ${{ matrix.image }}
     strategy:
       fail-fast: false

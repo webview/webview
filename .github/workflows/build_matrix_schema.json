@@ -6,6 +6,7 @@
     "docs": "boolean",
     "gcov": "string",
     "generator": "string",
+    "id": "number",
     "image": "string",
     "job-name-suffix": "string",
     "job-type": "string",
