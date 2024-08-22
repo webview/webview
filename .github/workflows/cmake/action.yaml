@@ -158,7 +158,7 @@ runs:
 
     - if: inputs.package != '' && fromJson(inputs.package)
       name: Create multi-config package
-      run: cpack -C "Debug;Release" --config CPackConfig.cmake
+      run: cpack -C "${{ inputs.build-config-debug }};${{ inputs.build-config-release }}" --config CPackConfig.cmake
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
