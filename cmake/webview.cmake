@@ -82,7 +82,6 @@ macro(webview_find_dependencies)
     endif()
 endmacro()
 
-
 function(webview_fetch_mswebview2 VERSION)
     if(NOT COMMAND FetchContent_Declare)
         include(FetchContent)
