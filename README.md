@@ -107,7 +107,7 @@ Find the executable in the `build/bin` directory.
 
 ### CMake Targets
 
-The following CMake targets are avilable:
+The following CMake targets are available:
 
 Name               | Description
 ----               | -----------
