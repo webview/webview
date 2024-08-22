@@ -1,4 +1,4 @@
-name: CI / Test Coverage
+name: CI / Package
 on:
   workflow_call:
     inputs:
@@ -8,27 +8,33 @@ on:
         required: false
         default: '7.2'
 jobs:
-  test:
-    name: ${{ matrix.os }} (c++${{ matrix.cxx-std }}, ${{ matrix.a }}, ${{ matrix.t }}${{ matrix.ces }}${{ matrix.name-suffix }})
-    runs-on: ${{ matrix.i }}
+  load-matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.load-matrix.outputs.result }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load matrix file
+        id: load-matrix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const csv = require("./.github/workflows/csv.js");
+            const path = require("node:path");
+            const schema = require("./.github/workflows/build_matrix_schema.json");
+            const matrix = { include: csv.loadFile(path.join(".github", "workflows", "build_matrix.csv"), schema) };
+            console.log(matrix);
+            return matrix;
+
+  build:
+    needs: load-matrix
+    name: ${{ matrix.job-type }} (${{ matrix.os }}, c++${{ matrix.cxx-std }}, ${{ matrix.arch }}, ${{ matrix.toolchain }}${{ matrix.toolchain-executable-suffix }}${{ matrix.job-name-suffix }})
+    runs-on: ${{ matrix.image }}
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # os:      Target operating systme
-          # a:       Architecture
-          # i:       Image
-          # cxx-std: C++ standard
-          # ces:     CMAKE_EXECUTABLE_SUFFIX
-          # g:       CMake generator
-          # msvc-mt: Use static MSVC runtime library
-          # t:       Toolchain
-          # sh:      Shell
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk6.0', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '6.0' }
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.1', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '4.1' }
-          - { os: linux,   i: ubuntu-22.04, cxx-std: 20, a: host,      t: llvm,               ces: '-15',    g: Ninja Multi-Config,    sh: bash,        name-suffix: ', webkitgtk4.0', gcov: llvm-cov-15 gcov,   test-wrapper-cmd: xvfb-run, apt: clang-15 clang++-15, webkitgtk-api: '4.0' }
-          - { os: macos,   i: macos-14,     cxx-std: 20, a: universal, t: macos-llvm,         ces: '',       g: Xcode,                 sh: bash,        name-suffix: '',               gcov: xcrun llvm-cov gcov }
-          - { os: windows, i: windows-2022, cxx-std: 20, a: x86_64,    t: msys2-llvm-clang64, ces: '',       g: Ninja Multi-Config,    sh: 'msys2 {0}', name-suffix: ', CLANG64',      gcov: llvm-cov gcov,      msys: CLANG64 }
+      matrix: ${{ fromJson(needs.load-matrix.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,60 +44,84 @@ jobs:
         with:
           apt: ${{ matrix.apt }}
           msys: ${{ matrix.msys }}
+          msys-pacboy: ${{ matrix.msys-pacboy }}
           webkitgtk-api: ${{ matrix.webkitgtk-api }}
 
-      - name: Generate variables
-        id: vars
-        run: |
-          if [[ "${{ matrix.os }}" == "linux" ]]; then
-            name="${{ runner.os }}_${{ matrix.i }}_cxx${{ matrix.cxx-std }}_${{ matrix.a }}_${{ matrix.t }}${{ matrix.ces }}_webkitgtk${{ matrix.webkitgtk-api }}"
-          else
-            name="${{ runner.os }}_${{ matrix.i }}_cxx${{ matrix.cxx-std }}_${{ matrix.a }}_${{ matrix.t }}${{ matrix.ces }}"
-          fi
-          echo "artifacts-name=${name}" >> "${GITHUB_OUTPUT}"
+      - name: Build artifacts name
+        uses: actions/github-script@v7
+        id: artifacts-name
+        env:
+          MATRIX: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const crypto = require("node:crypto");
+            const matrix = JSON.parse(process.env.MATRIX);
+            const name = Object.entries(matrix).flatMap(kv => kv).join("_")
+            console.log(name);
+            const nameDigest = crypto.createHash("sha256").update(name).digest("hex");
+            console.log(nameDigest);
+            return nameDigest;
+          result-encoding: string
 
-          cmake_options=()
-
-          if [[ ! -z "${{ matrix.ces }}" ]]; then
-            cmake_options+=("CMAKE_EXECUTABLE_SUFFIX=${{ matrix.ces }}")
-          fi
-
-          echo "cmake-options=$(printf '%s\n' "${cmake_options[@]}")" >> "${GITHUB_OUTPUT}"
-        shell: bash
+      - name: Build CMake options
+        uses: actions/github-script@v7
+        id: cmake-options
+        env:
+          MATRIX: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const matrix = JSON.parse(process.env.MATRIX);
+            const option = (k, v) => v === undefined ? undefined : [k, ({
+                boolean: () => v ? "ON" : "OFF"
+              }[typeof v] || (() => v))()
+            ].join("=");
+            return [
+              option("CMAKE_CXX_STANDARD", matrix["cxx-std"]),
+              option("CMAKE_OSX_DEPLOYMENT_TARGET", matrix["osx-deployment-target"]),
+              option("CMAKE_TOOLCHAIN_FILE", `cmake/toolchains/${matrix["arch"]}-${matrix["toolchain"]}.cmake`),
+              option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
+              option("WEBVIEW_INSTALL_DOCS", matrix["docs"]),
+              option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
+              option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
+              option("WEBVIEW_ENABLE_CHECKS", matrix["checks"]),
+              option("WEBVIEW_WEBKITGTK_API", matrix["webkitgtk-api"]),
+            ].filter(v => v !== undefined).filter(v => {
+              console.log(v);
+              return true;
+            });
 
       - name: CMake
         uses: ./.github/workflows/cmake
         with:
-          artifacts-name: ${{ steps.vars.outputs.artifacts-name }}
+          artifacts-name: ${{ steps.artifacts-name.outputs.result }}
           build-dir: build
-          cmake-options: ${{ steps.vars.outputs.cmake-options }}
-          coverage: true
-          cxx-std: ${{ matrix.cxx-std }}
-          gcov: ${{ matrix.gcov }}
-          gcovr-version: ${{ inputs.gcovr-version }}
-          generator: ${{ matrix.g }}
-          shell: ${{ matrix.sh }}
+          docs: ${{ matrix.docs }}
+          docs-target: webview_docs
+          cmake-options: ${{ steps.cmake-options.outputs.result }}
+          generator: ${{ matrix.generator }}
+          package: ${{ matrix.package }}
+          package-source: ${{ matrix.package-source }}
+          shell: ${{ matrix.shell }}
           source-dir: .
           test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
-          toolchain-file: cmake/toolchains/${{ matrix.a }}-${{ matrix.t }}.cmake
+          # Specific to code coverage
+          coverage: ${{ matrix.job-type == 'coverage' }}
+          gcov: ${{ matrix.gcov }}
+          gcovr-version: ${{ inputs.gcovr-version }}
 
-      - name: Generate artifacts name
-        id: generate-artifacts-name
-        run: |
-          if [[ "${{ matrix.os }}" == "linux" ]]; then
-            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_webkitgtk${{ matrix.webkitgtk-api }}"
-          elif [[ "${{ matrix.os }}" == "macos" ]]; then
-            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}"
-          elif [[ "${{ matrix.os }}" == "windows" && "${{ matrix.cn }}" == "msvc" ]]; then
-            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_${{ matrix.gp }}"
-          elif [[ "${{ matrix.os }}" == "windows" && ! -z "${{ matrix.msys }}" ]]; then
-            name="${{ runner.os }}_${{ matrix.tc }}_${{ matrix.cn }}_cxx${{ matrix.cxx-std }}_${{ matrix.msys }}"
-          fi
-          echo "artifacts-name=${name}" >> "${GITHUB_OUTPUT}"
-        shell: bash
+  merge-package-artifacts:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Merge package artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: package
+          pattern: package_*
+          delete-merged: true
 
-  report:
-    needs: test
+  coverage-report:
+    needs: build
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout

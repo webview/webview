@@ -24,11 +24,8 @@ inputs:
     description: Enable code coverage?
     required: false
   cmake-options:
-    description: Sets extra CMake options in the form A=1 (one per line)
+    description: Sets extra CMake options in the form ["K=V", ...]
     required: false
-  cxx-std:
-    description: Sets CMAKE_CXX_STANDARD
-    required: true
   docs:
     description: Build documentation
     required: false
@@ -51,12 +48,6 @@ inputs:
     description: CMake generator
     required: false
     default: Ninja
-  generator-platform:
-    description: Sets CMAKE_GENERATOR_PLATFORM
-    required: false
-  osx-deployment-target:
-    description: Sets CMAKE_OSX_DEPLOYMENT_TARGET
-    required: false
   package:
     description: Package?
     required: false
@@ -74,18 +65,15 @@ inputs:
   test-wrapper-cmd:
     description: Test wrapper command
     required: false
-  toolchain-file:
-    description: CMake toolchain file
-    required: false
 runs:
   using: composite
   steps:
-    - if: inputs.coverage != '' && fromJSON(inputs.coverage)
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
       name: gcov version
       run: ${{ inputs.gcov }} --version
       shell: ${{ inputs.shell }}
 
-    - if: inputs.coverage != '' && fromJSON(inputs.coverage)
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
       name: Install gcovr
       run: pip install "gcovr==${{ inputs.gcovr-version }}"
       shell: ${{ inputs.shell }}
@@ -103,7 +91,18 @@ runs:
         echo "configs=${configs[@]}" >> "${GITHUB_OUTPUT}"
       shell: bash
 
+    - name: Parse CMake options
+      uses: actions/github-script@v7
+      id: cmake-options
+      env:
+        OPTIONS: ${{ inputs.cmake-options }}
+      with:
+        script: return JSON.parse(process.env.OPTIONS).join("\n")
+        result-encoding: string
+
     - name: Configure
+      env:
+        OPTIONS: ${{ steps.cmake-options.outputs.result }}
       run: |
         cmake_cmd=(
           cmake
@@ -111,24 +110,12 @@ runs:
           -B "${{ inputs.build-dir }}"
           -S "${{ inputs.source-dir }}"
         )
-        if [[ ! -z "${{ inputs.cxx-std }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_CXX_STANDARD=${{ inputs.cxx-std }}")
-        fi
-        if [[ ! -z "${{ inputs.generator-platform }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_GENERATOR_PLATFORM=${{ inputs.generator-platform }}")
-        fi
-        if [[ ! -z "${{ inputs.osx-deployment-target }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_OSX_DEPLOYMENT_TARGET=${{ inputs.osx-deployment-target }}")
-        fi
-        if [[ ! -z "${{ inputs.toolchain-file }}" ]]; then
-          cmake_cmd+=(-D "CMAKE_TOOLCHAIN_FILE=${{ inputs.toolchain-file }}")
-        fi
         while read opt; do
           if [[ ! -z "${opt}" ]]; then
             cmake_cmd+=(-D "${opt}")
           fi
         done << EOF
-        ${{ inputs.cmake-options }}
+        ${OPTIONS}
         EOF
         "${cmake_cmd[@]}"
       shell: ${{ inputs.shell }}
@@ -164,24 +151,24 @@ runs:
         done
       shell: ${{ inputs.shell }}
 
-    - if: inputs.docs != '' && fromJSON(inputs.docs)
+    - if: inputs.docs != '' && fromJson(inputs.docs)
       name: Build documentation
       run: cmake --build "${{ inputs.build-dir }}" --target "${{ inputs.docs-target }}"
       shell: ${{ inputs.shell }}
 
-    - if: inputs.package != '' && fromJSON(inputs.package)
+    - if: inputs.package != '' && fromJson(inputs.package)
       name: Create multi-config package
       run: cpack -C "Debug;Release" --config CPackConfig.cmake
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: inputs.package-source != '' && fromJSON(inputs.package-source)
+    - if: inputs.package-source != '' && fromJson(inputs.package-source)
       name: Create source package
       run: cpack --config CPackSourceConfig.cmake
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: inputs.coverage != '' && fromJSON(inputs.coverage)
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
       name: Generate coverage data
       id: prepare-coverage-artifacts
       run: |
@@ -204,7 +191,7 @@ runs:
     # CPack produces checksum files with CRLF on Windows but the CR being present can cause
     # verification with shasum to fail on Unix-like systems.
     # find and grep were combined to work around incompatibilities between Linux and macOS.
-    - if: (inputs.package != '' && fromJSON(inputs.package)) || (inputs.package-source != '' && fromJSON(inputs.package-source))
+    - if: (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source))
       name: Fix newlines in checksum files
       run: |
         while read f; do
@@ -213,7 +200,7 @@ runs:
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: inputs.package != '' && fromJSON(inputs.package)
+    - if: inputs.package != '' && fromJson(inputs.package)
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -225,7 +212,7 @@ runs:
         retention-days: 1
         if-no-files-found: error
 
-    - if: inputs.coverage != '' && fromJSON(inputs.coverage)
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
       name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -234,7 +221,7 @@ runs:
         retention-days: 1
         if-no-files-found: error
 
-    - if: inputs.coverage != '' && fromJSON(inputs.coverage)
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
       name: Clean up temporary coverage files
       run: rm -rf "${{ steps.prepare-coverage-artifacts.outputs.upload-dir }}"
       shell: ${{ inputs.shell }}

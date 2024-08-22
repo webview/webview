@@ -206,6 +206,7 @@ macro(webview_internal_options)
     option(WEBVIEW_BUILD_STATIC_LIBRARY "Build static libraries" ON)
     option(WEBVIEW_USE_COMPAT_MINGW "Use compatibility helper for MinGW" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_USE_STATIC_MSVC_RUNTIME "Use static runtime library (MSVC)" OFF)
+    option(WEBVIEW_ENABLE_CHECKS "Enable checks" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
 endmacro()
 
 macro(webview_set_install_rpath)

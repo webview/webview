@@ -7,6 +7,9 @@ inputs:
   msys:
     description: MSYS2 environment
     required: false
+  msys-pacboy:
+    description: MSYS2 packages (pacboy)
+    required: false
   webkitgtk-api:
     description: WebKitGTK API version
     required: false
@@ -60,3 +63,4 @@ runs:
           python-markupsafe:p
           python-pip:p
           toolchain:p
+          ${{ inputs.msys-pacboy }}
