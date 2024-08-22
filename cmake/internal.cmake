@@ -113,7 +113,7 @@ macro(webview_init)
 endmacro()
 
 macro(webview_extract_version)
-    file(READ "${WEBVIEW_ROOT_DIR}/core/include/webview/core/webview.h" WEBVIEW_H_CONTENT)
+    file(READ "${WEBVIEW_ROOT_DIR}/core/include/webview/webview.h" WEBVIEW_H_CONTENT)
 
     if(NOT DEFINED WEBVIEW_VERSION_MAJOR)
         string(REGEX MATCH "#define WEBVIEW_VERSION_MAJOR ([0-9]+)" WEBVIEW_VERSION_MAJOR_MATCH "${WEBVIEW_H_CONTENT}")

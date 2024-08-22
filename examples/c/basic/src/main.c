@@ -1,4 +1,4 @@
-#include "webview/core/webview.h"
+#include "webview/webview.h"
 #include <stddef.h>
 
 #ifdef _WIN32

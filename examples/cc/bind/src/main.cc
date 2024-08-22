@@ -1,4 +1,4 @@
-#include "webview/core/webview.h"
+#include "webview/webview.h"
 
 #include <chrono>
 #include <iostream>

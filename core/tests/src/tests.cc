@@ -6,7 +6,7 @@
 #define WEBVIEW_VERSION_PRE_RELEASE "-test"
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
 
-#include "webview/core/webview.h"
+#include "webview/webview.h"
 
 #include <cassert>
 #include <cstdint>
