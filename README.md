@@ -48,8 +48,8 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
     * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
 * Fedora:
   * WebKitGTK 6.0, GTK 4:
-    * Development: `dnf install gtk3-devel webkitgtk6.0-devel`
-    * Production: `dnf install gtk3 webkitgtk6.0`
+    * Development: `dnf install gtk4-devel webkitgtk6.0-devel`
+    * Production: `dnf install gtk4 webkitgtk6.0`
   * WebKitGTK 4.1, GTK 3, libsoup 3:
     * Development: `dnf install gtk3-devel webkit2gtk4.1-devel`
     * Production: `dnf install gtk3 webkit2gtk4.1`
@@ -119,14 +119,20 @@ Name                    | Description
 
 These CMake options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
 
-Option                         | Description
------------------------------- | ----------------------
-`WEBVIEW_BUILD_TESTS`          | Build tests
-`WEBVIEW_BUILD_EXAMPLES`       | Build examples
-`WEBVIEW_INSTALL_TARGETS`      | Install targets
-`WEBVIEW_BUILD_PACKAGE`        | Build package
-`WEBVIEW_BUILD_SHARED_LIBRARY` | Build shared libraries
-`WEBVIEW_BUILD_STATIC_LIBRARY` | Build static libraries
+Option                            | Description
+------                            | -----------
+`WEBVIEW_BUILD_DOCS`              | Build documentation
+`WEBVIEW_BUILD_TESTS`             | Build tests
+`WEBVIEW_BUILD_EXAMPLES`          | Build examples
+`WEBVIEW_INSTALL_DOCS`            | Install documentation
+`WEBVIEW_INSTALL_TARGETS`         | Install targets
+`WEBVIEW_BUILD_PACKAGE`           | Build package
+`WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries
+`WEBVIEW_BUILD_STATIC_LIBRARY`    | Build static libraries
+`WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
+`WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
+`WEBVIEW_ENABLE_CHECKS`           | Enable checks
+`WEBVIEW_ENABLE_CLANG_TIDY`       | Enable clang-tidy
 
 ### Package Consumer Options
 
@@ -135,13 +141,13 @@ These options can be used when when using the webview CMake package.
 #### Linux-specific Options
 
 Option                          | Description
-------------------------------- | ------------------------
-`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` or `4.0`. This will also automatically decide the GTK version. Uses the latest known and available API by default.
+------                          | -----------
+`WEBVIEW_WEBKITGTK_API`         | WebKitGTK API to interface with, e.g. `6.0`, `4.1` (recommended) or `4.0`. This will also automatically decide the GTK version. Uses the latest recommended API by default if available, or the latest known and available API. Note that there can be major differences between API versions that can affect feature availability. See webview API documentation for details.
 
 #### Windows-specific Options
 
 Option                          | Description
-------------------------------- | ------------------------
+------                          | -----------
 `WEBVIEW_MSWEBVIEW2_VERSION`    | MS WebView2 version, e.g. `1.0.1150.38`.
 `WEBVIEW_USE_BUILTIN_MSWEBVIEW2`| Use built-in MS WebView2.
 
@@ -165,6 +171,13 @@ Name                   | Description
 `WEBVIEW_GTK`          | Compile the GTK/WebKitGTK backend.
 `WEBVIEW_COCOA`        | Compile the Cocoa/WebKit backend.
 `WEBVIEW_EDGE`         | Compile the Win32/WebView2 backend.
+
+#### Windows-specific Options
+
+Option                            | Description
+------                            | -----------
+`WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` | Enables (`1`) or disables (`0`) the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
+`WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK`| Enables (`1`) or disables (`0`) explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
 
 ## App Distribution
 
@@ -244,10 +257,7 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 * Does not support configuring WebView2 using environment variables such as `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`.
 * Microsoft Edge Insider (preview) channels are not supported.
 
-The following [compile-time options](#compile-time-options) can be used to change how the library integrates the WebView2 loader:
-
-* `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=<1|0>` - Enables or disables the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
-* `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=<1|0>` - Enables or disables explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
+[Customization options](#Customization) can be used to change how the library integrates the WebView2 loader.
 
 ## Development
 
@@ -256,31 +266,34 @@ This project uses the CMake build system.
 ### Building
 
 ```
-cmake -G Ninja -B build -S .
-cmake --build build
+cmake -G "Ninja Multi-Config" -B build -S .
+cmake --build build --config CONFIG
 ```
 
-### Generate Test Coverage
+Replace `CONFIG` with one of `Debug`, `Release`, or `Profile`. Use `Profile` to enable code coverage (GCC/Clang).
 
-Test coverage is currently only supported with GCC/Clang. We suggest using gcovr for generating reports.
+Run tests:
 
 ```
-cmake -G Ninja -B build-profile -S . -D CMAKE_BUILD_TYPE=Profile
-cmake --build build-profile
-ctest --test-dir build-profile
+ctest --test-dir build --build-config CONFIG
+```
+
+Generate test coverage report:
+
+```
 gcovr
 ```
 
-See the coverage report in `build-profile/coverage`.
+Find the coverage report in `build/coverage`:
 
 ### Cross-compilation
 
 See CMake toolchain files in the `cmake/toolchains` directory.
 
-For example, this targets Windows x64 on Linux:
+For example, this targets Windows x64 on Linux with POSIX threads:
 
 ```sh
-cmake -G Ninja -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake
+cmake -G Ninja -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake -D WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX=-posix
 cmake --build build
 ```
 
