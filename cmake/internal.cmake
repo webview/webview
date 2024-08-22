@@ -104,7 +104,7 @@ macro(webview_init)
             else()
                 # Skip check when clang isn't used with clang-tidy to avoid errors due to unsupported compiler flags
                 # such as -fno-keep-inline-dllexport (tested GCC 14, Clang-Tidy 18)
-                message(WARNING "Skipping clang-tidy checks for non-clang compiler.")
+                message(WARNING "Skipping clang-tidy checks with non-clang compiler.")
             endif()
         endif()
     endif()
