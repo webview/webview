@@ -32,6 +32,9 @@ inputs:
   docs-target:
     description: CMake target for documentation
     required: false
+  docs-component:
+    description: CMake component for documentation
+    required: false
   gcov:
     description: gcov executable
     required: false
@@ -153,7 +156,10 @@ runs:
 
     - if: inputs.docs != '' && fromJson(inputs.docs)
       name: Build documentation
-      run: cmake --build "${{ inputs.build-dir }}" --target "${{ inputs.docs-target }}"
+      run: |
+        cmake --build . --target "${{ inputs.docs-target }}"
+        cpack -D "CPACK_COMPONENTS_ALL=${{ inputs.docs-component }}"
+      working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
     - if: inputs.package != '' && fromJson(inputs.package)
@@ -190,25 +196,24 @@ runs:
 
     # CPack produces checksum files with CRLF on Windows but the CR being present can cause
     # verification with shasum to fail on Unix-like systems.
-    # find and grep were combined to work around incompatibilities between Linux and macOS.
-    - if: (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source))
-      name: Fix newlines in checksum files
+    - name: Fix newlines in checksum files
       run: |
         while read f; do
+          [ -z "${f}" ] && continue
           sed -i.bak 's/\\r\\n/\n/g' "${f}"
-        done <<< "$(find . -type f -name "*.sha*" | grep -E '^.*\.sha[0-9]+$')"
+        done <<< "$(find . -type f -name "*.sha256")"
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: inputs.package != '' && fromJson(inputs.package)
+    - if: (inputs.docs != '' && fromJson(inputs.docs)) || (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source))
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
         name: package_${{ inputs.artifacts-name }}
         path: |
-          build/*.gz
-          build/*.sha256
-          build/*.zip
+          ${{ inputs.build-dir }}/*.gz
+          ${{ inputs.build-dir }}/*.sha256
+          ${{ inputs.build-dir }}/*.zip
         retention-days: 1
         if-no-files-found: error
 

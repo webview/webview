@@ -80,7 +80,6 @@ jobs:
               option("CMAKE_OSX_DEPLOYMENT_TARGET", matrix["osx-deployment-target"]),
               option("CMAKE_TOOLCHAIN_FILE", `cmake/toolchains/${matrix["arch"]}-${matrix["toolchain"]}.cmake`),
               option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
-              option("WEBVIEW_INSTALL_DOCS", matrix["docs"]),
               option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
               option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
               option("WEBVIEW_ENABLE_CHECKS", matrix["checks"]),
@@ -97,6 +96,7 @@ jobs:
           build-dir: build
           docs: ${{ matrix.docs }}
           docs-target: webview_docs
+          docs-component: webview_development_api_docs
           cmake-options: ${{ steps.cmake-options.outputs.result }}
           generator: ${{ matrix.generator }}
           package: ${{ matrix.package }}
