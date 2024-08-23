@@ -68,6 +68,9 @@ inputs:
   test-wrapper-cmd:
     description: Test wrapper command
     required: false
+  upload-artifacts:
+    description: Upload artifacts?
+    required: false
 runs:
   using: composite
   steps:
@@ -205,7 +208,7 @@ runs:
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: (inputs.docs != '' && fromJson(inputs.docs)) || (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source))
+    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.docs != '' && fromJson(inputs.docs)) || (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -217,7 +220,7 @@ runs:
         retention-days: 1
         if-no-files-found: error
 
-    - if: inputs.coverage != '' && fromJson(inputs.coverage)
+    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && (inputs.coverage != '' && fromJson(inputs.coverage))
       name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:

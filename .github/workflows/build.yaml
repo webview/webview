@@ -98,6 +98,7 @@ jobs:
           shell: ${{ matrix.shell }}
           source-dir: .
           test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
+          upload-artifacts: ${{ inputs.pr == '' || !fromJson(inputs.pr) }}
           # Specific to code coverage
           coverage: ${{ matrix.job-type == 'coverage' }}
           gcov: ${{ matrix.gcov }}
