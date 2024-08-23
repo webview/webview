@@ -17,6 +17,7 @@
     "osx-deployment-target": "string",
     "package": "boolean",
     "package-source": "boolean",
+    "pr-only": "boolean",
     "shell": "string",
     "test-wrapper-cmd": "string",
     "toolchain": "string",

@@ -10,3 +10,10 @@ jobs:
   build:
     needs: check
     uses: ./.github/workflows/build.yaml
+
+  build-pr:
+    if: github.event_name == 'pull_request'
+    needs: check
+    uses: ./.github/workflows/build.yaml
+    with:
+      pr: true

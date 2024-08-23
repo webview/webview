@@ -7,6 +7,10 @@ on:
         description: gcovr version
         required: false
         default: '7.2'
+      pr:
+        type: string
+        description: Is this a pull request build?
+        required: false
 jobs:
   load-matrix:
     runs-on: ubuntu-22.04
@@ -19,12 +23,19 @@ jobs:
       - name: Load matrix file
         id: load-matrix
         uses: actions/github-script@v7
+        env:
+          PR: ${{ inputs.pr != '' && fromJson(inputs.pr) }}
         with:
           script: |
             const csv = require("./.github/workflows/csv.js");
             const path = require("node:path");
             const schema = require("./.github/workflows/build_matrix_schema.json");
-            const matrix = { include: csv.loadFile(path.join(".github", "workflows", "build_matrix.csv"), schema) };
+            let include = csv.loadFile(path.join(".github", "workflows", "build_matrix.csv"), schema);
+
+            // Filters
+            include = include.filter(x => JSON.parse(process.env.PR) === x["pr-only"]);
+
+            const matrix = { include };
             console.log(matrix);
             return matrix;
 
