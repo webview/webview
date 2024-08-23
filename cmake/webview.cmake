@@ -57,6 +57,8 @@ macro(webview_find_dependencies)
                     message(FATAL_ERROR "Couldn't find any known WebKitGTK API")
                 endif()
             endif()
+        else()
+            pkg_check_modules(WEBVIEW_WEBKITGTK REQUIRED IMPORTED_TARGET "${WEBVIEW_WEBKITGTK_MODULE_NAME}")
         endif()
 
         # Find matching GTK module
