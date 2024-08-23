@@ -22,7 +22,8 @@
  * SOFTWARE.
  */
 
-#pragma once
+#ifndef WEBVIEW_TEST_DRIVER_HH
+#define WEBVIEW_TEST_DRIVER_HH
 
 #include <exception>
 #include <functional>
@@ -102,3 +103,5 @@ struct auto_test_reg {
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
 } // namespace webview
+
+#endif // WEBVIEW_TEST_DRIVER_HH
