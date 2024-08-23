@@ -148,18 +148,18 @@ macro(webview_install)
     # Install headers
     install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        COMPONENT webview_development)
+        COMPONENT webview_headers)
     install(FILES "${WEBVIEW_ROOT_DIR}/core/include/webview.h"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        COMPONENT webview_development)
+        COMPONENT webview_headers)
 
     # Install modules
     install(DIRECTORY "${WEBVIEW_CURRENT_CMAKE_DIR}/modules"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
-        COMPONENT webview_development)
+        COMPONENT webview_cmake)
 
     # Install targets
-    install(TARGETS webview_core_headers EXPORT webview_targets)
+    list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_core_headers)
 
     if(WEBVIEW_BUILD_SHARED_LIBRARY)
         list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_core_shared)
@@ -175,22 +175,19 @@ macro(webview_install)
 
     install(TARGETS ${WEBVIEW_INSTALL_TARGET_NAMES}
         EXPORT webview_targets
+        COMPONENT webview_libraries
         RUNTIME
             DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            COMPONENT webview_runtime
         LIBRARY
             DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            COMPONENT webview_runtime
-            NAMELINK_COMPONENT webview_development
         ARCHIVE
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-            COMPONENT webview_development)
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
     install(EXPORT webview_targets
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
         NAMESPACE webview::
         FILE webview-targets.cmake
-        COMPONENT webview_development)
+        COMPONENT webview_cmake)
 
     export(EXPORT webview_targets FILE "${CMAKE_CURRENT_BINARY_DIR}/webview-targets.cmake")
 
@@ -213,7 +210,7 @@ macro(webview_install)
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config-version.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
-        COMPONENT webview_development)
+        COMPONENT webview_cmake)
 endmacro()
 
 macro(webview_internal_options)

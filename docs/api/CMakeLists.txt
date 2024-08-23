@@ -16,8 +16,5 @@ add_custom_target(webview_api_docs
 if(WEBVIEW_INSTALL_DOCS)
     install(DIRECTORY "${WEBVIEW_DOXYFILE_OUTPUT_DIRECTORY}/html"
         DESTINATION "${CMAKE_INSTALL_DOCDIR}"
-        COMPONENT webview_development)
-    install(DIRECTORY "${WEBVIEW_DOXYFILE_OUTPUT_DIRECTORY}/html"
-        DESTINATION .
-        COMPONENT webview_development_api_docs)
+        COMPONENT webview_api_docs)
 endif()
