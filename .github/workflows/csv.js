@@ -1,3 +1,7 @@
+/**
+ * A simple CSV parser that should be "good enough" for basic needs.
+ */
+
 const fs = require("node:fs");
 
 function parseRow(line) {
