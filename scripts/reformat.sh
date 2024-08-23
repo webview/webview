@@ -11,7 +11,7 @@ fi
 while read f; do
     "${CLANG_FORMAT_EXE}" -i "${f}" || exit 1
 done <<EOF
-$(find "${project_dir}" \( -iname "*.h" -or -iname "*.hpp" -or -iname "*.c" -or -iname "*.cpp" \) -not -iwholename "${build_dir}/*")
+$(find "${project_dir}" \( -iname "*.h" -or -iname "*.hh" -or -iname "*.c" -or -iname "*.cc" \) -not -iwholename "${build_dir}/*")
 EOF
 
 "${script_dir}/check_format.sh" || exit 1

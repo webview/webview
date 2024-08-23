@@ -1,4 +1,4 @@
-#include "webview/test_driver.hpp"
+#include "webview/test_driver.hh"
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2

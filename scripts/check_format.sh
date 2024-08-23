@@ -13,7 +13,7 @@ while read f; do
     "${CLANG_FORMAT_EXE}" --dry-run --Werror "${f}" || exit 1
     processed_count=$((processed_count+1))
 done <<EOF
-$(find "${project_dir}" \( -iname "*.h" -or -iname "*.hpp" -or -iname "*.c" -or -iname "*.cpp" \) -not -iwholename "${build_dir}/*")
+$(find "${project_dir}" \( -iname "*.h" -or -iname "*.hh" -or -iname "*.c" -or -iname "*.cc" \) -not -iwholename "${build_dir}/*")
 EOF
 
 if [ "${processed_count}" -lt 1 ]; then
