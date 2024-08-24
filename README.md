@@ -282,7 +282,16 @@ Generate test coverage report:
 gcovr
 ```
 
-Find the coverage report in `build/coverage`:
+Find the coverage report in `build/coverage`.
+
+### Packaging
+
+Run this after building the `Debug` and `Release` configs of the project:
+
+```
+cd build
+cpack -G External -C "Debug;Release" --config CPackConfig.cmake
+```
 
 ### Cross-compilation
 
