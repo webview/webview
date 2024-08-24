@@ -180,17 +180,6 @@ runs:
         echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
       shell: ${{ inputs.shell }}
 
-    # CPack produces checksum files with CRLF on Windows but the CR being present can cause
-    # verification with shasum to fail on Unix-like systems.
-    - name: Fix newlines in checksum files
-      run: |
-        while read f; do
-          [ -z "${f}" ] && continue
-          sed -i.bak 's/\\r\\n/\n/g' "${f}"
-        done <<< "$(find . -type f -name "*.sha256")"
-      working-directory: ${{ inputs.build-dir }}
-      shell: ${{ inputs.shell }}
-
     - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
