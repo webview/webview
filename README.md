@@ -263,7 +263,7 @@ This project uses the CMake build system.
 
 ### Building
 
-```
+```sh
 cmake -G "Ninja Multi-Config" -B build -S .
 cmake --build build --config CONFIG
 ```
@@ -272,13 +272,13 @@ Replace `CONFIG` with one of `Debug`, `Release`, or `Profile`. Use `Profile` to 
 
 Run tests:
 
-```
+```sh
 ctest --test-dir build --build-config CONFIG
 ```
 
 Generate test coverage report:
 
-```
+```sh
 gcovr
 ```
 
@@ -288,7 +288,7 @@ Find the coverage report in `build/coverage`.
 
 Run this after building the `Debug` and `Release` configs of the project:
 
-```
+```sh
 cd build
 cpack -G External -C "Debug;Release" --config CPackConfig.cmake
 ```
