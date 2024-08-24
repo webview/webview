@@ -149,9 +149,6 @@ macro(webview_install)
     install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_headers)
-    install(FILES "${WEBVIEW_ROOT_DIR}/core/include/webview.h"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-        COMPONENT webview_headers)
 
     # Install modules
     install(DIRECTORY "${WEBVIEW_CURRENT_CMAKE_DIR}/modules"
@@ -172,6 +169,18 @@ macro(webview_install)
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
         list(APPEND WEBVIEW_INSTALL_TARGET_NAMES webview_compat_mingw)
     endif()
+
+    install(TARGETS ${WEBVIEW_INSTALL_TARGET_NAMES}
+        COMPONENT webview_libraries_runtime_release
+        CONFIGURATIONS Release
+        RUNTIME
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            NAMELINK_COMPONENT webview_trash
+        ARCHIVE
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            COMPONENT webview_trash)
 
     install(TARGETS ${WEBVIEW_INSTALL_TARGET_NAMES}
         EXPORT webview_targets

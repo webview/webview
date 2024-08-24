@@ -26,15 +26,6 @@ inputs:
   cmake-options:
     description: Sets extra CMake options in the form ["K=V", ...]
     required: false
-  docs:
-    description: Build documentation
-    required: false
-  docs-target:
-    description: CMake target for documentation
-    required: false
-  docs-component:
-    description: CMake component for documentation
-    required: false
   gcov:
     description: gcov executable
     required: false
@@ -157,17 +148,9 @@ runs:
         done
       shell: ${{ inputs.shell }}
 
-    - if: inputs.docs != '' && fromJson(inputs.docs)
-      name: Build documentation
-      run: |
-        cmake --build . --target "${{ inputs.docs-target }}"
-        cpack -D "CPACK_COMPONENTS_ALL=${{ inputs.docs-component }}"
-      working-directory: ${{ inputs.build-dir }}
-      shell: ${{ inputs.shell }}
-
     - if: inputs.package != '' && fromJson(inputs.package)
-      name: Create multi-config package
-      run: cpack -C "${{ inputs.build-config-debug }};${{ inputs.build-config-release }}" --config CPackConfig.cmake
+      name: Create packages
+      run: cpack -G External -C "${{ inputs.build-config-debug }};${{ inputs.build-config-release }}" --config CPackConfig.cmake
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
@@ -208,7 +191,7 @@ runs:
       working-directory: ${{ inputs.build-dir }}
       shell: ${{ inputs.shell }}
 
-    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.docs != '' && fromJson(inputs.docs)) || (inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
+    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:

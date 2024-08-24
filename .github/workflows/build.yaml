@@ -88,9 +88,6 @@ jobs:
         with:
           artifacts-name: ${{ matrix.id }}
           build-dir: build
-          docs: ${{ matrix.docs }}
-          docs-target: webview_docs
-          docs-component: webview_development_api_docs
           cmake-options: ${{ steps.cmake-options.outputs.result }}
           generator: ${{ matrix.generator }}
           package: ${{ matrix.package }}

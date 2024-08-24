@@ -39,7 +39,7 @@ add_custom_command(
 add_custom_target(webview_api_docs ALL DEPENDS "${API_DOCS_STAMP_FILE}")
 
 if(WEBVIEW_INSTALL_DOCS)
-    install(DIRECTORY "${WEBVIEW_DOXYFILE_OUTPUT_DIRECTORY}/html"
+    install(DIRECTORY "${DOXYFILE_OUTPUT_DIRECTORY}/html"
         DESTINATION "${CMAKE_INSTALL_DOCDIR}"
         COMPONENT webview_api_docs)
 endif()
