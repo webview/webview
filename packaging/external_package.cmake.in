@@ -76,36 +76,22 @@ endfunction()
 # API documentation archive
 create_archive_for_components(
     ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-apidoc.tar.gz"
-    COMPONENT
-        NAME webview_api_docs
-        SUBDIR "${CMAKE_INSTALL_DOCDIR}")
+    COMPONENT NAME webview_api_docs SUBDIR "${CMAKE_INSTALL_DOCDIR}")
 
 # Header archive
 create_archive_for_components(
     ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-headers.tar.gz"
-    COMPONENT
-        NAME webview_headers
-        SUBDIR .)
+    COMPONENT NAME webview_headers SUBDIR .)
 
 # Per-system/architecture development archive
 create_archive_for_components(
     ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
-    COMPONENT
-        NAME webview_api_docs
-        SUBDIR .
-    COMPONENT
-        NAME webview_cmake
-        SUBDIR .
-    COMPONENT
-        NAME webview_headers
-        SUBDIR .
-    COMPONENT
-        NAME webview_libraries
-        SUBDIR .)
+    COMPONENT NAME webview_api_docs SUBDIR .
+    COMPONENT NAME webview_cmake SUBDIR .
+    COMPONENT NAME webview_headers SUBDIR .
+    COMPONENT NAME webview_libraries SUBDIR .)
 
 # Release library runtime
 create_archive_for_components(
     ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-lib.tar.gz"
-    COMPONENT
-        NAME webview_libraries_runtime_release
-        SUBDIR .)
+    COMPONENT NAME webview_libraries_runtime_release SUBDIR .)
