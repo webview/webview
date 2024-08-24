@@ -1,5 +1,6 @@
 set(WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME "@WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME@")
 set(WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME "@WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME@")
+set(WEBVIEW_BUILD_DOCS "@WEBVIEW_BUILD_DOCS@")
 set(CMAKE_INSTALL_DOCDIR "@CMAKE_INSTALL_DOCDIR@")
 
 function(create_archive_for_components)
@@ -73,10 +74,12 @@ function(create_archive_for_components)
     file(WRITE "${ARCHIVE}.sha256" "${ARCHIVE_SHA256_DIGEST} ${ARCHIVE_FILE_NAME}")
 endfunction()
 
-# API documentation archive
-create_archive_for_components(
-    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-apidoc.tar.gz"
-    COMPONENT NAME webview_api_docs SUBDIR "${CMAKE_INSTALL_DOCDIR}")
+if(WEBVIEW_BUILD_DOCS)
+    # API documentation archive
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-apidoc.tar.gz"
+        COMPONENT NAME webview_api_docs SUBDIR "${CMAKE_INSTALL_DOCDIR}")
+endif()
 
 # Header archive
 create_archive_for_components(
@@ -84,9 +87,13 @@ create_archive_for_components(
     COMPONENT NAME webview_headers SUBDIR .)
 
 # Per-system/architecture development archive
+if(WEBVIEW_BUILD_DOCS)
+    set(DEV_PACKAGE_API_DOCS_ARGS COMPONENT NAME webview_api_docs SUBDIR .)
+endif()
+
 create_archive_for_components(
     ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
-    COMPONENT NAME webview_api_docs SUBDIR .
+    ${DEV_PACKAGE_API_DOCS_ARGS}
     COMPONENT NAME webview_cmake SUBDIR .
     COMPONENT NAME webview_headers SUBDIR .
     COMPONENT NAME webview_libraries SUBDIR .)
