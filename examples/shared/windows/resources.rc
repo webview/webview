@@ -1,0 +1,4 @@
+#define IDI_APPLICATION 32512
+
+100             ICON "..\\icons\\application.ico"
+//IDI_APPLICATION ICON "..\\icons\\window.ico"
