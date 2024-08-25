@@ -78,18 +78,61 @@ If you are a developer of this project then please go to the [development sectio
 
 You will have a working app made with C++ and CMake, but you are encouraged to explore the [available examples][examples].
 
-Start with creating a new directory structure for your project:
+Create the following files in a new directory:
 
-```sh
-mkdir my-project && cd my-project
+`.gitignore`:
+```
+# Build artifacts
+/build
 ```
 
-Save the example files into your project directory:
+`CMakeLists.txt`:
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(example LANGUAGES CXX)
 
-```sh
-curl -sSLo .gitignore "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/.gitignore"
-curl -sSLo CMakeLists.txt "https://raw.githubusercontent.com/webview/webview/master/examples/cmake/CMakeLists.txt"
-curl -sSLo main.cc "https://raw.githubusercontent.com/webview/webview/master/examples/cc/basic/src/main.cc"
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+include(FetchContent)
+
+FetchContent_Declare(
+    webview
+    GIT_REPOSITORY https://github.com/webview/webview
+    GIT_TAG master)
+FetchContent_MakeAvailable(webview)
+
+add_executable(example WIN32)
+target_sources(example PRIVATE main.cc)
+target_link_libraries(example PRIVATE webview::headers)
+```
+
+`main.cc`:
+```cpp
+#include "webview/webview.h"
+
+#include <iostream>
+
+#ifdef _WIN32
+int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
+                   LPSTR /*lpCmdLine*/, int /*nCmdShow*/) {
+#else
+int main() {
+#endif
+  try {
+    webview::webview w(false, nullptr);
+    w.set_title("Basic Example");
+    w.set_size(480, 320, WEBVIEW_HINT_NONE);
+    w.set_html("Thanks for using webview!");
+    w.run();
+  } catch (const webview::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
+
+  return 0;
+}
 ```
 
 Build the project:
