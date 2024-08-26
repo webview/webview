@@ -45,6 +45,7 @@ jobs:
           name: package
           pattern: package_*
           delete-merged: true
+          retention-days: 1
 
   generate-coverage-report:
     needs:
