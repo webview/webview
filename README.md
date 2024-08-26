@@ -261,8 +261,8 @@ my-project/
 
 `resources.rc`:
 ```
-100 ICON "icons\\application.ico"
-32512 ICON "icons\\window.ico"
+100 ICON "icons/application.ico"
+32512 ICON "icons/window.ico"
 ```
 
 > **Note:** The ID of the icon resource to be used for the window must be `32512` (`IDI_APPLICATION`).
