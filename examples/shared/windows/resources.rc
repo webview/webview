@@ -1,4 +1,7 @@
 #define IDI_APPLICATION 32512
 
-100             ICON "../icons/application.ico"
-//IDI_APPLICATION ICON "../icons/window.ico"
+// An application icon can be specified with a low ID
+//100 ICON "../icons/webview.ico"
+
+// Window icon (may also be used as the application icon)
+IDI_APPLICATION ICON "../icons/webview.ico"
