@@ -86,13 +86,15 @@ macro(webview_init)
         if(WEBVIEW_ENABLE_CHECKS AND WEBVIEW_ENABLE_CLANG_FORMAT)
             # Allow skipping clang-format outside of CI environment
 
-            set(WEBVIEW_CLANG_FORMAT_EXE_HINT "clang-format${WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX}")
-            set(WEBVIEW_FIND_CLANG_FORMAT_ARGS WEBVIEW_CLANG_FORMAT_EXE "${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
-            if(DEFINED ENV{CI})
-                list(APPEND WEBVIEW_FIND_CLANG_FORMAT_ARGS REQUIRED)
-            endif()
+            if(NOT DEFINED WEBVIEW_CLANG_FORMAT_EXE)
+                set(WEBVIEW_CLANG_FORMAT_EXE_HINT "clang-format")
+                set(WEBVIEW_FIND_CLANG_FORMAT_ARGS WEBVIEW_CLANG_FORMAT_EXE "${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
+                if(DEFINED ENV{CI})
+                    list(APPEND WEBVIEW_FIND_CLANG_FORMAT_ARGS REQUIRED)
+                endif()
 
-            find_program(${WEBVIEW_FIND_CLANG_FORMAT_ARGS})
+                find_program(${WEBVIEW_FIND_CLANG_FORMAT_ARGS})
+            endif()
 
             if(WEBVIEW_CLANG_FORMAT_EXE)
                 add_custom_target(webview_format_check ALL
@@ -101,8 +103,10 @@ macro(webview_init)
                         -D "BINARY_DIR=${PROJECT_BINARY_DIR}"
                         -D "SOURCE_DIR=${PROJECT_SOURCE_DIR}"
                         -D "CLANG_FORMAT_EXE=${WEBVIEW_CLANG_FORMAT_EXE}"
+                        -D "STRICT=$<AND:$<BOOL:${WEBVIEW_STRICT_CHECKS}>,$<BOOL:${WEBVIEW_STRICT_CLANG_FORMAT}>>"
                         -P "${WEBVIEW_CURRENT_CMAKE_DIR}/clang_format.cmake"
-                    COMMENT "Checking files with clang-format...")
+                    COMMENT "Checking files with clang-format..."
+                    VERBATIM)
                 add_custom_target(webview_reformat
                     COMMAND ${CMAKE_COMMAND}
                         -D CMD=reformat
@@ -110,9 +114,10 @@ macro(webview_init)
                         -D "SOURCE_DIR=${PROJECT_SOURCE_DIR}"
                         -D "CLANG_FORMAT_EXE=${WEBVIEW_CLANG_FORMAT_EXE}"
                         -P "${WEBVIEW_CURRENT_CMAKE_DIR}/clang_format.cmake"
-                    COMMENT "Reformatting files with clang-format...")
+                    COMMENT "Reformatting files with clang-format..."
+                    VERBATIM)
             else()
-                message(WARNING "Skipping clang-format checks due to clang-format was not found: ${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
+                message(WARNING "Skipping clang-format checks as clang-format was not found: ${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
             endif()
         endif()
 
@@ -120,19 +125,26 @@ macro(webview_init)
             if((CMAKE_C_COMPILER_ID MATCHES "Clang$") AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang$"))
                 # Allow skipping clang-tidy outside of CI environment
 
-                set(WEBVIEW_CLANG_TIDY_EXE_HINT "clang-tidy${WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX}")
-                set(WEBVIEW_FIND_CLANG_TIDY_ARGS WEBVIEW_CLANG_TIDY_EXE "${WEBVIEW_CLANG_TIDY_EXE_HINT}")
-                if(DEFINED ENV{CI})
-                    list(APPEND WEBVIEW_FIND_CLANG_TIDY_ARGS REQUIRED)
+                if(NOT DEFINED WEBVIEW_CLANG_TIDY_EXE)
+                    set(WEBVIEW_CLANG_TIDY_EXE_HINT "clang-tidy${WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX}")
+                    set(WEBVIEW_FIND_CLANG_TIDY_ARGS WEBVIEW_CLANG_TIDY_EXE "${WEBVIEW_CLANG_TIDY_EXE_HINT}")
+                    if(DEFINED ENV{CI})
+                        list(APPEND WEBVIEW_FIND_CLANG_TIDY_ARGS REQUIRED)
+                    endif()
+
+                    find_program(${WEBVIEW_FIND_CLANG_TIDY_ARGS})
                 endif()
 
-                find_program(${WEBVIEW_FIND_CLANG_TIDY_ARGS})
-
                 if(WEBVIEW_CLANG_TIDY_EXE)
-                    set(CMAKE_C_CLANG_TIDY "${WEBVIEW_CLANG_TIDY_EXE}")
-                    set(CMAKE_CXX_CLANG_TIDY "${WEBVIEW_CLANG_TIDY_EXE}")
+                    set(WEBVIEW_CLANG_TIDY_ARGS)
+                    if(WEBVIEW_STRICT_CHECKS AND WEBVIEW_STRICT_CLANG_TIDY)
+                        list(APPEND WEBVIEW_CLANG_TIDY_ARGS "--warnings-as-errors=*")
+                    endif()
+
+                    set(CMAKE_C_CLANG_TIDY "${WEBVIEW_CLANG_TIDY_EXE}" ${WEBVIEW_CLANG_TIDY_ARGS})
+                    set(CMAKE_CXX_CLANG_TIDY "${WEBVIEW_CLANG_TIDY_EXE}" ${WEBVIEW_CLANG_TIDY_ARGS})
                 else()
-                    message(WARNING "Skipping clang-tidy checks due to clang-tidy was not found: ${WEBVIEW_CLANG_TIDY_EXE_HINT}")
+                    message(WARNING "Skipping clang-tidy checks as clang-tidy was not found: ${WEBVIEW_CLANG_TIDY_EXE_HINT}")
                 endif()
             else()
                 # Skip check when clang isn't used with clang-tidy to avoid errors due to unsupported compiler flags
@@ -260,6 +272,13 @@ macro(webview_internal_options)
         set(WEBVIEW_IS_TOP_LEVEL_BUILD TRUE)
     endif()
 
+    if(NOT DEFINED WEBVIEW_IS_CI)
+        set(WEBVIEW_IS_CI FALSE)
+        if("$ENV{CI}" MATCHES "^(1|true|TRUE)$")
+            set(WEBVIEW_IS_CI TRUE)
+        endif()
+    endif()
+
     option(WEBVIEW_BUILD_DOCS "Build documentation" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_TESTS "Build tests" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_EXAMPLES "Build examples" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
@@ -273,6 +292,9 @@ macro(webview_internal_options)
     option(WEBVIEW_ENABLE_CHECKS "Enable checks" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_ENABLE_CLANG_FORMAT "Enable clang-format" ${WEBVIEW_ENABLE_CHECKS})
     option(WEBVIEW_ENABLE_CLANG_TIDY "Enable clang-tidy" ${WEBVIEW_ENABLE_CHECKS})
+    option(WEBVIEW_STRICT_CHECKS "Make checks strict" ${WEBVIEW_IS_CI})
+    option(WEBVIEW_STRICT_CLANG_FORMAT "Make clang-format check strict" ${WEBVIEW_STRICT_CHECKS})
+    option(WEBVIEW_STRICT_CLANG_TIDY "Make clang-tidy check strict" ${WEBVIEW_STRICT_CHECKS})
 endmacro()
 
 macro(webview_set_install_rpath)

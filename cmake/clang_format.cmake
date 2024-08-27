@@ -25,9 +25,13 @@ elseif(CMD STREQUAL "reformat")
     set(ARGS "-i")
 endif()
 
-execute_process(COMMAND "${CLANG_FORMAT_EXE}" ${ARGS} --Werror ${FILES}
+if(STRICT)
+    list(APPEND ARGS "--Werror")
+endif()
+
+execute_process(COMMAND "${CLANG_FORMAT_EXE}" ${ARGS} ${FILES}
     RESULT_VARIABLE RESULT)
 
-if(NOT RESULT EQUAL 0)
+if(NOT RESULT EQUAL 0 AND (STRICT OR NOT RESULT EQUAL 1))
     message(FATAL_ERROR "clang-format check failed.")
 endif()
