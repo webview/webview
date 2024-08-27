@@ -60,6 +60,19 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
   * GTK 4: `pkg install webkit2-gtk4`
   * GTK 3: `pkg install webkit2-gtk3`
 
+#### Library Dependencies
+
+* Linux:
+  * Use `pkg-config` with `--cflags` and `--libs` to get the compiler/linker options for one of these sets of modules:
+    * `gtk4 webkitgtk-6.0`
+    * `gtk+-3.0 webkit2gtk-4.1`
+    * `gtk+-3.0 webkit2gtk-4.0`
+* macOS:
+  * Link with `-framework WebKit`.
+* Windows:
+  * [WebView2 from NuGet](https://www.nuget.org/packages/Microsoft.Web.WebView2).
+  * Windows libraries: `advapi32 ole32 shell32 shlwapi user32 version`
+
 #### BSD
 
 * Execution on BSD-based systems may require adding the `wxallowed` option (see [mount(8)](https://man.openbsd.org/mount.8))  to your fstab to bypass [W^X](https://en.wikipedia.org/wiki/W%5EX "write xor execute") memory protection for your executable. Please see if it works without disabling this security feature first.
