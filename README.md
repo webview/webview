@@ -170,22 +170,22 @@ The following boolean options can be used when building the webview project stan
 Option                            | Description
 ------                            | -----------
 `WEBVIEW_BUILD_DOCS`              | Build documentation
-`WEBVIEW_BUILD_TESTS`             | Build tests
 `WEBVIEW_BUILD_EXAMPLES`          | Build examples
-`WEBVIEW_INSTALL_DOCS`            | Install documentation
-`WEBVIEW_INSTALL_TARGETS`         | Install targets
 `WEBVIEW_BUILD_PACKAGE`           | Build package
 `WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries
 `WEBVIEW_BUILD_STATIC_LIBRARY`    | Build static libraries
-`WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable
-`WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
-`WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
+`WEBVIEW_BUILD_TESTS`             | Build tests
 `WEBVIEW_ENABLE_CHECKS`           | Enable checks
 `WEBVIEW_ENABLE_CLANG_FORMAT`     | Enable clang-format
 `WEBVIEW_ENABLE_CLANG_TIDY`       | Enable clang-tidy
+`WEBVIEW_INSTALL_DOCS`            | Install documentation
+`WEBVIEW_INSTALL_TARGETS`         | Install targets
+`WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable
 `WEBVIEW_STRICT_CHECKS`           | Make checks strict
 `WEBVIEW_STRICT_CLANG_FORMAT`     | Make clang-format check strict
 `WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict
+`WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
+`WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
 
 > [!NOTE]
 > Checks are *enabled* by default, but aren't *enforced* by default for local development (controlled by the `WEBVIEW_IS_CI` option).
