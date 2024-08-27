@@ -16,7 +16,7 @@ It supports two-way JavaScript bindings (to call JavaScript from C/C++ and to ca
 
 Platform | Technologies
 -------- | ------------
-Linux    | [GTK 3][gtk], [WebKitGTK][webkitgtk]
+Linux    | [GTK][gtk], [WebKitGTK][webkitgtk]
 macOS    | Cocoa, [WebKit][webkit]
 Windows  | [Windows API][win32-api], [WebView2][ms-webview2]
 
@@ -46,8 +46,8 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
     * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
 * Fedora:
   * WebKitGTK 6.0, GTK 4:
-    * Development: `dnf install gtk3-devel webkitgtk6.0-devel`
-    * Production: `dnf install gtk3 webkitgtk6.0`
+    * Development: `dnf install gtk4-devel webkitgtk6.0-devel`
+    * Production: `dnf install gtk4 webkitgtk6.0`
   * WebKitGTK 4.1, GTK 3, libsoup 3:
     * Development: `dnf install gtk3-devel webkit2gtk4.1-devel`
     * Production: `dnf install gtk3 webkit2gtk4.1`
@@ -401,7 +401,7 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 
 [macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
 [examples]:          https://github.com/webview/webview/tree/master/examples
-[gtk]:               https://docs.gtk.org/gtk3/
+[gtk]:               https://gtk.org/
 [issues]:            https://github.com/webview/docs/issues
 [issues-new]:        https://github.com/webview/webview/issues/new
 [webkit]:            https://webkit.org/
