@@ -155,7 +155,9 @@ macro(webview_init)
         endif()
     endif()
 
-    webview_find_dependencies()
+    if(WEBVIEW_BUILD)
+        webview_find_dependencies()
+    endif()
 endmacro()
 
 macro(webview_extract_version)

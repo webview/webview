@@ -7,4 +7,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get install --no-install-recommends -y clang-format-15
-      - run: CLANG_FORMAT_EXE=clang-format-15 ./scripts/check_format.sh
+      - run: cmake -B build -S . -D WEBVIEW_BUILD=OFF -D WEBVIEW_CLANG_FORMAT_EXE=clang-format-15
+      - run: cmake --build build --target webview_format_check
