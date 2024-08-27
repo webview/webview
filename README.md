@@ -387,4 +387,3 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
-[win32-rc]:          https://docs.microsoft.com/en-us/windows/win32/menurc/resource-compiler
