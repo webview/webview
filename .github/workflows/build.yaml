@@ -76,10 +76,11 @@ jobs:
               option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
               option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
               option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
-              option("WEBVIEW_ENABLE_CHECKS", true),
               // We check formatting separately
               option("WEBVIEW_ENABLE_CLANG_FORMAT", false),
               option("WEBVIEW_ENABLE_CLANG_TIDY", matrix["checks"]),
+              // Please enable strict clang-tidy when issues have been fixed
+              option("WEBVIEW_STRICT_CLANG_TIDY", matrix["strict-clang-tidy"]),
               option("WEBVIEW_WEBKITGTK_API", matrix["webkitgtk-api"]),
             ].filter(v => v !== undefined).filter(v => {
               console.log(v);
