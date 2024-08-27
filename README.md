@@ -295,6 +295,17 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 
 This project uses the CMake build system.
 
+### Development Dependencies
+
+In addition to the dependencies mentioned earlier in this document for developing *with* the webview library, the following are used during development *of* the webview library.
+
+* Checks:
+  * `clang-format`
+  * `clang-tidy`
+* Documentation:
+  * Doxygen
+  * Graphvis
+
 ### Building
 
 ```sh
