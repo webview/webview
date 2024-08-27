@@ -33,7 +33,7 @@ if(WEBVIEW_BUILD)
         webview_install()
     endif()
 
-    if(WEBVIEW_BUILD_PACKAGE)
+    if(WEBVIEW_ENABLE_PACKAGING)
         add_subdirectory(packaging)
     endif()
 endif()
