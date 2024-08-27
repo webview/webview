@@ -30,7 +30,7 @@ if(WEBVIEW_BUILD)
     endif()
 
     if(WEBVIEW_INSTALL_TARGETS)
-        webview_install()
+        webview_install_targets()
     endif()
 
     if(WEBVIEW_ENABLE_PACKAGING)

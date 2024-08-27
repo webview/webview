@@ -192,7 +192,7 @@ macro(webview_extract_version)
     set(WEBVIEW_VERSION "${WEBVIEW_VERSION_NUMBER}${WEBVIEW_VERSION_PRE_RELEASE}${WEBVIEW_VERSION_BUILD_METADATA}")
 endmacro()
 
-macro(webview_install)
+macro(webview_install_targets)
     # Install headers
     install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
