@@ -11,27 +11,29 @@ project(
 
 webview_init()
 
-add_subdirectory(compatibility)
+if(WEBVIEW_BUILD)
+    add_subdirectory(compatibility)
 
-if(WEBVIEW_BUILD_TESTS)
-    include(CTest)
-    add_subdirectory(test_driver)
-endif()
+    if(WEBVIEW_BUILD_TESTS)
+        include(CTest)
+        add_subdirectory(test_driver)
+    endif()
 
-add_subdirectory(core)
+    add_subdirectory(core)
 
-if(WEBVIEW_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+    if(WEBVIEW_BUILD_EXAMPLES)
+        add_subdirectory(examples)
+    endif()
 
-if(WEBVIEW_BUILD_DOCS)
-    add_subdirectory(docs)
-endif()
+    if(WEBVIEW_BUILD_DOCS)
+        add_subdirectory(docs)
+    endif()
 
-if(WEBVIEW_INSTALL_TARGETS)
-    webview_install()
-endif()
+    if(WEBVIEW_INSTALL_TARGETS)
+        webview_install()
+    endif()
 
-if(WEBVIEW_BUILD_PACKAGE)
-    add_subdirectory(packaging)
+    if(WEBVIEW_BUILD_PACKAGE)
+        add_subdirectory(packaging)
+    endif()
 endif()

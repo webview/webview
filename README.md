@@ -182,6 +182,7 @@ The following boolean options can be used when building the webview project stan
 
 Option                            | Description
 ------                            | -----------
+`WEBVIEW_BUILD`                   | Enable building
 `WEBVIEW_BUILD_DOCS`              | Build documentation
 `WEBVIEW_BUILD_EXAMPLES`          | Build examples
 `WEBVIEW_BUILD_PACKAGE`           | Build package

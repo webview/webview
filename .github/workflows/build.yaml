@@ -76,7 +76,10 @@ jobs:
               option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
               option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
               option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
-              option("WEBVIEW_ENABLE_CHECKS", matrix["checks"]),
+              option("WEBVIEW_ENABLE_CHECKS", true),
+              // We check formatting separately
+              option("WEBVIEW_ENABLE_CLANG_FORMAT", false),
+              option("WEBVIEW_ENABLE_CLANG_TIDY", matrix["checks"]),
               option("WEBVIEW_WEBKITGTK_API", matrix["webkitgtk-api"]),
             ].filter(v => v !== undefined).filter(v => {
               console.log(v);
