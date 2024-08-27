@@ -83,6 +83,39 @@ macro(webview_init)
 
         webview_set_install_rpath()
 
+        if(WEBVIEW_ENABLE_CHECKS AND WEBVIEW_ENABLE_CLANG_FORMAT)
+            # Allow skipping clang-format outside of CI environment
+
+            set(WEBVIEW_CLANG_FORMAT_EXE_HINT "clang-format${WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX}")
+            set(WEBVIEW_FIND_CLANG_FORMAT_ARGS WEBVIEW_CLANG_FORMAT_EXE "${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
+            if(DEFINED ENV{CI})
+                list(APPEND WEBVIEW_FIND_CLANG_FORMAT_ARGS REQUIRED)
+            endif()
+
+            find_program(${WEBVIEW_FIND_CLANG_FORMAT_ARGS})
+
+            if(WEBVIEW_CLANG_FORMAT_EXE)
+                add_custom_target(webview_format_check ALL
+                    COMMAND ${CMAKE_COMMAND}
+                        -D CMD=check
+                        -D "BINARY_DIR=${PROJECT_BINARY_DIR}"
+                        -D "SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+                        -D "CLANG_FORMAT_EXE=${WEBVIEW_CLANG_FORMAT_EXE}"
+                        -P "${WEBVIEW_CURRENT_CMAKE_DIR}/clang_format.cmake"
+                    COMMENT "Checking files with clang-format...")
+                add_custom_target(webview_reformat
+                    COMMAND ${CMAKE_COMMAND}
+                        -D CMD=reformat
+                        -D "BINARY_DIR=${PROJECT_BINARY_DIR}"
+                        -D "SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+                        -D "CLANG_FORMAT_EXE=${WEBVIEW_CLANG_FORMAT_EXE}"
+                        -P "${WEBVIEW_CURRENT_CMAKE_DIR}/clang_format.cmake"
+                    COMMENT "Reformatting files with clang-format...")
+            else()
+                message(WARNING "Skipping clang-format checks due to clang-format was not found: ${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
+            endif()
+        endif()
+
         if(WEBVIEW_ENABLE_CHECKS AND WEBVIEW_ENABLE_CLANG_TIDY)
             if((CMAKE_C_COMPILER_ID MATCHES "Clang$") AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang$"))
                 # Allow skipping clang-tidy outside of CI environment
@@ -238,6 +271,7 @@ macro(webview_internal_options)
     option(WEBVIEW_USE_COMPAT_MINGW "Use compatibility helper for MinGW" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_USE_STATIC_MSVC_RUNTIME "Use static runtime library (MSVC)" OFF)
     option(WEBVIEW_ENABLE_CHECKS "Enable checks" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
+    option(WEBVIEW_ENABLE_CLANG_FORMAT "Enable clang-format" ${WEBVIEW_ENABLE_CHECKS})
     option(WEBVIEW_ENABLE_CLANG_TIDY "Enable clang-tidy" ${WEBVIEW_ENABLE_CHECKS})
 endmacro()
 

@@ -156,9 +156,16 @@ Name               | Description
 `webview::shared`  | Shared library for C.
 `webview::static`  | Static library for C.
 
+Special targets for on-demand checks and related tasks:
+
+Name                   | Description
+----                   | -----------
+`webview_format_check` | Check files with clang-format.
+`webview_reformat`     | Reformat files with clang-format.
+
 ### CMake Options
 
-These CMake options can be used when building the webview project standalone or building it as part of your project (e.g. with FetchContent).
+These CMake options can be used when building the webview project standalone or when building it as part of your project (e.g. with FetchContent).
 
 Option                            | Description
 ------                            | -----------
@@ -173,6 +180,7 @@ Option                            | Description
 `WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
 `WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
 `WEBVIEW_ENABLE_CHECKS`           | Enable checks
+`WEBVIEW_ENABLE_CLANG_FORMAT`     | Enable clang-format
 `WEBVIEW_ENABLE_CLANG_TIDY`       | Enable clang-tidy
 
 ### Package Consumer Options
