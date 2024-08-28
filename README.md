@@ -89,7 +89,7 @@ Developers and end-users must have the [WebView2 runtime][ms-webview2-rt] instal
 
 If you are a developer of this project then please go to the [development section](#development).
 
-You will have a working app made with C++ and CMake, but you are encouraged to explore the [available examples][examples].
+You will have a working app, but you are encouraged to explore the [available examples][examples].
 
 Create the following files in a new directory:
 
@@ -98,6 +98,8 @@ Create the following files in a new directory:
 # Build artifacts
 /build
 ```
+
+### C++ Example
 
 `CMakeLists.txt`:
 ```cmake
@@ -148,10 +150,65 @@ int main() {
 }
 ```
 
+### C Example
+
+`CMakeLists.txt`:
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(example LANGUAGES C CXX)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+
+include(FetchContent)
+
+FetchContent_Declare(
+    webview
+    GIT_REPOSITORY https://github.com/webview/webview
+    GIT_TAG master)
+FetchContent_MakeAvailable(webview)
+
+add_executable(example WIN32)
+target_sources(example PRIVATE main.c)
+target_link_libraries(example PRIVATE webview::static)
+```
+
+`main.c`:
+```cpp
+#include "webview/webview.h"
+#include <stddef.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#ifdef _WIN32
+int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine,
+                   int nCmdShow) {
+  (void)hInst;
+  (void)hPrevInst;
+  (void)lpCmdLine;
+  (void)nCmdShow;
+#else
+int main(void) {
+#endif
+  webview_t w = webview_create(0, NULL);
+  webview_set_title(w, "Basic Example");
+  webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
+  webview_set_html(w, "Thanks for using webview!");
+  webview_run(w);
+  webview_destroy(w);
+  return 0;
+}
+```
+
+### Building the Example
+
 Build the project:
 
 ```sh
-cmake -G Ninja -B build -S .
+cmake -G Ninja -B build -S . -D CMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
@@ -359,8 +416,8 @@ See CMake toolchain files in the `cmake/toolchains` directory.
 For example, this targets Windows x64 on Linux with POSIX threads:
 
 ```sh
-cmake -G Ninja -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake -D WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX=-posix
-cmake --build build
+cmake -G "Ninja Multi-Config" -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake -D WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX=-posix
+cmake --build build --config CONFIG
 ```
 
 ## Limitations
