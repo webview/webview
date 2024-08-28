@@ -1,0 +1,110 @@
+set(WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME "@WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME@")
+set(WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME "@WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME@")
+set(WEBVIEW_BUILD_DOCS "@WEBVIEW_BUILD_DOCS@")
+set(CMAKE_INSTALL_DOCDIR "@CMAKE_INSTALL_DOCDIR@")
+
+function(create_archive_for_components)
+    # Parse function arguments
+    set(COMPONENT_INDEX 0)
+    set(ARG_INDEX 0)
+    while(ARG_INDEX LESS "${ARGC}")
+        set(ARG "${ARGV${ARG_INDEX}}")
+        if(ARG STREQUAL "ARCHIVE")
+            math(EXPR ARG_INDEX "${ARG_INDEX}+1")
+            set(ARCHIVE "${ARGV${ARG_INDEX}}")
+        elseif(ARG STREQUAL "COMPONENT")
+            math(EXPR SUB_ARGC "${ARG_INDEX}+4")
+            while(ARG_INDEX LESS "${SUB_ARGC}")
+                set(SUB_ARG "${ARGV${ARG_INDEX}}")
+                if(SUB_ARG STREQUAL "NAME")
+                    math(EXPR ARG_INDEX "${ARG_INDEX}+1")
+                    set("COMPONENT${COMPONENT_INDEX}_NAME" "${ARGV${ARG_INDEX}}")
+                elseif(SUB_ARG STREQUAL "SUBDIR")
+                    math(EXPR ARG_INDEX "${ARG_INDEX}+1")
+                    set("COMPONENT${COMPONENT_INDEX}_SUBDIR" "${ARGV${ARG_INDEX}}")
+                endif()
+                math(EXPR ARG_INDEX "${ARG_INDEX}+1")
+            endwhile()
+            math(EXPR COMPONENT_INDEX "${COMPONENT_INDEX}+1")
+            continue()
+        else()
+            message(FATAL_ERROR "Unparsed arg ${ARG_INDEX}: ${ARGV${ARG_INDEX}}")
+        endif()
+        math(EXPR ARG_INDEX "${ARG_INDEX}+1")
+    endwhile()
+    math(EXPR COMPONENT_COUNT "${COMPONENT_INDEX}")
+
+    # Build list of component names
+    set(COMPONENT_NAMES)
+    set(COMPONENT_INDEX 0)
+    while(COMPONENT_INDEX LESS "${COMPONENT_COUNT}")
+        list(APPEND COMPONENT_NAMES "${COMPONENT${COMPONENT_INDEX}_NAME}")
+        math(EXPR COMPONENT_INDEX "${COMPONENT_INDEX}+1")
+    endwhile()
+
+    string(SHA256 NAME_HASH "${COMPONENT_NAMES}")
+    set(TEMP_DIR "${CPACK_TEMPORARY_DIRECTORY}/${NAME_HASH}")
+
+    # Consolidate files from each component's staging directory
+    set(COMPONENT_INDEX 0)
+    while(COMPONENT_INDEX LESS "${COMPONENT_COUNT}")
+        set(COMPONENT_NAME "${COMPONENT${COMPONENT_INDEX}_NAME}")
+        set(COMPONENT_SUBDIR "${COMPONENT${COMPONENT_INDEX}_SUBDIR}")
+        if("${COMPONENT_SUBDIR}" STREQUAL "")
+            set(COMPONENT_SUBDIR ".")
+        endif()
+        file(GLOB_RECURSE COMPONENT_FILES
+            RELATIVE "${CPACK_TEMPORARY_DIRECTORY}/${COMPONENT_NAME}/${COMPONENT_SUBDIR}"
+            "${CPACK_TEMPORARY_DIRECTORY}/${COMPONENT_NAME}/${COMPONENT_SUBDIR}/**")
+        foreach(COMPONENT_FILE IN LISTS COMPONENT_FILES)
+            get_filename_component(COMPONENT_DIR "${TEMP_DIR}/${COMPONENT_FILE}" DIRECTORY)
+            file(COPY "${CPACK_TEMPORARY_DIRECTORY}/${COMPONENT_NAME}/${COMPONENT_SUBDIR}/${COMPONENT_FILE}" DESTINATION "${COMPONENT_DIR}")
+        endforeach()
+        math(EXPR COMPONENT_INDEX "${COMPONENT_INDEX}+1")
+    endwhile()
+
+    # Create archive
+    file(GLOB_RECURSE TEMP_FILES RELATIVE "${TEMP_DIR}" "${TEMP_DIR}/**")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar cz "${ARCHIVE}" ${TEMP_FILES}
+        WORKING_DIRECTORY "${TEMP_DIR}")
+
+    # Hash archive
+    # CPack's built-in checksum feature (CPACK_PACKAGE_CHECKSUM) produces checksum files with CRLF
+    # on Windows, but the CR causes verification using "sha256sum -c ..." to fail on Unix-like systems.
+    # Since file(WRITE) always uses platform-specific line-endings, we use configure_file() to rewrite
+    # the file with Unix-style line endings.
+    get_filename_component(ARCHIVE_FILE_NAME "${ARCHIVE}" NAME)
+    file(SHA256 "${ARCHIVE}" ARCHIVE_SHA256_DIGEST)
+    file(WRITE "${ARCHIVE}.sha256.in" "${ARCHIVE_SHA256_DIGEST} ${ARCHIVE_FILE_NAME}\n")
+    configure_file("${ARCHIVE}.sha256.in" "${ARCHIVE}.sha256" NEWLINE_STYLE LF)
+    file(REMOVE "${ARCHIVE}.sha256.in")
+endfunction()
+
+if(WEBVIEW_BUILD_DOCS)
+    # API documentation archive
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-apidoc.tar.gz"
+        COMPONENT NAME webview_api_docs SUBDIR "${CMAKE_INSTALL_DOCDIR}")
+endif()
+
+# Header archive
+create_archive_for_components(
+    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-headers.tar.gz"
+    COMPONENT NAME webview_headers SUBDIR .)
+
+# Per-system/architecture development archive
+if(WEBVIEW_BUILD_DOCS)
+    set(DEV_PACKAGE_API_DOCS_ARGS COMPONENT NAME webview_api_docs SUBDIR .)
+endif()
+
+create_archive_for_components(
+    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
+    ${DEV_PACKAGE_API_DOCS_ARGS}
+    COMPONENT NAME webview_cmake SUBDIR .
+    COMPONENT NAME webview_headers SUBDIR .
+    COMPONENT NAME webview_libraries SUBDIR .)
+
+# Release library runtime
+create_archive_for_components(
+    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-lib.tar.gz"
+    COMPONENT NAME webview_libraries_runtime_release SUBDIR .)

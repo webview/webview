@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New compile-time options for controlling `WEBVIEW_API` ([#893](https://github.com/webview/webview/pull/893))
 - Support for WebKitGTK API 6.0 and GTK 4 ([#1125](https://github.com/webview/webview/pull/1125)).
+- CMake build system ([#1130](https://github.com/webview/webview/pull/1130)).
 
 ### Changed
 
