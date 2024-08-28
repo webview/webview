@@ -12,7 +12,7 @@ endmacro()
 
 macro(webview_find_dependencies)
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        list(APPEND WEBVIEW_DEPENDENCIES "-framework WebKit")
+        list(APPEND WEBVIEW_DEPENDENCIES "-framework WebKit" dl)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(PkgConfig REQUIRED)
 
@@ -68,7 +68,7 @@ macro(webview_find_dependencies)
             pkg_check_modules(WEBVIEW_GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
         endif()
 
-        list(APPEND WEBVIEW_DEPENDENCIES PkgConfig::WEBVIEW_WEBKITGTK PkgConfig::WEBVIEW_GTK)
+        list(APPEND WEBVIEW_DEPENDENCIES PkgConfig::WEBVIEW_WEBKITGTK PkgConfig::WEBVIEW_GTK dl)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         if(WEBVIEW_USE_BUILTIN_MSWEBVIEW2)
             find_package(MSWebView2 QUIET)

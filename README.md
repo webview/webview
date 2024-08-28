@@ -67,8 +67,10 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
     * `gtk4 webkitgtk-6.0`
     * `gtk+-3.0 webkit2gtk-4.1`
     * `gtk+-3.0 webkit2gtk-4.0`
+  * Link libraries: `dl`
 * macOS:
-  * Link with `-framework WebKit`.
+  * Link frameworks: `WebKit`
+  * Link libraries: `dl`
 * Windows:
   * [WebView2 from NuGet](https://www.nuget.org/packages/Microsoft.Web.WebView2).
   * Windows libraries: `advapi32 ole32 shell32 shlwapi user32 version`
