@@ -17,10 +17,10 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Your Name"
-            VALUE "FileDescription", "Example app made with webview"
+            VALUE "CompanyName", "@VENDOR@"
+            VALUE "FileDescription", "@DESCRIPTION@"
             VALUE "FileVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@.0"
-            VALUE "LegalCopyright", "Copyright [year], Your Name"
+            VALUE "LegalCopyright", "@COPYRIGHT@"
             VALUE "ProductName", "@PROJECT_NAME@"
             VALUE "ProductVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@.0"
         END
