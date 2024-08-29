@@ -7,15 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2024-08-29
+
 ### Added
 
 - New compile-time options for controlling `WEBVIEW_API` ([#893](https://github.com/webview/webview/pull/893))
-- Support for WebKitGTK API 6.0 and GTK 4 ([#1125](https://github.com/webview/webview/pull/1125)).
-- CMake build system ([#1130](https://github.com/webview/webview/pull/1130)).
+- Support for WebKitGTK API 4.1 ([#1022](https://github.com/webview/webview/pull/1022))
+- Support for WebKitGTK API 6.0 and GTK 4 ([#1125](https://github.com/webview/webview/pull/1125))
+- CMake build system ([#1130](https://github.com/webview/webview/pull/1130))
 
 ### Changed
 
 - Disable status bar (Windows/WebView2) ([#1028](https://github.com/webview/webview/pull/1028))
+- Reworked handling and reporting of errors ([#1099](https://github.com/webview/webview/pull/1099))
 
 ### Breaking Changes
 
@@ -47,7 +51,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[unreleased]: https://github.com/webview/webview/compare/0.10.0...HEAD
+[unreleased]: https://github.com/webview/webview/compare/0.11.0...HEAD
+[0.11.0]:     https://github.com/webview/webview/compare/0.10.0...0.11.0
 [0.10.0]:     https://github.com/webview/webview/compare/0.1.1...0.10.0
 [0.1.1]:      https://github.com/webview/webview/compare/0.1.0...0.1.1
 [0.1.0]:      https://github.com/webview/webview/releases/tag/0.1.0
