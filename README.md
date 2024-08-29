@@ -315,30 +315,6 @@ Option                            | Description
 `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` | Enables (`1`) or disables (`0`) the built-in implementation of the WebView2 loader. Enabling this avoids the need for `WebView2Loader.dll` but if the DLL is present then the DLL takes priority. This option is enabled by default.
 `WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK`| Enables (`1`) or disables (`0`) explicit linking of `WebView2Loader.dll`. Enabling this avoids the need for import libraries (`*.lib`). This option is enabled by default if `WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL` is enabled.
 
-## App Distribution
-
-Distribution of your app is outside the scope of this library but we can give some pointers for you to explore.
-
-### macOS Application Bundle
-
-On macOS you would typically create a bundle for your app with an icon and proper metadata.
-
-A minimalistic bundle typically has the following directory structure:
-
-```
-example.app                 bundle
-└── Contents
-    ├── Info.plist          information property list
-    ├── MacOS
-    |   └── example         executable
-    └── Resources
-        └── example.icns    icon
-```
-
-Read more about the [structure of bundles][macos-app-bundle] at the Apple Developer site.
-
-> Tip: The `png2icns` tool can create icns files from PNG files. See the `icnsutils` package for Debian-based systems.
-
 ## MinGW-w64 Requirements
 
 In order to build this library using MinGW-w64 on Windows then it must support C++14 and have an up-to-date Windows SDK.
@@ -479,7 +455,6 @@ swig -c++ -ruby -outdir build/bindings/ruby -o build/bindings/ruby/ruby_wrap.cpp
 
 Code is distributed under MIT license, feel free to use it in your proprietary projects as well.
 
-[macos-app-bundle]:  https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html
 [examples]:          https://github.com/webview/webview/tree/master/examples
 [gtk]:               https://gtk.org/
 [issues]:            https://github.com/webview/docs/issues
