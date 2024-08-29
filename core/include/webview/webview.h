@@ -71,7 +71,7 @@
 
 #ifndef WEBVIEW_VERSION_MINOR
 /// The current library minor version.
-#define WEBVIEW_VERSION_MINOR 11
+#define WEBVIEW_VERSION_MINOR 12
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
