@@ -53,6 +53,8 @@ macro(webview_init)
         endif()
 
         # Default language standards
+        # All of CMAKE_<LANG>_STANDARD, CMAKE_<LANG>_REQUIRED and CMAKE_<LANG>_EXTENSIONS must be set
+        # Note that we also use the cxx_std_11 compile feature for consumers
         set(CMAKE_C_STANDARD 99 CACHE STRING "")
         set(CMAKE_C_STANDARD_REQUIRED YES)
         set(CMAKE_C_EXTENSIONS NO)

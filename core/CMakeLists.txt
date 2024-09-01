@@ -7,6 +7,8 @@ target_include_directories(
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 target_link_libraries(webview_core_headers INTERFACE ${WEBVIEW_DEPENDENCIES})
+# Note that we also use CMAKE_CXX_STANDARD which can override this
+target_compile_features(webview_core_headers INTERFACE cxx_std_11)
 set_target_properties(webview_core_headers PROPERTIES
     EXPORT_NAME core_headers)
 
