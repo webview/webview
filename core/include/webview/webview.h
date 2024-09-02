@@ -2169,24 +2169,6 @@ enum WKUserScriptInjectionTime : NSInteger {
 
 enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
-typedef struct NSPoint
-{
-  CGFloat x;
-  CGFloat y;
-} NSPoint;
-
-typedef struct NSSize
-{
-  CGFloat width;
-  CGFloat height;
-} NSSize;
-
-typedef struct NSRect
-{
-  NSPoint origin;
-  NSSize size;
-} NSRect;
-
 // Convenient conversion of string literals.
 inline id operator"" _cls(const char *s, std::size_t) {
   return (id)objc_getClass(s);
@@ -2374,8 +2356,8 @@ protected:
       objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
                            CGSizeMake(width, height));
     } else {
-      NSRect rect =
-          ((NSRect(*)(id, SEL))objc_msgSend_stret)(m_window, "frame"_sel);
+      CGRect rect =
+          ((CGRect(*)(id, SEL))objc_msgSend_stret)(m_window, "frame"_sel);
       objc::msg_send<void>(
           m_window, "setFrame:display:animate:"_sel,
           CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
