@@ -1,0 +1,207 @@
+name: CMake build
+description: Build project using CMake
+inputs:
+  artifacts-name:
+    description: Artifacts name
+    required: false
+  build-dir:
+    description: CMake build directory
+    required: false
+    default: build
+  build-config-debug:
+    description: CMake build config for debug
+    required: false
+    default: Debug
+  build-config-release:
+    description: CMake build config for release
+    required: false
+    default: Release
+  build-config-profile:
+    description: CMake build config for profiling
+    required: false
+    default: Profile
+  coverage:
+    description: Enable code coverage?
+    required: false
+  cmake-options:
+    description: Sets extra CMake options in the form ["K=V", ...]
+    required: false
+  gcov:
+    description: gcov executable
+    required: false
+    default: gcov
+  gcovr-config:
+    description: gcovr config file
+    required: false
+    default: gcovr.ci.cfg
+  gcovr-version:
+    description: gcovr version
+    required: false
+    default: '7.2'
+  generator:
+    description: CMake generator
+    required: false
+    default: Ninja
+  package:
+    description: Package?
+    required: false
+  package-source:
+    description: Package source code?
+    required: false
+  shell:
+    description: Shell
+    required: false
+    default: bash
+  source-dir:
+    description: CMake source directory
+    required: false
+    default: .
+  test-wrapper-cmd:
+    description: Test wrapper command
+    required: false
+  upload-artifacts:
+    description: Upload artifacts?
+    required: false
+runs:
+  using: composite
+  steps:
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
+      name: gcov version
+      run: ${{ inputs.gcov }} --version
+      shell: ${{ inputs.shell }}
+
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
+      name: Install gcovr
+      run: pip install "gcovr==${{ inputs.gcovr-version }}"
+      shell: ${{ inputs.shell }}
+
+    - name: Generate build config names
+      id: generate-build-config-names
+      run: |
+        configs=()
+        if [[ "${{ inputs.coverage }}" == "true" ]]; then
+          configs+=("${{ inputs.build-config-profile }}")
+        else
+          configs+=("${{ inputs.build-config-debug }}")
+          configs+=("${{ inputs.build-config-release }}")
+        fi
+        echo "configs=${configs[@]}" >> "${GITHUB_OUTPUT}"
+      shell: bash
+
+    - name: Parse CMake options
+      uses: actions/github-script@v7
+      id: cmake-options
+      env:
+        OPTIONS: ${{ inputs.cmake-options }}
+      with:
+        script: return JSON.parse(process.env.OPTIONS).join("\n")
+        result-encoding: string
+
+    - name: Configure
+      env:
+        OPTIONS: ${{ steps.cmake-options.outputs.result }}
+      run: |
+        cmake_cmd=(
+          cmake
+          -G "${{ inputs.generator }}"
+          -B "${{ inputs.build-dir }}"
+          -S "${{ inputs.source-dir }}"
+        )
+        while read opt; do
+          if [[ ! -z "${opt}" ]]; then
+            cmake_cmd+=(-D "${opt}")
+          fi
+        done << EOF
+        ${OPTIONS}
+        EOF
+        "${cmake_cmd[@]}"
+      shell: ${{ inputs.shell }}
+
+    - name: Build
+      run: |
+        configs=(${{ steps.generate-build-config-names.outputs.configs }})
+        for config in "${configs[@]}"; do
+          cmake_cmd=(
+            cmake
+            --build "${{ inputs.build-dir }}"
+            --config "${config}"
+          )
+          "${cmake_cmd[@]}"
+        done
+      shell: ${{ inputs.shell }}
+
+    - name: Test
+      run: |
+        configs=(${{ steps.generate-build-config-names.outputs.configs }})
+        for config in "${configs[@]}"; do
+          cmake_cmd=()
+          if [[ ! -z "${{ inputs.test-wrapper-cmd }}" ]]; then
+            cmake_cmd+=("${{ inputs.test-wrapper-cmd }}")
+          fi
+          cmake_cmd+=(
+            ctest
+            --test-dir "${{ inputs.build-dir }}"
+            --output-on-failure
+            --build-config "${config}"
+          )
+          "${cmake_cmd[@]}"
+        done
+      shell: ${{ inputs.shell }}
+
+    - if: inputs.package != '' && fromJson(inputs.package)
+      name: Create packages
+      run: cpack -G External -C "${{ inputs.build-config-debug }};${{ inputs.build-config-release }}" --config CPackConfig.cmake
+      working-directory: ${{ inputs.build-dir }}
+      shell: ${{ inputs.shell }}
+
+    - if: inputs.package-source != '' && fromJson(inputs.package-source)
+      name: Create source package
+      run: cpack --config CPackSourceConfig.cmake
+      working-directory: ${{ inputs.build-dir }}
+      shell: ${{ inputs.shell }}
+
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
+      name: Generate coverage data
+      id: prepare-coverage-artifacts
+      run: |
+        artifact_dir="temp_${RANDOM}/${{ inputs.artifacts-name }}"
+
+        gcovr_args=(
+          --config "${{ inputs.gcovr-config }}"
+          --json "${artifact_dir}/coverage.json"
+        )
+        if [[ ! -z "${{ inputs.gcov }}" ]]; then
+          gcovr_args+=(--gcov-executable "${{ inputs.gcov }}")
+        fi
+
+        mkdir -p "${artifact_dir}"
+        gcovr "${gcovr_args[@]}"
+
+        echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
+      shell: ${{ inputs.shell }}
+
+    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
+      name: Upload package artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: package_${{ inputs.artifacts-name }}
+        path: |
+          ${{ inputs.build-dir }}/*.gz
+          ${{ inputs.build-dir }}/*.sha256
+          ${{ inputs.build-dir }}/*.zip
+        retention-days: 1
+        if-no-files-found: error
+
+    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && (inputs.coverage != '' && fromJson(inputs.coverage))
+      name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: test_coverage_data_${{ inputs.artifacts-name }}
+        path: ${{ steps.prepare-coverage-artifacts.outputs.upload-dir }}
+        retention-days: 1
+        if-no-files-found: error
+
+    - if: inputs.coverage != '' && fromJson(inputs.coverage)
+      name: Clean up temporary coverage files
+      run: rm -rf "${{ steps.prepare-coverage-artifacts.outputs.upload-dir }}"
+      shell: ${{ inputs.shell }}

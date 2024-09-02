@@ -1,0 +1,106 @@
+name: CI / Build
+on:
+  workflow_call:
+    inputs:
+      gcovr-version:
+        type: string
+        description: gcovr version
+        required: false
+      pr:
+        type: string
+        description: Is this a pull request build?
+        required: false
+jobs:
+  load-matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.load-matrix.outputs.result }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load matrix file
+        id: load-matrix
+        uses: actions/github-script@v7
+        env:
+          PR: ${{ inputs.pr != '' && fromJson(inputs.pr) }}
+        with:
+          script: |
+            const csv = require("./.github/workflows/csv.js");
+            const path = require("node:path");
+            const schema = require("./.github/workflows/build_matrix_schema.json");
+            let include = csv.loadFile(path.join(".github", "workflows", "build_matrix.csv"), schema);
+
+            // Filters
+            include = include.filter(x => JSON.parse(process.env.PR) === x["pr-only"]);
+
+            const matrix = { include };
+            console.log(matrix);
+            return matrix;
+
+  build:
+    needs: load-matrix
+    name: ${{ matrix.job-type }} (${{ matrix.id }}, ${{ matrix.os }}, c++${{ matrix.cxx-std }}, ${{ matrix.arch }}, ${{ matrix.toolchain }}${{ matrix.toolchain-executable-suffix }}${{ matrix.job-name-suffix }})
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.load-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        uses: ./.github/workflows/setup-env
+        with:
+          apt: ${{ matrix.apt }}
+          msys: ${{ matrix.msys }}
+          msys-pacboy: ${{ matrix.msys-pacboy }}
+          webkitgtk-api: ${{ matrix.webkitgtk-api }}
+
+      - name: Build CMake options
+        uses: actions/github-script@v7
+        id: cmake-options
+        env:
+          MATRIX: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const matrix = JSON.parse(process.env.MATRIX);
+            const option = (k, v) => v === undefined ? undefined : [k, ({
+                boolean: () => v ? "ON" : "OFF"
+              }[typeof v] || (() => v))()
+            ].join("=");
+            return [
+              option("CMAKE_CXX_STANDARD", matrix["cxx-std"]),
+              option("CMAKE_OSX_DEPLOYMENT_TARGET", matrix["osx-deployment-target"]),
+              option("CMAKE_TOOLCHAIN_FILE", `cmake/toolchains/${matrix["arch"]}-${matrix["toolchain"]}.cmake`),
+              option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
+              option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
+              option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
+              // We check formatting separately
+              option("WEBVIEW_ENABLE_CLANG_FORMAT", false),
+              option("WEBVIEW_ENABLE_CLANG_TIDY", matrix["checks"]),
+              // Please enable strict clang-tidy when issues have been fixed
+              option("WEBVIEW_STRICT_CLANG_TIDY", matrix["strict-clang-tidy"]),
+              option("WEBVIEW_WEBKITGTK_API", matrix["webkitgtk-api"]),
+            ].filter(v => v !== undefined).filter(v => {
+              console.log(v);
+              return true;
+            });
+
+      - name: CMake
+        uses: ./.github/workflows/cmake
+        with:
+          artifacts-name: ${{ matrix.id }}
+          build-dir: build
+          cmake-options: ${{ steps.cmake-options.outputs.result }}
+          generator: ${{ matrix.generator }}
+          package: ${{ matrix.package }}
+          package-source: ${{ matrix.package-source }}
+          shell: ${{ matrix.shell }}
+          source-dir: .
+          test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
+          upload-artifacts: ${{ inputs.pr == '' || !fromJson(inputs.pr) }}
+          # Specific to code coverage
+          coverage: ${{ matrix.job-type == 'coverage' }}
+          gcov: ${{ matrix.gcov }}
+          gcovr-version: ${{ inputs.gcovr-version }}

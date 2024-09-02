@@ -1,0 +1,11 @@
+name: CI / Check
+on:
+  workflow_call:
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install --no-install-recommends -y clang-format-15
+      - run: cmake -B build -S . -D WEBVIEW_BUILD=OFF -D WEBVIEW_CLANG_FORMAT_EXE=clang-format-15
+      - run: cmake --build build --target webview_format_check
