@@ -13,4 +13,4 @@ endif()
 find_package(webview REQUIRED CONFIG)
 
 add_executable(example WIN32 ../../examples/cc/basic/src/main.cc)
-target_link_libraries(example PRIVATE webview::headers)
+target_link_libraries(example PRIVATE webview::core)

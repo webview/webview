@@ -1,6 +1,6 @@
 # Core header library
 add_library(webview_core_headers INTERFACE)
-add_library(webview::headers ALIAS webview_core_headers)
+add_library(webview::core ALIAS webview_core_headers)
 target_include_directories(
     webview_core_headers
     INTERFACE
@@ -10,7 +10,7 @@ target_link_libraries(webview_core_headers INTERFACE ${WEBVIEW_DEPENDENCIES})
 # Note that we also use CMAKE_CXX_STANDARD which can override this
 target_compile_features(webview_core_headers INTERFACE cxx_std_11)
 set_target_properties(webview_core_headers PROPERTIES
-    EXPORT_NAME core_headers)
+    EXPORT_NAME core)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
     target_link_libraries(webview_core_headers INTERFACE webview::compat_mingw)
@@ -19,7 +19,7 @@ endif()
 # Core shared library
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview_core_shared SHARED)
-    add_library(webview::shared ALIAS webview_core_shared)
+    add_library(webview::core_shared ALIAS webview_core_shared)
     target_sources(webview_core_shared PRIVATE src/webview.cc)
     target_link_libraries(webview_core_shared PUBLIC webview_core_headers)
     set_target_properties(webview_core_shared PROPERTIES
@@ -42,7 +42,7 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
     endif()
 
     add_library(webview_core_static STATIC)
-    add_library(webview::static ALIAS webview_core_static)
+    add_library(webview::core_static ALIAS webview_core_static)
     target_sources(webview_core_static PRIVATE src/webview.cc)
     target_link_libraries(webview_core_static PUBLIC webview_core_headers)
     set_target_properties(webview_core_static PROPERTIES
