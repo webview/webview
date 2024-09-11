@@ -122,7 +122,7 @@ FetchContent_MakeAvailable(webview)
 
 add_executable(example WIN32)
 target_sources(example PRIVATE main.cc)
-target_link_libraries(example PRIVATE webview::headers)
+target_link_libraries(example PRIVATE webview::core)
 ```
 
 `main.cc`:
@@ -173,7 +173,7 @@ FetchContent_MakeAvailable(webview)
 
 add_executable(example WIN32)
 target_sources(example PRIVATE main.c)
-target_link_libraries(example PRIVATE webview::static)
+target_link_libraries(example PRIVATE webview::core_static)
 ```
 
 `main.c`:
@@ -222,11 +222,11 @@ Find the executable in the `build/bin` directory.
 
 The following CMake targets are available:
 
-Name               | Description
-----               | -----------
-`webview::headers` | Headers only for C++.
-`webview::shared`  | Shared library for C.
-`webview::static`  | Static library for C.
+Name                   | Description
+----                   | -----------
+`webview::core`        | Headers for C++.
+`webview::core_shared` | Shared library for C.
+`webview::core_static` | Static library for C.
 
 Special targets for on-demand checks and related tasks:
 
