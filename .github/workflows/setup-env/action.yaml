@@ -35,6 +35,7 @@ runs:
       name: Install packages (APT)
       run: |
         packages=(${{ inputs.apt }} ${{ steps.apt-webkitgtk.outputs.packages }})
+        sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
           cmake \
           doxygen \
