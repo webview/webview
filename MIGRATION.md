@@ -1,5 +1,15 @@
 # Migration
 
+## v0.11.0 to v0.12.0
+
+Some CMake targets names have been replaced in order to match the exported/installed target names:
+
+Old target         | Replacement
+----------         | -----------
+`webview::headers` | `webview::core`
+`webview::shared`  | `webview::core_shared`
+`webview::static`  | `webview::core_static`
+
 ## v0.10.0 to v0.11.0
 
 ### New Defaults for `WEBVIEW_API`
