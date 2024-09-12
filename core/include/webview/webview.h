@@ -4072,7 +4072,6 @@ public:
   }
 
 protected:
-
   noresult run_impl() override {
     MSG msg;
     while (true) {
