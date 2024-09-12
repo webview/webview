@@ -4054,12 +4054,36 @@ public:
   win32_edge_engine(win32_edge_engine &&other) = delete;
   win32_edge_engine &operator=(win32_edge_engine &&other) = delete;
 
+  std::mutex runInUiThreadMutex;
+  std::vector<std::function<void()>> runInUiThread;
+
+  void run_in_ui(const std::function<void()> &cb) {
+    runInUiThreadMutex.lock();
+    runInUiThread.push_back(cb);
+    runInUiThreadMutex.unlock();
+  }
+
+  void run_in_ui() {
+    runInUiThreadMutex.lock();
+    for (const std::function<void()> &cb : runInUiThread)
+      cb();
+    runInUiThread.clear();
+    runInUiThreadMutex.unlock();
+  }
+
 protected:
+
   noresult run_impl() override {
     MSG msg;
-    while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
-      TranslateMessage(&msg);
-      DispatchMessageW(&msg);
+    while (true) {
+      if (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+        if (msg.message == WM_QUIT)
+          break;
+      }
+      this->run_in_ui();
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     return {};
   }
