@@ -30,6 +30,7 @@
 
 #include "macros.h"
 #include "types.h"
+#include "errors.h"
 #include "api.h"
 
 #ifdef __cplusplus

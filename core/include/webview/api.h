@@ -26,6 +26,7 @@
 #ifndef WEBVIEW_API_H
 #define WEBVIEW_API_H
 
+#include "errors.h"
 #include "macros.h"
 #include "types.h"
 

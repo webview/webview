@@ -78,42 +78,4 @@ typedef enum {
   WEBVIEW_HINT_FIXED
 } webview_hint_t;
 
-/// @name Errors
-/// @{
-
-/**
- * @brief Error codes returned to callers of the API.
- *
- * The following codes are commonly used in the library:
- * - @c WEBVIEW_ERROR_OK
- * - @c WEBVIEW_ERROR_UNSPECIFIED
- * - @c WEBVIEW_ERROR_INVALID_ARGUMENT
- * - @c WEBVIEW_ERROR_INVALID_STATE
- *
- * With the exception of @c WEBVIEW_ERROR_OK which is normally expected,
- * the other common codes do not normally need to be handled specifically.
- * Refer to specific functions regarding handling of other codes.
- */
-typedef enum {
-  /// Missing dependency.
-  WEBVIEW_ERROR_MISSING_DEPENDENCY = -5,
-  /// Operation canceled.
-  WEBVIEW_ERROR_CANCELED = -4,
-  /// Invalid state detected.
-  WEBVIEW_ERROR_INVALID_STATE = -3,
-  /// One or more invalid arguments have been specified e.g. in a function call.
-  WEBVIEW_ERROR_INVALID_ARGUMENT = -2,
-  /// An unspecified error occurred. A more specific error code may be needed.
-  WEBVIEW_ERROR_UNSPECIFIED = -1,
-  /// OK/Success. Functions that return error codes will typically return this
-  /// to signify successful operations.
-  WEBVIEW_ERROR_OK = 0,
-  /// Signifies that something already exists.
-  WEBVIEW_ERROR_DUPLICATE = 1,
-  /// Signifies that something does not exist.
-  WEBVIEW_ERROR_NOT_FOUND = 2
-} webview_error_t;
-
-/// @}
-
 #endif /* WEBVIEW_TYPES_H */
