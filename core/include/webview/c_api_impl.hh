@@ -32,6 +32,7 @@
 #include "json_deprecated.hh"
 #include "macros.h"
 #include "types.h"
+#include "version.h"
 
 namespace webview {
 namespace detail {
