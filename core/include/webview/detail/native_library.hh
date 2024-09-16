@@ -162,4 +162,4 @@ private:
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_NATIVE_LIBRARY_HH */
+#endif // WEBVIEW_DETAIL_NATIVE_LIBRARY_HH

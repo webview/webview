@@ -251,4 +251,4 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
-#endif /* WEBVIEW_C_API_IMPL_H */
+#endif // WEBVIEW_C_API_IMPL_H

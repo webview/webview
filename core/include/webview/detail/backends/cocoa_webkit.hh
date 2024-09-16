@@ -711,4 +711,4 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 
 } // namespace webview
 
-#endif /* WEBVIEW_BACKEND_COCOA_WEBKIT_H */
+#endif // WEBVIEW_BACKEND_COCOA_WEBKIT_H

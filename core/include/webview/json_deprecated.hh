@@ -55,4 +55,4 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 
 } // namespace webview
 
-#endif /* WEBVIEW_JSON_HH */
+#endif // WEBVIEW_JSON_HH

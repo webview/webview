@@ -36,4 +36,4 @@ class bad_access : public std::exception {};
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_EXCEPTIONS_HH */
+#endif // WEBVIEW_DETAIL_EXCEPTIONS_HH

@@ -577,4 +577,4 @@ using browser_engine = detail::gtk_webkit_engine;
 
 } // namespace webview
 
-#endif /* WEBVIEW_BACKEND_GTK_WEBKITGTK_H */
+#endif // WEBVIEW_BACKEND_GTK_WEBKITGTK_H

@@ -34,4 +34,4 @@
 #endif
 #endif
 
-#endif /* WEBVIEW_H */
+#endif // WEBVIEW_H

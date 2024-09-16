@@ -148,7 +148,7 @@
   WEBVIEW_DEPRECATED("Private API should not be used")
 #endif
 
-#endif /* WEBVIEW_HEADER */
-#endif /* __cplusplus */
+#endif // WEBVIEW_HEADER
+#endif // __cplusplus
 
-#endif /* WEBVIEW_MACROS_H */
+#endif // WEBVIEW_MACROS_H

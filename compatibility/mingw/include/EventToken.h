@@ -13,7 +13,7 @@
 typedef struct EventRegistrationToken {
   int64_t value;
 } EventRegistrationToken;
-#endif /* __eventtoken_h__ */
+#endif // __eventtoken_h__
 
-#endif /* _WIN32 */
-#endif /* WEBVIEW_COMPAT_EVENTTOKEN_H */
+#endif // _WIN32
+#endif // WEBVIEW_COMPAT_EVENTTOKEN_H

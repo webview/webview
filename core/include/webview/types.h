@@ -78,4 +78,4 @@ typedef enum {
   WEBVIEW_HINT_FIXED
 } webview_hint_t;
 
-#endif /* WEBVIEW_TYPES_H */
+#endif // WEBVIEW_TYPES_H

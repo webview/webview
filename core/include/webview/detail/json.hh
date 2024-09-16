@@ -328,4 +328,4 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_JSON_HH */
+#endif // WEBVIEW_DETAIL_JSON_HH

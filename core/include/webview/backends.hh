@@ -40,4 +40,4 @@ namespace webview {
 using webview = browser_engine;
 }
 
-#endif /* WEBVIEW_H */
+#endif // WEBVIEW_H

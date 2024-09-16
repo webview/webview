@@ -515,7 +515,7 @@ get_last_native_path_component(const std::basic_string<T> &path) {
   }
   return std::basic_string<T>();
 }
-#endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
 template <typename T> struct cast_info_t {
   using type = T;
@@ -568,7 +568,7 @@ static constexpr auto CreateWebViewEnvironmentWithOptionsInternal =
 static constexpr auto DllCanUnloadNow =
     library_symbol<DllCanUnloadNow_t>("DllCanUnloadNow");
 } // namespace webview2_symbols
-#endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
 #if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
 namespace webview2_symbols {
@@ -585,7 +585,7 @@ static constexpr auto GetAvailableCoreWebView2BrowserVersionString =
     library_symbol<GetAvailableCoreWebView2BrowserVersionString_t>(
         "GetAvailableCoreWebView2BrowserVersionString");
 } // namespace webview2_symbols
-#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
+#endif // WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
 
 class loader {
 public:
@@ -610,7 +610,7 @@ public:
 #else
     return ::CreateCoreWebView2EnvironmentWithOptions(
         browser_dir, user_data_dir, env_options, created_handler);
-#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
+#endif // WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
   }
 
   HRESULT
@@ -630,7 +630,7 @@ public:
 #endif
 #else
     return ::GetAvailableCoreWebView2BrowserVersionString(browser_dir, version);
-#endif /* WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK */
+#endif // WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK
   }
 
 private:
@@ -776,7 +776,7 @@ private:
       L"{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
 
   static constexpr auto default_release_channel_guid = stable_release_guid;
-#endif /* WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL */
+#endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
 
 #if WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK == 1
   native_library m_lib{L"WebView2Loader.dll"};
@@ -1633,4 +1633,4 @@ using browser_engine = detail::win32_edge_engine;
 
 } // namespace webview
 
-#endif /* WEBVIEW_BACKEND_WIN32_EDGE_H */
+#endif // WEBVIEW_BACKEND_WIN32_EDGE_H

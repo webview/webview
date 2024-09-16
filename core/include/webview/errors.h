@@ -64,4 +64,4 @@ typedef enum {
 
 /// @}
 
-#endif /* WEBVIEW_ERRORS_H */
+#endif // WEBVIEW_ERRORS_H

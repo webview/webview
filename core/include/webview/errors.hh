@@ -79,4 +79,4 @@ private:
 
 } // namespace webview
 
-#endif /* WEBVIEW_ERRORS_HH */
+#endif // WEBVIEW_ERRORS_HH

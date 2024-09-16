@@ -112,4 +112,4 @@ template <> class optional<void> {};
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_OPTIONAL_HH */
+#endif // WEBVIEW_DETAIL_OPTIONAL_HH

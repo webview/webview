@@ -241,4 +241,4 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
 }
 #endif
 
-#endif /* WEBVIEW_API_H */
+#endif // WEBVIEW_API_H

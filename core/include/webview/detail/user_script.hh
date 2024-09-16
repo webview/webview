@@ -67,4 +67,4 @@ private:
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_USER_SCRIPT_HH */
+#endif // WEBVIEW_DETAIL_USER_SCRIPT_HH

@@ -113,4 +113,4 @@ private:
 } // namespace detail
 } // namespace webview
 
-#endif /* WEBVIEW_DETAIL_BASIC_RESULT_H */
+#endif // WEBVIEW_DETAIL_BASIC_RESULT_H

@@ -42,4 +42,4 @@ using noresult = detail::basic_result<void, error_info, exception>;
 
 } // namespace webview
 
-#endif /* WEBVIEW_TYPES_HH */
+#endif // WEBVIEW_TYPES_HH
