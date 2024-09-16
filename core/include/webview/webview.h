@@ -28,16 +28,16 @@
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+#include "api.h"
+#include "errors.h"
 #include "macros.h"
 #include "types.h"
-#include "errors.h"
-#include "api.h"
 
 #ifdef __cplusplus
 #ifndef WEBVIEW_HEADER
 
-#include "errors.hh"
 #include "detail/basic_result.hh"
+#include "errors.hh"
 #include "types.hh"
 
 #include <algorithm>
