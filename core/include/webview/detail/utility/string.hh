@@ -92,4 +92,5 @@ inline std::string narrow_string(const std::wstring &input) {
 
 } // namespace detail
 } // namespace webview
+
 #endif // WEBVIEW_DETAIL_UTILITY_STRING_HH
