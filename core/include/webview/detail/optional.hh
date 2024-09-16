@@ -26,15 +26,14 @@
 #ifndef WEBVIEW_DETAIL_OPTIONAL_HH
 #define WEBVIEW_DETAIL_OPTIONAL_HH
 
-#include <exception>
+#include "exceptions.hh"
+
 #include <new>
 #include <type_traits>
 #include <utility>
 
 namespace webview {
 namespace detail {
-
-class bad_access : public std::exception {};
 
 template <typename T> class optional {
 public:
