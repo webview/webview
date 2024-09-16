@@ -38,6 +38,7 @@
 #include "../../errors.hh"
 #include "../../types.hh"
 #include "../engine_base.hh"
+#include "../native_library.hh"
 #include "../user_script.hh"
 #include "../utility/string.hh"
 
