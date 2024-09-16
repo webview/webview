@@ -68,4 +68,7 @@ if(WEBVIEW_BUILD_AMALGAMATION)
             "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
         COMMENT "Building amalgamation..."
         VERBATIM)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        COMPONENT webview_amalgamation)
 endif()
