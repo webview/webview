@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKEND_GTK_WEBKITGTK_H
-#define WEBVIEW_BACKEND_GTK_WEBKITGTK_H
+#ifndef WEBVIEW_BACKEND_GTK_WEBKITGTK_HH
+#define WEBVIEW_BACKEND_GTK_WEBKITGTK_HH
 
 //
 // ====================================================================

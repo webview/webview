@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKEND_COCOA_WEBKIT_H
-#define WEBVIEW_BACKEND_COCOA_WEBKIT_H
+#ifndef WEBVIEW_BACKEND_COCOA_WEBKIT_HH
+#define WEBVIEW_BACKEND_COCOA_WEBKIT_HH
 
 //
 // ====================================================================
