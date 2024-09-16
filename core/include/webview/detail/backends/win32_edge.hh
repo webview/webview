@@ -37,6 +37,7 @@
 
 #include "../../errors.hh"
 #include "../../types.hh"
+#include "../user_script.hh"
 #include "../utility/string.hh"
 
 #ifndef WIN32_LEAN_AND_MEAN

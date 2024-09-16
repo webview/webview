@@ -41,6 +41,7 @@
 
 #include "../../errors.hh"
 #include "../../types.hh"
+#include "../user_script.hh"
 
 #include <cstdlib>
 

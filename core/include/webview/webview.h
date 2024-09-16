@@ -38,6 +38,7 @@
 
 #include "detail/basic_result.hh"
 #include "detail/json.hh"
+#include "detail/user_script.hh"
 #include "errors.hh"
 #include "types.hh"
 
@@ -108,37 +109,6 @@ webview_error_t api_filter(WorkFn &&do_work) noexcept {
     return WEBVIEW_ERROR_UNSPECIFIED;
   }
 }
-
-class user_script {
-public:
-  class impl;
-
-  user_script(const std::string &code, std::unique_ptr<impl> &&impl_)
-      : m_code{code}, m_impl{std::move(impl_)} {}
-
-  user_script(const user_script &other) = delete;
-  user_script &operator=(const user_script &other) = delete;
-  user_script(user_script &&other) noexcept { *this = std::move(other); }
-
-  user_script &operator=(user_script &&other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    m_code = std::move(other.m_code);
-    m_impl = std::move(other.m_impl);
-    return *this;
-  }
-
-  const std::string &get_code() const { return m_code; }
-
-  impl &get_impl() { return *m_impl; }
-
-  const impl &get_impl() const { return *m_impl; }
-
-private:
-  std::string m_code;
-  std::unique_ptr<impl> m_impl;
-};
 
 class engine_base {
 public:
