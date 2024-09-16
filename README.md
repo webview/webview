@@ -242,6 +242,7 @@ The following boolean options can be used when building the webview project stan
 Option                            | Description
 ------                            | -----------
 `WEBVIEW_BUILD`                   | Enable building
+`WEBVIEW_BUILD_AMALGAMATION`      | Build amalgamated library
 `WEBVIEW_BUILD_DOCS`              | Build documentation
 `WEBVIEW_BUILD_EXAMPLES`          | Build examples
 `WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries
