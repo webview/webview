@@ -6,16 +6,22 @@ import re
 
 @dataclass
 class ProcessorContext:
+    base_dir: os.PathLike
     include_pattern = re.compile(r'#include "([^"]+)"\n')
     block_comment_pattern = re.compile(r"^/\*.*?\*/\n", re.DOTALL)
     visited_files = set()
-    ordered_files = []
     chunks = []
     visited_copyright_notices = set()
+    ordered_copyright_notices = []
 
 
-def process_file(context: ProcessorContext, input: os.PathLike):
-    input = os.path.realpath(input)
+def process_file(
+    context: ProcessorContext, input: os.PathLike, base_dir: os.PathLike = None
+):
+    base_dir = os.path.realpath(context.base_dir if base_dir is None else base_dir)
+    input = os.path.realpath(
+        input if os.path.isabs(input) else os.path.join(base_dir, input)
+    )
 
     if input in context.visited_files:
         return
@@ -26,18 +32,22 @@ def process_file(context: ProcessorContext, input: os.PathLike):
 
     print("Processing file: {}".format(input))
 
+    input_relative_root = os.path.relpath(input, context.base_dir)
+    context.chunks.append("// file begin: {}\n".format(input_relative_root))
     with open(input, encoding="utf-8") as f:
         content = f.read()
 
         content = context.block_comment_pattern.sub(
             lambda m: replace_copyright(context, m), content
-        )
+        ).strip()
+
+        base_dir = os.path.dirname(input)
 
         end = 0
         for m in context.include_pattern.finditer(content):
             context.chunks.append(content[end : m.start(0)])
             end = m.end(0)
-            include_file = os.path.join(os.path.dirname(input), m[1])
+            include_file = os.path.join(base_dir, m[1])
 
             if include_file in context.visited_files:
                 continue
@@ -47,26 +57,32 @@ def process_file(context: ProcessorContext, input: os.PathLike):
                 context.chunks.append(m[0])
                 continue
 
-            context.chunks.append("// File: {}\n".format(m[1]))
-            process_file(context, include_file)
+            process_file(context, include_file, base_dir=base_dir)
         context.chunks.append(content[end:])
+    context.chunks.append("\n// file end: {}\n".format(input_relative_root))
 
 
 def replace_copyright(context: ProcessorContext, match: re.Match[str]):
-    if not "copyright".casefold() in match[0].casefold():
+    if "copyright".casefold() not in match[0].casefold():
         return match[0]
     hashed = hash(match[0])
     if hashed in context.visited_copyright_notices:
         return ""
     context.visited_copyright_notices.add(hashed)
-    return match[0]
+    context.ordered_copyright_notices.append(match[0])
+    return ""
 
 
 def main(options):
-    context = ProcessorContext()
+    context = ProcessorContext(base_dir=options.base)
     for input in options.input:
         process_file(context, input)
-    with open(os.path.realpath(options.output), mode="w", encoding="utf-8") as f:
+    output = os.path.realpath(options.output)
+    os.makedirs(os.path.dirname(output), exist_ok=True)
+    with open(output, mode="w", encoding="utf-8") as f:
+        for notice in context.ordered_copyright_notices:
+            f.write(notice)
+            f.write("\n")
         for chunk in context.chunks:
             f.write(chunk)
 
@@ -76,8 +92,9 @@ def parse_args():
         prog="amalgamate",
         description="Combines a C or C++ source/header hierarchy into one file",
     )
+    parser.add_argument("--base", help="Base directory")
     parser.add_argument("input", nargs="+", help="Input file")
-    parser.add_argument("output", help="Output file")
+    parser.add_argument("--output", help="Output file")
     return parser.parse_args()
 
 

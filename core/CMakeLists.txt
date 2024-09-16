@@ -55,3 +55,15 @@ endif()
 if(WEBVIEW_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+if(WEBVIEW_BUILD_AMALGAMATION)
+    find_package(Python3 REQUIRED)
+    add_custom_target(webview_amalgamate ALL
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
+            --base "${CMAKE_CURRENT_SOURCE_DIR}"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
+        COMMENT "Building amalgamation..."
+        VERBATIM)
+endif()

@@ -285,6 +285,7 @@ macro(webview_internal_options)
     endif()
 
     option(WEBVIEW_BUILD "Enable building" ON)
+    option(WEBVIEW_BUILD_AMALGAMATION "Build amalgamated library" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_DOCS "Build documentation" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_TESTS "Build tests" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
     option(WEBVIEW_BUILD_EXAMPLES "Build examples" ${WEBVIEW_IS_TOP_LEVEL_BUILD})
