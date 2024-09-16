@@ -36,6 +36,7 @@
 #ifndef WEBVIEW_HEADER
 
 #include "detail/basic_result.hh"
+#include "detail/utility/string.hh"
 
 #include <algorithm>
 #include <array>
@@ -125,58 +126,6 @@ constexpr const webview_version_info_t library_version_info{
     WEBVIEW_VERSION_NUMBER,
     WEBVIEW_VERSION_PRE_RELEASE,
     WEBVIEW_VERSION_BUILD_METADATA};
-
-#if defined(_WIN32)
-// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-inline std::wstring widen_string(const std::string &input) {
-  if (input.empty()) {
-    return std::wstring();
-  }
-  UINT cp = CP_UTF8;
-  DWORD flags = MB_ERR_INVALID_CHARS;
-  auto input_c = input.c_str();
-  auto input_length = static_cast<int>(input.size());
-  auto required_length =
-      MultiByteToWideChar(cp, flags, input_c, input_length, nullptr, 0);
-  if (required_length > 0) {
-    std::wstring output(static_cast<std::size_t>(required_length), L'\0');
-    if (MultiByteToWideChar(cp, flags, input_c, input_length, &output[0],
-                            required_length) > 0) {
-      return output;
-    }
-  }
-  // Failed to convert string from UTF-8 to UTF-16
-  return std::wstring();
-}
-
-// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
-inline std::string narrow_string(const std::wstring &input) {
-  struct wc_flags {
-    enum TYPE : unsigned int {
-      // WC_ERR_INVALID_CHARS
-      err_invalid_chars = 0x00000080U
-    };
-  };
-  if (input.empty()) {
-    return std::string();
-  }
-  UINT cp = CP_UTF8;
-  DWORD flags = wc_flags::err_invalid_chars;
-  auto input_c = input.c_str();
-  auto input_length = static_cast<int>(input.size());
-  auto required_length = WideCharToMultiByte(cp, flags, input_c, input_length,
-                                             nullptr, 0, nullptr, nullptr);
-  if (required_length > 0) {
-    std::string output(static_cast<std::size_t>(required_length), '\0');
-    if (WideCharToMultiByte(cp, flags, input_c, input_length, &output[0],
-                            required_length, nullptr, nullptr) > 0) {
-      return output;
-    }
-  }
-  // Failed to convert string from UTF-16 to UTF-8
-  return std::string();
-}
-#endif
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
