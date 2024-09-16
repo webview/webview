@@ -40,6 +40,12 @@
 #include "../engine_base.hh"
 #include "../user_script.hh"
 
+#include <atomic>
+#include <functional>
+#include <list>
+#include <memory>
+#include <string>
+
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>

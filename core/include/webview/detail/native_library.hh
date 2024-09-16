@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
 #define WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
 
+#include "utility/string.hh"
+
 #include <string>
 
 #if defined(_WIN32)

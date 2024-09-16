@@ -42,6 +42,14 @@
 #include "../user_script.hh"
 #include "../utility/string.hh"
 
+#include <array>
+#include <atomic>
+#include <functional>
+#include <list>
+#include <memory>
+#include <utility>
+#include <vector>
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif

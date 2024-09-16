@@ -45,6 +45,10 @@
 #include "../user_script.hh"
 
 #include <cstdlib>
+#include <functional>
+#include <list>
+#include <memory>
+#include <string>
 
 #include <gtk/gtk.h>
 
