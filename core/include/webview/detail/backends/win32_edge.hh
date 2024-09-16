@@ -35,7 +35,10 @@
 // ====================================================================
 //
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <stdlib.h>
