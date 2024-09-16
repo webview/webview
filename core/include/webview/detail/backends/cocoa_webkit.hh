@@ -37,6 +37,7 @@
 //
 
 #include "../../types.hh"
+#include "../engine_base.hh"
 #include "../user_script.hh"
 
 #include <CoreGraphics/CoreGraphics.h>
