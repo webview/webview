@@ -36,7 +36,6 @@
 #ifdef __cplusplus
 #ifndef WEBVIEW_HEADER
 
-#include "detail/basic_result.hh"
 #include "detail/json.hh"
 #include "detail/user_script.hh"
 #include "errors.hh"
