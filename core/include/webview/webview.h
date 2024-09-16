@@ -38,6 +38,7 @@
 
 #include "errors.hh"
 #include "detail/basic_result.hh"
+#include "types.hh"
 
 #include <algorithm>
 #include <array>
@@ -67,14 +68,6 @@
 #endif
 
 namespace webview {
-
-using dispatch_fn_t = std::function<void()>;
-
-template <typename T>
-using result = detail::basic_result<T, error_info, exception>;
-
-using noresult = detail::basic_result<void, error_info, exception>;
-
 namespace detail {
 
 // The library's version information.

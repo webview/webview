@@ -36,6 +36,8 @@
 // ====================================================================
 //
 
+#include "../../types.hh"
+
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>

@@ -40,6 +40,7 @@
 //
 
 #include "../../errors.hh"
+#include "../../types.hh"
 
 #include <cstdlib>
 
