@@ -88,14 +88,10 @@ macro(webview_init)
         if(WEBVIEW_ENABLE_CHECKS AND WEBVIEW_ENABLE_CLANG_FORMAT)
             # Allow skipping clang-format outside of CI environment
 
-            if(NOT DEFINED WEBVIEW_CLANG_FORMAT_EXE)
-                set(WEBVIEW_CLANG_FORMAT_EXE_HINT "clang-format")
-                set(WEBVIEW_FIND_CLANG_FORMAT_ARGS WEBVIEW_CLANG_FORMAT_EXE "${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
-                if(WEBVIEW_IS_CI)
-                    list(APPEND WEBVIEW_FIND_CLANG_FORMAT_ARGS REQUIRED)
-                endif()
-
-                find_program(${WEBVIEW_FIND_CLANG_FORMAT_ARGS})
+            if(WEBVIEW_IS_CI)
+                webview_find_clang_format(REQUIRED)
+            else()
+                webview_find_clang_format()
             endif()
 
             if(WEBVIEW_CLANG_FORMAT_EXE)
@@ -161,6 +157,21 @@ macro(webview_init)
         webview_find_dependencies()
     endif()
 endmacro()
+
+function(webview_find_clang_format)
+    cmake_parse_arguments(ARG REQUIRED OUTPUT "" ${ARGN})
+    if(NOT DEFINED WEBVIEW_CLANG_FORMAT_EXE)
+        set(WEBVIEW_CLANG_FORMAT_EXE_HINT "clang-format")
+        set(WEBVIEW_FIND_CLANG_FORMAT_ARGS WEBVIEW_CLANG_FORMAT_EXE "${WEBVIEW_CLANG_FORMAT_EXE_HINT}")
+        if(ARG_REQUIRED)
+            list(APPEND WEBVIEW_FIND_CLANG_FORMAT_ARGS REQUIRED)
+        endif()
+
+        find_program(${WEBVIEW_FIND_CLANG_FORMAT_ARGS})
+
+        set(${ARG_OUTPUT} ${WEBVIEW_CLANG_FORMAT_EXE} PARENT_SCOPE)
+    endif()
+endfunction()
 
 macro(webview_extract_version)
     file(READ "${WEBVIEW_ROOT_DIR}/core/include/webview/version.h" WEBVIEW_H_CONTENT)

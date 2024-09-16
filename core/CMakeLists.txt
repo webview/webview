@@ -57,11 +57,13 @@ if(WEBVIEW_BUILD_TESTS)
 endif()
 
 if(WEBVIEW_BUILD_AMALGAMATION)
+    webview_find_clang_format(REQUIRED)
     find_package(Python3 REQUIRED)
     add_custom_target(webview_amalgamate ALL
         COMMAND ${Python3_EXECUTABLE}
             "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
             --base "${CMAKE_CURRENT_SOURCE_DIR}"
+            --clang-format-exe "${WEBVIEW_CLANG_FORMAT_EXE}"
             --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
         COMMENT "Building amalgamation..."

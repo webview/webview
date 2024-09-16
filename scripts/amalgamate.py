@@ -2,6 +2,9 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 import os
 import re
+import shutil
+import subprocess
+from typing import Sequence
 
 
 @dataclass
@@ -69,15 +72,17 @@ def replace_copyright(context: ProcessorContext, match: re.Match[str]):
     if hashed in context.visited_copyright_notices:
         return ""
     context.visited_copyright_notices.add(hashed)
-    context.ordered_copyright_notices.append(match[0])
+    context.ordered_copyright_notices.append(match[0].strip())
     return ""
 
 
-def main(options):
-    context = ProcessorContext(base_dir=options.base)
-    for input in options.input:
+def amalgamate(
+    base_dir: os.PathLike, inputs: Sequence[os.PathLike], output: os.PathLike
+):
+    context = ProcessorContext(base_dir=base_dir)
+    for input in inputs:
         process_file(context, input)
-    output = os.path.realpath(options.output)
+    output = os.path.realpath(output)
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, mode="w", encoding="utf-8") as f:
         for notice in context.ordered_copyright_notices:
@@ -87,14 +92,28 @@ def main(options):
             f.write(chunk)
 
 
+def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike = "clang-format"):
+    clang_format_exe = shutil.which(clang_format_exe)
+    if clang_format_exe is None:
+        raise Exception("clang-format not found: {}".format(clang_format_exe))
+    print("Reformatting file: {}".format(file))
+    subprocess.check_call((clang_format_exe, "-i", file))
+
+
+def main(options):
+    amalgamate(options.base, options.input, options.output)
+    reformat_file(options.output, clang_format_exe=options.clang_format_exe)
+
+
 def parse_args():
     parser = ArgumentParser(
         prog="amalgamate",
         description="Combines a C or C++ source/header hierarchy into one file",
     )
     parser.add_argument("--base", help="Base directory")
-    parser.add_argument("input", nargs="+", help="Input file")
+    parser.add_argument("--clang-format-exe", help="clang-format executable")
     parser.add_argument("--output", help="Output file")
+    parser.add_argument("input", nargs="+", help="Input file")
     return parser.parse_args()
 
 
