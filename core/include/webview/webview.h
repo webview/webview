@@ -37,7 +37,6 @@
 #ifndef WEBVIEW_HEADER
 
 #include "detail/basic_result.hh"
-#include "detail/utility/string.hh"
 
 #include <algorithm>
 #include <array>
