@@ -35,6 +35,8 @@
 #ifdef __cplusplus
 #ifndef WEBVIEW_HEADER
 
+#include "detail/optional.hh"
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -64,82 +66,6 @@
 
 namespace webview {
 namespace detail {
-
-class bad_access : public std::exception {};
-
-template <typename T> class optional {
-public:
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init, hicpp-member-init)
-  optional() = default;
-
-  optional(const T &other) noexcept : m_has_data{true} {
-    new (&m_data) T{other};
-  }
-
-  optional(T &&other) noexcept : m_has_data{true} {
-    new (&m_data) T{std::move(other)};
-  }
-
-  optional(const optional<T> &other) noexcept { *this = other; }
-
-  optional &operator=(const optional<T> &other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    m_has_data = other.has_value();
-    if (m_has_data) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-      new (&m_data) T{*reinterpret_cast<const T *>(&other.m_data)};
-    }
-    return *this;
-  }
-
-  optional(optional<T> &&other) noexcept { *this = std::move(other); }
-
-  optional &operator=(optional<T> &&other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    m_has_data = other.has_value();
-    if (m_has_data) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-      new (&m_data) T{std::move(*reinterpret_cast<T *>(&other.m_data))};
-    }
-    return *this;
-  }
-
-  ~optional() {
-    if (m_has_data) {
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-      reinterpret_cast<T *>(&m_data)->~T();
-    }
-  }
-
-  const T &get() const {
-    if (!m_has_data) {
-      throw bad_access{};
-    }
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return *reinterpret_cast<const T *>(&m_data);
-  }
-
-  T &get() {
-    if (!m_has_data) {
-      throw bad_access{};
-    }
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return *reinterpret_cast<T *>(&m_data);
-  }
-
-  bool has_value() const { return m_has_data; }
-
-private:
-  // NOLINTNEXTLINE(bugprone-sizeof-expression): pointer to aggregate is OK
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type m_data;
-  bool m_has_data{};
-};
-
-template <> class optional<void> {};
 
 template <typename Value, typename Error, typename Exception>
 class basic_result {
