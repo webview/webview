@@ -23,15 +23,36 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_JSON_HH
+#define WEBVIEW_JSON_HH
 
-#include "api.h"
+#include "detail/json.hh"
+#include "macros.h"
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+namespace webview {
 
-#endif /* WEBVIEW_H */
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
+                        const char **value, size_t *valuesz) {
+  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_escape(const std::string &s) {
+  return detail::json_escape(s);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_unescape(const char *s, size_t n, char *out) {
+  return detail::json_unescape(s, n, out);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_parse(const std::string &s, const std::string &key,
+                              const int index) {
+  return detail::json_parse(s, key, index);
+}
+
+} // namespace webview
+
+#endif /* WEBVIEW_JSON_HH */

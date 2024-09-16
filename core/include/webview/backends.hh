@@ -23,15 +23,21 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_BACKENDS_H
+#define WEBVIEW_BACKENDS_H
 
-#include "api.h"
+#include "macros.h"
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
+#if defined(WEBVIEW_GTK)
+#include "detail/backends/gtk_webkitgtk.hh"
+#elif defined(WEBVIEW_COCOA)
+#include "detail/backends/cocoa_webkit.hh"
+#elif defined(WEBVIEW_EDGE)
+#include "detail/backends/win32_edge.hh"
 #endif
-#endif
+
+namespace webview {
+using webview = browser_engine;
+}
 
 #endif /* WEBVIEW_H */
