@@ -1,4 +1,5 @@
 {
+    "amalgamate": "boolean",
     "apt": "string",
     "arch": "string",
     "checks": "boolean",

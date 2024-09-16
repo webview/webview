@@ -73,6 +73,7 @@ jobs:
               option("CMAKE_CXX_STANDARD", matrix["cxx-std"]),
               option("CMAKE_OSX_DEPLOYMENT_TARGET", matrix["osx-deployment-target"]),
               option("CMAKE_TOOLCHAIN_FILE", `cmake/toolchains/${matrix["arch"]}-${matrix["toolchain"]}.cmake`),
+              option("WEBVIEW_BUILD_AMALGAMATION", matrix["amalgamate"]),
               option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
               option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
               option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
