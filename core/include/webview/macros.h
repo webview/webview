@@ -111,4 +111,44 @@
 
 /// @}
 
+/// @brief Evaluates to @c TRUE for error codes indicating success or
+///        additional information.
+#define WEBVIEW_SUCCEEDED(error) ((int)(error) >= 0)
+
+/// Evaluates to @c TRUE if the given error code indicates failure.
+#define WEBVIEW_FAILED(error) ((int)(error) < 0)
+
+#ifdef __cplusplus
+#ifndef WEBVIEW_HEADER
+
+#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
+#if defined(__APPLE__)
+#define WEBVIEW_COCOA
+#elif defined(__unix__)
+#define WEBVIEW_GTK
+#elif defined(_WIN32)
+#define WEBVIEW_EDGE
+#else
+#error "please, specify webview backend"
+#endif
+#endif
+
+#ifndef WEBVIEW_DEPRECATED
+#if __cplusplus >= 201402L
+#define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
+#elif defined(_MSC_VER)
+#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
+#else
+#define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
+#endif
+#endif
+
+#ifndef WEBVIEW_DEPRECATED_PRIVATE
+#define WEBVIEW_DEPRECATED_PRIVATE                                             \
+  WEBVIEW_DEPRECATED("Private API should not be used")
+#endif
+
+#endif /* WEBVIEW_HEADER */
+#endif /* __cplusplus */
+
 #endif /* WEBVIEW_MACROS_H */
