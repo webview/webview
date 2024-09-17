@@ -54,6 +54,8 @@ def process_file(
 
     print("Processing file: {}".format(input))
 
+    input_include_files = context.graph.setdefault(input, set())
+
     with open(input, encoding="utf-8") as f:
         content = f.read()
 
@@ -71,6 +73,7 @@ def process_file(
             include_file = os.path.realpath(os.path.join(base_dir, m[1]))
 
             if include_file in context.visited_files:
+                input_include_files.add(include_file)
                 continue
 
             if not os.path.exists(include_file):
@@ -78,7 +81,7 @@ def process_file(
                 input_include.chunks.append(m[0])
                 continue
 
-            context.graph.setdefault(input, set()).add(include_file)
+            input_include_files.add(include_file)
 
             process_file(context, include_file, base_dir=base_dir)
         input_include.chunks.append(content[end:])
@@ -103,7 +106,12 @@ def amalgamate(
         process_file(context, input)
     output = os.path.realpath(output)
     print("Sorting...")
-    sorter = graphlib.TopologicalSorter(context.graph)
+    graph = dict(
+        sorted(
+            tuple((k, sorted(v)) for k, v in context.graph.items()), key=lambda i: i[0]
+        )
+    )
+    sorter = graphlib.TopologicalSorter(graph)
     ordered_includes = tuple(map(lambda x: context.includes[x], sorter.static_order()))
     print("Saving to file: {}".format(output))
     os.makedirs(os.path.dirname(output), exist_ok=True)
@@ -115,7 +123,9 @@ def amalgamate(
                 f.write("\n")
         for include in ordered_includes:
             if len(include.chunks) > 0:
-                posix_include_relative_path = pathlib.Path(os.path.relpath(include.path, context.base_dir)).as_posix()
+                posix_include_relative_path = pathlib.Path(
+                    os.path.relpath(include.path, context.base_dir)
+                ).as_posix()
                 print("Embedding file: {}".format(include.path))
                 f.write("// file begin: {}\n".format(posix_include_relative_path))
                 for chunk in include.chunks:
@@ -143,7 +153,9 @@ def parse_args():
         description="Combines a C or C++ source/header hierarchy into one file",
     )
     parser.add_argument("--base", help="Base directory")
-    parser.add_argument("--clang-format-exe", help="clang-format executable", default="clang-format")
+    parser.add_argument(
+        "--clang-format-exe", help="clang-format executable", default="clang-format"
+    )
     parser.add_argument("--output", help="Output file")
     parser.add_argument("input", nargs="+", help="Input file")
     return parser.parse_args()
