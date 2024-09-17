@@ -40,6 +40,7 @@
 #include "../engine_base.hh"
 #include "../native_library.hh"
 #include "../platform/windows/com_init_wrapper.hh"
+#include "../platform/windows/reg_key.hh"
 #include "../user_script.hh"
 #include "../utility/string.hh"
 
@@ -208,85 +209,6 @@ using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
 constexpr auto SetProcessDpiAwareness =
     library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
 } // namespace shcore_symbols
-
-class reg_key {
-public:
-  explicit reg_key(HKEY root_key, const wchar_t *sub_key, DWORD options,
-                   REGSAM sam_desired) {
-    HKEY handle;
-    auto status =
-        RegOpenKeyExW(root_key, sub_key, options, sam_desired, &handle);
-    if (status == ERROR_SUCCESS) {
-      m_handle = handle;
-    }
-  }
-
-  explicit reg_key(HKEY root_key, const std::wstring &sub_key, DWORD options,
-                   REGSAM sam_desired)
-      : reg_key(root_key, sub_key.c_str(), options, sam_desired) {}
-
-  virtual ~reg_key() {
-    if (m_handle) {
-      RegCloseKey(m_handle);
-      m_handle = nullptr;
-    }
-  }
-
-  reg_key(const reg_key &other) = delete;
-  reg_key &operator=(const reg_key &other) = delete;
-  reg_key(reg_key &&other) = delete;
-  reg_key &operator=(reg_key &&other) = delete;
-
-  bool is_open() const { return !!m_handle; }
-  bool get_handle() const { return m_handle; }
-
-  template <typename Container>
-  void query_bytes(const wchar_t *name, Container &result) const {
-    DWORD buf_length = 0;
-    // Get the size of the data in bytes.
-    auto status = RegQueryValueExW(m_handle, name, nullptr, nullptr, nullptr,
-                                   &buf_length);
-    if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) {
-      result.resize(0);
-      return;
-    }
-    // Read the data.
-    result.resize(buf_length / sizeof(typename Container::value_type));
-    auto *buf = reinterpret_cast<LPBYTE>(&result[0]);
-    status =
-        RegQueryValueExW(m_handle, name, nullptr, nullptr, buf, &buf_length);
-    if (status != ERROR_SUCCESS) {
-      result.resize(0);
-      return;
-    }
-  }
-
-  std::wstring query_string(const wchar_t *name) const {
-    std::wstring result;
-    query_bytes(name, result);
-    // Remove trailing null-characters.
-    for (std::size_t length = result.size(); length > 0; --length) {
-      if (result[length - 1] != 0) {
-        result.resize(length);
-        break;
-      }
-    }
-    return result;
-  }
-
-  unsigned int query_uint(const wchar_t *name,
-                          unsigned int default_value) const {
-    std::vector<char> data;
-    query_bytes(name, data);
-    if (data.size() < sizeof(DWORD)) {
-      return default_value;
-    }
-    return static_cast<unsigned int>(*reinterpret_cast<DWORD *>(data.data()));
-  }
-
-private:
-  HKEY m_handle = nullptr;
-};
 
 // Compare the specified version against the OS version.
 // Returns less than 0 if the OS version is less.
