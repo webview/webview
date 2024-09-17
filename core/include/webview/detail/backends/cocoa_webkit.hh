@@ -38,8 +38,10 @@
 
 #include "../../types.hh"
 #include "../engine_base.hh"
-#include "../user_script.hh"
+#include "../platform/darwin/cocoa.hh"
 #include "../platform/darwin/objc.hh"
+#include "../platform/darwin/webkit.hh"
+#include "../user_script.hh"
 
 #include <atomic>
 #include <functional>
@@ -53,25 +55,6 @@
 
 namespace webview {
 namespace detail {
-
-enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
-
-enum NSWindowStyleMask : NSUInteger {
-  NSWindowStyleMaskTitled = 1,
-  NSWindowStyleMaskClosable = 2,
-  NSWindowStyleMaskMiniaturizable = 4,
-  NSWindowStyleMaskResizable = 8
-};
-
-enum NSApplicationActivationPolicy : NSInteger {
-  NSApplicationActivationPolicyRegular = 0
-};
-
-enum WKUserScriptInjectionTime : NSInteger {
-  WKUserScriptInjectionTimeAtDocumentStart = 0
-};
-
-enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 // Convenient conversion of string literals.
 inline id operator"" _cls(const char *s, std::size_t) {
