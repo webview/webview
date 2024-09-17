@@ -42,9 +42,11 @@
 #include "../../errors.hh"
 #include "../../types.hh"
 #include "../engine_base.hh"
+#include "../platform/linux/gtk/compat.hh"
+#include "../platform/linux/webkitgtk/compat.hh"
+#include "../platform/linux/webkitgtk/dmabuf.hh"
 #include "../user_script.hh"
 
-#include <cstdlib>
 #include <functional>
 #include <list>
 #include <memory>
@@ -57,18 +59,10 @@
 #include <jsc/jsc.h>
 #include <webkit/webkit.h>
 
-#ifdef GDK_WINDOWING_X11
-#include <gdk/x11/gdkx.h>
-#endif
-
 #elif GTK_MAJOR_VERSION >= 3
 
 #include <JavaScriptCore/JavaScript.h>
 #include <webkit2/webkit2.h>
-
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
-#endif
 
 #endif
 
@@ -77,102 +71,6 @@
 
 namespace webview {
 namespace detail {
-
-// Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
-// driver.
-// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
-// Please remove all of the code in this namespace when it's no longer needed.
-namespace webkit_dmabuf {
-
-// Get environment variable. Not thread-safe.
-static inline std::string get_env(const std::string &name) {
-  auto *value = std::getenv(name.c_str());
-  if (value) {
-    return {value};
-  }
-  return {};
-}
-
-// Set environment variable. Not thread-safe.
-static inline void set_env(const std::string &name, const std::string &value) {
-  ::setenv(name.c_str(), value.c_str(), 1);
-}
-
-// Checks whether the NVIDIA GPU driver is used based on whether the kernel
-// module is loaded.
-static inline bool is_using_nvidia_driver() {
-  struct ::stat buffer {};
-  if (::stat("/sys/module/nvidia", &buffer) != 0) {
-    return false;
-  }
-  return S_ISDIR(buffer.st_mode);
-}
-
-// Checks whether the windowing system is Wayland.
-static inline bool is_wayland_display() {
-  if (!get_env("WAYLAND_DISPLAY").empty()) {
-    return true;
-  }
-  if (get_env("XDG_SESSION_TYPE") == "wayland") {
-    return true;
-  }
-  if (get_env("DESKTOP_SESSION").find("wayland") != std::string::npos) {
-    return true;
-  }
-  return false;
-}
-
-// Checks whether the GDK X11 backend is used.
-// See: https://docs.gtk.org/gdk3/class.DisplayManager.html
-static inline bool is_gdk_x11_backend() {
-#ifdef GDK_WINDOWING_X11
-  auto *gdk_display = gdk_display_get_default();
-  return GDK_IS_X11_DISPLAY(gdk_display); // NOLINT(misc-const-correctness)
-#else
-  return false;
-#endif
-}
-
-// Checks whether WebKit is affected by bug when using DMA-BUF renderer.
-// Returns true if all of the following conditions are met:
-//  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
-//  - Environment variables are empty or not set:
-//    - WEBKIT_DISABLE_DMABUF_RENDERER
-//  - Windowing system is not Wayland.
-//  - GDK backend is X11.
-//  - NVIDIA GPU driver is used.
-static inline bool is_webkit_dmabuf_bugged() {
-  auto wk_major = webkit_get_major_version();
-  auto wk_minor = webkit_get_minor_version();
-  // TODO: Narrow down affected WebKit version when there's a fixed version
-  auto is_affected_wk_version = wk_major == 2 && wk_minor >= 42;
-  if (!is_affected_wk_version) {
-    return false;
-  }
-  if (!get_env("WEBKIT_DISABLE_DMABUF_RENDERER").empty()) {
-    return false;
-  }
-  if (is_wayland_display()) {
-    return false;
-  }
-  if (!is_gdk_x11_backend()) {
-    return false;
-  }
-  if (!is_using_nvidia_driver()) {
-    return false;
-  }
-  return true;
-}
-
-// Applies workaround for WebKit DMA-BUF bug if needed.
-// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
-static inline void apply_webkit_dmabuf_workaround() {
-  if (!is_webkit_dmabuf_bugged()) {
-    return;
-  }
-  set_env("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-}
-} // namespace webkit_dmabuf
 
 class user_script::impl {
 public:
@@ -191,156 +89,6 @@ public:
 
 private:
   WebKitUserScript *m_script{};
-};
-
-/**
- * GTK compatibility helper class.
- */
-class gtk_compat {
-public:
-  static gboolean init_check() {
-#if GTK_MAJOR_VERSION >= 4
-    return gtk_init_check();
-#else
-    return gtk_init_check(nullptr, nullptr);
-#endif
-  }
-
-  static GtkWidget *window_new() {
-#if GTK_MAJOR_VERSION >= 4
-    return gtk_window_new();
-#else
-    return gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#endif
-  }
-
-  static void window_set_child(GtkWindow *window, GtkWidget *widget) {
-#if GTK_MAJOR_VERSION >= 4
-    gtk_window_set_child(window, widget);
-#else
-    gtk_container_add(GTK_CONTAINER(window), widget);
-#endif
-  }
-
-  static void window_remove_child(GtkWindow *window, GtkWidget *widget) {
-#if GTK_MAJOR_VERSION >= 4
-    if (gtk_window_get_child(window) == widget) {
-      gtk_window_set_child(window, nullptr);
-    }
-#else
-    gtk_container_remove(GTK_CONTAINER(window), widget);
-#endif
-  }
-
-  static void widget_set_visible(GtkWidget *widget, bool visible) {
-#if GTK_MAJOR_VERSION >= 4
-    gtk_widget_set_visible(widget, visible ? TRUE : FALSE);
-#else
-    if (visible) {
-      gtk_widget_show(widget);
-    } else {
-      gtk_widget_hide(widget);
-    }
-#endif
-  }
-
-  static void window_set_size(GtkWindow *window, int width, int height) {
-#if GTK_MAJOR_VERSION >= 4
-    gtk_window_set_default_size(window, width, height);
-#else
-    gtk_window_resize(window, width, height);
-#endif
-  }
-
-  static void window_set_max_size(GtkWindow *window, int width, int height) {
-// X11-specific features are available in GTK 3 but not GTK 4
-#if GTK_MAJOR_VERSION < 4
-    GdkGeometry g{};
-    g.max_width = width;
-    g.max_height = height;
-    GdkWindowHints h = GDK_HINT_MAX_SIZE;
-    gtk_window_set_geometry_hints(GTK_WINDOW(window), nullptr, &g, h);
-#else
-    // Avoid "unused parameter" warnings
-    (void)window;
-    (void)width;
-    (void)height;
-#endif
-  }
-};
-
-/**
- * WebKitGTK compatibility helper class.
- */
-class webkitgtk_compat {
-public:
-#if GTK_MAJOR_VERSION >= 4
-  using wk_handler_js_value_t = JSCValue;
-#else
-  using wk_handler_js_value_t = WebKitJavascriptResult;
-#endif
-
-  using on_script_message_received_t =
-      std::function<void(WebKitUserContentManager *, const std::string &)>;
-  static void
-  connect_script_message_received(WebKitUserContentManager *manager,
-                                  const std::string &handler_name,
-                                  on_script_message_received_t handler) {
-    std::string signal_name = "script-message-received::";
-    signal_name += handler_name;
-
-    auto callback = +[](WebKitUserContentManager *manager,
-                        wk_handler_js_value_t *r, gpointer arg) {
-      auto *handler = static_cast<on_script_message_received_t *>(arg);
-      (*handler)(manager, get_string_from_js_result(r));
-    };
-
-    auto deleter = +[](gpointer data, GClosure *) {
-      delete static_cast<on_script_message_received_t *>(data);
-    };
-
-    g_signal_connect_data(manager, signal_name.c_str(), G_CALLBACK(callback),
-                          new on_script_message_received_t{handler}, deleter,
-                          static_cast<GConnectFlags>(0) /*G_CONNECT_DEFAULT*/);
-  }
-
-  static std::string get_string_from_js_result(JSCValue *r) {
-    char *cs = jsc_value_to_string(r);
-    std::string s{cs};
-    g_free(cs);
-    return s;
-  }
-
-#if GTK_MAJOR_VERSION < 4
-  static std::string get_string_from_js_result(WebKitJavascriptResult *r) {
-#if (WEBKIT_MAJOR_VERSION == 2 && WEBKIT_MINOR_VERSION >= 22) ||               \
-    WEBKIT_MAJOR_VERSION > 2
-    JSCValue *value = webkit_javascript_result_get_js_value(r);
-    return get_string_from_js_result(value);
-#else
-    JSGlobalContextRef ctx = webkit_javascript_result_get_global_context(r);
-    JSValueRef value = webkit_javascript_result_get_value(r);
-    JSStringRef js = JSValueToStringCopy(ctx, value, nullptr);
-    size_t n = JSStringGetMaximumUTF8CStringSize(js);
-    char *cs = g_new(char, n);
-    JSStringGetUTF8CString(js, cs, n);
-    JSStringRelease(js);
-    std::string s{cs};
-    g_free(cs);
-    return s;
-#endif
-  }
-#endif
-
-  static void user_content_manager_register_script_message_handler(
-      WebKitUserContentManager *manager, const gchar *name) {
-#if GTK_MAJOR_VERSION >= 4
-    webkit_user_content_manager_register_script_message_handler(manager, name,
-                                                                nullptr);
-#else
-    webkit_user_content_manager_register_script_message_handler(manager, name);
-#endif
-  }
 };
 
 class gtk_webkit_engine : public engine_base {
