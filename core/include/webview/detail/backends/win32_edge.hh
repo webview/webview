@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_WIN32_EDGE_HH
+#if !defined(WEBVIEW_BACKENDS_WIN32_EDGE_HH) &&                                \
+    defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
 #define WEBVIEW_BACKENDS_WIN32_EDGE_HH
 
 //

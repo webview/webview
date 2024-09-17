@@ -59,16 +59,20 @@ endif()
 if(WEBVIEW_BUILD_AMALGAMATION)
     webview_find_clang_format(REQUIRED)
     find_package(Python3 REQUIRED)
+    # Note: Use a C++ file name extension with clang-format instead of something
+    #       that could be wrongly guessed by clang-format to be Objective-C which
+    #       then makes it unable to format the file.
     add_custom_target(webview_amalgamate ALL
         COMMAND ${Python3_EXECUTABLE}
             "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
-            --base "${CMAKE_CURRENT_SOURCE_DIR}"
+            --base "${CMAKE_CURRENT_SOURCE_DIR}/include/webview"
             --clang-format-exe "${WEBVIEW_CLANG_FORMAT_EXE}"
-            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.hh"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
         COMMENT "Building amalgamation..."
         VERBATIM)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.hh"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        RENAME webview.h
         COMPONENT webview_amalgamation)
 endif()

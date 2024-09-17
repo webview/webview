@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
+#if !defined(WEBVIEW_BACKENDS_COCOA_WEBKIT_HH) &&                              \
+    defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #define WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 
 //

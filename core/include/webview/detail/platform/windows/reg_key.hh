@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH) &&                           \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH
 
 #include <string>

@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_WINDOWS_IID_HH
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_IID_HH) &&                               \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_PLATFORM_WINDOWS_IID_HH
 
 #ifndef WIN32_LEAN_AND_MEAN

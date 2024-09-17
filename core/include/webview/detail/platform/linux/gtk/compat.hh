@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH
+#if !defined(WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH) &&                          \
+    defined(WEBVIEW_PLATFORM_LINUX)
 #define WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH
 
 #include <gtk/gtk.h>

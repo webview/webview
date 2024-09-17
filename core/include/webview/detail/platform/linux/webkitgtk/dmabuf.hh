@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
+#if !defined(WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH) &&                      \
+    defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 
 #include <cstdlib>

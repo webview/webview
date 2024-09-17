@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_WINDOWS_DWMAPI_HH
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_DWMAPI_HH) &&                            \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_PLATFORM_WINDOWS_DWMAPI_HH
 
 #include "../../native_library.hh"

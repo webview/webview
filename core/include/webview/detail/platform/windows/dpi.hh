@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_WINDOWS_DPI_HH
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_DPI_HH) &&                               \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_PLATFORM_WINDOWS_DPI_HH
 
 //

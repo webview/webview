@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_VERSION_HH) &&                           \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 
 #include "ntdll.hh"

@@ -80,12 +80,22 @@
 #ifdef __cplusplus
 #ifndef WEBVIEW_HEADER
 
-#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
 #if defined(__APPLE__)
-#define WEBVIEW_COCOA
+#define WEBVIEW_PLATFORM_DARWIN
 #elif defined(__unix__)
-#define WEBVIEW_GTK
+#define WEBVIEW_PLATFORM_LINUX
 #elif defined(_WIN32)
+#define WEBVIEW_PLATFORM_WINDOWS
+#else
+#error "Unable to detect current platform"
+#endif
+
+#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
+#if defined(WEBVIEW_PLATFORM_DARWIN)
+#define WEBVIEW_COCOA
+#elif defined(WEBVIEW_PLATFORM_LINUX)
+#define WEBVIEW_GTK
+#elif defined(WEBVIEW_PLATFORM_WINDOWS)
 #define WEBVIEW_EDGE
 #else
 #error "please, specify webview backend"

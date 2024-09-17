@@ -1,10 +1,28 @@
 from argparse import ArgumentParser
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import graphlib
 import os
+import pathlib
 import re
 import shutil
 import subprocess
-from typing import Sequence
+from typing import List, MutableMapping, MutableSet, Sequence
+
+
+@dataclass
+class Include:
+    path: os.PathLike
+    chunks: List[str] = field(default_factory=list)
+
+    def __eq__(self, other):
+        if isinstance(other, "Include"):
+            return self.path == other.path
+        return self.path == other
+
+    def __lt__(self, other):
+        if isinstance(other, "Include"):
+            return self.path < other.path
+        return self.path < other
 
 
 @dataclass
@@ -12,10 +30,11 @@ class ProcessorContext:
     base_dir: os.PathLike
     include_pattern = re.compile(r'#include "([^"]+)"\n')
     block_comment_pattern = re.compile(r"^/\*.*?\*/\n", re.DOTALL)
-    visited_files = set()
-    chunks = []
-    visited_copyright_notices = set()
-    ordered_copyright_notices = []
+    visited_files: MutableSet[os.PathLike] = field(default_factory=set)
+    visited_copyright_notices: MutableSet[str] = field(default_factory=set)
+    ordered_copyright_notices: List[str] = field(default_factory=list)
+    graph: MutableMapping[str, MutableSet[str]] = field(default_factory=dict)
+    includes: MutableMapping[str, Include] = field(default_factory=dict)
 
 
 def process_file(
@@ -35,8 +54,6 @@ def process_file(
 
     print("Processing file: {}".format(input))
 
-    input_relative_root = os.path.relpath(input, context.base_dir)
-    context.chunks.append("// file begin: {}\n".format(input_relative_root))
     with open(input, encoding="utf-8") as f:
         content = f.read()
 
@@ -45,24 +62,26 @@ def process_file(
         ).strip()
 
         base_dir = os.path.dirname(input)
+        input_include = context.includes.setdefault(input, Include(input))
 
         end = 0
         for m in context.include_pattern.finditer(content):
-            context.chunks.append(content[end : m.start(0)])
+            input_include.chunks.append(content[end : m.start(0)])
             end = m.end(0)
-            include_file = os.path.join(base_dir, m[1])
+            include_file = os.path.realpath(os.path.join(base_dir, m[1]))
 
             if include_file in context.visited_files:
                 continue
 
             if not os.path.exists(include_file):
                 print("File not found: {}".format(include_file))
-                context.chunks.append(m[0])
+                input_include.chunks.append(m[0])
                 continue
 
+            context.graph.setdefault(input, set()).add(include_file)
+
             process_file(context, include_file, base_dir=base_dir)
-        context.chunks.append(content[end:])
-    context.chunks.append("\n// file end: {}\n".format(input_relative_root))
+        input_include.chunks.append(content[end:])
 
 
 def replace_copyright(context: ProcessorContext, match: re.Match[str]):
@@ -83,21 +102,34 @@ def amalgamate(
     for input in inputs:
         process_file(context, input)
     output = os.path.realpath(output)
+    print("Sorting...")
+    sorter = graphlib.TopologicalSorter(context.graph)
+    ordered_includes = tuple(map(lambda x: context.includes[x], sorter.static_order()))
+    print("Saving to file: {}".format(output))
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, mode="w", encoding="utf-8") as f:
-        for notice in context.ordered_copyright_notices:
-            f.write(notice)
-            f.write("\n")
-        for chunk in context.chunks:
-            f.write(chunk)
+        if len(context.ordered_copyright_notices) > 0:
+            print("Embedding copyright notices...")
+            for notice in context.ordered_copyright_notices:
+                f.write(notice)
+                f.write("\n")
+        for include in ordered_includes:
+            if len(include.chunks) > 0:
+                posix_include_relative_path = pathlib.Path(os.path.relpath(include.path, context.base_dir)).as_posix()
+                print("Embedding file: {}".format(include.path))
+                f.write("// file begin: {}\n".format(posix_include_relative_path))
+                for chunk in include.chunks:
+                    f.write(chunk)
+                f.write("\n// file end: {}\n".format(posix_include_relative_path))
 
 
-def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike = "clang-format"):
-    clang_format_exe = shutil.which(clang_format_exe)
-    if clang_format_exe is None:
+def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike):
+    file = os.path.realpath(file)
+    resolved_clang_format_exe = shutil.which(clang_format_exe)
+    if resolved_clang_format_exe is None:
         raise Exception("clang-format not found: {}".format(clang_format_exe))
     print("Reformatting file: {}".format(file))
-    subprocess.check_call((clang_format_exe, "-i", file))
+    subprocess.check_call((resolved_clang_format_exe, "-i", file))
 
 
 def main(options):
@@ -111,7 +143,7 @@ def parse_args():
         description="Combines a C or C++ source/header hierarchy into one file",
     )
     parser.add_argument("--base", help="Base directory")
-    parser.add_argument("--clang-format-exe", help="clang-format executable")
+    parser.add_argument("--clang-format-exe", help="clang-format executable", default="clang-format")
     parser.add_argument("--output", help="Output file")
     parser.add_argument("input", nargs="+", help="Input file")
     return parser.parse_args()

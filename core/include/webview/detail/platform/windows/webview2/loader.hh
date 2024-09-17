@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
+#if !defined(WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH) &&                           \
+    defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
 #include "../../../native_library.hh"

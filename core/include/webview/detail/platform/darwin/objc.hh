@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#if !defined(WEBVIEW_PLATFORM_DARWIN_OBJC_HH) &&                               \
+    defined(WEBVIEW_PLATFORM_DARWIN)
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
 
 #include <objc/NSObjCRuntime.h>
