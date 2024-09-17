@@ -44,9 +44,9 @@
 #include "../platform/windows/reg_key.hh"
 #include "../platform/windows/theme.hh"
 #include "../platform/windows/version.hh"
+#include "../platform/windows/webview2/loader.hh"
 #include "../user_script.hh"
 #include "../utility/string.hh"
-#include "webview2/loader.hh"
 
 #include <atomic>
 #include <cstdlib>

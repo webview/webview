@@ -26,9 +26,9 @@
 #ifndef WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
-#include "../../native_library.hh"
-#include "../../platform/windows/reg_key.hh"
-#include "../../platform/windows/version.hh"
+#include "../../../native_library.hh"
+#include "../reg_key.hh"
+#include "../version.hh"
 
 #include <string>
 
