@@ -39,6 +39,7 @@
 #include "../../types.hh"
 #include "../engine_base.hh"
 #include "../native_library.hh"
+#include "../platform/windows/com_init_wrapper.hh"
 #include "../user_script.hh"
 #include "../utility/string.hh"
 
@@ -138,60 +139,6 @@ get_file_version_string(const std::wstring &file_path) noexcept {
   }
   return std::wstring(version, version_length);
 }
-
-/**
- * A wrapper around COM library initialization. Calls CoInitializeEx in the
- * constructor and CoUninitialize in the destructor.
- *
- * @exception exception Thrown if CoInitializeEx has already been called with a
- * different concurrency model.
- */
-class com_init_wrapper {
-public:
-  com_init_wrapper() = default;
-
-  com_init_wrapper(DWORD dwCoInit) {
-    // We can safely continue as long as COM was either successfully
-    // initialized or already initialized.
-    // RPC_E_CHANGED_MODE means that CoInitializeEx was already called with
-    // a different concurrency model.
-    switch (CoInitializeEx(nullptr, dwCoInit)) {
-    case S_OK:
-    case S_FALSE:
-      m_initialized = true;
-      break;
-    case RPC_E_CHANGED_MODE:
-      throw exception{
-          WEBVIEW_ERROR_INVALID_STATE,
-          "CoInitializeEx already called with a different concurrency model"};
-    default:
-      throw exception{WEBVIEW_ERROR_UNSPECIFIED,
-                      "Unexpected result from CoInitializeEx"};
-    }
-  }
-
-  ~com_init_wrapper() {
-    if (m_initialized) {
-      CoUninitialize();
-      m_initialized = false;
-    }
-  }
-
-  com_init_wrapper(const com_init_wrapper &other) = delete;
-  com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
-  com_init_wrapper(com_init_wrapper &&other) { *this = std::move(other); }
-
-  com_init_wrapper &operator=(com_init_wrapper &&other) {
-    if (this == &other) {
-      return *this;
-    }
-    m_initialized = std::exchange(other.m_initialized, false);
-    return *this;
-  }
-
-private:
-  bool m_initialized = false;
-};
 
 namespace ntdll_symbols {
 using RtlGetVersion_t =
