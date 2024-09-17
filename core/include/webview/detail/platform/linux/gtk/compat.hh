@@ -30,9 +30,6 @@
 
 #if GTK_MAJOR_VERSION >= 4
 
-#include <jsc/jsc.h>
-#include <webkit/webkit.h>
-
 #ifdef GDK_WINDOWING_X11
 #include <gdk/x11/gdkx.h>
 #endif
