@@ -41,6 +41,7 @@
 #include "../native_library.hh"
 #include "../platform/windows/com_init_wrapper.hh"
 #include "../platform/windows/dpi.hh"
+#include "../platform/windows/iid.hh"
 #include "../platform/windows/reg_key.hh"
 #include "../platform/windows/theme.hh"
 #include "../platform/windows/version.hh"
@@ -77,24 +78,6 @@ namespace webview {
 namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
-
-// Checks whether the specified IID equals the IID of the specified type and
-// if so casts the "this" pointer to T and returns it. Returns nullptr on
-// mismatching IIDs.
-// If ppv is specified then the pointer will also be assigned to *ppv.
-template <typename From, typename To>
-To *cast_if_equal_iid(From *from, REFIID riid, const cast_info_t<To> &info,
-                      LPVOID *ppv = nullptr) noexcept {
-  To *ptr = nullptr;
-  if (IsEqualIID(riid, info.iid)) {
-    ptr = static_cast<To *>(from);
-    ptr->AddRef();
-  }
-  if (ppv) {
-    *ppv = ptr;
-  }
-  return ptr;
-}
 
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,

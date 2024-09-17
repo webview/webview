@@ -27,6 +27,7 @@
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
 #include "../../../native_library.hh"
+#include "../iid.hh"
 #include "../reg_key.hh"
 #include "../version.hh"
 
@@ -81,11 +82,6 @@ get_last_native_path_component(const std::basic_string<T> &path) {
   return std::basic_string<T>();
 }
 #endif // WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL
-
-template <typename T> struct cast_info_t {
-  using type = T;
-  IID iid;
-};
 
 namespace mswebview2 {
 static constexpr IID
