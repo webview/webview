@@ -76,6 +76,22 @@ inline id autoreleased(id object) {
   return object;
 }
 
+namespace literals {
+
+// Convenient conversion of string literals.
+inline id operator"" _cls(const char *s, std::size_t) {
+  return (id)objc_getClass(s);
+}
+
+inline SEL operator"" _sel(const char *s, std::size_t) {
+  return sel_registerName(s);
+}
+
+inline id operator"" _str(const char *s, std::size_t) {
+  return msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
+}
+
+} // namespace literals
 } // namespace objc
 } // namespace detail
 } // namespace webview
