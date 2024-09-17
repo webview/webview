@@ -216,6 +216,29 @@ cmake --build build
 
 Find the executable in the `build/bin` directory.
 
+### Non-CMake Usage
+
+Here's an example for invoking GCC/Clang-like compilers directly. Use the `main.cc` file from the previous example.
+
+Place either the amalgamated `webview.h` header or all of the individual files into `libs/webview`, and `WebView2.h` from [MS WebView2][ms-webview2-sdk] into `libs`.
+
+Build the project on your chosen platform.
+
+<details>
+  <summary>macOS</summary>
+  <pre><code>c++ main.cc --std=c++11 -Ilibs -framework WebKit -ldl -o example</code></pre>
+</details>
+
+<details>
+  <summary>Linux</summary>
+  <pre><code>c++ main.cc --std=c++11 -Ilibs $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1) -ldl -o example</code></pre>
+</details>
+
+<details>
+  <summary>Windows</summary>
+  <pre><code>c++ main.cc --std=c++14 -mwindows -Ilibs -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o example</code></pre>
+</details>
+
 ## Customization
 
 ### CMake Targets
