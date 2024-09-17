@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKEND_WIN32_EDGE_HH
-#define WEBVIEW_BACKEND_WIN32_EDGE_HH
+#ifndef WEBVIEW_BACKENDS_WIN32_EDGE_HH
+#define WEBVIEW_BACKENDS_WIN32_EDGE_HH
 
 //
 // ====================================================================
@@ -1589,4 +1589,4 @@ using browser_engine = detail::win32_edge_engine;
 
 } // namespace webview
 
-#endif // WEBVIEW_BACKEND_WIN32_EDGE_H
+#endif // WEBVIEW_BACKENDS_WIN32_EDGE_H

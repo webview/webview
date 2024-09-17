@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKEND_GTK_WEBKITGTK_HH
-#define WEBVIEW_BACKEND_GTK_WEBKITGTK_HH
+#ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH
+#define WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH
 
 //
 // ====================================================================
@@ -581,4 +581,4 @@ using browser_engine = detail::gtk_webkit_engine;
 
 } // namespace webview
 
-#endif // WEBVIEW_BACKEND_GTK_WEBKITGTK_H
+#endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_H
