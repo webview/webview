@@ -39,6 +39,7 @@
 #include "../../types.hh"
 #include "../engine_base.hh"
 #include "../user_script.hh"
+#include "../platform/darwin/objc.hh"
 
 #include <atomic>
 #include <functional>
@@ -52,52 +53,6 @@
 
 namespace webview {
 namespace detail {
-namespace objc {
-
-// A convenient template function for unconditionally casting the specified
-// C-like function into a function that can be called with the given return
-// type and arguments. Caller takes full responsibility for ensuring that
-// the function call is valid. It is assumed that the function will not
-// throw exceptions.
-template <typename Result, typename Callable, typename... Args>
-Result invoke(Callable callable, Args... args) noexcept {
-  return reinterpret_cast<Result (*)(Args...)>(callable)(args...);
-}
-
-// Calls objc_msgSend.
-template <typename Result, typename... Args>
-Result msg_send(Args... args) noexcept {
-  return invoke<Result>(objc_msgSend, args...);
-}
-
-// Wrapper around NSAutoreleasePool that drains the pool on destruction.
-class autoreleasepool {
-public:
-  autoreleasepool()
-      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
-                            sel_registerName("new"))) {}
-
-  ~autoreleasepool() {
-    if (m_pool) {
-      msg_send<void>(m_pool, sel_registerName("drain"));
-    }
-  }
-
-  autoreleasepool(const autoreleasepool &) = delete;
-  autoreleasepool &operator=(const autoreleasepool &) = delete;
-  autoreleasepool(autoreleasepool &&) = delete;
-  autoreleasepool &operator=(autoreleasepool &&) = delete;
-
-private:
-  id m_pool{};
-};
-
-inline id autoreleased(id object) {
-  msg_send<void>(object, sel_registerName("autorelease"));
-  return object;
-}
-
-} // namespace objc
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
 
