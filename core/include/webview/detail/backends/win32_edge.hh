@@ -49,6 +49,7 @@
 #include "webview2/loader.hh"
 
 #include <atomic>
+#include <cstdlib>
 #include <functional>
 #include <list>
 #include <memory>
@@ -58,10 +59,11 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include <windows.h>
+
+#include <objbase.h>
 #include <shlobj.h>
 #include <shlwapi.h>
-#include <stdlib.h>
-#include <windows.h>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")

@@ -38,6 +38,8 @@
 
 #include <windows.h>
 
+#include <objbase.h>
+
 #include "WebView2.h"
 
 #ifdef _MSC_VER
