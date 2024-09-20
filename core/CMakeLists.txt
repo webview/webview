@@ -67,14 +67,11 @@ if(WEBVIEW_BUILD_AMALGAMATION)
             "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
             --base "${CMAKE_CURRENT_SOURCE_DIR}/include/webview"
             --clang-format-exe "${WEBVIEW_CLANG_FORMAT_EXE}"
-            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.hh"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
-        COMMAND ${CMAKE_COMMAND} -E rename
-            "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.hh"
-            "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
         COMMENT "Building amalgamation..."
         VERBATIM)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+        DESTINATION .
         COMPONENT webview_amalgamation)
 endif()
