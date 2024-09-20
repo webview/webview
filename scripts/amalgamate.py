@@ -149,6 +149,7 @@ def main(options):
         amalgamate(base_dir, options.input, temp_file.name)
         reformat_file(temp_file.name, clang_format_exe=options.clang_format_exe)
         print("Saving output file: {}".format(options.output))
+        os.makedirs(os.path.dirname(options.output), exist_ok=True)
         shutil.move(temp_file.name, options.output)
 
 
