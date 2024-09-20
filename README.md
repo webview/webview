@@ -216,6 +216,18 @@ cmake --build build
 
 Find the executable in the `build/bin` directory.
 
+### Building Amalgamated Library
+
+An amalgamated library can be built when building the project using CMake, or the `amalgamate.py` script can be invoked directly.
+
+The latter is described below.
+
+```sh
+python3 scripts/amalgamate.py --output webview_amalgamation.h core/include/webview/webview.h
+```
+
+See `python3 scripts/amalgamate.py --help` for script usage.
+
 ### Non-CMake Usage
 
 Here's an example for invoking GCC/Clang-like compilers directly. Use the `main.cc` file from the previous example.
