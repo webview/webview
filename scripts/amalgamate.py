@@ -144,7 +144,7 @@ def main(options):
     base_dir = os.getcwd() if options.base is None else options.base
     # Use a suffix that clang-format recognizes as C++
     with NamedTemporaryFile(
-        "r", encoding="utf-8", suffix=".hh", delete_on_close=False
+        "r", encoding="utf-8", suffix=".hh", delete=False
     ) as temp_file:
         amalgamate(base_dir, options.input, temp_file.name)
         reformat_file(temp_file.name, clang_format_exe=options.clang_format_exe)
