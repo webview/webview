@@ -37,12 +37,9 @@ class ProcessorContext:
     includes: MutableMapping[str, Include] = field(default_factory=dict)
 
 
-def process_file(
-    context: ProcessorContext, input: os.PathLike, base_dir: os.PathLike = None
-):
-    base_dir = os.path.realpath(context.base_dir if base_dir is None else base_dir)
+def process_file(context: ProcessorContext, input: os.PathLike):
     input = os.path.realpath(
-        input if os.path.isabs(input) else os.path.join(base_dir, input)
+        input if os.path.isabs(input) else os.path.join(context.base_dir, input)
     )
 
     if input in context.visited_files:
@@ -63,14 +60,14 @@ def process_file(
             lambda m: replace_copyright(context, m), content
         ).strip()
 
-        base_dir = os.path.dirname(input)
+        input_parent_dir = os.path.dirname(input)
         input_include = context.includes.setdefault(input, Include(input))
 
         end = 0
         for m in context.include_pattern.finditer(content):
             input_include.chunks.append(content[end : m.start(0)])
             end = m.end(0)
-            include_file = os.path.realpath(os.path.join(base_dir, m[1]))
+            include_file = os.path.realpath(os.path.join(input_parent_dir, m[1]))
 
             if include_file in context.visited_files:
                 input_include_files.add(include_file)
@@ -83,7 +80,7 @@ def process_file(
 
             input_include_files.add(include_file)
 
-            process_file(context, include_file, base_dir=base_dir)
+            process_file(context, include_file)
         input_include.chunks.append(content[end:])
 
 
@@ -143,7 +140,8 @@ def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike):
 
 
 def main(options):
-    amalgamate(options.base, options.input, options.output)
+    base_dir = os.getcwd() if options.base is None else options.base
+    amalgamate(base_dir, options.input, options.output)
     reformat_file(options.output, clang_format_exe=options.clang_format_exe)
 
 
