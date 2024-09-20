@@ -6,6 +6,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+from tempfile import NamedTemporaryFile
 from typing import List, MutableMapping, MutableSet, Sequence
 
 
@@ -110,7 +111,7 @@ def amalgamate(
     )
     sorter = graphlib.TopologicalSorter(graph)
     ordered_includes = tuple(map(lambda x: context.includes[x], sorter.static_order()))
-    print("Saving to file: {}".format(output))
+    print("Saving amalgamation to file: {}".format(output))
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, mode="w", encoding="utf-8") as f:
         if len(context.ordered_copyright_notices) > 0:
@@ -141,8 +142,14 @@ def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike):
 
 def main(options):
     base_dir = os.getcwd() if options.base is None else options.base
-    amalgamate(base_dir, options.input, options.output)
-    reformat_file(options.output, clang_format_exe=options.clang_format_exe)
+    # Use a suffix that clang-format recognizes as C++
+    with NamedTemporaryFile(
+        "r", encoding="utf-8", suffix=".hh", delete_on_close=False
+    ) as temp_file:
+        amalgamate(base_dir, options.input, temp_file.name)
+        reformat_file(temp_file.name, clang_format_exe=options.clang_format_exe)
+        print("Saving output file: {}".format(options.output))
+        shutil.move(temp_file.name, options.output)
 
 
 def parse_args():
