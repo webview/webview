@@ -27,6 +27,8 @@
     defined(WEBVIEW_PLATFORM_DARWIN)
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
 
+#include <cstddef>
+
 #include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>
 
