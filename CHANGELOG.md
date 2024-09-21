@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2024-09-11
+
+### Added
+
+- Use CMake `cxx_std_11` compile feature ([#1135](https://github.com/webview/webview/pull/1135))
+
+### Fixed
+
+- ODR issues caused by functions not being marked with `inline` ([#1138](https://github.com/webview/webview/pull/1138))
+
+### Breaking Changes
+
+- Synchronize CMake alias targets and export names ([#1140](https://github.com/webview/webview/pull/1140))
+
 ## [0.11.0] - 2024-08-29
 
 ### Added
@@ -51,7 +65,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[unreleased]: https://github.com/webview/webview/compare/0.11.0...HEAD
+[unreleased]: https://github.com/webview/webview/compare/0.12.0...HEAD
+[0.12.0]:     https://github.com/webview/webview/compare/0.11.0...0.12.0
 [0.11.0]:     https://github.com/webview/webview/compare/0.10.0...0.11.0
 [0.10.0]:     https://github.com/webview/webview/compare/0.1.1...0.10.0
 [0.1.1]:      https://github.com/webview/webview/compare/0.1.0...0.1.1

@@ -59,8 +59,11 @@ inputs:
   test-wrapper-cmd:
     description: Test wrapper command
     required: false
-  upload-artifacts:
-    description: Upload artifacts?
+  upload-coverage-artifacts:
+    description: Upload coverage artifacts?
+    required: false
+  upload-package-artifacts:
+    description: Upload package artifacts?
     required: false
 runs:
   using: composite
@@ -180,7 +183,7 @@ runs:
         echo "upload-dir=${artifact_dir}" >> "${GITHUB_OUTPUT}"
       shell: ${{ inputs.shell }}
 
-    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && ((inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
+    - if: (inputs.upload-package-artifacts != '' && fromJson(inputs.upload-package-artifacts)) && ((inputs.package != '' && fromJson(inputs.package)) || (inputs.package-source != '' && fromJson(inputs.package-source)))
       name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -192,7 +195,7 @@ runs:
         retention-days: 1
         if-no-files-found: error
 
-    - if: (inputs.upload-artifacts != '' && fromJson(inputs.upload-artifacts)) && (inputs.coverage != '' && fromJson(inputs.coverage))
+    - if: (inputs.upload-coverage-artifacts != '' && fromJson(inputs.upload-coverage-artifacts)) && (inputs.coverage != '' && fromJson(inputs.coverage))
       name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:

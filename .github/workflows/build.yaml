@@ -73,7 +73,8 @@ jobs:
               option("CMAKE_CXX_STANDARD", matrix["cxx-std"]),
               option("CMAKE_OSX_DEPLOYMENT_TARGET", matrix["osx-deployment-target"]),
               option("CMAKE_TOOLCHAIN_FILE", `cmake/toolchains/${matrix["arch"]}-${matrix["toolchain"]}.cmake`),
-              option("WEBVIEW_BUILD_DOCS", matrix["docs"]),
+              option("WEBVIEW_BUILD_AMALGAMATION", matrix["package-amalgamation"]),
+              option("WEBVIEW_BUILD_DOCS", matrix["package-docs"]),
               option("WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX", matrix["toolchain-executable-suffix"]),
               option("WEBVIEW_USE_STATIC_MSVC_RUNTIME", matrix["msvc-mt"]),
               // We check formatting separately
@@ -82,6 +83,13 @@ jobs:
               // Please enable strict clang-tidy when issues have been fixed
               option("WEBVIEW_STRICT_CLANG_TIDY", matrix["strict-clang-tidy"]),
               option("WEBVIEW_WEBKITGTK_API", matrix["webkitgtk-api"]),
+              // Packaging
+              option("WEBVIEW_ENABLE_PACKAGING", matrix["package"]),
+              option("WEBVIEW_PACKAGE_AMALGAMATION", matrix["package-amalgamation"]),
+              option("WEBVIEW_PACKAGE_DEV", matrix["package-dev"]),
+              option("WEBVIEW_PACKAGE_DOCS", matrix["package-docs"]),
+              option("WEBVIEW_PACKAGE_HEADERS", matrix["package-headers"]),
+              option("WEBVIEW_PACKAGE_LIB", matrix["package-lib"]),
             ].filter(v => v !== undefined).filter(v => {
               console.log(v);
               return true;
@@ -99,8 +107,9 @@ jobs:
           shell: ${{ matrix.shell }}
           source-dir: .
           test-wrapper-cmd: ${{ matrix.test-wrapper-cmd }}
-          upload-artifacts: ${{ inputs.pr == '' || !fromJson(inputs.pr) }}
+          upload-package-artifacts: ${{ matrix.package && (inputs.pr == '' || !fromJson(inputs.pr)) }}
           # Specific to code coverage
           coverage: ${{ matrix.job-type == 'coverage' }}
           gcov: ${{ matrix.gcov }}
           gcovr-version: ${{ inputs.gcovr-version }}
+          upload-coverage-artifacts: ${{ matrix.job-type == 'coverage' && (inputs.pr == '' || !fromJson(inputs.pr)) }}
