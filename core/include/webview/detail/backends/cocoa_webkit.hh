@@ -236,8 +236,7 @@ protected:
       objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
                            CGSizeMake(width, height));
     } else {
-      CGRect rect =
-          ((CGRect(*)(id, SEL))objc_msgSend_stret)(m_window, "frame"_sel);
+      CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
       objc::msg_send<void>(
           m_window, "setFrame:display:animate:"_sel,
           CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
