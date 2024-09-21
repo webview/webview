@@ -236,8 +236,10 @@ protected:
       objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
                            CGSizeMake(width, height));
     } else {
-      objc::msg_send<void>(m_window, "setFrame:display:animate:"_sel,
-                           CGRectMake(0, 0, width, height), YES, NO);
+      CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
+      objc::msg_send<void>(
+          m_window, "setFrame:display:animate:"_sel,
+          CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
     }
     objc::msg_send<void>(m_window, "center"_sel);
 

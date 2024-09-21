@@ -52,6 +52,16 @@ Result msg_send(Args... args) noexcept {
   return invoke<Result>(objc_msgSend, args...);
 }
 
+// Calls objc_msgSend_stret or objc_msgSend depending on architecture.
+template <typename Result, typename... Args>
+Result msg_send_stret(Args... args) noexcept {
+#if defined(__arm64__)
+  return invoke<Result>(objc_msgSend, args...);
+#else
+  return invoke<Result>(objc_msgSend_stret, args...);
+#endif
+}
+
 // Wrapper around NSAutoreleasePool that drains the pool on destruction.
 class autoreleasepool {
 public:
