@@ -23,15 +23,17 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_DETAIL_EXCEPTIONS_HH
+#define WEBVIEW_DETAIL_EXCEPTIONS_HH
 
-#include "api.h"
+#include <exception>
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+namespace webview {
+namespace detail {
 
-#endif // WEBVIEW_H
+class bad_access : public std::exception {};
+
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_DETAIL_EXCEPTIONS_HH

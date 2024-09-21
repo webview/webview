@@ -23,15 +23,31 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#if !defined(WEBVIEW_PLATFORM_DARWIN_COCOA_HH) &&                              \
+    defined(WEBVIEW_PLATFORM_DARWIN)
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
 
-#include "api.h"
+#include <objc/NSObjCRuntime.h>
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+namespace webview {
+namespace detail {
 
-#endif // WEBVIEW_H
+enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
+
+enum NSWindowStyleMask : NSUInteger {
+  NSWindowStyleMaskTitled = 1,
+  NSWindowStyleMaskClosable = 2,
+  NSWindowStyleMaskMiniaturizable = 4,
+  NSWindowStyleMaskResizable = 8
+};
+
+enum NSApplicationActivationPolicy : NSInteger {
+  NSApplicationActivationPolicyRegular = 0
+};
+
+enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
+
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH

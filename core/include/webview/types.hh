@@ -23,15 +23,23 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_TYPES_HH
+#define WEBVIEW_TYPES_HH
 
-#include "api.h"
+#include "detail/basic_result.hh"
+#include "errors.hh"
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+#include <functional>
 
-#endif // WEBVIEW_H
+namespace webview {
+
+using dispatch_fn_t = std::function<void()>;
+
+template <typename T>
+using result = detail::basic_result<T, error_info, exception>;
+
+using noresult = detail::basic_result<void, error_info, exception>;
+
+} // namespace webview
+
+#endif // WEBVIEW_TYPES_HH

@@ -216,6 +216,41 @@ cmake --build build
 
 Find the executable in the `build/bin` directory.
 
+### Building Amalgamated Library
+
+An amalgamated library can be built when building the project using CMake, or the `amalgamate.py` script can be invoked directly.
+
+The latter is described below.
+
+```sh
+python3 scripts/amalgamate.py --output webview_amalgamation.h core/include/webview/webview.h
+```
+
+See `python3 scripts/amalgamate.py --help` for script usage.
+
+### Non-CMake Usage
+
+Here's an example for invoking GCC/Clang-like compilers directly. Use the `main.cc` file from the previous example.
+
+Place either the amalgamated `webview.h` header or all of the individual files into `libs/webview`, and `WebView2.h` from [MS WebView2][ms-webview2-sdk] into `libs`.
+
+Build the project on your chosen platform.
+
+<details>
+  <summary>macOS</summary>
+  <pre><code>c++ main.cc -O2 --std=c++11 -Ilibs -framework WebKit -ldl -o example</code></pre>
+</details>
+
+<details>
+  <summary>Linux</summary>
+  <pre><code>c++ main.cc -O2 --std=c++11 -Ilibs $(pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1) -ldl -o example</code></pre>
+</details>
+
+<details>
+  <summary>Windows</summary>
+  <pre><code>c++ main.cc -O2 --std=c++14 -static -mwindows -Ilibs -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o example</code></pre>
+</details>
+
 ## Customization
 
 ### CMake Targets
@@ -242,6 +277,7 @@ The following boolean options can be used when building the webview project stan
 Option                            | Description
 ------                            | -----------
 `WEBVIEW_BUILD`                   | Enable building
+`WEBVIEW_BUILD_AMALGAMATION`      | Build amalgamated library
 `WEBVIEW_BUILD_DOCS`              | Build documentation
 `WEBVIEW_BUILD_EXAMPLES`          | Build examples
 `WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries
@@ -254,6 +290,11 @@ Option                            | Description
 `WEBVIEW_INSTALL_DOCS`            | Install documentation
 `WEBVIEW_INSTALL_TARGETS`         | Install targets
 `WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable
+`WEBVIEW_PACKAGE_AMALGAMATION`    | Package amalgamated library
+`WEBVIEW_PACKAGE_DEV`             | Package development library
+`WEBVIEW_PACKAGE_DOCS`            | Package documentation
+`WEBVIEW_PACKAGE_HEADERS`         | Package headers
+`WEBVIEW_PACKAGE_LIB`             | Package release library
 `WEBVIEW_STRICT_CHECKS`           | Make checks strict
 `WEBVIEW_STRICT_CLANG_FORMAT`     | Make clang-format check strict
 `WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict

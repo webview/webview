@@ -23,15 +23,48 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_DETAIL_USER_SCRIPT_HH
+#define WEBVIEW_DETAIL_USER_SCRIPT_HH
 
-#include "api.h"
+#include <memory>
+#include <string>
+#include <utility>
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+namespace webview {
+namespace detail {
 
-#endif // WEBVIEW_H
+class user_script {
+public:
+  class impl;
+
+  user_script(const std::string &code, std::unique_ptr<impl> &&impl_)
+      : m_code{code}, m_impl{std::move(impl_)} {}
+
+  user_script(const user_script &other) = delete;
+  user_script &operator=(const user_script &other) = delete;
+  user_script(user_script &&other) noexcept { *this = std::move(other); }
+
+  user_script &operator=(user_script &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    m_code = std::move(other.m_code);
+    m_impl = std::move(other.m_impl);
+    return *this;
+  }
+
+  const std::string &get_code() const { return m_code; }
+
+  impl &get_impl() { return *m_impl; }
+
+  const impl &get_impl() const { return *m_impl; }
+
+private:
+  std::string m_code;
+  std::unique_ptr<impl> m_impl;
+};
+
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_DETAIL_USER_SCRIPT_HH

@@ -23,15 +23,30 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_SHCORE_HH) &&                            \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
+#define WEBVIEW_PLATFORM_WINDOWS_SHCORE_HH
 
-#include "api.h"
+#include "../../native_library.hh"
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
-#endif
 
-#endif // WEBVIEW_H
+#include <windows.h>
+
+namespace webview {
+namespace detail {
+namespace shcore_symbols {
+
+typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+
+constexpr auto SetProcessDpiAwareness =
+    library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
+
+} // namespace shcore_symbols
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_PLATFORM_WINDOWS_SHCORE_HH

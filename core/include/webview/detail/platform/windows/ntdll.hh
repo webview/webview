@@ -23,15 +23,29 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#if !defined(WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH) &&                             \
+    defined(WEBVIEW_PLATFORM_WINDOWS)
+#define WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH
 
-#include "api.h"
+#include "../../native_library.hh"
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
-#endif
 
-#endif // WEBVIEW_H
+#include <windows.h>
+
+namespace webview {
+namespace detail {
+namespace ntdll_symbols {
+
+using RtlGetVersion_t =
+    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
+
+constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
+
+} // namespace ntdll_symbols
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH

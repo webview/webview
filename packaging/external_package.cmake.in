@@ -1,6 +1,10 @@
 set(WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME "@WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME@")
 set(WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME "@WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME@")
-set(WEBVIEW_BUILD_DOCS "@WEBVIEW_BUILD_DOCS@")
+set(WEBVIEW_PACKAGE_AMALGAMATION "@WEBVIEW_PACKAGE_AMALGAMATION@")
+set(WEBVIEW_PACKAGE_DEV "@WEBVIEW_PACKAGE_DEV@")
+set(WEBVIEW_PACKAGE_DOCS "@WEBVIEW_PACKAGE_DOCS@")
+set(WEBVIEW_PACKAGE_HEADERS "@WEBVIEW_PACKAGE_HEADERS@")
+set(WEBVIEW_PACKAGE_LIB "@WEBVIEW_PACKAGE_LIB@")
 set(CMAKE_INSTALL_DOCDIR "@CMAKE_INSTALL_DOCDIR@")
 
 function(create_archive_for_components)
@@ -80,31 +84,45 @@ function(create_archive_for_components)
     file(REMOVE "${ARCHIVE}.sha256.in")
 endfunction()
 
-if(WEBVIEW_BUILD_DOCS)
+if(WEBVIEW_PACKAGE_DOCS)
     # API documentation archive
     create_archive_for_components(
         ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-apidoc.tar.gz"
         COMPONENT NAME webview_api_docs SUBDIR "${CMAKE_INSTALL_DOCDIR}")
 endif()
 
-# Header archive
-create_archive_for_components(
-    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-headers.tar.gz"
-    COMPONENT NAME webview_headers SUBDIR .)
+if(WEBVIEW_PACKAGE_HEADERS)
+    # Header archive
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-headers.tar.gz"
+        COMPONENT NAME webview_headers SUBDIR .)
+endif()
 
-# Per-system/architecture development archive
-if(WEBVIEW_BUILD_DOCS)
+if(WEBVIEW_PACKAGE_DOCS)
+    # Per-system/architecture development archive
     set(DEV_PACKAGE_API_DOCS_ARGS COMPONENT NAME webview_api_docs SUBDIR .)
 endif()
 
-create_archive_for_components(
-    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
-    ${DEV_PACKAGE_API_DOCS_ARGS}
-    COMPONENT NAME webview_cmake SUBDIR .
-    COMPONENT NAME webview_headers SUBDIR .
-    COMPONENT NAME webview_libraries SUBDIR .)
+if(WEBVIEW_PACKAGE_DEV)
+    # Development files
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
+        ${DEV_PACKAGE_API_DOCS_ARGS}
+        COMPONENT NAME webview_cmake SUBDIR .
+        COMPONENT NAME webview_headers SUBDIR .
+        COMPONENT NAME webview_libraries SUBDIR .)
+endif()
 
-# Release library runtime
-create_archive_for_components(
-    ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-lib.tar.gz"
-    COMPONENT NAME webview_libraries_runtime_release SUBDIR .)
+if(WEBVIEW_PACKAGE_LIB)
+    # Release library runtime
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-lib.tar.gz"
+        COMPONENT NAME webview_libraries_runtime_release SUBDIR .)
+endif()
+
+if(WEBVIEW_PACKAGE_AMALGAMATION)
+    # Amalgamated library
+    create_archive_for_components(
+        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME}-amalgamation.tar.gz"
+        COMPONENT NAME webview_amalgamation SUBDIR .)
+endif()

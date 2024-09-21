@@ -23,15 +23,20 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#if !defined(WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH) &&                             \
+    defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
 
-#include "api.h"
+#include <objc/NSObjCRuntime.h>
 
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
-#include "c_api_impl.hh"
-#endif
-#endif
+namespace webview {
+namespace detail {
 
-#endif // WEBVIEW_H
+enum WKUserScriptInjectionTime : NSInteger {
+  WKUserScriptInjectionTimeAtDocumentStart = 0
+};
+
+} // namespace detail
+} // namespace webview
+
+#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH

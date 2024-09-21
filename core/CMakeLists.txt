@@ -55,3 +55,31 @@ endif()
 if(WEBVIEW_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+if(WEBVIEW_BUILD_AMALGAMATION)
+    webview_find_clang_format(REQUIRED)
+    find_package(Python3 REQUIRED)
+
+    file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS include/**)
+    set(AMALGAMATION_STAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h.stamp")
+
+    add_custom_command(
+        OUTPUT "${AMALGAMATION_STAMP_FILE}"
+        COMMAND "${CMAKE_COMMAND}" -E touch "${AMALGAMATION_STAMP_FILE}"
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
+            --base "${CMAKE_CURRENT_SOURCE_DIR}/include/webview"
+            --clang-format-exe "${WEBVIEW_CLANG_FORMAT_EXE}"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
+        DEPENDS ${HEADER_FILES}
+        COMMENT "Building amalgamation..."
+        VERBATIM)
+
+    add_custom_target(webview_amalgamate ALL
+        DEPENDS "${AMALGAMATION_STAMP_FILE}")
+
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
+        DESTINATION .
+        COMPONENT webview_amalgamation)
+endif()
