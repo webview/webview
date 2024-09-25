@@ -130,11 +130,15 @@ public:
           objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, nullptr);
           objc::msg_send<void>(ui_delegate, "release"_sel);
         }
-        if (m_webview == objc::msg_send<id>(m_window, "contentView"_sel)) {
-          objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
-        }
         objc::msg_send<void>(m_webview, "release"_sel);
         m_webview = nullptr;
+      }
+      if (m_widget) {
+        if (m_widget == objc::msg_send<id>(m_window, "contentView"_sel)) {
+          objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
+        }
+        objc::msg_send<void>(m_widget, "release"_sel);
+        m_widget = nullptr;
       }
       if (m_owns_window) {
         // Replace delegate to avoid callbacks and other bad things during
@@ -173,8 +177,8 @@ protected:
   }
 
   result<void *> widget_impl() override {
-    if (m_webview) {
-      return m_webview;
+    if (m_widget) {
+      return m_widget;
     }
     return error_info{WEBVIEW_ERROR_INVALID_STATE};
   }
@@ -485,6 +489,7 @@ private:
   }
   void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
+    m_widget = nullptr;
     m_webview = nullptr;
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
@@ -509,8 +514,9 @@ private:
     }
 
     set_up_web_view();
+    set_up_widget();
 
-    objc::msg_send<void>(m_window, "setContentView:"_sel, m_webview);
+    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
 
     if (m_owns_window) {
       objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
@@ -554,6 +560,12 @@ private:
     auto ui_delegate = create_webkit_ui_delegate();
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
                          CGRectMake(0, 0, 0, 0), config);
+    // Autoresizing mask is needed to prevent the Web Inspector pane from
+    // pushing the main web view out of bounds
+    auto autoresizing_mask = NSViewWidthSizable | NSViewMaxXMargin |
+                             NSViewHeightSizable | NSViewMaxYMargin;
+    objc::msg_send<void>(m_webview, "setAutoresizingMask:"_sel,
+                         autoresizing_mask);
     objc_setAssociatedObject(ui_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
@@ -588,6 +600,18 @@ private:
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
+  }
+  void set_up_widget() {
+    objc::autoreleasepool arp;
+    // Create a new view that can contain both the web view and the Web Inspector pane
+    m_widget = objc::msg_send<id>("NSView"_cls, "alloc"_sel);
+    objc::msg_send<void>(m_widget, "initWithFrame:"_sel,
+                         CGRectMake(0, 0, 0, 0));
+    // Autoresizing is needed because the Web Inspector pane is a sibling of the web view
+    objc::msg_send<void>(m_widget, "setAutoresizesSubviews:"_sel, YES);
+    objc::msg_send<void>(m_widget, "addSubview:"_sel, m_webview);
+    objc::msg_send<void>(m_webview, "setFrame:"_sel,
+                         objc::msg_send_stret<CGRect>(m_widget, "bounds"_sel));
   }
   void stop_run_loop() {
     objc::autoreleasepool arp;
@@ -638,6 +662,7 @@ private:
   id m_app_delegate{};
   id m_window_delegate{};
   id m_window{};
+  id m_widget{};
   id m_webview{};
   id m_manager{};
   bool m_owns_window{};
