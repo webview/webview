@@ -237,7 +237,7 @@ protected:
       if (result !== undefined) {\n\
         try {\n\
           result = JSON.parse(result);\n\
-        } catch {\n\
+        } catch (e) {\n\
           promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
           return;\n\
         }\n\
