@@ -248,7 +248,7 @@ protected:
       }\n\
     };\n\
     Webview_.prototype.onBind = function(name) {\n\
-      if (Object.hasOwn(window, name)) {\n\
+      if (window.hasOwnProperty(name)) {\n\
         throw new Error('Property \"' + name + '\" already exists');\n\
       }\n\
       window[name] = (function() {\n\
@@ -257,7 +257,7 @@ protected:
       }).bind(this);\n\
     };\n\
     Webview_.prototype.onUnbind = function(name) {\n\
-      if (!Object.hasOwn(window, name)) {\n\
+      if (!window.hasOwnProperty(name)) {\n\
         throw new Error('Property \"' + name + '\" does not exist');\n\
       }\n\
       delete window[name];\n\
