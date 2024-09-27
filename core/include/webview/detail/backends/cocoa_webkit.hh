@@ -547,15 +547,25 @@ private:
     objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
                        "fullScreenEnabled"_str);
 
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
-    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                       "javaScriptCanAccessClipboard"_str);
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_available)
+    if (__builtin_available(macOS 10.13, *)) {
+      // Equivalent Obj-C:
+      // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
+      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                         "javaScriptCanAccessClipboard"_str);
 
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
-    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                       "DOMPasteAllowed"_str);
+      // Equivalent Obj-C:
+      // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
+      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
+                         "DOMPasteAllowed"_str);
+    }
+#else
+#error __builtin_available not supported by compiler
+#endif
+#else
+#error __has_builtin not supported by compiler
+#endif
 
     auto ui_delegate = create_webkit_ui_delegate();
     objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
