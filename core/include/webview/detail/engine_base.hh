@@ -208,7 +208,8 @@ protected:
     var bytes = new Uint8Array(16);\n\
     crypto.getRandomValues(bytes);\n\
     return Array.prototype.slice.call(bytes).map(function(n) {\n\
-      return n.toString(16).padStart(2, '0');\n\
+      var s = n.toString(16);\n\
+      return ((s.length % 2) == 1 ? '0' : '') + s;\n\
     }).join('');\n\
   }\n\
   var Webview = (function() {\n\
