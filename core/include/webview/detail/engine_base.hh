@@ -208,7 +208,8 @@ protected:
     var bytes = new Uint8Array(16);\n\
     crypto.getRandomValues(bytes);\n\
     return Array.prototype.slice.call(bytes).map(function(n) {\n\
-      return n.toString(16).padStart(2, '0');\n\
+      var s = n.toString(16);\n\
+      return ((s.length % 2) == 1 ? '0' : '') + s;\n\
     }).join('');\n\
   }\n\
   var Webview = (function() {\n\
@@ -236,7 +237,7 @@ protected:
       if (result !== undefined) {\n\
         try {\n\
           result = JSON.parse(result);\n\
-        } catch {\n\
+        } catch (e) {\n\
           promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
           return;\n\
         }\n\
@@ -248,7 +249,7 @@ protected:
       }\n\
     };\n\
     Webview_.prototype.onBind = function(name) {\n\
-      if (Object.hasOwn(window, name)) {\n\
+      if (window.hasOwnProperty(name)) {\n\
         throw new Error('Property \"' + name + '\" already exists');\n\
       }\n\
       window[name] = (function() {\n\
@@ -257,7 +258,7 @@ protected:
       }).bind(this);\n\
     };\n\
     Webview_.prototype.onUnbind = function(name) {\n\
-      if (!Object.hasOwn(window, name)) {\n\
+      if (!window.hasOwnProperty(name)) {\n\
         throw new Error('Property \"' + name + '\" does not exist');\n\
       }\n\
       delete window[name];\n\
