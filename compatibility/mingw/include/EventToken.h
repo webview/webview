@@ -9,7 +9,13 @@
 // matters when cross-compiling on a system with case-sensitive file names.
 
 #ifndef __eventtoken_h__
+
+#ifdef __cplusplus
 #include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
 typedef struct EventRegistrationToken {
   int64_t value;
 } EventRegistrationToken;
