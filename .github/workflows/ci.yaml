@@ -43,7 +43,7 @@ jobs:
     strategy:
       matrix:
         image:
-          #- macos-14
+          - macos-14
           - ubuntu-22.04
           #- windows-2022
         python-version:
@@ -52,8 +52,8 @@ jobs:
           - "3.11"
           - "3.12"
         include:
-          #- image: macos-14
-          #  clang-format-exe: clang-format
+          - image: macos-14
+            clang-format-exe: clang-format
           - image: ubuntu-22.04
             clang-format-exe: clang-format-15
           #- image: windows-2022
@@ -62,6 +62,8 @@ jobs:
       - uses: actions/checkout@v4
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y clang-format-15
+      - if: runner.os == 'macOS'
+        run: brew install clang-format
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
