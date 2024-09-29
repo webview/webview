@@ -389,6 +389,8 @@ This project uses the CMake build system.
 
 In addition to the dependencies mentioned earlier in this document for developing *with* the webview library, the following are used during development *of* the webview library.
 
+* Amalgamation:
+  * Python >= 3.9
 * Checks:
   * `clang-format`
   * `clang-tidy`
