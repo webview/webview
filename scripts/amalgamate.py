@@ -6,7 +6,7 @@ import pathlib
 import re
 import shutil
 import subprocess
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 from typing import List, MutableMapping, MutableSet, Sequence
 
 
@@ -142,15 +142,18 @@ def reformat_file(file: os.PathLike, clang_format_exe: os.PathLike):
 
 def main(options):
     base_dir = os.getcwd() if options.base is None else options.base
+    output_path = os.path.realpath(options.output)
     # Use a suffix that clang-format recognizes as C++
-    with NamedTemporaryFile(
-        "r", encoding="utf-8", suffix=".hh", delete=False
-    ) as temp_file:
-        amalgamate(base_dir, options.input, temp_file.name)
-        reformat_file(temp_file.name, clang_format_exe=options.clang_format_exe)
-        print("Saving output file: {}".format(options.output))
-        os.makedirs(os.path.dirname(options.output), exist_ok=True)
-        shutil.move(temp_file.name, options.output)
+    with TemporaryDirectory() as temp_dir:
+        try:
+            amalgamated_path = os.path.join(temp_dir, "amalgamated.hh")
+            amalgamate(base_dir, options.input, amalgamated_path)
+            reformat_file(amalgamated_path, clang_format_exe=options.clang_format_exe)
+            print("Saving output file: {}".format(output_path))
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            shutil.move(amalgamated_path, output_path)
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 def parse_args():
