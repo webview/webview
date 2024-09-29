@@ -45,7 +45,7 @@ jobs:
         image:
           - macos-14
           - ubuntu-22.04
-          #- windows-2022
+          - windows-2022
         python-version:
           - "3.9"
           - "3.10"
@@ -56,8 +56,8 @@ jobs:
             clang-format-exe: clang-format
           - image: ubuntu-22.04
             clang-format-exe: clang-format-15
-          #- image: windows-2022
-          #  clang-format-exe: clang-format
+          - image: windows-2022
+            clang-format-exe: clang-format
     steps:
       - uses: actions/checkout@v4
       - if: runner.os == 'Linux'
