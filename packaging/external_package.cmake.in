@@ -71,17 +71,6 @@ function(create_archive_for_components)
     file(GLOB_RECURSE TEMP_FILES RELATIVE "${TEMP_DIR}" "${TEMP_DIR}/**")
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar cz "${ARCHIVE}" ${TEMP_FILES}
         WORKING_DIRECTORY "${TEMP_DIR}")
-
-    # Hash archive
-    # CPack's built-in checksum feature (CPACK_PACKAGE_CHECKSUM) produces checksum files with CRLF
-    # on Windows, but the CR causes verification using "sha256sum -c ..." to fail on Unix-like systems.
-    # Since file(WRITE) always uses platform-specific line-endings, we use configure_file() to rewrite
-    # the file with Unix-style line endings.
-    get_filename_component(ARCHIVE_FILE_NAME "${ARCHIVE}" NAME)
-    file(SHA256 "${ARCHIVE}" ARCHIVE_SHA256_DIGEST)
-    file(WRITE "${ARCHIVE}.sha256.in" "${ARCHIVE_SHA256_DIGEST} ${ARCHIVE_FILE_NAME}\n")
-    configure_file("${ARCHIVE}.sha256.in" "${ARCHIVE}.sha256" NEWLINE_STYLE LF)
-    file(REMOVE "${ARCHIVE}.sha256.in")
 endfunction()
 
 if(WEBVIEW_PACKAGE_DOCS)
