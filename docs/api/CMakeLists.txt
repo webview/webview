@@ -1,4 +1,9 @@
-find_package(Doxygen REQUIRED dot)
+webview_find_doxygen(${WEBVIEW_IS_CI})
+
+if(NOT Doxygen_FOUND)
+    message(WARNING "Skipping docs as Doxygen was not found")
+    return()
+endif()
 
 # We can set this to "-$<CONFIG>" if we need per-config documentation
 set(CONFIG_SUFFIX "")
