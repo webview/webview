@@ -1,4 +1,4 @@
-name: CI / Check
+name: Check
 on:
   workflow_call:
 jobs:
@@ -10,3 +10,39 @@ jobs:
       - run: sudo apt-get install --no-install-recommends -y clang-format-15
       - run: cmake -B build -S . -D WEBVIEW_BUILD=OFF -D WEBVIEW_CLANG_FORMAT_EXE=clang-format-15
       - run: cmake --build build --target webview_format_check
+
+  amalgamate:
+    runs-on: ${{ matrix.image }}
+    strategy:
+      matrix:
+        image:
+          - macos-14
+          - ubuntu-22.04
+          - windows-2022
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+        include:
+          - image: macos-14
+            clang-format-exe: clang-format
+          - image: ubuntu-22.04
+            clang-format-exe: clang-format-15
+          - image: windows-2022
+            clang-format-exe: clang-format
+    steps:
+      - uses: actions/checkout@v4
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y clang-format-15
+      - if: runner.os == 'macOS'
+        run: brew install clang-format
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: |
+          python3 scripts/amalgamate.py \
+            "--clang-format-exe=${{ matrix.clang-format-exe }}" \
+            --base core/include/webview \
+            --output webviev_amalgamation.h webview.h
+        shell: bash

@@ -1,0 +1,58 @@
+name: Set up signing
+description: Set up GPG and Git for signing
+inputs:
+  git-user-email:
+    description: Git user e-mail address
+    required: true
+  git-user-name:
+    description: Git user name
+    required: true
+  pgp-key-id:
+    description: PGP key ID
+    required: true
+  pgp-key-passphrase:
+    description: PGP key passphrase
+    required: true
+  pgp-private-key:
+    description: PGP private key
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: "PGP: Import private key"
+      env:
+        PGP_PRIVATE_KEY: ${{ inputs.pgp-private-key }}
+      run: |
+        gpg --batch --pinentry-mode loopback --import <<EOF
+        ${PGP_PRIVATE_KEY}
+        EOF
+      shell: bash
+
+    - name: "PGP: Set key owner trust"
+      env:
+        PGP_KEY_ID: ${{ inputs.pgp-key-id }}
+      run: |
+        ultimate_trust=5
+        gpg --batch --pinentry-mode loopback --command-fd 0 --edit-key "${PGP_KEY_ID}" trust <<< "${ultimate_trust}"$'\n'y$'\n'
+      shell: bash
+
+    - name: "PGP: Remove passphrase"
+      env:
+        PGP_KEY_ID: ${{ inputs.pgp-key-id }}
+        PGP_KEY_PASSPHRASE: ${{ inputs.pgp-key-passphrase }}
+      run: |
+        gpg --batch --pinentry-mode loopback --command-fd 0 --passwd "${PGP_KEY_ID}" <<< "${PGP_KEY_PASSPHRASE}"$'\n'$'\n'$'\n'
+      shell: bash
+
+    - name: "Git: Configure for signing"
+      env:
+        GIT_USER_EMAIL: ${{ inputs.git-user-email }}
+        GIT_USER_NAME: ${{ inputs.git-user-name }}
+        PGP_KEY_ID: ${{ inputs.pgp-key-id }}
+      run: |
+        git config --global user.email "${GIT_USER_EMAIL}"
+        git config --global user.name "${GIT_USER_NAME}"
+        git config --global user.signingkey "${PGP_KEY_ID}"
+        git config --global commit.gpgSign true
+        git config --global tag.gpgSign true
+      shell: bash

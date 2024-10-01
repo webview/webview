@@ -1,0 +1,28 @@
+name: Delete deployments
+description: Deletes inactive deployments associated with the current git commit
+runs:
+  using: composite
+  steps:
+    - name: Delete inactive deployments
+      uses: actions/github-script@v7
+      with:
+        # https://github.com/actions/runner/issues/2120#issuecomment-1336193335
+        script: |
+          const { sha } = context;
+          const { owner, repo } = context.repo;
+          const deployments = await github.rest.repos.listDeployments({ owner, repo, sha });
+          await Promise.all(
+            deployments.data.map(async (deployment) => {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: "inactive"
+              });
+              return github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id
+              });
+            })
+          );

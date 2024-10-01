@@ -1,80 +1,45 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '*'
+      - '!release/*'
+    paths-ignore:
+      - '*.md'
+  pull_request:
 defaults:
   run:
     shell: bash
 jobs:
-  check:
-    uses: ./.github/workflows/check.yaml
-
-  vars:
+  init:
     runs-on: ubuntu-22.04
     outputs:
       gcovr-version: ${{ steps.vars.outputs.gcovr-version }}
-      is-release-tag: ${{ steps.vars.outputs.is-release-tag }}
     steps:
       - id: vars
         run: |
           echo "gcovr-version=7.2" >> "${GITHUB_OUTPUT}"
-          echo "is-release-tag=$([[ "${GITHUB_REF_NAME}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
-        shell: bash
+
+  check:
+    uses: ./.github/workflows/check.yaml
 
   build:
     needs:
       - check
-      - vars
+      - init
     uses: ./.github/workflows/build.yaml
     with:
-      gcovr-version: ${{ needs.vars.outputs.gcovr-version }}
+      gcovr-version: ${{ needs.init.outputs.gcovr-version }}
 
   build-pr:
     if: github.event_name == 'pull_request'
     needs:
       - check
-      - vars
+      - init
     uses: ./.github/workflows/build.yaml
     with:
-      gcovr-version: ${{ needs.vars.outputs.gcovr-version }}
+      gcovr-version: ${{ needs.init.outputs.gcovr-version }}
       pr: true
-
-  amalgamate:
-    needs:
-      - check
-      - vars
-    runs-on: ${{ matrix.image }}
-    strategy:
-      matrix:
-        image:
-          - macos-14
-          - ubuntu-22.04
-          - windows-2022
-        python-version:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-        include:
-          - image: macos-14
-            clang-format-exe: clang-format
-          - image: ubuntu-22.04
-            clang-format-exe: clang-format-15
-          - image: windows-2022
-            clang-format-exe: clang-format
-    steps:
-      - uses: actions/checkout@v4
-      - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y clang-format-15
-      - if: runner.os == 'macOS'
-        run: brew install clang-format
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: |
-          python3 scripts/amalgamate.py \
-            "--clang-format-exe=${{ matrix.clang-format-exe }}" \
-            --base core/include/webview \
-            --output webviev_amalgamation.h webview.h
-        shell: bash
 
   merge-package-artifacts:
     needs: build
@@ -91,7 +56,7 @@ jobs:
   generate-coverage-report:
     needs:
       - build
-      - vars
+      - init
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -106,7 +71,7 @@ jobs:
           python3-pip
 
       - name: Install gcovr
-        run: pip install "gcovr==${{ needs.vars.outputs.gcovr-version }}"
+        run: pip install "gcovr==${{ needs.init.outputs.gcovr-version }}"
 
       - name: Merge test coverage artifacts
         uses: actions/upload-artifact/merge@v4
@@ -184,31 +149,3 @@ jobs:
                 ])
               ])
               .write();
-
-  gh-release:
-    if: github.event_name == 'push' && github.ref_type == 'tag' && fromJson(needs.vars.outputs.is-release-tag)
-    needs:
-      - generate-coverage-report
-      - merge-package-artifacts
-      - vars
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download package artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: package
-          path: package
-
-      - name: List artifacts
-        run: find package/ || exit 1
-
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create --verify-tag --draft "${GITHUB_REF_NAME}" package/* || exit 1
-        shell: bash
