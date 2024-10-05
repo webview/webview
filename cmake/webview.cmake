@@ -1,8 +1,3 @@
-# Avoid warning related to FetchContent and DOWNLOAD_EXTRACT_TIMESTAMP
-if(POLICY CMP0135)
-    cmake_policy(SET CMP0135 NEW)
-endif()
-
 macro(webview_options)
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.1150.38" CACHE STRING "MS WebView2 version")
@@ -79,6 +74,11 @@ macro(webview_find_dependencies)
 endmacro()
 
 function(webview_fetch_mswebview2 VERSION)
+    cmake_policy(PUSH)
+    # Avoid warning related to FetchContent and DOWNLOAD_EXTRACT_TIMESTAMP
+    if(POLICY CMP0135)
+        cmake_policy(SET CMP0135 NEW)
+    endif()
     if(NOT COMMAND FetchContent_Declare)
         include(FetchContent)
     endif()
@@ -89,4 +89,5 @@ function(webview_fetch_mswebview2 VERSION)
     FetchContent_MakeAvailable(${FC_NAME})
     set(MSWebView2_ROOT "${${FC_NAME}_SOURCE_DIR}")
     set(MSWebView2_ROOT "${MSWebView2_ROOT}" PARENT_SCOPE)
+    cmake_policy(POP)
 endfunction()
