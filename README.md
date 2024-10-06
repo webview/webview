@@ -291,10 +291,9 @@ Option                            | Description
 `WEBVIEW_INSTALL_TARGETS`         | Install targets
 `WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable
 `WEBVIEW_PACKAGE_AMALGAMATION`    | Package amalgamated library
-`WEBVIEW_PACKAGE_DEV`             | Package development library
 `WEBVIEW_PACKAGE_DOCS`            | Package documentation
 `WEBVIEW_PACKAGE_HEADERS`         | Package headers
-`WEBVIEW_PACKAGE_LIB`             | Package release library
+`WEBVIEW_PACKAGE_LIB`             | Package compiled libraries
 `WEBVIEW_STRICT_CHECKS`           | Make checks strict
 `WEBVIEW_STRICT_CLANG_FORMAT`     | Make clang-format check strict
 `WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict

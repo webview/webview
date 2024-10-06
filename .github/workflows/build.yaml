@@ -94,7 +94,6 @@ jobs:
               // Packaging
               option("WEBVIEW_ENABLE_PACKAGING", matrix["package"]),
               option("WEBVIEW_PACKAGE_AMALGAMATION", matrix["package-amalgamation"]),
-              option("WEBVIEW_PACKAGE_DEV", matrix["package-dev"]),
               option("WEBVIEW_PACKAGE_DOCS", matrix["package-docs"]),
               option("WEBVIEW_PACKAGE_HEADERS", matrix["package-headers"]),
               option("WEBVIEW_PACKAGE_LIB", matrix["package-lib"]),
