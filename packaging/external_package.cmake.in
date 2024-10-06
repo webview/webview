@@ -98,7 +98,6 @@ if(WEBVIEW_PACKAGE_DEV)
         ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
         ${DEV_PACKAGE_API_DOCS_ARGS}
         COMPONENT NAME webview_cmake SUBDIR .
-        COMPONENT NAME webview_headers SUBDIR .
         COMPONENT NAME webview_libraries SUBDIR .)
 endif()
 
