@@ -141,21 +141,6 @@ jobs:
           RELEASE_TAG: ${{ needs.init.outputs.release-tag }}
         run: gh release edit --verify-tag --draft=false "${RELEASE_TAG}"
 
-  cleanup-branch:
-    if: success() && startsWith(github.ref_name, 'release/')
-    needs:
-      - publish-release
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    environment:
-      name: production
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
-
       - name: Delete release branch
         env:
           REF: ${{ github.ref_name }}
