@@ -14,8 +14,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       gcovr-version: ${{ steps.vars.outputs.gcovr-version }}
-      release-tag: ${{ steps.vars.outputs.release-version }}
-      release-version: ${{ steps.vars.outputs.release-version }}
+      release-tag: ${{ steps.vars.outputs.release-tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +24,6 @@ jobs:
           version="$(cmake -P cmake/extract_version.cmake)"
           echo "gcovr-version=7.2" >> "${GITHUB_OUTPUT}"
           echo "release-tag=${version}" >> "${GITHUB_OUTPUT}"
-          echo "release-version=${version}" >> "${GITHUB_OUTPUT}"
 
   check:
     uses: ./.github/workflows/check.yaml
@@ -39,10 +37,30 @@ jobs:
       coverage: false
       gcovr-version: ${{ needs.init.outputs.gcovr-version }}
 
-  merge-package-artifacts:
+  process-artifacts:
     needs: build
     runs-on: ubuntu-22.04
     steps:
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: package_*
+          path: dist
+          merge-multiple: true
+
+      - name: Create checksum file
+        run: sha256sum * > SHA256SUMS
+        working-directory: dist
+        shell: bash
+
+      - name: Upload checksum artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package_checksum
+          path: dist/*SUMS
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Merge package artifacts
         uses: actions/upload-artifact/merge@v4
         with:
@@ -53,13 +71,11 @@ jobs:
 
   create-github-release-draft:
     needs:
-      - merge-package-artifacts
+      - process-artifacts
       - init
     runs-on: ubuntu-22.04
     permissions:
       contents: write
-    environment:
-      name: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,92 +86,11 @@ jobs:
           name: package
           path: dist
 
-      - name: Set up signing
-        uses: ./.github/actions/setup-sign
-        with:
-          pgp-key-id: ${{ vars.PGP_KEY_ID }}
-          pgp-key-passphrase: ${{ secrets.PGP_KEY_PASSPHRASE }}
-          pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
-          git-user-email: ${{ vars.GIT_USER_EMAIL }}
-          git-user-name: ${{ vars.GIT_USER_NAME }}
-
-      - name: Sign artifacts
-        uses: ./.github/actions/sign-artifacts
-        with:
-          directory: dist
-
       - name: List artifacts
         run: find dist/
-
-      - name: Upload signature artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: package_signatures
-          path: |
-            dist/*.asc
-            dist/*SUMS
-          retention-days: 1
-          if-no-files-found: error
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.init.outputs.release-tag }}
         run: gh release create --draft "${RELEASE_TAG}" dist/*
-
-  publish-release:
-    needs:
-      - create-github-release-draft
-      - init
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    environment:
-      name: production
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
-
-      - name: Set up signing
-        uses: ./.github/actions/setup-sign
-        with:
-          pgp-key-id: ${{ vars.PGP_KEY_ID }}
-          pgp-key-passphrase: ${{ secrets.PGP_KEY_PASSPHRASE }}
-          pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
-          git-user-email: ${{ vars.GIT_USER_EMAIL }}
-          git-user-name: ${{ vars.GIT_USER_NAME }}
-
-      - name: Tag release
-        env:
-          RELEASE_VERSION: ${{ needs.init.outputs.release-version }}
-          RELEASE_TAG: ${{ needs.init.outputs.release-tag }}
-        run: |
-          git tag --sign --message "Release ${RELEASE_VERSION}" "${RELEASE_TAG}"
-          git push origin "${RELEASE_TAG}"
-
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.init.outputs.release-tag }}
-        run: gh release edit --verify-tag --draft=false "${RELEASE_TAG}"
-
-      - name: Delete release branch
-        env:
-          REF: ${{ github.ref_name }}
-        run: git push origin ":${REF}"
-
-  cleanup-deployments:
-    if: always()
-    needs:
-      - publish-release
-    runs-on: ubuntu-22.04
-    permissions:
-      deployments: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Delete deployments
-        uses: ./.github/actions/delete-deployments
