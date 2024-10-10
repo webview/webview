@@ -87,6 +87,10 @@ jobs:
       - name: List artifacts
         run: find dist/
 
+      - name: Verify checksums
+        run: sha256sum --check SHA256SUMS
+        working-directory: dist
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
