@@ -1,4 +1,4 @@
-name: Release
+name: Draft Release
 on:
   workflow_dispatch:
 defaults:
