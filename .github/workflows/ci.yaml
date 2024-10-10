@@ -1,12 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - '*'
-      - '!release/*'
-    paths-ignore:
-      - '*.md'
-  pull_request:
+on: [push, pull_request]
 defaults:
   run:
     shell: bash

@@ -440,23 +440,6 @@ cmake -G "Ninja Multi-Config" -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolch
 cmake --build build --config CONFIG
 ```
 
-### Releasing
-
-This process should be partially automated with GitHub Actions.
-
-1. Verify that the next version of the project is set correctly (`WEBVIEW_VERSION_{MAJOR,MINOR,PATCH,...}`).
-2. Create and push a branch that points to the commit to create a release from, e.g. `release/x.y.z`.
-3. Verify that the commit being built is correct.
-4. When the GitHub Actions workflow completes successfully, download the artifacts that should be released.
-5. Verify checksums (`*SUMS` files).
-6. Create a PGP signature for each of the `*SUMS` files, e.g. `gpg --detach-sign --armor SHA256SUMS`.
-7. Edit the automatically created GitHub release draft and upload each `*SUMS.asc` file as an asset.
-8. Verify that the tag name in the release draft is correct.
-9. Create and push a signed tag whose name matches the tag name in the release draft, with tag message `Release x.y.z`.
-10. Publish the GitHub release.
-11. Delete the release branch.
-12. Bump the version number of the project via a pull request.
-
 ## Limitations
 
 ### Browser Features

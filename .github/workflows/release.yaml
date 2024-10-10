@@ -1,8 +1,6 @@
 name: Release
 on:
-  push:
-    branches:
-      - 'release/*'
+  workflow_dispatch:
 defaults:
   run:
     shell: bash
