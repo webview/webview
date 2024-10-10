@@ -39,12 +39,19 @@ jobs:
     needs: build
     runs-on: ubuntu-22.04
     steps:
+      - name: Merge package artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: package
+          pattern: package_*
+          delete-merged: true
+          retention-days: 1
+
       - name: Download package artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: package_*
+          name: package
           path: dist
-          merge-multiple: true
 
       - name: Create checksum file
         run: sha256sum * > SHA256SUMS
@@ -59,14 +66,6 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Merge package artifacts
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: package
-          pattern: package_*
-          delete-merged: true
-          retention-days: 1
-
   create-github-release-draft:
     needs:
       - process-artifacts
@@ -78,11 +77,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download package artifacts
         uses: actions/download-artifact@v4
         with:
-          name: package
+          pattern: package*
           path: dist
+          merge-multiple: true
 
       - name: List artifacts
         run: find dist/
