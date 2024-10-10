@@ -1,7 +1,6 @@
 set(WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME "@WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME@")
 set(WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME "@WEBVIEW_ARCHIVE_UNIVERSAL_FILE_NAME@")
 set(WEBVIEW_PACKAGE_AMALGAMATION "@WEBVIEW_PACKAGE_AMALGAMATION@")
-set(WEBVIEW_PACKAGE_DEV "@WEBVIEW_PACKAGE_DEV@")
 set(WEBVIEW_PACKAGE_DOCS "@WEBVIEW_PACKAGE_DOCS@")
 set(WEBVIEW_PACKAGE_HEADERS "@WEBVIEW_PACKAGE_HEADERS@")
 set(WEBVIEW_PACKAGE_LIB "@WEBVIEW_PACKAGE_LIB@")
@@ -71,17 +70,6 @@ function(create_archive_for_components)
     file(GLOB_RECURSE TEMP_FILES RELATIVE "${TEMP_DIR}" "${TEMP_DIR}/**")
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar cz "${ARCHIVE}" ${TEMP_FILES}
         WORKING_DIRECTORY "${TEMP_DIR}")
-
-    # Hash archive
-    # CPack's built-in checksum feature (CPACK_PACKAGE_CHECKSUM) produces checksum files with CRLF
-    # on Windows, but the CR causes verification using "sha256sum -c ..." to fail on Unix-like systems.
-    # Since file(WRITE) always uses platform-specific line-endings, we use configure_file() to rewrite
-    # the file with Unix-style line endings.
-    get_filename_component(ARCHIVE_FILE_NAME "${ARCHIVE}" NAME)
-    file(SHA256 "${ARCHIVE}" ARCHIVE_SHA256_DIGEST)
-    file(WRITE "${ARCHIVE}.sha256.in" "${ARCHIVE_SHA256_DIGEST} ${ARCHIVE_FILE_NAME}\n")
-    configure_file("${ARCHIVE}.sha256.in" "${ARCHIVE}.sha256" NEWLINE_STYLE LF)
-    file(REMOVE "${ARCHIVE}.sha256.in")
 endfunction()
 
 if(WEBVIEW_PACKAGE_DOCS)
@@ -103,21 +91,13 @@ if(WEBVIEW_PACKAGE_DOCS)
     set(DEV_PACKAGE_API_DOCS_ARGS COMPONENT NAME webview_api_docs SUBDIR .)
 endif()
 
-if(WEBVIEW_PACKAGE_DEV)
-    # Development files
-    create_archive_for_components(
-        ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-dev.tar.gz"
-        ${DEV_PACKAGE_API_DOCS_ARGS}
-        COMPONENT NAME webview_cmake SUBDIR .
-        COMPONENT NAME webview_headers SUBDIR .
-        COMPONENT NAME webview_libraries SUBDIR .)
-endif()
-
 if(WEBVIEW_PACKAGE_LIB)
-    # Release library runtime
+    # CMake configuration and compiled libraries
     create_archive_for_components(
         ARCHIVE "${CPACK_PACKAGE_DIRECTORY}/${WEBVIEW_ARCHIVE_SYSTEM_ARCH_FILE_NAME}-lib.tar.gz"
-        COMPONENT NAME webview_libraries_runtime_release SUBDIR .)
+        ${DEV_PACKAGE_API_DOCS_ARGS}
+        COMPONENT NAME webview_cmake SUBDIR .
+        COMPONENT NAME webview_libraries SUBDIR .)
 endif()
 
 if(WEBVIEW_PACKAGE_AMALGAMATION)

@@ -1,0 +1,98 @@
+name: Draft Release
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  init:
+    runs-on: ubuntu-22.04
+    outputs:
+      gcovr-version: ${{ steps.vars.outputs.gcovr-version }}
+      release-tag: ${{ steps.vars.outputs.release-tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: vars
+        run: |
+          version="$(cmake -P cmake/extract_version.cmake)"
+          echo "gcovr-version=7.2" >> "${GITHUB_OUTPUT}"
+          echo "release-tag=${version}" >> "${GITHUB_OUTPUT}"
+
+  check:
+    uses: ./.github/workflows/check.yaml
+
+  build:
+    needs:
+      - check
+      - init
+    uses: ./.github/workflows/build.yaml
+    with:
+      coverage: false
+      gcovr-version: ${{ needs.init.outputs.gcovr-version }}
+
+  process-artifacts:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Merge package artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: package
+          pattern: package_*
+          delete-merged: true
+          retention-days: 1
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: dist
+
+      - name: Create checksum file
+        run: sha256sum * > SHA256SUMS
+        working-directory: dist
+        shell: bash
+
+      - name: Upload checksum artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package_checksum
+          path: dist/*SUMS
+          retention-days: 1
+          if-no-files-found: error
+
+  create-github-release-draft:
+    needs:
+      - process-artifacts
+      - init
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: package*
+          path: dist
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find dist/
+
+      - name: Verify checksums
+        run: sha256sum --check SHA256SUMS
+        working-directory: dist
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.init.outputs.release-tag }}
+        run: gh release create --draft "${RELEASE_TAG}" dist/*

@@ -17,7 +17,6 @@
     "osx-deployment-target": "string",
     "package": "boolean",
     "package-amalgamation": "boolean",
-    "package-dev": "boolean",
     "package-docs": "boolean",
     "package-headers": "boolean",
     "package-lib": "boolean",

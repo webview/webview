@@ -190,7 +190,6 @@ runs:
         name: package_${{ inputs.artifacts-name }}
         path: |
           ${{ inputs.build-dir }}/*.gz
-          ${{ inputs.build-dir }}/*.sha256
           ${{ inputs.build-dir }}/*.zip
         retention-days: 1
         if-no-files-found: error
