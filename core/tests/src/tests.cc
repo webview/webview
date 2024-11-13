@@ -350,12 +350,7 @@ TEST_CASE("optional class") {
   REQUIRE(optional<int>{1}.has_value());
   REQUIRE(optional<int>{1}.get() == 1);
 
-  try {
-    optional<int>{}.get();
-    REQUIRE(!!"Expected exception");
-  } catch (const bad_access &) {
-    // Do nothing
-  }
+  REQUIRE_THROW(bad_access, [] { optional<int>{}.get(); });
 
   REQUIRE(!optional<int>{optional<int>{}}.has_value());
   REQUIRE(optional<int>{optional<int>{1}}.has_value());
@@ -383,12 +378,7 @@ TEST_CASE("result class") {
   REQUIRE(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
   REQUIRE(result_with_error.error().message() == "invalid argument");
 
-  try {
-    result<int>{}.error();
-    REQUIRE(!!"Expected exception");
-  } catch (const bad_access &) {
-    // Do nothing
-  }
+  REQUIRE_THROW(bad_access, [] { result<int>{}.error(); });
 }
 
 TEST_CASE("noresult class") {
@@ -405,12 +395,7 @@ TEST_CASE("noresult class") {
   REQUIRE(result_with_error.error().code() == WEBVIEW_ERROR_INVALID_ARGUMENT);
   REQUIRE(result_with_error.error().message() == "invalid argument");
 
-  try {
-    noresult{}.error();
-    REQUIRE(!!"Expected exception");
-  } catch (const bad_access &) {
-    // Do nothing
-  }
+  REQUIRE_THROW(bad_access, [] { noresult{}.error(); });
 }
 
 #define ASSERT_WEBVIEW_FAILED(expr) REQUIRE(WEBVIEW_FAILED(expr))
