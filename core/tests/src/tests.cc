@@ -17,12 +17,12 @@ TEST_CASE("Start app loop and terminate it") {
   w.run();
 }
 
-static void cb_assert_arg(webview_t w, void *arg) {
+void cb_assert_arg(webview_t w, void *arg) {
   REQUIRE(w != nullptr);
   REQUIRE(memcmp(arg, "arg", 3) == 0);
 }
 
-static void cb_terminate(webview_t w, void *arg) {
+void cb_terminate(webview_t w, void *arg) {
   REQUIRE(arg == nullptr);
   webview_terminate(w);
 }
