@@ -683,8 +683,9 @@ protected:
     }
     // TODO: There's a non-zero chance that we didn't get the script ID.
     //       We need to convey the error somehow.
-    return user_script{js, std::unique_ptr<user_script::impl>{
-                               new user_script::impl{script_id, wjs}}};
+    return user_script{
+        js, user_script::impl_ptr{new user_script::impl{script_id, wjs},
+                                  [](user_script::impl *p) { delete p; }}};
   }
 
   void

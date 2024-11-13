@@ -265,8 +265,9 @@ protected:
         js.c_str(), WEBKIT_USER_CONTENT_INJECT_TOP_FRAME,
         WEBKIT_USER_SCRIPT_INJECT_AT_DOCUMENT_START, nullptr, nullptr);
     webkit_user_content_manager_add_script(m_user_content_manager, wk_script);
-    user_script script{js, std::unique_ptr<user_script::impl>{
-                               new user_script::impl{wk_script}}};
+    user_script script{
+        js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                  [](user_script::impl *p) { delete p; }}};
     webkit_user_script_unref(wk_script);
     return script;
   }
