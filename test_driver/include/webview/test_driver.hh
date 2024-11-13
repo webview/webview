@@ -98,6 +98,17 @@ struct auto_test_reg {
         ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
   }
 
+#define REQUIRE_THROW(exception, fn)                                           \
+  {                                                                            \
+    bool did_throw{};                                                          \
+    try {                                                                      \
+      fn();                                                                    \
+    } catch (const exception &) {                                              \
+      did_throw = true;                                                        \
+    }                                                                          \
+    REQUIRE(did_throw);                                                        \
+  }
+
 #define SECTION(name)
 
 // NOLINTEND(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
