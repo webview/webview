@@ -50,6 +50,7 @@ Checks: >
     -modernize-use-override,
     -modernize-use-trailing-return-type,
     -modernize-use-using,
+    -performance-enum-size,
     -performance-unnecessary-value-param,
     -readability-convert-member-functions-to-static,
     -readability-else-after-return,
