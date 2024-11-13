@@ -70,7 +70,7 @@ struct auto_test_reg {
   static std::map<std::string, test_reg> &tests();
 };
 
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+// NOLINTBEGIN(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
 #define MAKE_TEST_CASE_NAME2(name, counter) name##counter
 #define MAKE_TEST_CASE_NAME(name, counter) MAKE_TEST_CASE_NAME2(name, counter)
@@ -100,7 +100,7 @@ struct auto_test_reg {
 
 #define SECTION(name)
 
-// NOLINTEND(cppcoreguidelines-macro-usage)
+// NOLINTEND(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
 } // namespace webview
 
