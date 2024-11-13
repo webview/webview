@@ -41,6 +41,7 @@ Checks: >
     -hicpp-use-override,
     -hicpp-vararg,
     -misc-definitions-in-headers,
+    -misc-include-cleaner,
     -misc-non-private-member-variables-in-classes,
     -modernize-avoid-c-arrays,
     -modernize-make-unique,
