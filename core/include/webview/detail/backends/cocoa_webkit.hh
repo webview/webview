@@ -297,8 +297,9 @@ protected:
         WKUserScriptInjectionTimeAtDocumentStart, YES);
     // Script is retained when added.
     objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-    user_script script{js, std::unique_ptr<user_script::impl>{
-                               new user_script::impl{wk_script}}};
+    user_script script{
+        js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                  [](user_script::impl *p) { delete p; }}};
     objc::msg_send<void>(wk_script, "release"_sel);
     return script;
   }
