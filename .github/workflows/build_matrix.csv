@@ -17,10 +17,12 @@ package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,T
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,20,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
+package,linux,ubuntu-22.04,host,23,llvm,-15,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",Checks disabled because clang-tidy-15 segfaults
 package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,20,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
+package,linux,ubuntu-22.04,host,23,llvm,-15,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",Checks disabled because clang-tidy-15 segfaults
 package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
