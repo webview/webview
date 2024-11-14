@@ -38,6 +38,10 @@ jobs:
             const schema = require("./.github/workflows/build_matrix_schema.json");
             let include = csv.loadFile(path.join(".github", "workflows", "build_matrix.csv"), schema);
 
+            // Generate IDs that match line numbers in the CSV file, making it more
+            // convenient to work with the file and review changes made to it.
+            [...include.keys()].forEach(n => include[n].id = 2 + n);
+
             // Filters
             include = include.filter(x => JSON.parse(process.env.PR) === x["pr-only"]);
             include = include.filter(x => x["job-type"] !== "coverage" || JSON.parse(process.env.ENABLE_COVERAGE));
