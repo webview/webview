@@ -3,10 +3,12 @@ package,linux,ubuntu-22.04,host,11,gnu,-12,Ninja Multi-Config,FALSE,FALSE,TRUE,F
 package,linux,ubuntu-22.04,host,14,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,17,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,20,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,6.0,", webkitgtk6.0",
+package,linux,ubuntu-22.04,host,23,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,11,gnu,-12,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,14,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,17,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,20,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.1,", webkitgtk4.1",
+package,linux,ubuntu-22.04,host,23,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,11,gnu,-12,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,14,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,17,gnu,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-12 g++-12,,,xvfb-run,4.0,", webkitgtk4.0",
@@ -15,10 +17,12 @@ package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,T
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
 package,linux,ubuntu-22.04,host,20,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",
+package,linux,ubuntu-22.04,host,23,llvm,-15,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,6.0,", webkitgtk6.0",Checks disabled because clang-tidy-15 segfaults
 package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
 package,linux,ubuntu-22.04,host,20,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",
+package,linux,ubuntu-22.04,host,23,llvm,-15,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.1,", webkitgtk4.1",Checks disabled because clang-tidy-15 segfaults
 package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
@@ -29,6 +33,7 @@ package,macos,macos-14,universal,11,macos-llvm,,Xcode,FALSE,FALSE,TRUE,TRUE,FALS
 package,macos,macos-14,universal,14,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
 package,macos,macos-14,universal,17,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
 package,macos,macos-14,universal,20,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
+package,macos,macos-14,universal,23,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
 package,windows,ubuntu-22.04,x86_64,11,w64-mingw32,-posix,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,mingw-w64,,,,,,
 package,windows,ubuntu-22.04,x86_64,14,w64-mingw32,-posix,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,mingw-w64,,,,,,
 package,windows,ubuntu-22.04,x86_64,17,w64-mingw32,-posix,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,mingw-w64,,,,,,
@@ -41,12 +46,14 @@ package,windows,windows-2022,arm64,14,windows-msvc,,Visual Studio 17 2022,FALSE,
 package,windows,windows-2022,x86_64,14,windows-msvc,,Visual Studio 17 2022,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,bash,FALSE,,,,,,,,", md",
 package,windows,windows-2022,x86_64,17,windows-msvc,,Visual Studio 17 2022,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,FALSE,,,,,,,,", md",
 package,windows,windows-2022,x86_64,20,windows-msvc,,Visual Studio 17 2022,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,FALSE,,,,,,,,", md",
+package,windows,windows-2022,x86_64,23,windows-msvc,,Visual Studio 17 2022,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,FALSE,,,,,,,,", md",
 package,windows,windows-2022,i686,14,windows-msvc,,Visual Studio 17 2022,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,bash,FALSE,,,,,,,,", md",
 package,windows,windows-2022,x86_64,11,msys2-gnu-ucrt64,,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,UCRT64,,,,,,,", UCRT64",
 package,windows,windows-2022,x86_64,11,msys2-llvm-clang64,,Ninja Multi-Config,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,CLANG64,clang-tools-extra:p,,,,,,", CLANG64",Please enable strict clang-tidy when issues have been fixed.
 package,windows,windows-2022,x86_64,14,msys2-llvm-clang64,,Ninja Multi-Config,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,CLANG64,clang-tools-extra:p,,,,,,", CLANG64",Please enable strict clang-tidy when issues have been fixed.
 package,windows,windows-2022,x86_64,17,msys2-llvm-clang64,,Ninja Multi-Config,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,CLANG64,clang-tools-extra:p,,,,,,", CLANG64",Please enable strict clang-tidy when issues have been fixed.
 package,windows,windows-2022,x86_64,20,msys2-llvm-clang64,,Ninja Multi-Config,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,CLANG64,clang-tools-extra:p,,,,,,", CLANG64",Please enable strict clang-tidy when issues have been fixed.
+package,windows,windows-2022,x86_64,23,msys2-llvm-clang64,,Ninja Multi-Config,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,msys2 {0},,CLANG64,clang-tools-extra:p,,,,,,", CLANG64",Please enable strict clang-tidy when issues have been fixed.
 coverage,linux,ubuntu-22.04,host,11,llvm,,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,llvm-cov-15 gcov,,xvfb-run,6.0,", webkitgtk6.0",
 coverage,linux,ubuntu-22.04,host,11,llvm,,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,llvm-cov-15 gcov,,xvfb-run,4.1,", webkitgtk4.1",
 coverage,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,llvm-cov-15 gcov,,xvfb-run,4.0,", webkitgtk4.0",
