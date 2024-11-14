@@ -70,7 +70,7 @@ struct auto_test_reg {
   static std::map<std::string, test_reg> &tests();
 };
 
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+// NOLINTBEGIN(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
 #define MAKE_TEST_CASE_NAME2(name, counter) name##counter
 #define MAKE_TEST_CASE_NAME(name, counter) MAKE_TEST_CASE_NAME2(name, counter)
@@ -98,9 +98,20 @@ struct auto_test_reg {
         ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
   }
 
+#define REQUIRE_THROW(exception, fn)                                           \
+  {                                                                            \
+    bool did_throw{};                                                          \
+    try {                                                                      \
+      fn();                                                                    \
+    } catch (const exception &) {                                              \
+      did_throw = true;                                                        \
+    }                                                                          \
+    REQUIRE(did_throw);                                                        \
+  }
+
 #define SECTION(name)
 
-// NOLINTEND(cppcoreguidelines-macro-usage)
+// NOLINTEND(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
 } // namespace webview
 
