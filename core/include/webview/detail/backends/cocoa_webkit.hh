@@ -80,7 +80,7 @@ private:
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window, void *env = nullptr)
+  cocoa_wkwebview_engine(bool debug, void *window, void *env)
       : m_debug{debug},
         m_window{static_cast<id>(window)},
         m_owns_window{!window} {

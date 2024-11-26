@@ -58,7 +58,7 @@ extern "C" {
  *         May be returned if WebView2 is unavailable on Windows.
  */
 WEBVIEW_API webview_t webview_create(int debug, void *window,
-                                     void *env = nullptr);
+                                     void *env);
 
 /**
  * Destroys a webview instance and closes the native window.

@@ -29,7 +29,7 @@ void cb_terminate(webview_t w, void *arg) {
 
 TEST_CASE("Use C API to create a window, run app and terminate it") {
   webview_t w;
-  w = webview_create(false, nullptr);
+  w = webview_create(false, nullptr, nullptr);
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_title(w, "Test");
   webview_set_html(w, "set_html ok");
@@ -97,7 +97,7 @@ TEST_CASE("Use C API to test binding and unbinding") {
   auto html = "<script>\n"
               "  window.test(0);\n"
               "</script>";
-  auto w = webview_create(1, nullptr);
+  auto w = webview_create(1, nullptr, nullptr);
   context.w = w;
   // Attempting to remove non-existing binding is OK
   webview_unbind(w, "test");

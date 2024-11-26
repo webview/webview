@@ -303,7 +303,7 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window, void *envOptions = nullptr)
+  win32_edge_engine(bool debug, void *window, void *envOptions)
       : m_owns_window{!window} {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
