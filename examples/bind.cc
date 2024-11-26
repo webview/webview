@@ -47,7 +47,7 @@ int main() {
   try {
     long count = 0;
 
-    webview::webview w(true, nullptr);
+    webview::webview w(true, nullptr, nullptr);
     w.set_title("Bind Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
 
