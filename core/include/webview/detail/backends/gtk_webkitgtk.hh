@@ -91,11 +91,13 @@ public:
 private:
   WebKitUserScript *m_script{};
 };
+#define UNUSEDPARAMETERENVIRONMENT(x) (void)(x)
 
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window, void *env)
       : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
+    UNUSEDPARAMETERENVIRONMENT(env);
     if (m_owns_window) {
       if (!gtk_compat::init_check()) {
         throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
