@@ -247,7 +247,8 @@ TEST_CASE("webview_version()") {
 
 struct test_webview : webview::browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
-  test_webview(cb_t cb) : webview::browser_engine(true, nullptr, nullptr), m_cb(cb) {}
+  test_webview(cb_t cb)
+      : webview::browser_engine(true, nullptr, nullptr), m_cb(cb) {}
   void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;

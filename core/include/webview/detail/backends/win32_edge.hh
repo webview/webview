@@ -303,7 +303,8 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window, void *envOptions) : m_owns_window{!window} {
+  win32_edge_engine(bool debug, void *window, void *envOptions)
+      : m_owns_window{!window} {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -516,8 +517,9 @@ public:
 
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
-
-    embed(m_widget, debug, cb, static_cast<ICoreWebView2EnvironmentOptions *>(envOptions)).ensure_ok();
+    embed(m_widget, debug, cb,
+          static_cast<ICoreWebView2EnvironmentOptions *>(envOptions))
+        .ensure_ok();
   }
 
   virtual ~win32_edge_engine() {
@@ -704,7 +706,8 @@ protected:
   }
 
 private:
-  noresult embed(HWND wnd, bool debug, msg_cb_t cb, ICoreWebView2EnvironmentOptions *envOption) {
+  noresult embed(HWND wnd, bool debug, msg_cb_t cb,
+                 ICoreWebView2EnvironmentOptions *envOption) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
 
