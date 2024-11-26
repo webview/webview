@@ -12,7 +12,7 @@
 #include <cstdint>
 
 TEST_CASE("Start app loop and terminate it") {
-  webview::webview w(false, nullptr);
+  webview::webview w(false, nullptr, nullptr);
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
@@ -122,7 +122,7 @@ TEST_CASE("Test synchronous binding and unbinding") {
     return js;
   };
   unsigned int number = 0;
-  webview::webview w(false, nullptr);
+  webview::webview w(false, nullptr, nullptr);
   auto test = [&](const std::string &req) -> std::string {
     auto increment = [&](const std::string & /*req*/) -> std::string {
       ++number;
@@ -183,7 +183,7 @@ TEST_CASE("The string returned from a binding call must be JSON") {
   }
 </script>)html";
 
-  webview::webview w(true, nullptr);
+  webview::webview w(true, nullptr, nullptr);
 
   w.bind("loadData", [](const std::string & /*req*/) -> std::string {
     return "\"hello\"";
@@ -213,7 +213,7 @@ TEST_CASE("The string returned of a binding call must not be JS") {
   }
 </script>)html";
 
-  webview::webview w(true, nullptr);
+  webview::webview w(true, nullptr, nullptr);
 
   w.bind("loadData", [](const std::string & /*req*/) -> std::string {
     // Try to load malicious JS code
@@ -247,7 +247,7 @@ TEST_CASE("webview_version()") {
 
 struct test_webview : webview::browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
-  test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
+  test_webview(cb_t cb) : webview::browser_engine(true, nullptr, nullptr), m_cb(cb) {}
   void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;
