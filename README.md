@@ -138,7 +138,7 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   try {
-    webview::webview w(false, nullptr);
+    webview::webview w(false, nullptr, nullptr);
     w.set_title("Basic Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");
@@ -195,7 +195,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine,
 #else
 int main(void) {
 #endif
-  webview_t w = webview_create(0, NULL);
+  webview_t w = webview_create(0, NULL, NULL);
   webview_set_title(w, "Basic Example");
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_html(w, "Thanks for using webview!");
