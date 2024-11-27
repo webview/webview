@@ -113,8 +113,7 @@ public:
     webkit_dmabuf::apply_webkit_dmabuf_workaround();
     // Initialize webview widget
     if (env)
-      m_webview = webkit_web_view_new_with_context(
-                       static_cast<WebKitWebContext *>(env));
+      m_webview = webkit_web_view_new_with_context(static_cast<WebKitWebContext *>(env));
     else
       m_webview = webkit_web_view_new();
     g_object_ref_sink(m_webview);
