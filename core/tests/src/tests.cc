@@ -28,6 +28,7 @@ void cb_terminate(webview_t w, void *arg) {
 }
 
 #ifdef _WIN32
+#ifdef _MSC_VER
 #include <WebView2EnvironmentOptions.h>
 
 TEST_CASE("Start app loop with environment and terminate it") {
@@ -41,6 +42,7 @@ TEST_CASE("Start app loop with environment and terminate it") {
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
+#endif
 #endif
 
 TEST_CASE("Use C API to create a window, run app and terminate it") {
