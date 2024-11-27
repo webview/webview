@@ -32,7 +32,10 @@ void cb_terminate(webview_t w, void *arg) {
 
 TEST_CASE("Start app loop with environment and terminate it") {
   auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
-  options->put_AdditionalBrowserArguments(L"--flag-switches-begin --disable-features=ElasticOverscroll,OverscrollHistoryNavigation --flag-switches-end");
+  options->put_AdditionalBrowserArguments(
+      L"--flag-switches-begin "
+      L"--disable-features=ElasticOverscroll,OverscrollHistoryNavigation "
+      L"--flag-switches-end");
 
   webview::webview w(false, nullptr, options.Get());
   w.dispatch([&]() { w.terminate(); });
