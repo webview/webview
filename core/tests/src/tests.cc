@@ -28,21 +28,26 @@ void cb_terminate(webview_t w, void *arg) {
 }
 
 #ifdef _WIN32
+
 #ifdef _MSC_VER
 #include <WebView2EnvironmentOptions.h>
+#endif
 
-TEST_CASE("Start app loop with environment and terminate it") {
+TEST_CASE("Start app loop with edge  environment and terminate it") {
+#ifdef _MSC_VER
   auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
   options->put_AdditionalBrowserArguments(
       L"--flag-switches-begin "
       L"--disable-features=ElasticOverscroll,OverscrollHistoryNavigation "
       L"--flag-switches-end");
-
   webview::webview w(false, nullptr, options.Get());
+#else
+  webview::webview w(false, nullptr, nullptr);
+#endif
+
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
-#endif
 #endif
 
 TEST_CASE("Use C API to create a window, run app and terminate it") {
