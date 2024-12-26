@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.i": "swig"
+  },
+  "cSpell.words": ["libwebview", "napi"],
+  "editor.formatOnSave": true
+}

@@ -1,0 +1,3 @@
+node_modules/
+webview.napi.node
+build.sh
