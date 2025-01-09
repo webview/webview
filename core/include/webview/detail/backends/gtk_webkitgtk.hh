@@ -228,8 +228,10 @@ protected:
       gtk_widget_set_size_request(m_window, width, height);
     } else if (hints == WEBVIEW_HINT_MAX) {
       gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
+    } else {
+      return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
     }
-    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
+    return {};
   }
 
   noresult navigate_impl(const std::string &url) override {
