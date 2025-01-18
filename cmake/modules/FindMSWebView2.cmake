@@ -16,5 +16,12 @@ if(MSWebView2_FOUND)
         set_target_properties(MSWebView2::headers PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES "${MSWebView2_INCLUDE_DIR}")
         target_compile_features(MSWebView2::headers INTERFACE cxx_std_14)
+
+        if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+            set(MSWebView2_LIB ${MSWebView2_INCLUDE_DIR}/../x64/WebView2LoaderStatic.lib)
+        else()
+            set(MSWebView2_LIB ${MSWebView2_INCLUDE_DIR}/../x86/WebView2LoaderStatic.lib)
+        endif()
+        target_link_libraries(MSWebView2::headers INTERFACE ${MSWebView2_LIB})
     endif()
 endif()
