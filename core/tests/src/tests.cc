@@ -12,7 +12,7 @@
 #include <cstdint>
 
 TEST_CASE("Start app loop and terminate it") {
-  webview::webview w(false, nullptr);
+  webview::webview w(false, nullptr, nullptr);
   w.dispatch([&]() { w.terminate(); });
   w.run();
 }
@@ -27,9 +27,32 @@ void cb_terminate(webview_t w, void *arg) {
   webview_terminate(w);
 }
 
+#ifdef _WIN32
+
+#ifdef _MSC_VER
+#include <WebView2EnvironmentOptions.h>
+#endif
+
+TEST_CASE("Start app loop with edge  environment and terminate it") {
+#ifdef _MSC_VER
+  auto options = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
+  options->put_AdditionalBrowserArguments(
+      L"--flag-switches-begin "
+      L"--disable-features=ElasticOverscroll,OverscrollHistoryNavigation "
+      L"--flag-switches-end");
+  webview::webview w(false, nullptr, options.Get());
+#else
+  webview::webview w(false, nullptr, nullptr);
+#endif
+
+  w.dispatch([&]() { w.terminate(); });
+  w.run();
+}
+#endif
+
 TEST_CASE("Use C API to create a window, run app and terminate it") {
   webview_t w;
-  w = webview_create(false, nullptr);
+  w = webview_create(false, nullptr, nullptr);
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_title(w, "Test");
   webview_set_html(w, "set_html ok");
@@ -97,7 +120,7 @@ TEST_CASE("Use C API to test binding and unbinding") {
   auto html = "<script>\n"
               "  window.test(0);\n"
               "</script>";
-  auto w = webview_create(1, nullptr);
+  auto w = webview_create(1, nullptr, nullptr);
   context.w = w;
   // Attempting to remove non-existing binding is OK
   webview_unbind(w, "test");
@@ -122,7 +145,7 @@ TEST_CASE("Test synchronous binding and unbinding") {
     return js;
   };
   unsigned int number = 0;
-  webview::webview w(false, nullptr);
+  webview::webview w(false, nullptr, nullptr);
   auto test = [&](const std::string &req) -> std::string {
     auto increment = [&](const std::string & /*req*/) -> std::string {
       ++number;
@@ -183,7 +206,7 @@ TEST_CASE("The string returned from a binding call must be JSON") {
   }
 </script>)html";
 
-  webview::webview w(true, nullptr);
+  webview::webview w(true, nullptr, nullptr);
 
   w.bind("loadData", [](const std::string & /*req*/) -> std::string {
     return "\"hello\"";
@@ -213,7 +236,7 @@ TEST_CASE("The string returned of a binding call must not be JS") {
   }
 </script>)html";
 
-  webview::webview w(true, nullptr);
+  webview::webview w(true, nullptr, nullptr);
 
   w.bind("loadData", [](const std::string & /*req*/) -> std::string {
     // Try to load malicious JS code
@@ -247,7 +270,8 @@ TEST_CASE("webview_version()") {
 
 struct test_webview : webview::browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
-  test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
+  test_webview(cb_t cb)
+      : webview::browser_engine(true, nullptr, nullptr), m_cb(cb) {}
   void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;
