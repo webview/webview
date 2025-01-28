@@ -4,12 +4,12 @@
     'targets': [
         {
             'target_name': 'webview.napi',
-            'sources': ['webview_napi_wrap.cxx'],
+            'sources': ['webview.napi_wrap.cxx'],
             'include_dirs': [
                 "<!@(node -p \"require('node-addon-api').include\")",
                 "../../core/include/webview"
             ],
-            'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
+            'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
             "cflags": ["-O2", "-fpermissive"],
             'msvs_settings': {
                 'VCCLCompilerTool': {'ExceptionHandling': 1},
@@ -38,6 +38,27 @@
                  }
                  ]
             ]
+        },
+        {
+            'target_name': 'jscallback',
+            'defines': ['V8_DEPRECATION_WARNINGS=1'],
+            'sources': ['JsCallback.cc'],
+            'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")"],
+            'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
+            'cflags!': ['-fno-exceptions'],
+            'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
+            "cflags": ["-O2", "-fpermissive"],
+            'conditions': [
+                ['OS=="mac"', {
+                    'cflags+': ['-fvisibility=hidden'],
+                    'xcode_settings': {
+                        'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
+                    }
+                }]
+            ],
+            'msvs_settings': {
+                'VCCLCompilerTool': {'ExceptionHandling': 1},
+            }
         }
 
     ]

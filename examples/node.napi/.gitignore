@@ -1,3 +1,7 @@
+.vscode/
 node_modules/
+build/
+package-lock.json
 webview.napi.node
-build.sh
+jscallback.node
+compile_commands.json

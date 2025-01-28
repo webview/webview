@@ -1,7 +1,7 @@
 {
-  "files.associations": {
-    "*.i": "swig"
-  },
-  "cSpell.words": ["libwebview", "napi"],
-  "editor.formatOnSave": true
+  "cSpell.words": ["jscallback", "jsfunction", "libwebview", "napi", "tsfn"],
+  "editor.formatOnSave": true,
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/examples/node.napi/build/Release"
+  ]
 }
