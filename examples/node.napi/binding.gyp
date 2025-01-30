@@ -4,10 +4,11 @@
     'targets': [
         {
             'target_name': 'webview.napi',
-            'sources': ['webview.napi_wrap.cxx'],
+            'sources': ['src/webview.napi_wrap.cxx'],
             'include_dirs': [
                 "<!@(node -p \"require('node-addon-api').include\")",
-                "../../core/include/webview"
+                "../../core/include/webview",
+                "./src"
             ],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
             "cflags": ["-O2", "-fpermissive"],
@@ -42,8 +43,8 @@
         {
             'target_name': 'jscallback',
             'defines': ['V8_DEPRECATION_WARNINGS=1'],
-            'sources': ['JsCallback.cc'],
-            'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")"],
+            'sources': ['src/JsCallback.cc'],
+            'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")", "./src"],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
             'cflags!': ['-fno-exceptions'],
             'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],

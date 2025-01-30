@@ -1334,13 +1334,6 @@ template <typename T> T SwigValueInit() {
     #include <JsCallback.h>
 
 
-    // Cleanly destroy JsCallback instances after Webview is destroyed.
-    void new_webview_destroy(webview_t w) {
-        webview_destroy(w);
-        shutDown();
-    }
-
-
 #include "webview.h"
 
 
@@ -1430,60 +1423,6 @@ fail:
 #define SWIG_NAPI_INIT webview_napi_initialize
 
 
-
-
-// js_global_function
-Napi::Value _wrap_new_webview_destroy(const Napi::CallbackInfo &info) {
-  Napi::Env env = info.Env();
-  Napi::Value jsresult;
-  webview_t arg1 = (webview_t) 0 ;
-  
-  if(static_cast<int>(info.Length()) < 1 || static_cast<int>(info.Length()) > 1) {
-    SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_new_webview_destroy.");
-  }
-  
-  {
-    {
-      arg1 = getPtrFromAddress(info[0]);
-    }
-  }
-  new_webview_destroy(arg1);
-  jsresult = env.Undefined();
-  
-  
-  return jsresult;
-  
-  goto fail;
-fail:
-  return Napi::Value();
-}
-
-
-// js_global_function
-Napi::Value _wrap_webview_destroy(const Napi::CallbackInfo &info) {
-  Napi::Env env = info.Env();
-  Napi::Value jsresult;
-  webview_t arg1 = (webview_t) 0 ;
-  
-  if(static_cast<int>(info.Length()) < 1 || static_cast<int>(info.Length()) > 1) {
-    SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_webview_destroy.");
-  }
-  
-  {
-    {
-      arg1 = getPtrFromAddress(info[0]);
-    }
-  }
-  new_webview_destroy(arg1);
-  jsresult = env.Undefined();
-  
-  
-  return jsresult;
-  
-  goto fail;
-fail:
-  return Napi::Value();
-}
 
 
 // js_global_function
@@ -1623,13 +1562,13 @@ fail:
 
 
 // js_global_function
-Napi::Value _wrap_original_webview_destroy(const Napi::CallbackInfo &info) {
+Napi::Value _wrap_webview_destroy(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   Napi::Value jsresult;
   webview_t arg1 = (webview_t) 0 ;
   
   if(static_cast<int>(info.Length()) < 1 || static_cast<int>(info.Length()) > 1) {
-    SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_original_webview_destroy.");
+    SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_webview_destroy.");
   }
   
   {
@@ -2550,20 +2489,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   /* create and register namespace objects */
   // jsnapi_register_global_function
 do {
-  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("new_webview_destroy", _wrap_new_webview_destroy);
-  NAPI_CHECK_MAYBE(exports.DefineProperties({
-    pd
-  }));
-} while (0);
-// jsnapi_register_global_function
-do {
-  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("webview_destroy", _wrap_webview_destroy);
-  NAPI_CHECK_MAYBE(exports.DefineProperties({
-    pd
-  }));
-} while (0);
-// jsnapi_register_global_function
-do {
   Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("webview_version", _wrap_webview_version);
   NAPI_CHECK_MAYBE(exports.DefineProperties({
     pd
@@ -2606,7 +2531,7 @@ do {
 } while (0);
 // jsnapi_register_global_function
 do {
-  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("original_webview_destroy", _wrap_original_webview_destroy);
+  Napi::PropertyDescriptor pd = Napi::PropertyDescriptor::Function("webview_destroy", _wrap_webview_destroy);
   NAPI_CHECK_MAYBE(exports.DefineProperties({
     pd
   }));

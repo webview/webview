@@ -1,27 +1,17 @@
-const wv = require("./webview.napi.node");
-const lib = require("./jscallback.node");
-
-/** Size hints for use with `webview_set_size` */
-enum webview_hint {
-  WEBVIEW_HINT_NONE,
-  WEBVIEW_HINT_MIN,
-  WEBVIEW_HINT_MAX,
-  WEBVIEW_HINT_FIXED,
-}
-/** Webview handle kinds for use with `webview_get_native_handle` */
-enum webview_native_handle_kind {
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW,
-  WEBVIEW_NATIVE_HANDLE_KIND_UI_WIDGET,
-  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER,
-}
 type cbKind_t = "bind" | "dispatch";
 
-class JsCallback extends lib.JsCallback {
-  /** An external pointer to the instance native callback function */
-  ptr;
+const libCb = require("bindings")("./jscallback.node");
+const { libWv: wv } = require("./webview.napi.js");
 
+const cbMap = new Map<Number, JsCallback>();
+
+class JsCallback extends libCb.JsCallback {
+  /** An external pointer to the native instance callback function */
+  ptr;
   /** The unique identifier of this `JsCallback` instance */
   uid;
+  /** Argument counter for the instance */
+  argCount = 0;
 
   /**
    * Instance values and methods for working with Webview callback functions.
@@ -34,42 +24,59 @@ class JsCallback extends lib.JsCallback {
     if (cbKind === "dispatch") callback = wrapDispatchCb(callback);
 
     super(callback);
+    this.uid = super.cbUid;
 
     if (cbKind === "bind") this.ptr = super.bindPtr;
     if (cbKind === "dispatch") this.ptr = super.dispatchPtr;
-    this.uid = super.cbUid;
+
+    cbMap.set(this.uid, this);
   }
 
   /**
    * Releases the memory associated with this `JsCallback` instance.
    * This method must explicitly be called by the user to avoid memory leaks.
    * */
-  close() {
+  close(isShutdown?: boolean) {
     if (this.ptr === null) return;
     this.ptr = null;
-    super.cleanup();
+    isShutdown ? super.destroy(true) : super.destroy();
+    cbMap.delete(this.uid);
   }
 
-  /** Initiates a user provided argument in the native callback instance.
+  /**
+   * Initiates a user provided argument in the native callback instance.
    *  The `JsCallback` instance UID piggy-backs on the Webview user `arg` parameter ID.
    *  @returns `Object` The `arg` ID and the instance UID piggy-backed.
    */
   arg = (arg?: any) => {
-    const argId = super.argId;
-    if (argId === null) return isClosing(this.uid);
+    if (!super.setArg) return isClosing(this.uid);
+    const argId = this.argCount;
+    this.argCount++;
     super.setArg({ arg }, argId);
+
     return { cbUid: this.uid, argId };
   };
+
+  /**
+   * Destroys active cb instances then ends the process.
+   * @param code
+   */
+  static destroy(code: number) {
+    cbMap.forEach((self) => {
+      self.close(true);
+    });
+    process.exit(code);
+  }
 }
 
-/** Returns the expected Webview `dispatch` cb shape. */
+/** Wraps the user cb in the expected Webview `dispatch` cb shape. */
 function wrapDispatchCb(callback: Function) {
   return function (w: bigint, arg: any) {
     callback(w, arg);
   };
 }
 
-/** Returns the expected Webview `bind` cb shape.  */
+/** Wraps the user cb in the expected Webview `bind` cb shape.  */
 function wrapBindCb(w: bigint, callback: Function) {
   return function (id: string, req: string, arg: any) {
     try {
@@ -78,11 +85,11 @@ function wrapBindCb(w: bigint, callback: Function) {
       const isPromise = result instanceof Promise;
       if (!isPromise) return processResult(result);
       result = result
-        .then((result) => processResult)
-        .catch((err) => {
+        .then((result: any) => processResult)
+        .catch((err: Error) => {
           throw err;
         });
-      function processResult(result) {
+      function processResult(result: any) {
         result = typeof result !== "undefined" ? JSON.stringify(result) : "";
         wv.webview_return(w, id, 0, result);
       }
@@ -100,5 +107,6 @@ function isClosing(cbUid: number) {
   return { cbUid, argId: null };
 }
 
-export { webview_hint, webview_native_handle_kind, JsCallback };
-export default wv;
+module.exports = {
+  JsCallback,
+};

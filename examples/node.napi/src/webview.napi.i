@@ -87,22 +87,9 @@
     $result = jsObject;
 }
 
-//***************************************************** OVERRIDE
-%inline %{
-    // Cleanly destroy JsCallback instances after Webview is destroyed.
-    void new_webview_destroy(webview_t w) {
-        webview_destroy(w);
-        shutDown();
-    }
-%}
-%rename(original_webview_destroy) webview_destroy;
-%rename(webview_destroy) new_webview_destroy;
-
-extern void new_webview_destroy(webview_t w);
-
 //***************************************************** INCLUDE
 extern const webview_version_info_t *webview_version(void);
-%include "../../webview.i"
+%include "../../../webview.i"
 
 
 
