@@ -30,20 +30,21 @@
                      'include_dirs': [
                          " <!(pkg-config --cflags gtk4 webkitgtk-6.0)",
                      ],
-                     "libraries": [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
-                     "cflags": ["-std=c++11"],
+                     'libraries': [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
+                     'cflags': ["-std=c++11"],
                      'cflags!': ['-fno-exceptions'],
                      'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
                  }
                  ],
                 ['OS=="win"', {
+                    'defines': ['WV2_VERSION="<(process.env.WV2_VERSION)"'],
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
                     "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
                     'include_dirs': [
-                        "./src/Microsoft.Web.WebView2.<(npm_config_wv2_version)",
+                        "./src/Microsoft.Web.WebView2.<(WV2_VERSION)",
                     ],
                 }]
             ]

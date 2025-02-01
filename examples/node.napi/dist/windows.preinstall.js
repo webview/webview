@@ -18,25 +18,11 @@ const nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
 const MsWv2Tag = "Microsoft.Web.WebView2";
 const MsWv2Version = "1.0.2957.106";
 if (os.platform() === "win32") {
-    setMsWv2Version()
-        .then(fetchNuget)
+    process.env.WV2_VERSION = MsWv2Version;
+    fetchNuget()
         .then(downloadMsWebView2)
         .catch((err) => {
         throw err;
-    });
-}
-function setMsWv2Version() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const command = `npm config set "wv2_version" "${MsWv2Version}"`;
-        try {
-            yield exec(command, (err) => {
-                if (err)
-                    throw err;
-            });
-        }
-        catch (err) {
-            throw err;
-        }
     });
 }
 function fetchNuget() {
