@@ -1,6 +1,8 @@
 ifeq ($(OS),Windows_NT)
+    # Windows
     PATH_SEP = \\
 else
+    # Unix-like systems (macOS, Linux)
     PATH_SEP = /
 endif
 
@@ -29,7 +31,7 @@ clean:
 	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
 
 swig:
-	swig -c++ -javascript -napi -o $(subst /,$(PATH_SEP),$(SRC_DIR)/webview.napi_wrap.cxx) $(subst /,$(PATH_SEP),$(SRC_DIR)/webview.napi.i)	
+	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py >/dev/null 2>&1
