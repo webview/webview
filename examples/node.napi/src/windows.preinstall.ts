@@ -29,7 +29,7 @@ async function fetchNuget() {
   }
 }
 async function downloadMsWebView2() {
-  const command = `nuget.exe install Microsoft.Web.WebView2 ${MsWebView2Dir}`;
+  const command = `nuget.exe install Microsoft.Web.WebView2 -OutputDirectory ${MsWebView2Dir}`;
   try {
     const cp = await exec(command, (err: Error) => {
       if (err) throw err;
