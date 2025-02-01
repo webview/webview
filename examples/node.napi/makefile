@@ -25,11 +25,12 @@ build:
 clean:
 	$(RMD) $(BUILD_DIR)
 	$(RMD) $(DIST_DIR)
-	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
 	$(RM) compile_commands.json
-	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
-	
 	$(RM) nuget.exe
+	cd $(SRC_DIR)
+	$(RMD) Microsoft.Web.WebView2*
+	$(RM) webview.napi_wrap.cxx
+	cd ../
 
 swig:
 	@echo $(CURDIR)
