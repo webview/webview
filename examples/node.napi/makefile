@@ -33,7 +33,7 @@ clean:
 	cd ../
 
 swig:
-	@echo $(CURDIR)
+	source .wv2v
 	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
 
 configure:
