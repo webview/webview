@@ -3,17 +3,30 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { exec } = require("node:child_process");
 const nugetDest = path.join(process.cwd(), "nuget.exe");
-const MsWebView2Dir = path.join(process.cwd(), "src");
+const srcDir = path.join(process.cwd(), "src");
 const nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
+const MsWv2Tag = "Microsoft.Web.WebView2";
+const MsWv2Version = "1.0.2957.106";
 
 if (os.platform() === "win32") {
-  fetchNuget()
+  setMsWv2Version()
+    .then(fetchNuget)
     .then(downloadMsWebView2)
     .catch((err) => {
       throw err;
     });
 }
 
+async function setMsWv2Version() {
+  const command = `npm config set wv2_version ${MsWv2Version}`;
+  try {
+    await exec(command, (err: Error) => {
+      if (err) throw err;
+    });
+  } catch (err) {
+    throw err;
+  }
+}
 async function fetchNuget() {
   if (fs.existsSync(nugetDest)) return;
   console.info("Downloading nuget.exe");
@@ -30,17 +43,21 @@ async function fetchNuget() {
   }
 }
 async function downloadMsWebView2() {
-  const isDownloaded = fs
-    .readdirSync(MsWebView2Dir)
-    .find((name: string) => name.startsWith("Microsoft.Web.WebView2"));
+  const isDownloaded = fs.existsSync(
+    path.join(srcDir, `${MsWv2Tag}.${MsWv2Version}`)
+  );
   if (!!isDownloaded) return;
 
   console.info("Downloading Microsoft.Web.WebView2 with nuget.exe");
-  const command = `nuget.exe install Microsoft.Web.WebView2 -OutputDirectory ${MsWebView2Dir}`;
+  const command = `nuget.exe install ${MsWv2Tag} -Version ${MsWv2Version} -OutputDirectory ${srcDir}`;
   try {
-    const cp = await exec(command, (err: Error) => {
+    await exec(command, (err: Error) => {
       if (err) throw err;
     });
+    fs.writeFileSync(
+      path.join(process.cwd(), "MsWv2Version"),
+      JSON.stringify({ MsWv2Version })
+    );
   } catch (err) {
     throw err;
   }

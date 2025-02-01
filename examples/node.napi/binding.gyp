@@ -12,9 +12,7 @@
             ],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
             "cflags": ["-O2", "-fpermissive"],
-            'msvs_settings': {
-                'VCCLCompilerTool': {'ExceptionHandling': 1},
-            },
+
             'conditions': [
                 ['OS=="mac"',
                  {
@@ -37,7 +35,17 @@
                      'cflags!': ['-fno-exceptions'],
                      'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
                  }
-                 ]
+                 ],
+                ['OS=="win"', {
+                    'msvs_settings': {
+                        'VCCLCompilerTool': {'ExceptionHandling': 1},
+                    },
+                    "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
+                    "cflags": ["-std=c++14", "-static", "-mwindows"],
+                    'include_dirs': [
+                        "./src/Microsoft.Web.WebView2.<(npm_config_wv2_version)",
+                    ],
+                }]
             ]
         },
         {
