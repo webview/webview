@@ -2,6 +2,7 @@ ifeq ($(OS),Windows_NT)
     RDR = >NUL 2>&1
 	RMD = del /s /f /q
 	RM = del /f /q
+	set WV2_VERSION noop 
 else
     RDR = >/dev/null 2>&1
 	RMD = rm -rf
@@ -36,7 +37,6 @@ swig:
 	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
 
 configure:
-	export WV2_VERSION=noop 
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(RDR)
 	mv $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
