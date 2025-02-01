@@ -19,7 +19,7 @@ if (os.platform() === "win32") {
 
 async function fetchNuget() {
   if (fs.existsSync(nugetDest)) return;
-  console.info("Downloading nuget.exe");
+  console.info("Downloading nuget.exe...");
   try {
     const res = await fetch(nugetUrl);
     if (!res.ok)
@@ -38,7 +38,7 @@ async function downloadMsWebView2() {
   );
   if (!!isDownloaded) return;
 
-  console.info("Downloading Microsoft.Web.WebView2 with nuget.exe");
+  console.info("Downloading Microsoft.Web.WebView2 with nuget.exe...");
   const command = `nuget.exe install ${MsWv2Tag} -Version ${MsWv2Version} -OutputDirectory ${srcDir}`;
   try {
     await exec(command, (err: Error) => {

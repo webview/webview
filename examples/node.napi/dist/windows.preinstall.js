@@ -29,7 +29,7 @@ function fetchNuget() {
     return __awaiter(this, void 0, void 0, function* () {
         if (fs.existsSync(nugetDest))
             return;
-        console.info("Downloading nuget.exe");
+        console.info("Downloading nuget.exe...");
         try {
             const res = yield fetch(nugetUrl);
             if (!res.ok)
@@ -47,7 +47,7 @@ function downloadMsWebView2() {
         const isDownloaded = fs.existsSync(path.join(srcDir, `${MsWv2Tag}.${MsWv2Version}`));
         if (!!isDownloaded)
             return;
-        console.info("Downloading Microsoft.Web.WebView2 with nuget.exe");
+        console.info("Downloading Microsoft.Web.WebView2 with nuget.exe...");
         const command = `nuget.exe install ${MsWv2Tag} -Version ${MsWv2Version} -OutputDirectory ${srcDir}`;
         try {
             yield exec(command, (err) => {
