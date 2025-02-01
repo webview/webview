@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
     RDR = >NUL 2>&1
 	RMD = del /s /f /q
-	RM = $(RMD)
+	RM = del /f /q
 else
     RDR = >/dev/null 2>&1
 	RMD = rm -rf
