@@ -23,14 +23,20 @@ build:
 	npx tsc
 
 clean:
-	$(RMD) $(BUILD_DIR)
-	$(RMD) $(DIST_DIR)
-	$(RM) compile_commands.json
-	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
 	ifeq ($(OS),Windows_NT)
-		$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
-		$(RM) nuget.exe
+		if exists $(SRC_DIR)/Microsoft.Web.WebView2* $(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
+		if exists nuget.exe $(RM) nuget.exe
+		if exists $(BUILD_DIR) $(RMD) $(BUILD_DIR)
+		if exists $(DIST_DIR) $(RMD) $(DIST_DIR)
+		if exists compile_commands.json $(RM) compile_commands.json
+		if exists $(SRC_DIR)/webview.napi_wrap.cxx $(RM) $(SRC_DIR)/webview.napi_wrap.cxx
+	else
+		$(RMD) $(BUILD_DIR)
+		$(RMD) $(DIST_DIR)
+		$(RM) compile_commands.json
+		$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
 	endif
+	
 
 swig:
 	@echo $(CURDIR)
