@@ -1,13 +1,10 @@
 {
-  "name": "directors",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "webview-napi-example",
+  "version": "0.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "preinstall": "if [ \"$OS\" = \"Windows_NT\" ]; then node ./dist/windows.preinstall.js.js; fi"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Michael Jonker",
   "devDependencies": {
     "@types/node": "^22.10.2",
     "bindings": "^1.5.0",
