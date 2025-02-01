@@ -25,14 +25,12 @@ build:
 	npx tsc
 
 clean:
-	ifeq ($(OS),Windows_NT)
-		$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2* $(RDRE)
-		$(RM) nuget.exe $(RDRE)
-	endif
 	$(RMD) $(BUILD_DIR) $(RDRE)
 	$(RMD) $(DIST_DIR) $(RDRE)
 	$(RM) compile_commands.json $(RDRE)
-	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx $(RDRE)	
+	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx $(RDRE)
+	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2* $(RDRE)
+	$(RM) nuget.exe $(RDRE)
 
 swig:
 	@echo $(CURDIR)
