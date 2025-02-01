@@ -8,7 +8,6 @@ if (os.platform() === "win32") {
     console.log(dest);
     if (!fs.existsSync(dest)) {
         const url = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
-        const command = `wGet -O ${dest} ${url}`;
-        execSync(command, { stdio: "inherit" });
+        execSync("wGet", ["-O", dest, url], { stdio: "inherit" });
     }
 }
