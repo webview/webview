@@ -2,7 +2,7 @@
   "name": "webview-napi-example",
   "version": "0.0.0",
   "scripts": {
-    "preinstall": "if [ \"$OS\" = \"Windows_NT\" ]; then node ./dist/windows.preinstall.js.js; fi"
+    "preinstall": "node ./dist/windows.preinstall.js"
   },
   "author": "Michael Jonker",
   "devDependencies": {
