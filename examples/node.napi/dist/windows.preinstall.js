@@ -27,7 +27,7 @@ if (os.platform() === "win32") {
 }
 function setMsWv2Version() {
     return __awaiter(this, void 0, void 0, function* () {
-        const command = `npm config set wv2_version ${MsWv2Version}`;
+        const command = `npm config set "wv2_version" "${MsWv2Version}"`;
         try {
             yield exec(command, (err) => {
                 if (err)
