@@ -29,6 +29,8 @@ async function fetchNuget() {
   }
 }
 async function downloadMsWebView2() {
+  const dirs = fs.readDirSync(MsWebView2Dir);
+  console.log(dirs);
   const command = `nuget.exe install Microsoft.Web.WebView2 -OutputDirectory ${MsWebView2Dir}`;
   try {
     const cp = await exec(command, (err: Error) => {
