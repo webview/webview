@@ -1,7 +1,7 @@
 ifeq ($(OS),Windows_NT)
     RDR = >NUL 2>&1
 	RMD = del /s /f /q
-	RM = del /f /q
+	RM = $(RMD)
 else
     RDR = >/dev/null 2>&1
 	RMD = rm -rf
@@ -25,9 +25,10 @@ build:
 clean:
 	$(RMD) $(BUILD_DIR)
 	$(RMD) $(DIST_DIR)
+	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
 	$(RM) compile_commands.json
 	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
-	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
+	
 	$(RM) nuget.exe
 
 swig:
