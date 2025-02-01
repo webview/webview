@@ -1,9 +1,11 @@
 ifeq ($(OS),Windows_NT)
     REDIRECT = >NUL 2>&1
 	RMD = rd /s /q
+	RM = del /f /q
 else
     REDIRECT = >/dev/null 2>&1
 	RMD = rm -rf
+	RM = rm
 endif
 
 # Directories
@@ -23,11 +25,11 @@ build:
 clean:
 	$(RMD) $(BUILD_DIR)
 	$(RMD) $(DIST_DIR)
-	rm compile_commands.json
-	rm $(SRC_DIR)/webview.napi_wrap.cxx
+	$(RM) compile_commands.json
+	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
 	ifeq ($(OS),Windows_NT)
 		$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
-		rm nuget.exe
+		$(RM) nuget.exe
 	endif
 
 swig:
