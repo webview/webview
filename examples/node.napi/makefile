@@ -36,7 +36,8 @@ swig:
 	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
 
 configure:
-	WV2_VERSION=noop npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(RDR)
+	export WV2_VERSION=noop 
+	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(RDR)
 	mv $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
 	
