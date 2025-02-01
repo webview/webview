@@ -1,11 +1,9 @@
 ifeq ($(OS),Windows_NT)
     RDR = >NUL 2>&1
-	RDRE = 2>NUL
-	RMD = rd /s /q
+	RMD = rd /s /f /q
 	RM = del /f /q
 else
     RDR = >/dev/null 2>&1
-	RDRE = 2>/dev/null
 	RMD = rm -rf
 	RM = rm
 endif
@@ -25,12 +23,12 @@ build:
 	npx tsc
 
 clean:
-	$(RMD) $(BUILD_DIR) $(RDRE)
-	$(RMD) $(DIST_DIR) $(RDRE)
-	$(RM) compile_commands.json $(RDRE)
-	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx $(RDRE)
-	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2* $(RDRE)
-	$(RM) nuget.exe $(RDRE)
+	$(RMD) $(BUILD_DIR)
+	$(RMD) $(DIST_DIR)
+	$(RM) compile_commands.json
+	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
+	$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
+	$(RM) nuget.exe
 
 swig:
 	@echo $(CURDIR)
