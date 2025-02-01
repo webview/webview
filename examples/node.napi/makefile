@@ -1,9 +1,9 @@
 ifeq ($(OS),Windows_NT)
     REDIRECT = >NUL 2>&1
-	RMD = rm -rf
+	RMD = rd /s /q
 else
     REDIRECT = >/dev/null 2>&1
-	RMD = rd /s /q
+	RMD = rm -rf
 endif
 
 # Directories
@@ -28,7 +28,6 @@ clean:
 	ifeq ($(OS),Windows_NT)
 		$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
 		rm nuget.exe
-		
 	endif
 
 swig:
