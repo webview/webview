@@ -16,6 +16,7 @@ if (os.platform() === "win32") {
 
 async function fetchNuget() {
   if (fs.existsSync(nugetDest)) return;
+  console.info("Downloading nuget.exe");
   try {
     const res = await fetch(nugetUrl);
     if (!res.ok)
@@ -29,8 +30,12 @@ async function fetchNuget() {
   }
 }
 async function downloadMsWebView2() {
-  const dirs = fs.readdirSync(MsWebView2Dir);
-  console.log(dirs);
+  const isDownloaded = fs
+    .readdirSync(MsWebView2Dir)
+    .find((name: string) => name.startsWith("Microsoft.Web.WebView2"));
+  if (!!isDownloaded) return;
+
+  console.info("Downloading Microsoft.Web.WebView2 with nuget.exe");
   const command = `nuget.exe install Microsoft.Web.WebView2 -OutputDirectory ${MsWebView2Dir}`;
   try {
     const cp = await exec(command, (err: Error) => {
