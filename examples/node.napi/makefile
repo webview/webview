@@ -1,7 +1,9 @@
 ifeq ($(OS),Windows_NT)
     REDIRECT = >NUL 2>&1
+	RMD = rm -rf
 else
     REDIRECT = >/dev/null 2>&1
+	RMD = rd /s /q
 endif
 
 # Directories
@@ -19,12 +21,12 @@ build:
 	npx tsc
 
 clean:
-	rm -rf $(BUILD_DIR)
-	rm -rf $(DIST_DIR)
+	$(RMD) $(BUILD_DIR)
+	$(RMD) $(DIST_DIR)
 	rm compile_commands.json
 	rm $(SRC_DIR)/webview.napi_wrap.cxx
 	ifeq ($(OS),Windows_NT)
-		rm -rf $(SRC_DIR)/Microsoft.Web.WebView2*
+		$(RMD) $(SRC_DIR)/Microsoft.Web.WebView2*
 		rm nuget.exe
 		
 	endif
