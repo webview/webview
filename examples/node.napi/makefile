@@ -4,10 +4,6 @@ else
     REDIRECT = >/dev/null 2>&1
 endif
 
-RM := rm -rf
-MKDIR := mkdir -p
-MV := mv
-
 # Directories
 BUILD_DIR := build
 SRC_DIR := src
@@ -23,13 +19,14 @@ build:
 	npx tsc
 
 clean:
-	$(RM) $(BUILD_DIR)
-	$(RM) $(DIST_DIR)
-	$(RM) compile_commands.json
-	$(RM) $(SRC_DIR)/webview.napi_wrap.cxx
+	rm -rf $(BUILD_DIR)
+	rm -rf $(DIST_DIR)
+	rm compile_commands.json
+	rm $(SRC_DIR)/webview.napi_wrap.cxx
 	ifeq ($(OS),Windows_NT)
-		$(RM) nuget.exe
-		$(RM) $(SRC_DIR)/Microsoft.Web.WebView2*
+		rm -rf $(SRC_DIR)/Microsoft.Web.WebView2*
+		rm nuget.exe
+		
 	endif
 
 swig:
@@ -38,6 +35,6 @@ swig:
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(REDIRECT)
-	$(MV) $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
+	mv $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
 	
