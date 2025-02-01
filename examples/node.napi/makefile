@@ -1,6 +1,6 @@
 ifeq ($(OS),Windows_NT)
     RDR = >NUL 2>&1
-	RDRE = 2>null
+	RDRE = 2>NUL
 	RMD = rd /s /q
 	RM = del /f /q
 else
