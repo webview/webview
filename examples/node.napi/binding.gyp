@@ -41,9 +41,7 @@
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
                     },
-                    'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 1},
-                    },
+
                     "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
                     'include_dirs': [
@@ -76,3 +74,7 @@
 
     ]
 }
+
+# 'msvs_settings': {
+#     'VCCLCompilerTool': {'ExceptionHandling': 1},
+# },
