@@ -195,18 +195,8 @@ inline Value getAddressFromPtr(Env env, void *ptr) {
  */
 inline void *getPtrFromAddress(Value jsAddress) {
   auto env = jsAddress.Env();
-  HandleScope scope(env);
+  uint64_t address = jsAddress.As<BigInt>().Uint64Value();
 
-  if (!jsAddress.IsBigInt()) {
-    return SWIG_Error(SWIG_ERROR,
-                      "pointer reference must be a uint64_t memory address");
-  }
-  bool lossless;
-  uint64_t address = jsAddress.As<BigInt>().Uint64Value(&lossless);
-  if (!lossless) {
-    return SWIG_Error(SWIG_ERROR,
-                      "Information lost retrieving a pointer from an address.");
-  }
   return reinterpret_cast<void *>(address);
 };
 
