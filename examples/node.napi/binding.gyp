@@ -47,7 +47,7 @@
                     'include_dirs': [
                         "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
                     ],
-                    "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
+                    "libraries": ["advapi32", "ole32", "shell32", "shlwapi", "user32", "version"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
                     'cflags!': ['-fno-exceptions'],
                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
