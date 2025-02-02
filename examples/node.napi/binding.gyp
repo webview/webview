@@ -12,7 +12,7 @@
                 "./src"
             ],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
-            "cflags": ["-O2"],
+            "cflags": ["-O2", "-fpermissive"],
 
             'conditions': [
                 ['OS=="mac"',
@@ -33,7 +33,8 @@
                      ],
                      'libraries': [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
                      'cflags': ["-std=c++11"],
-
+                     'cflags!': ['-fno-exceptions'],
+                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
                  }
                  ],
                 ['OS=="win"', {
@@ -48,6 +49,9 @@
                     ],
                     "libraries": ["advapi32", "ole32", "shell32", "shlwapi", "user32", "version"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
+                    "cflags_cc": ["-std=c++14", "-static", "-mwindows"],
+                    'cflags!': ['-fno-exceptions'],
+                    'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
 
                 }]
             ]
@@ -58,7 +62,6 @@
             'sources': ['src/JsCallback.cc'],
             'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")", "./src"],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
-            "cflags": ["-O2"],
             'conditions': [
                 ['OS=="mac"', {
                     'cflags+': ['-fvisibility=hidden'],
