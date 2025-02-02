@@ -12,7 +12,7 @@
                 "./src"
             ],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
-            "cflags": ["-O2", "-fpermissive"],
+            "cflags": ["-O2"],
 
             'conditions': [
                 ['OS=="mac"',
@@ -33,13 +33,12 @@
                      ],
                      'libraries': [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
                      'cflags': ["-std=c++11"],
-                     'cflags!': ['-fno-exceptions'],
-                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
+
                  }
                  ],
                 ['OS=="win"', {
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': "/EHsc"},
+                        'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
@@ -49,8 +48,6 @@
                     ],
                     "libraries": ["advapi32", "ole32", "shell32", "shlwapi", "user32", "version"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
-                    'cflags!': ['-fno-exceptions'],
-                    'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
 
                 }]
             ]
