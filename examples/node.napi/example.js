@@ -75,12 +75,12 @@ function runMainThread() {
       wv.webview_dispatch(w, dpCb.ptr, dpCb.arg(args[1]));
       wv.webview_dispatch(w, dpCb.ptr, dpCb.arg(args[2]));
       wv.webview_dispatch(w, dpCb.ptr, dpCb.arg(args[3]));
-      //dpCb.close(); //**************************************** We are done with the dispatch cb function, so free the memory.
+      dpCb.close(); //**************************************** We are done with the dispatch cb function, so free the memory.
     }, 1000);
 
     setTimeout(() => {
       wv.webview_unbind(w, "boundFn");
-      //bindCb.close(); // ************************************* We are done with the bind cb function, so free the memory
+      bindCb.close(); // ************************************* We are done with the bind cb function, so free the memory
       wv.webview_terminate(w); // **************************** Close the Webview window.
     }, 7000);
   });
