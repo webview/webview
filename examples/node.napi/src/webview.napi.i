@@ -31,9 +31,6 @@
 %typemap(in) void *arg {
     auto jsArg = info[info.Length() -1];
     auto jsObject = jsArg.As<Napi::Object>();
-    if(!jsObject.Has("cbUid") || !jsObject.Has("argId")){
-        SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
-    };
     auto cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
     auto argId = jsObject.Get("argId");
     if(argId.IsNull()){
