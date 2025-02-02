@@ -5,7 +5,6 @@
     'targets': [
         {
             'target_name': 'webview.napi',
-
             'sources': ['src/webview.napi_wrap.cxx'],
             'include_dirs': [
                 "<!@(node -p \"require('node-addon-api').include\")",
@@ -13,7 +12,6 @@
                 "./src"
             ],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
-            "cflags": ["-O2", "-fpermissive"],
 
             'conditions': [
                 ['OS=="mac"',
@@ -24,7 +22,7 @@
                          'CLANG_CXX_LIBRARY': 'libc++',
                          'MACOSX_DEPLOYMENT_TARGET': '10.7'
                      },
-                     "cflags": ["-std=c++11"]
+                     "cflags": ["-std=c++11", "-O2", "-fpermissive"]
                  }
                  ],
                 ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"',
@@ -33,7 +31,7 @@
                          " <!(pkg-config --cflags gtk4 webkitgtk-6.0)",
                      ],
                      'libraries': [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
-                     'cflags': ["-std=c++11"],
+                     'cflags': ["-std=c++11", "-O2", "-fpermissive"],
                      'cflags!': ['-fno-exceptions'],
                      'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
                  }
@@ -41,9 +39,11 @@
                 ['OS=="win"', {
                     "defines": [
                         "NAPI_DISABLE_CPP_EXCEPTIONS=0",
+                        "_HAS_EXCEPTIONS=1"
                     ],
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'}
+                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'},
+                        'AdditionalOptions': ['/std:c++14'],
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
@@ -52,8 +52,6 @@
                         "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
                     ],
                     "libraries": ["advapi32", "ole32", "shell32", "shlwapi", "user32", "version"],
-                    "cflags": ["-std=c++14", "-static", "-mwindows"],
-                    "cflags_cc": ["-std=c++14", "-static", "-mwindows"],
                     'cflags!': ['-fno-exceptions'],
                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
 
@@ -74,8 +72,13 @@
                     }
                 }],
                 ['OS=="win"', {
+                    "defines": [
+                        "NAPI_DISABLE_CPP_EXCEPTIONS=0",
+                        "_HAS_EXCEPTIONS=1"
+                    ],
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'}
+                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'},
+                        'AdditionalOptions': ['/std:c++11'],
                     }
                 }]
             ],
