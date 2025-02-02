@@ -36,8 +36,8 @@
     if(!hasCbUid  || !hasArgId){
         SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
     };
-    uint32_t cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
-    Value argId = jsObject.Get("argId");
+    auto cbUid = MaybeUnwrap<Number>(jsObject.Get("cbUid")).Uint32Value();
+    auto argId = MaybeUnwrap<Number>(jsObject.Get("argId"));
     if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
