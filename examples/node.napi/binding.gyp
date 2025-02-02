@@ -44,8 +44,7 @@
                         "NAPI_DISABLE_CPP_EXCEPTIONS=0",
                     ],
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 1},
-                        "AdditionalOptions": ["/EHsc"]
+                        'VCCLCompilerTool': {'ExceptionHandling': 1}
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
