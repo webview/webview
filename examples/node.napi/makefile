@@ -39,6 +39,6 @@ swig:
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py
-	$(CP) $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
+	$(CP) "$(BUILD_DIR)/Release/compile_commands.json" "./compile_commands.json"
 
 	
