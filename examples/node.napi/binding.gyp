@@ -37,7 +37,7 @@
                  }
                  ],
                 ['OS=="win"', {
-                    'defines': ['WV2_VERSION="<(process.env.WV2_VERSION)"'],
+                    'defines': ['WV2_VERSION=%WV2_VERSION%'],
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
