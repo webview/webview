@@ -20,7 +20,7 @@ all: swig configure
 
 build:
 	npx tsc
-	npm install
+	npx node-gyp rebuild
 
 clean:
 	$(RM_DIR) $(BUILD_DIR)

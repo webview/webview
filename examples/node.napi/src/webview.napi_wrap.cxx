@@ -1330,6 +1330,9 @@ template <typename T> T SwigValueInit() {
 
 
     #include <napi.h>
+    #ifdef _WIN32
+        #include <windows.h>
+    #endif
     #include <webview.h>
     #include <JsCallback.h>
 
