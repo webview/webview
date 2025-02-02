@@ -2,12 +2,12 @@ ifeq ($(OS),Windows_NT)
     REDIRECT = >NUL 2>&1
 	RM_DIR = del /s /f /q
 	RM = del /f /q
-	MV = move
+	CP = copy
 else
     REDIRECT = >/dev/null 2>&1
 	RM_DIR = rm -rf
 	RM = rm -f
-	MV = mv
+	CP = cp
 endif
 
 # Directories
@@ -39,6 +39,6 @@ swig:
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py
-	$(MV) $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
+	$(CP) $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
 	
