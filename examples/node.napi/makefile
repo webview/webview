@@ -1,21 +1,19 @@
-ifeq ($(OS),Windows_NT)
-    REDIRECT = >NUL 2>&1
-	RM_DIR = del /s /f /q
-	RM = del /f /q
-	CP = copy
-else
-    REDIRECT = >/dev/null 2>&1
-	RM_DIR = rm -rf
-	RM = rm -f
-	CP = cp
-endif
-
-# Directories
 BUILD_DIR := build
 SRC_DIR := src
 DIST_DIR := dist
 
-# Targets
+ifeq ($(OS),Windows_NT)
+    REDIRECT = >NUL 2>&1
+	RM_DIR = del /s /f /q
+	RM = del /f /q
+	MOVE_COMP_COMDS = move "$(BUILD_DIR)\Release\compile_commands.json" ".\compile_commands.json"
+else
+    REDIRECT = >/dev/null 2>&1
+	RM_DIR = rm -rf
+	RM = rm -f
+	MOVE_COMP_COMDS = mv $(BUILD_DIR)/Release/compile_commands.json compile_commands.json
+endif
+
 .PHONY: swig clean configure build
 
 all: swig configure
@@ -39,6 +37,8 @@ swig:
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py
-	$(CP) "$(BUILD_DIR)/Release/compile_commands.json" "./compile_commands.json"
+	$(MOVE_COMP_COMDS)
+	
+	
 
 	
