@@ -39,7 +39,7 @@
                  ],
                 ['OS=="win"', {
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 1, "DisableSpecificWarnings": ["4800", "4244", "2088"]},
+                        'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
@@ -48,7 +48,7 @@
                         "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
                     ],
                     "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
-                    "cflags": ["-std=c++11", "-static", "-mwindows"],
+                    "cflags": ["-std=c++14", "-static", "-mwindows"],
                     'cflags!': ['-fno-exceptions'],
                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
 
