@@ -40,7 +40,7 @@
                  ],
                 ['OS=="win"', {
                     "defines": [
-                        "_CPPUNWIND",
+                        "_CPPUNWIND=1",
                         "NAPI_DISABLE_CPP_EXCEPTIONS=0",
                     ],
                     'msvs_settings': {
