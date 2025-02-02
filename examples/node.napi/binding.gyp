@@ -39,7 +39,7 @@
                  ],
                 ['OS=="win"', {
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 0},
+                        'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
