@@ -1,5 +1,12 @@
 {
-  "cSpell.words": ["jscallback", "jsfunction", "libwebview", "napi", "tsfn"],
+  "cSpell.words": [
+    "jscallback",
+    "jsfunction",
+    "libwebview",
+    "mswv",
+    "napi",
+    "tsfn"
+  ],
   "editor.formatOnSave": true,
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/examples/node.napi/build/Release"

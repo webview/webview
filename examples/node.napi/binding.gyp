@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=pointless-statement
 {
+
     'targets': [
         {
             'target_name': 'webview.napi',
@@ -37,7 +38,9 @@
                  }
                  ],
                 ['OS=="win"', {
-                    'defines': ['WV2_VERSION=<($$(cat .mswv2.version))'],
+                    'variables': {
+                        'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
+                    },
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
