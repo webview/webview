@@ -37,7 +37,7 @@ swig:
 
 configure:
 	$(eval WV2_VERSION := $$(.mswv2.version))
-	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(RDR)
+	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py
 	mv $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
 	
