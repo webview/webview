@@ -7,7 +7,6 @@ else
 	RMD = rm -rf
 	RM = rm
 endif
-WV2_VERSION = $(cat .mswv2.version)
 
 # Directories
 BUILD_DIR := build
@@ -37,7 +36,7 @@ swig:
 	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
 
 configure:
-	Write-Output $(WV2_VERSION)
+	$(eval WV2_VERSION := $$(cat .mswv2.version))
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py
 	mv $(BUILD_DIR)/Release/compile_commands.json ./compile_commands.json
 
