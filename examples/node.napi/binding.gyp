@@ -41,12 +41,14 @@
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
                     },
-
-                    "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
-                    "cflags": ["-std=c++14", "-static", "-mwindows"],
                     'include_dirs': [
                         "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
                     ],
+                    "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
+                    "cflags": ["-std=c++14", "-static", "-mwindows"],
+                    'cflags!': ['-fno-exceptions'],
+                    'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
+
                 }]
             ]
         },
