@@ -39,7 +39,7 @@
                  ],
                 ['OS=="win"', {
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 1},
+                        'VCCLCompilerTool': {'ExceptionHandling': 1, "DisableSpecificWarnings": ["4800", "4244", "2088"]},
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
