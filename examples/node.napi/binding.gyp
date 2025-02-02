@@ -37,7 +37,7 @@
                  }
                  ],
                 ['OS=="win"', {
-                    'defines': ['WV2_VERSION=<($(cat .mswv2.version))'],
+                    'defines': ['WV2_VERSION=<($$(cat .mswv2.version))'],
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
                     },
