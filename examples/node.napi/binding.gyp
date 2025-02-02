@@ -46,7 +46,7 @@
                     },
                     "libraries": [" -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion"],
                     "cflags": ["-std=c++14", "-static", "-mwindows"],
-                    'cflags_cc!': ["-static", "-mwindows"],
+                    'cflags_cc': ["-static", "-mwindows"],
                     'include_dirs': [
                         "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
                     ],
