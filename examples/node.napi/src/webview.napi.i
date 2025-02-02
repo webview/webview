@@ -38,13 +38,13 @@
     };
     Value cbUidValue = MaybeUnwrap<Napi::Value>(jsObject.Get("cbUid"));
     auto cbUid = cbUidValue.As<Number>().Uint32Value();
-    auto argId = MaybeUnwrap<Napi::Value>(jsObject.Get("argId"));
+    Value argId = MaybeUnwrap<Napi::Value>(jsObject.Get("argId"));
     if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
         $1 = voidPtr;
     } else {
-        auto ids = new std::vector<uint32_t>({cbUid, argId.ToNumber().Uint32Value()});
+        auto ids = new std::vector<uint32_t>({cbUid, argId.As<Number>().Uint32Value()});
         void *voidPtr = ids;
         $1 = voidPtr;
     }
