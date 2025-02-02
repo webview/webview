@@ -1261,9 +1261,10 @@ Napi::Value SWIG_NAPI_AppendOutput(Napi::Env env, Napi::Value result, Napi::Valu
 #define SWIGTYPE_p_char swig_types[0]
 #define SWIGTYPE_p_f_p_q_const__char_p_q_const__char_p_void__void swig_types[1]
 #define SWIGTYPE_p_f_p_void_p_void__void swig_types[2]
-#define SWIGTYPE_p_webview_native_handle_kind_t swig_types[3]
-static swig_type_info *swig_types[5];
-static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
+#define SWIGTYPE_p_webview_hint_t swig_types[3]
+#define SWIGTYPE_p_webview_native_handle_kind_t swig_types[4]
+static swig_type_info *swig_types[6];
+static swig_module_info swig_module = {swig_types, 5, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -1670,20 +1671,21 @@ Napi::Value _wrap_webview_dispatch(const Napi::CallbackInfo &info) {
     {
       auto jsArg = info[info.Length() -1];
       auto jsObject = jsArg.As<Napi::Object>();
-      bool hasCbUid = jsObject.Has("cbUid");
-      bool hasArgId = jsObject.Has("argId");
+      bool hasCbUid = MaybeUnwrap<bool>(jsObject.Has("cbUid"));
+      bool hasArgId = MaybeUnwrap<bool>(jsObject.Has("argId"));
       if(!hasCbUid  || !hasArgId){
         SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
       };
-      uint32_t cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
-      Value argId = jsObject.Get("argId");
+      Value cbUidValue = MaybeUnwrap<Napi::Value>(jsObject.Get("cbUid"));
+      auto cbUid = cbUidValue.As<Number>().Uint32Value();
+      Value argId = MaybeUnwrap<Napi::Value>(jsObject.Get("argId"));
       if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
         arg3 = voidPtr;
       } else {
         auto ids = new std::vector<uint32_t>({
-          cbUid, argId.ToNumber().Uint32Value()
+          cbUid, argId.As<Number>().Uint32Value()
         });
         void *voidPtr = ids;
         arg3 = voidPtr;
@@ -1753,11 +1755,12 @@ Napi::Value _wrap_webview_get_native_handle(const Napi::CallbackInfo &info) {
   }
   {
     {
-      auto isValid = info[1].IsNumber() && info[1].ToNumber().Uint32Value() < 3;
+      Value kindValue = info[1];
+      auto isValid = kindValue.IsNumber() && kindValue.As<Number>().Uint32Value() < 3;
       if(!isValid){
         SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
       }
-      auto num = info[1].ToNumber().Uint32Value();
+      auto num = kindValue.As<Number>().Uint32Value();
       arg2 = static_cast<webview_native_handle_kind_t>(num);
     }
   }
@@ -1818,13 +1821,13 @@ Napi::Value _wrap_webview_set_size(const Napi::CallbackInfo &info) {
   webview_t arg1 = (webview_t) 0 ;
   int arg2 ;
   int arg3 ;
-  int arg4 ;
+  webview_hint_t arg4 ;
   int val2 ;
   int ecode2 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
-  int val4 ;
-  int ecode4 = 0 ;
+  void *argp4 ;
+  int res4 = 0 ;
   
   if(static_cast<int>(info.Length()) < 4 || static_cast<int>(info.Length()) > 4) {
     SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_webview_set_size.");
@@ -1843,13 +1846,21 @@ Napi::Value _wrap_webview_set_size(const Napi::CallbackInfo &info) {
   if (!SWIG_IsOK(ecode3)) {
     SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "webview_set_size" "', argument " "3"" of type '" "int""'");
   } 
-  arg3 = static_cast< int >(val3);ecode4 = SWIG_AsVal_int(info[3], &val4);
-  if (!SWIG_IsOK(ecode4)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "webview_set_size" "', argument " "4"" of type '" "int""'");
-  } 
-  arg4 = static_cast< int >(val4);webview_set_size(arg1,arg2,arg3,arg4);
+  arg3 = static_cast< int >(val3);{
+    {
+      res4 = SWIG_ConvertPtr(info[3], &argp4, SWIGTYPE_p_webview_hint_t,  0 );
+      if (!SWIG_IsOK(res4)) {
+        SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "webview_set_size" "', argument " "4"" of type '" "webview_hint_t""'"); 
+      }  
+      if (!argp4) {
+        SWIG_exception_fail(SWIG_NullReferenceError, "invalid null reference " "in method '" "webview_set_size" "', argument " "4"" of type '" "webview_hint_t""'");
+      } else {
+        arg4 = *(reinterpret_cast< webview_hint_t * >(argp4));
+      }
+    }
+  }
+  webview_set_size(arg1,arg2,arg3,SWIG_STD_MOVE(arg4));
   jsresult = env.Undefined();
-  
   
   
   
@@ -2042,20 +2053,21 @@ Napi::Value _wrap_webview_bind(const Napi::CallbackInfo &info) {
     {
       auto jsArg = info[info.Length() -1];
       auto jsObject = jsArg.As<Napi::Object>();
-      bool hasCbUid = jsObject.Has("cbUid");
-      bool hasArgId = jsObject.Has("argId");
+      bool hasCbUid = MaybeUnwrap<bool>(jsObject.Has("cbUid"));
+      bool hasArgId = MaybeUnwrap<bool>(jsObject.Has("argId"));
       if(!hasCbUid  || !hasArgId){
         SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
       };
-      uint32_t cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
-      Value argId = jsObject.Get("argId");
+      Value cbUidValue = MaybeUnwrap<Napi::Value>(jsObject.Get("cbUid"));
+      auto cbUid = cbUidValue.As<Number>().Uint32Value();
+      Value argId = MaybeUnwrap<Napi::Value>(jsObject.Get("argId"));
       if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
         arg4 = voidPtr;
       } else {
         auto ids = new std::vector<uint32_t>({
-          cbUid, argId.ToNumber().Uint32Value()
+          cbUid, argId.As<Number>().Uint32Value()
         });
         void *voidPtr = ids;
         arg4 = voidPtr;
@@ -2171,24 +2183,28 @@ fail:
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_f_p_q_const__char_p_q_const__char_p_void__void = {"_p_f_p_q_const__char_p_q_const__char_p_void__void", "void (*)(char const *,char const *,void *)", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_f_p_void_p_void__void = {"_p_f_p_void_p_void__void", "void (*)(webview_t,void *)|void (*)(void *,void *)", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_webview_hint_t = {"_p_webview_hint_t", "webview_hint_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_webview_native_handle_kind_t = {"_p_webview_native_handle_kind_t", "webview_native_handle_kind_t *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
   &_swigt__p_f_p_q_const__char_p_q_const__char_p_void__void,
   &_swigt__p_f_p_void_p_void__void,
+  &_swigt__p_webview_hint_t,
   &_swigt__p_webview_native_handle_kind_t,
 };
 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_f_p_q_const__char_p_q_const__char_p_void__void[] = {  {&_swigt__p_f_p_q_const__char_p_q_const__char_p_void__void, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_f_p_void_p_void__void[] = {  {&_swigt__p_f_p_void_p_void__void, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_webview_hint_t[] = {  {&_swigt__p_webview_hint_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_webview_native_handle_kind_t[] = {  {&_swigt__p_webview_native_handle_kind_t, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
   _swigc__p_f_p_q_const__char_p_q_const__char_p_void__void,
   _swigc__p_f_p_void_p_void__void,
+  _swigc__p_webview_hint_t,
   _swigc__p_webview_native_handle_kind_t,
 };
 

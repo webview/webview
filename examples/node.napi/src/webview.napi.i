@@ -59,6 +59,16 @@
     auto num = kindValue.As<Number>().Uint32Value();
     $1 = static_cast<webview_native_handle_kind_t>(num);
 }
+//casts the `webview_set_size` "hints" parameter to `webview_hint_t`
+%typemap(in) int hints {
+    Value hintValue = info[3];
+    auto isValid = hintValue.IsNumber() && hintValue.As<Number>().Uint32Value() < 4;
+    if(!isValid){
+        SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
+    }
+    uint32_t num = hintValue.As<Number>().Uint32Value();
+    arg4 = webview_hint_t(num);
+}
 
 //***************************************************** OUT MAPS
 // Casts pointers to `uint64_t` aka `Napi::BigInt` addresses so that they can be passed using JS IPC.
