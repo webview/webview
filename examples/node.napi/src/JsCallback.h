@@ -195,7 +195,8 @@ inline Value getAddressFromPtr(Env env, void *ptr) {
  */
 inline void *getPtrFromAddress(Value jsAddress) {
   auto env = jsAddress.Env();
-  uint64_t address = jsAddress.As<BigInt>().Uint64Value();
+  bool lossless;
+  uint64_t address = jsAddress.As<BigInt>().Uint64Value(&lossless);
 
   return reinterpret_cast<void *>(address);
 };
