@@ -31,11 +31,11 @@
 %typemap(in) void *arg {
     auto jsArg = info[info.Length() -1];
     auto jsObject = jsArg.As<Napi::Object>();
-    Value cbUid_maybe;
-    Value argId;
+    Number cbUid_maybe;
+    Number argId;
     NAPI_CHECK_RESULT(jsObject.Get("cbUid"), cbUid_maybe);
     NAPI_CHECK_RESULT(jsObject.Get("argId"), argId);
-    auto cbUid = cbUid_maybe.ToNumber().Uint32Value();
+    auto cbUid = cbUid_maybe.Uint32Value();
     if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
