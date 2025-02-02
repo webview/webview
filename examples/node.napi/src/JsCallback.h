@@ -200,4 +200,19 @@ inline void *getPtrFromAddress(Value jsAddress) {
   return reinterpret_cast<void *>(address);
 };
 
+/**
+ * A helper that converts MaybeOrValue<T> to T by checking that
+ * MaybeOrValue is NOT an empty Maybe when NODE_ADDON_API_ENABLE_MAYBE is
+ * defined.
+ *
+ * Do nothing when NODE_ADDON_API_ENABLE_MAYBE is not defined.
+ */
+template <typename T> inline T MaybeUnwrap(MaybeOrValue<T> maybe) {
+#if defined(NODE_ADDON_API_ENABLE_MAYBE)
+  return maybe.Unwrap();
+#else
+  return maybe;
+#endif
+}
+
 #endif
