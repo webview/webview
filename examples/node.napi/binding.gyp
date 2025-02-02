@@ -40,6 +40,7 @@
                 ['OS=="win"', {
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
+                        "AdditionalOptions": ["/EHsc"]
                     },
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
@@ -72,6 +73,7 @@
                 ['OS=="win"', {
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
+                        "AdditionalOptions": ["/EHsc"]
                     }
                 }]
             ],
