@@ -58,20 +58,21 @@
             'sources': ['src/JsCallback.cc'],
             'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")", "./src"],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
-            'cflags!': ['-fno-exceptions'],
-            'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
-            "cflags": ["-O2", "-fpermissive"],
+            "cflags": ["-O2"],
             'conditions': [
                 ['OS=="mac"', {
                     'cflags+': ['-fvisibility=hidden'],
                     'xcode_settings': {
                         'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
                     }
+                }],
+                ['OS=="win"', {
+                    'msvs_settings': {
+                        'VCCLCompilerTool': {'ExceptionHandling': 1},
+                    }
                 }]
             ],
-            'msvs_settings': {
-                'VCCLCompilerTool': {'ExceptionHandling': 1},
-            }
+
         }
 
     ]
