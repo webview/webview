@@ -6,10 +6,10 @@ const nugetDest = path.join(process.cwd(), "nuget.exe");
 const srcDir = path.join(process.cwd(), "src");
 const nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
 const MsWv2Tag = "Microsoft.Web.WebView2";
+const MsWv2VersionFile = ".mswv2.nuget.v";
 const MsWv2Version = getMsWv2Version();
 
 if (os.platform() === "win32") {
-  process.env.WV2_VERSION = MsWv2Version;
   fetchNuget()
     .then(downloadMsWebView2)
     .catch((err) => {
@@ -17,7 +17,7 @@ if (os.platform() === "win32") {
     });
 }
 function getMsWv2Version() {
-  return fs.readFileSync(path.join("../", ".mswv2.version"), "utf8").trim();
+  return fs.readFileSync(path.join("../", MsWv2VersionFile), "utf8").trim();
 }
 async function fetchNuget() {
   if (fs.existsSync(nugetDest)) return;

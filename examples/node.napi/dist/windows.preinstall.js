@@ -18,7 +18,6 @@ const nugetUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe";
 const MsWv2Tag = "Microsoft.Web.WebView2";
 const MsWv2Version = getMsWv2Version();
 if (os.platform() === "win32") {
-    process.env.WV2_VERSION = MsWv2Version;
     fetchNuget()
         .then(downloadMsWebView2)
         .catch((err) => {
