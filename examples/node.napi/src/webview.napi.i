@@ -51,11 +51,12 @@
 }
 //casts the `webview_get_native_handle` "kind" parameter to `webview_native_handle_kind_t`
 %typemap(in) webview_native_handle_kind_t kind {
-    auto isValid = info[1].IsNumber() && info[1].ToNumber().Uint32Value() < 3;
+    Value kindValue = MaybeUnwrap<Napi::Value>(info[1]);
+    auto isValid = kindValue.IsNumber() && kindValue.As<Number>().Uint32Value() < 3;
     if(!isValid){
         SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
     }
-    auto num = info[1].ToNumber().Uint32Value();
+    auto num = kindValue.As<Number>().Uint32Value();
     $1 = static_cast<webview_native_handle_kind_t>(num);
 }
 
