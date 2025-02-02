@@ -1761,7 +1761,7 @@ Napi::Value _wrap_webview_get_native_handle(const Napi::CallbackInfo &info) {
         SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
       }
       auto num = kindValue.As<Number>().Uint32Value();
-      arg2 = static_cast<webview_native_handle_kind_t>(num);
+      arg2 = webview_native_handle_kind_t(num);
     }
   }
   result = (void *)webview_get_native_handle(arg1,SWIG_STD_MOVE(arg2));
@@ -1826,8 +1826,6 @@ Napi::Value _wrap_webview_set_size(const Napi::CallbackInfo &info) {
   int ecode2 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
-  void *argp4 ;
-  int res4 = 0 ;
   
   if(static_cast<int>(info.Length()) < 4 || static_cast<int>(info.Length()) > 4) {
     SWIG_Error(SWIG_ERROR, "Illegal number of arguments for _wrap_webview_set_size.");
@@ -1848,15 +1846,13 @@ Napi::Value _wrap_webview_set_size(const Napi::CallbackInfo &info) {
   } 
   arg3 = static_cast< int >(val3);{
     {
-      res4 = SWIG_ConvertPtr(info[3], &argp4, SWIGTYPE_p_webview_hint_t,  0 );
-      if (!SWIG_IsOK(res4)) {
-        SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "webview_set_size" "', argument " "4"" of type '" "webview_hint_t""'"); 
-      }  
-      if (!argp4) {
-        SWIG_exception_fail(SWIG_NullReferenceError, "invalid null reference " "in method '" "webview_set_size" "', argument " "4"" of type '" "webview_hint_t""'");
-      } else {
-        arg4 = *(reinterpret_cast< webview_hint_t * >(argp4));
+      Value hintValue = info[3];
+      auto isValid = hintValue.IsNumber() && hintValue.As<Number>().Uint32Value() < 4;
+      if(!isValid){
+        SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
       }
+      uint32_t num = hintValue.As<Number>().Uint32Value();
+      arg4 = webview_hint_t(num);
     }
   }
   webview_set_size(arg1,arg2,arg3,SWIG_STD_MOVE(arg4));

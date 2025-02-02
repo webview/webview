@@ -57,10 +57,10 @@
         SWIG_Error(SWIG_ERROR, "Argument 2 for webview_get_native_handle must be of type `webview_native_handle_kind`.");
     }
     auto num = kindValue.As<Number>().Uint32Value();
-    $1 = static_cast<webview_native_handle_kind_t>(num);
+    $1 = webview_native_handle_kind_t(num);
 }
 //casts the `webview_set_size` "hints" parameter to `webview_hint_t`
-%typemap(in) int hints {
+%typemap(in) webview_hint_t hints {
     Value hintValue = info[3];
     auto isValid = hintValue.IsNumber() && hintValue.As<Number>().Uint32Value() < 4;
     if(!isValid){
