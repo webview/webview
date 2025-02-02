@@ -36,7 +36,8 @@
     if(!hasCbUid  || !hasArgId){
         SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
     };
-    auto cbUid = MaybeUnwrap<Napi::Value>(jsObject.Get("cbUid")).ToNumber().Uint32Value();
+    Value cbUidValue = MaybeUnwrap<Napi::Value>(jsObject.Get("cbUid"));
+    auto cbUid = cbUidValue.As<Number>().Uint32Value();
     auto argId = MaybeUnwrap<Napi::Value>(jsObject.Get("argId"));
     if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
