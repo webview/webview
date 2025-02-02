@@ -40,7 +40,7 @@
                  ],
                 ['OS=="win"', {
                     "defines": [
-                        "NAPI_DISABLE_CPP_EXCEPTIONS=0",
+                        "_CPPUNWIND",
                     ],
                     'msvs_settings': {
                         'VCCLCompilerTool': {'ExceptionHandling': 1},
