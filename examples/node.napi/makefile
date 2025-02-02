@@ -6,7 +6,7 @@ ifeq ($(OS),Windows_NT)
 else
     REDIRECT = >/dev/null 2>&1
 	RM_DIR = rm -rf
-	RM = rm
+	RM = rm -f
 	MV = mv
 endif
 
@@ -21,8 +21,8 @@ DIST_DIR := dist
 all: swig configure
 
 build:
-	npm install
 	npx tsc
+	npm install
 
 clean:
 	$(RM_DIR) $(BUILD_DIR)
