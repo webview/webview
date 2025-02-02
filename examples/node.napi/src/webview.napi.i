@@ -31,11 +31,13 @@
 %typemap(in) void *arg {
     auto jsArg = info[info.Length() -1];
     auto jsObject = jsArg.As<Napi::Object>();
-    Number cbUid_maybe;
-    Number argId;
-    NAPI_CHECK_RESULT(jsObject.Get("cbUid"), cbUid_maybe);
-    NAPI_CHECK_RESULT(jsObject.Get("argId"), argId);
-    auto cbUid = cbUid_maybe.Uint32Value();
+    bool hasCbUid = jsObject.Has("cbUid");
+    bool hasArgId = jsObject.Has("argId");
+    if(!hasCbUid  || !hasArgId){
+        SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
+    };
+    uint32_t cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
+    Value argId = jsObject.Get("argId");
     if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
