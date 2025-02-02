@@ -1330,9 +1330,6 @@ template <typename T> T SwigValueInit() {
 
 
     #include <napi.h>
-    #ifdef _WIN32
-        #include <windows.h>
-    #endif
     #include <webview.h>
     #include <JsCallback.h>
 
@@ -1673,11 +1670,11 @@ Napi::Value _wrap_webview_dispatch(const Napi::CallbackInfo &info) {
     {
       auto jsArg = info[info.Length() -1];
       auto jsObject = jsArg.As<Napi::Object>();
-      if(!jsObject.Has("cbUid") || !jsObject.Has("argId")){
-        SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
-      };
-      auto cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
-      auto argId = jsObject.Get("argId");
+      Value cbUid_maybe;
+      Value argId;
+      NAPI_CHECK_RESULT(jsObject.Get("cbUid"), cbUid_maybe);
+      NAPI_CHECK_RESULT(jsObject.Get("argId"), argId);
+      auto cbUid = cbUid_maybe.ToNumber().Uint32Value();
       if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
@@ -2043,11 +2040,11 @@ Napi::Value _wrap_webview_bind(const Napi::CallbackInfo &info) {
     {
       auto jsArg = info[info.Length() -1];
       auto jsObject = jsArg.As<Napi::Object>();
-      if(!jsObject.Has("cbUid") || !jsObject.Has("argId")){
-        SWIG_Error(SWIG_ERROR, "`arg` must be passed as an `Object` with properties `cbUid<Number>` and `argId<Number>`.");
-      };
-      auto cbUid = jsObject.Get("cbUid").ToNumber().Uint32Value();
-      auto argId = jsObject.Get("argId");
+      Value cbUid_maybe;
+      Value argId;
+      NAPI_CHECK_RESULT(jsObject.Get("cbUid"), cbUid_maybe);
+      NAPI_CHECK_RESULT(jsObject.Get("argId"), argId);
+      auto cbUid = cbUid_maybe.ToNumber().Uint32Value();
       if(argId.IsNull()){
         //JsCallback instance was destroyed before the callback was called.
         void *voidPtr = nullptr;
