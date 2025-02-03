@@ -34,6 +34,28 @@
                  }
                  ],
                 ['OS=="win"', {
+                    "defines": [
+                        "WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL=0",
+                        "WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK=0",
+                        "WEBVIEW_STATIC=1"
+                    ],
+                    'variables': {
+                        'WV2_INCLUDE%': './src/Microsoft.Web.WebView2.<!(python ./src/get_mswv2_version.py)/build/native/include'
+                    },
+                    "conditions": [
+                        ['target_arch=="x64"', {
+                            'variables': {
+                                'WV2_LIB%': './src/Microsoft.Web.WebView2.<!(python ./src/get_mswv2_version.py)/build/native/x64'
+                            }}],
+                        ['target_arch=="ia32"', {
+                            'variables': {
+                                'WV2_LIB%': './src/Microsoft.Web.WebView2.<!(python ./src/get_mswv2_version.py)/build/native/x86'
+                            }}],
+                        ['target_arch=="arm64"', {
+                            'variables': {
+                                'WV2_LIB%': './src/Microsoft.Web.WebView2.<!(python ./src/get_mswv2_version.py)/build/native/arm64'
+                            }}]
+                    ],
                     'msbuild_settings': {
                         'ClCompile': {
                             'LanguageStandard': 'stdcpp17',
@@ -42,36 +64,30 @@
                     },
                     'msvs_settings': {
                         'VCCLCompilerTool': {
-                            "Optimization": 2,
-                            "BufferSecurityCheck": "true",
+                            "Optimization": 2,  # -O2
+                            # -static (/MT Multi-threaded static runtime).
                             "RuntimeLibrary": 0,
                         },
                         "VCLinkerTool": {
-                            "AdditionalDependencies": [
-                                "bufferoverflowU.lib",
-                                "ntdll.lib"
-                            ],
                             "AdditionalOptions": [
-                                "/DYNAMICBASE"
+                                # Ignore default libcmt.lib (static lib)
                                 "/NODEFAULTLIB:LIBCMT",
-                                "/DELAYLOAD:webview2loader.dll"
+                                # Ignore default msvcrt.lib (dynamic lib)
+                                "/NODEFAULTLIB:MSVCRT",
                             ]
                         }
                     },
-
-                    'variables': {
-                        'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
-                    },
                     'include_dirs': [
-                        "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include"
+                        "<(WV2_INCLUDE)",
                     ],
                     "libraries": [
-                        "AdvAPI32.lib",
-                        "Ole32.lib",
+                        "advapi32.lib",
+                        "ole32.lib",
                         "shell32.lib",
-                        "ShLwApi.lib",
-                        "User32.lib",
-                        "Version.lib"
+                        "shlwapi.lib",
+                        "user32.lib",
+                        "version.lib",
+                        "../<(WV2_LIB)/WebView2LoaderStatic.lib"
                     ]
                 }]
             ]
@@ -110,6 +126,5 @@
             ],
 
         }
-
     ]
 }
