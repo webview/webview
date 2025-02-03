@@ -104,14 +104,3 @@
 //***************************************************** INCLUDE
 extern const webview_version_info_t *webview_version(void);
 %include "../../../webview.i"
-
-
-
-
-
-
-
-
-
-
-
