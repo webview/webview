@@ -11,50 +11,68 @@
                 "../../core/include/webview",
                 "./src"
             ],
-            'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api"],
+            'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
 
             'conditions': [
-                ['OS=="mac"',
-                 {
-                     'xcode_settings': {
-                         'GCC_ENABLE_CPP_RTTI': 'YES',
-                         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-                         'CLANG_CXX_LIBRARY': 'libc++',
-                         'MACOSX_DEPLOYMENT_TARGET': '10.7'
-                     },
-                     "cflags": ["-std=c++11", "-O2", "-fpermissive"]
-                 }
-                 ],
+
                 ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"',
                  {
                      'include_dirs': [
-                         " <!(pkg-config --cflags gtk4 webkitgtk-6.0)",
+                         " <!(pkg-config --cflags gtk4 webkitgtk-6.0)"
                      ],
                      'libraries': [" <!(pkg-config --libs gtk4 webkitgtk-6.0)", "-ldl"],
-                     'cflags': ["-std=c++11", "-O2", "-fpermissive"],
-                     'cflags!': ['-fno-exceptions'],
-                     'cflags_cc!': ['-fno-exceptions', '-fno-rtti']
+                     'cflags': ["-std=c++17", "-O2"],
+                 }
+                 ],
+                ['OS=="mac"',
+                 {
+                     'xcode_settings': {
+                         'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
+                         "OTHER_LDFLAGS": ["-framework", "WebKit", "-ldl"],
+                     },
+                     "cflags_cc": ["-std=c++17", "-O2"]
                  }
                  ],
                 ['OS=="win"', {
-                    "defines": [
-                        "NAPI_DISABLE_CPP_EXCEPTIONS=0",
-                        "_HAS_EXCEPTIONS=1"
-                    ],
-                    'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'},
-                        'AdditionalOptions': ['/std:c++14'],
+                    'msbuild_settings': {
+                        'ClCompile': {
+                            'LanguageStandard': 'stdcpp17',
+                            'DisableSpecificWarnings': ['4005']
+                        }
                     },
+                    'msvs_settings': {
+                        'VCCLCompilerTool': {
+                            "Optimization": 2,
+                            "BufferSecurityCheck": "true",
+                            "RuntimeLibrary": 0,
+                        },
+                        "VCLinkerTool": {
+                            "AdditionalDependencies": [
+                                "bufferoverflowU.lib",
+                                "ntdll.lib"
+                            ],
+                            "AdditionalOptions": [
+                                "/DYNAMICBASE"
+                                "/NODEFAULTLIB:LIBCMT",
+                                "/DELAYLOAD:webview2loader.dll"
+                            ]
+                        }
+                    },
+
                     'variables': {
                         'WV2_VERSION%': '<!(python ./src/get_mswv2_version.py)'
                     },
                     'include_dirs': [
-                        "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include",
+                        "./src/Microsoft.Web.WebView2.<(WV2_VERSION)/build/native/include"
                     ],
-                    "libraries": ["advapi32", "ole32", "shell32", "shlwapi", "user32", "version"],
-                    'cflags!': ['-fno-exceptions'],
-                    'cflags_cc!': ['-fno-exceptions', '-fno-rtti'],
-
+                    "libraries": [
+                        "AdvAPI32.lib",
+                        "Ole32.lib",
+                        "shell32.lib",
+                        "ShLwApi.lib",
+                        "User32.lib",
+                        "Version.lib"
+                    ]
                 }]
             ]
         },
@@ -65,21 +83,29 @@
             'include_dirs': ["<!@(node -p \"require('node-addon-api').include\")", "./src"],
             'dependencies': ["<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except_all"],
             'conditions': [
+                ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"',
+                 {
+                     'cflags': ["-std=c++17", "-O2"],
+                 }
+                 ],
                 ['OS=="mac"', {
-                    'cflags+': ['-fvisibility=hidden'],
                     'xcode_settings': {
                         'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',
-                    }
+                    },
+                    'cflags': ["-std=c++17", "-O2"],
                 }],
                 ['OS=="win"', {
-                    "defines": [
-                        "NAPI_DISABLE_CPP_EXCEPTIONS=0",
-                        "_HAS_EXCEPTIONS=1"
-                    ],
+                    'msbuild_settings': {
+                        'ClCompile': {
+                            'LanguageStandard': 'stdcpp17',
+                        }
+                    },
                     'msvs_settings': {
-                        'VCCLCompilerTool': {'ExceptionHandling': 'Sync'},
-                        'AdditionalOptions': ['/std:c++11'],
-                    }
+                        'VCCLCompilerTool': {
+                            "Optimization": 2,
+                            "RuntimeLibrary": 0,
+                        },
+                    },
                 }]
             ],
 
