@@ -58,8 +58,7 @@
                     ],
                     'msbuild_settings': {
                         'ClCompile': {
-                            'LanguageStandard': 'stdcpp17',
-                            'DisableSpecificWarnings': ['4005']
+                            'LanguageStandard': 'stdcpp17'
                         }
                     },
                     'msvs_settings': {
@@ -67,14 +66,6 @@
                             "Optimization": 2,  # -O2
                             # -static (/MT Multi-threaded static runtime).
                             "RuntimeLibrary": 0,
-                        },
-                        "VCLinkerTool": {
-                            "AdditionalOptions": [
-                                # Ignore default libcmt.lib (static lib)
-                                "/NODEFAULTLIB:LIBCMT",
-                                # Ignore default msvcrt.lib (dynamic lib)
-                                "/NODEFAULTLIB:MSVCRT",
-                            ]
                         }
                     },
                     'include_dirs': [
