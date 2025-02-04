@@ -14,7 +14,7 @@ else
 	COPY_COMP_COMDS = cp $(BUILD_DIR)/Release/compile_commands.json compile_commands.json
 endif
 
-.PHONY: swig clean configure build
+.PHONY: swig clean configure build tsc nuget
 
 all: swig tsc nuget configure
 
