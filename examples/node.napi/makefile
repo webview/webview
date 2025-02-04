@@ -16,10 +16,9 @@ endif
 
 .PHONY: swig clean configure build
 
-all: swig configure
+all: swig tsc nuget configure
 
 build:
-	npx tsc
 	npx node-gyp build
 
 clean:
@@ -32,6 +31,12 @@ clean:
 
 swig:
 	swig -c++ -javascript -napi -o ./$(SRC_DIR)/webview.napi_wrap.cxx ./$(SRC_DIR)/webview.napi.i	
+
+tsc:
+	npx tsc
+
+nuget:
+	node ./dist/windows.preinstall.js
 
 configure:
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(REDIRECT)
