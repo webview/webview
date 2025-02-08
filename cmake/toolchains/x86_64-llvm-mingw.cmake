@@ -9,7 +9,7 @@ set(CMAKE_SYSTEM_PROCESSOR x86_64)
 set(WEBVIEW_USE_COMPAT_MINGW true)
 set(CMAKE_SYSROOT "/usr/local/lib/llvm-mingw")
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT}/x86_64-w64-mingw32)
-set(CMAKE_C_FLAGS "--target=x86_64-w64-windows-gnu")
+set(CMAKE_C_FLAGS "--target=x86_64-w64-windows-gnu -fuse-ld=lld")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS}")
 
 set(CMAKE_C_COMPILER x86_64-w64-mingw32-clang)

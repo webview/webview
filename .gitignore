@@ -4,3 +4,4 @@
 # Alternate dev contexts
 /.cache
 /.vscode
+.clangd
