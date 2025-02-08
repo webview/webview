@@ -1,2 +1,6 @@
 # Build artifacts
 /build
+
+# Alternate dev contexts
+/.cache
+/.vscode
