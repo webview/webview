@@ -12,9 +12,9 @@ using namespace Napi;
 
 typedef void *webview_t;
 /** Tracks an `JsCallback` instance lifecycle. */
-enum status_t { opened, deferred, closing, closed };
+enum status_t { cb_opened, cb_deferred, cb_closing, cb_closed };
 /** Identifies the kind of Webview cb function of the instance. */
-enum kind_t { dispatch, bind, unknown };
+enum kind_t { wv_dispatch, wv_bind, wv_unknown };
 /** Holds the `arg` ID and `JsCallback` instance UID. */
 struct ids_t {
   uint32_t cbUid;
@@ -134,7 +134,7 @@ public:
   int cbQTally = 0;
 
   /**Tracks the lifecycle of the cb function instance */
-  status_t cbStatus = opened;
+  status_t cbStatus = cb_opened;
 
   /** The boilerplate N-Api class initialiser */
   static Object Init(Napi::Env env, Object exports);

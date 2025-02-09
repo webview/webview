@@ -6,7 +6,7 @@ using namespace Napi;
 // JsCallback
 // ********************************************************************************************************
 JsCallback::JsCallback(const CallbackInfo &info)
-    : ObjectWrap<JsCallback>(info), cbKind(unknown), cbUid(cbCount) {
+    : ObjectWrap<JsCallback>(info), cbKind(wv_unknown), cbUid(cbCount) {
 
   std::lock_guard<std::mutex> lock(mtx);
   cbCount++;
@@ -18,13 +18,13 @@ JsCallback::JsCallback(const CallbackInfo &info)
 }
 
 Napi::Value JsCallback::getDispatchPtr(const CallbackInfo &info) {
-  cbKind = dispatch;
+  cbKind = wv_dispatch;
   auto ptr = reinterpret_cast<void *>(&dispatchCb);
   return External<void>::New(info.Env(), ptr);
 }
 
 Napi::Value JsCallback::getBindPtr(const CallbackInfo &info) {
-  cbKind = bind;
+  cbKind = wv_bind;
   auto ptr = reinterpret_cast<void *>(&bindCb);
   return External<void>::New(info.Env(), ptr);
 }
@@ -50,7 +50,7 @@ void JsCallback::setArg(const CallbackInfo &info) {
   auto argId = info[1].ToNumber().Int32Value();
   auto argRef = new Reference<Napi::Value>(Persistent(info[0]));
   argMap.emplace(argId, argRef);
-  if (cbKind == dispatch) {
+  if (cbKind == wv_dispatch) {
     cbQTally++;
   }
 }
@@ -88,7 +88,7 @@ void Trampoline::callTsfn(Env env, Function callback, tsfnContext *context,
 
   auto self = getSelf(data->cbUid);
   auto jsArg = self->getArg(data->argId);
-  if (self->cbKind == dispatch) {
+  if (self->cbKind == wv_dispatch) {
     auto jsW = getAddressFromPtr(env, data->w);
     try {
       callback.Call(context->Value(), {jsW, jsArg});
@@ -97,11 +97,11 @@ void Trampoline::callTsfn(Env env, Function callback, tsfnContext *context,
     }
     self->destroyArg(data->argId);
     self->cbQTally--;
-    if (self->cbStatus == deferred && self->cbQTally == 0) {
+    if (self->cbStatus == cb_deferred && self->cbQTally == 0) {
       self->destroy(false);
     }
   }
-  if (self->cbKind == bind) {
+  if (self->cbKind == wv_bind) {
     auto jsId = String::New(env, data->id);
     auto jsReq = String::New(env, data->req);
     try {
@@ -154,7 +154,7 @@ bool Trampoline::reject(void *arg) {
   if (self == nullptr) {
     return true;
   }
-  if (self->cbStatus == closed) {
+  if (self->cbStatus == cb_closed) {
     return true;
   }
   return false;
@@ -168,14 +168,14 @@ void JsCallback::destroy(const CallbackInfo &info) {
 };
 void JsCallback::destroy(bool isShutdown) {
   std::lock_guard<std::mutex> lock(mtx);
-  if (this->cbStatus == closed) {
+  if (this->cbStatus == cb_closed) {
     return;
   }
-  if (!isShutdown && this->cbStatus != closing && this->cbQTally > 0) {
-    this->cbStatus = deferred;
+  if (!isShutdown && this->cbStatus != cb_closing && this->cbQTally > 0) {
+    this->cbStatus = cb_deferred;
     return;
   }
-  this->cbStatus = closed;
+  this->cbStatus = cb_closed;
   this->tsfn.Abort();
   for (auto &pair : this->argMap) {
     auto argRef = pair.second;
