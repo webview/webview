@@ -5,3 +5,4 @@ build/
 package-lock.json
 compile_commands.json
 src/Microsoft.Web.WebView2.*
+nuget.exe
