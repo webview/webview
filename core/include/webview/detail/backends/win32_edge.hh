@@ -677,7 +677,7 @@ protected:
   user_script add_user_script_impl(const std::string &js) override {
     std::mutex m;
     std::condition_variable cv;
-    std::atomic<bool> allDone = false;
+    std::atomic<bool> allDone{false};
     auto const isCrossThread = isCrossThreaded();
     auto wjs = widen_string(js);
     std::wstring script_id;
