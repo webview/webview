@@ -2,7 +2,8 @@
 # Download or compile llvm-mingw: https://github.com/mstorsjo/llvm-mingw/releases
 # Extract or compile to /usr/local/lib/llvm-mingw
 # Add /usr/local/lib/llvm-mingw/bin to $PATH
-# Use the compile flag `-D CMAKE_EXPORT_COMPILE_COMMANDS=1` to generate "compile_commands.json"
+# Use the compile flag `-D CMAKE_EXPORT_COMPILE_COMMANDS=1` to generate "compile_commands.json" in the build dir,
+# or use `bear -- <your-build-command>` to generate "compile_commands.json" in the root dir.
 
 set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
