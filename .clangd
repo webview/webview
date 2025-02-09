@@ -1,4 +1,0 @@
-CompileFlags:
-  Add: 
-    - "-DWEBVIEW_PLATFORM_WINDOWS=1"
-    - "-DWEBVIEW_EDGE=1"
