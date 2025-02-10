@@ -39,6 +39,7 @@ nuget:
 	node ./dist/windows.preinstall.js
 
 configure:
+	npm i --include=dev --ignore-scripts=true
 	npx node-gyp configure -- -f gyp.generator.compile_commands_json.py $(REDIRECT)
 	$(COPY_COMP_COMDS)
 	npx node-gyp clean
