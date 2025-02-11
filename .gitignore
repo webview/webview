@@ -1,5 +1,6 @@
 # Build artifacts
 /build
+/Testing
 
 # Alternate dev contexts
 /.cache
