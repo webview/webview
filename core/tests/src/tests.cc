@@ -1,15 +1,21 @@
+#include "webview/backends.hh"
+#include "webview/detail/json.hh"
 #include "webview/test_driver.hh"
+#include <atomic>
+#include <cassert>
+#include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <pthread.h>
+#include <thread>
 
 #define WEBVIEW_VERSION_MAJOR 1
 #define WEBVIEW_VERSION_MINOR 2
 #define WEBVIEW_VERSION_PATCH 3
 #define WEBVIEW_VERSION_PRE_RELEASE "-test"
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
-
 #include "webview/webview.h"
-
-#include <cassert>
-#include <cstdint>
 
 TEST_CASE("Start app loop and terminate it") {
   webview::webview w(false, nullptr);
@@ -418,6 +424,84 @@ TEST_CASE("Bad C API usage without crash") {
   ASSERT_WEBVIEW_FAILED(webview_terminate(w));
   ASSERT_WEBVIEW_FAILED(webview_run(w));
   ASSERT_WEBVIEW_FAILED(webview_destroy(w));
+}
+
+typedef struct {
+  std::condition_variable cv;
+  std::atomic<bool> ready;
+  webview::webview *w;
+} worker_ctx_t;
+
+void *makeWorkerThread(void *arg) {
+  auto ctx = (worker_ctx_t *)arg;
+  ctx->w = new webview::webview(true, nullptr);
+  ctx->w->set_html("<html></html>");
+  ctx->ready.store(true, std::memory_order_release);
+  ctx->cv.notify_one();
+  ctx->w->run();
+  return nullptr;
+}
+
+TEST_CASE("Ensure that terminate can execute across threads") {
+  std::mutex mtx;
+  std::unique_lock<std::mutex> lock(mtx);
+  pthread_t workerThread;
+  worker_ctx_t ctx;
+  ctx.ready.store(false);
+  pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
+  ctx.cv.wait(lock,
+              [&ctx] { return ctx.ready.load(std::memory_order_acquire); });
+  try {
+    ctx.w->terminate();
+  } catch (...) {
+    ctx.w->dispatch([&]() { ctx.w->terminate(); });
+    throw std::runtime_error("Cross thread terminate failed.");
+  }
+
+  pthread_join(workerThread, nullptr);
+}
+
+TEST_CASE("Ensure that bind and eval can execute across threads") {
+  std::mutex mtx;
+  std::unique_lock<std::mutex> lock(mtx);
+  pthread_t workerThread;
+  worker_ctx_t ctx;
+  auto bindIndex = 0;
+
+  auto jsFn = "boundFn(0).then(val => boundFn(val));";
+  auto bindFn = [&](const std::string &id, const std::string &req,
+                    void *arg) -> std::string {
+    if (req == "[0]") {
+      REQUIRE(bindIndex == 0);
+      bindIndex++;
+      ctx.w->resolve(id, 0, "1");
+    }
+    if (req == "[1]") {
+      REQUIRE(bindIndex == 1);
+      auto done = static_cast<std::shared_ptr<std::function<void()>> *>(arg);
+      (*done)->operator()();
+    }
+    return "";
+  };
+  auto done = std::make_shared<std::function<void()>>([&]() {
+    try {
+      ctx.w->unbind("boundFn");
+      ctx.w->terminate();
+    } catch (...) {
+      ctx.w->dispatch([&]() { ctx.w->terminate(); });
+      throw std::runtime_error("Cross thread terminate failed.");
+    }
+  });
+  ctx.ready.store(false);
+  pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
+  ctx.cv.wait(lock, [&] { return ctx.ready.load(std::memory_order_acquire); });
+
+  ctx.w->bind("boundFn", bindFn, &done);
+  // How long async bind will take is not predictable, so allow a reasonable wait before calling it.
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  ctx.w->eval(jsFn);
+
+  pthread_join(workerThread, nullptr);
 }
 
 #if _WIN32

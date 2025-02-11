@@ -914,7 +914,6 @@ private:
   int m_dpi{};
   bool m_owns_window{};
 };
-//ICoreWebView2 *win32_edge_engine::m_webview = nullptr;
 } // namespace detail
 
 using browser_engine = detail::win32_edge_engine;
