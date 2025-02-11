@@ -467,7 +467,6 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
   pthread_t workerThread;
   worker_ctx_t ctx;
   auto bindIndex = 0;
-  auto timer = true;
 
   auto jsFn = "boundFn(0).then(val => boundFn(val));";
   auto bindFn = [&](const std::string &id, const std::string &req,
@@ -488,10 +487,8 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
     try {
       ctx.w->unbind("boundFn");
       ctx.w->terminate();
-      timer = false;
     } catch (...) {
       ctx.w->dispatch([&]() { ctx.w->terminate(); });
-      timer = false;
       throw std::runtime_error("Cross thread terminate failed.");
     }
   });
