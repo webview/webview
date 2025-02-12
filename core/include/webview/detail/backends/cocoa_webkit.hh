@@ -45,9 +45,12 @@
 #include "../user_script.hh"
 
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
+#include <pthread.h>
 #include <string>
 
 #include <CoreGraphics/CoreGraphics.h>
@@ -83,7 +86,8 @@ public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug},
         m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
+        m_owns_window{!window},
+        m_main_thread{GetCurrentThreadId()} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -191,7 +195,12 @@ protected:
   }
 
   noresult terminate_impl() override {
-    stop_run_loop();
+    auto f = [&]() { stop_run_loop(); };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
+    };
     return {};
   }
 
@@ -273,35 +282,65 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    objc::autoreleasepool arp;
-    // URI is null before content has begun loading.
-    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
-    if (!nsurl) {
-      return {};
+    auto f = [&]() {
+      objc::autoreleasepool arp;
+      // URI is null before content has begun loading.
+      auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+      if (!!nsurl) {
+        objc::msg_send<void>(
+            m_webview, "evaluateJavaScript:completionHandler:"_sel,
+            objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                               js.c_str()),
+            nullptr);
+      }
+    };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
     }
-    objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
-                         objc::msg_send<id>("NSString"_cls,
-                                            "stringWithUTF8String:"_sel,
-                                            js.c_str()),
-                         nullptr);
     return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
-    objc::autoreleasepool arp;
-    auto wk_script = objc::msg_send<id>(
-        objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
-        "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                           js.c_str()),
-        WKUserScriptInjectionTimeAtDocumentStart, YES);
-    // Script is retained when added.
-    objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-    user_script script{
-        js, user_script::impl_ptr{new user_script::impl{wk_script},
-                                  [](user_script::impl *p) { delete p; }}};
-    objc::msg_send<void>(wk_script, "release"_sel);
-    return script;
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> allDone{false};
+    auto const isCrossThread = isCrossThreaded();
+    alignas(user_script) char buffer[sizeof(user_script)];
+    user_script *scriptPtr = nullptr;
+
+    auto f = [&, js]() -> user_script {
+      objc::autoreleasepool arp;
+      auto wk_script = objc::msg_send<id>(
+          objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
+          "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+          objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                             js.c_str()),
+          WKUserScriptInjectionTimeAtDocumentStart, YES);
+      // Script is retained when added.
+      objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
+      user_script script{
+          js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                    [](user_script::impl *p) { delete p; }}};
+      objc::msg_send<void>(wk_script, "release"_sel);
+      if (isCrossThread) {
+        std::unique_lock<std::mutex> lock(mtx);
+        scriptPtr = new (buffer) user_script(std::move(script));
+        allDone.store(true, std::memory_order_release);
+        cv.notify_one();
+      }
+      return script;
+    };
+    if (isCrossThreaded()) {
+      dispatch_impl([&] { f(); });
+      std::unique_lock<std::mutex> lock(mtx);
+      cv.wait(lock,
+              [&allDone] { return allDone.load(std::memory_order_acquire); });
+      return std::move(*scriptPtr);
+    } else {
+      return f();
+    }
   }
 
   void remove_all_user_scripts_impl(
@@ -677,6 +716,12 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_owns_window{};
+
+  uint64_t GetCurrentThreadId() const {
+    return static_cast<uint64_t>(pthread_mach_thread_np(pthread_self()));
+  }
+  bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
+  uint64_t const m_main_thread{};
 };
 
 } // namespace detail
