@@ -293,13 +293,14 @@ protected:
           objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                              js.c_str()),
           nullptr);
+      return {};
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
+      return {};
     } else {
-      f();
+      return f();
     }
-    return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
