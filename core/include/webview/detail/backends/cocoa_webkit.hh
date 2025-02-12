@@ -194,7 +194,7 @@ protected:
   }
 
   noresult terminate_impl() override {
-    void f = [&]() { stop_run_loop(); };
+    auto f = [&]() { stop_run_loop(); };
     if (isCrossThreaded()) {
       dispatch_impl(f);
     } else {
@@ -281,18 +281,17 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    void f = [&]() {
+    auto f = [&]() {
       objc::autoreleasepool arp;
       // URI is null before content has begun loading.
       auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
-      if (!nsurl) {
-        return;
+      if (!!nsurl) {
+        objc::msg_send<void>(
+            m_webview, "evaluateJavaScript:completionHandler:"_sel,
+            objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                               js.c_str()),
+            nullptr);
       }
-      objc::msg_send<void>(
-          m_webview, "evaluateJavaScript:completionHandler:"_sel,
-          objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                             js.c_str()),
-          nullptr);
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
@@ -311,7 +310,7 @@ protected:
     user_script *scriptPtr = nullptr;
     user_script script;
 
-    void f = [&, js]() {
+    auto f = [&, js]() {
       objc::autoreleasepool arp;
       auto wk_script = objc::msg_send<id>(
           objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
