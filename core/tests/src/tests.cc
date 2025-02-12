@@ -5,6 +5,7 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <pthread.h>
@@ -426,8 +427,8 @@ TEST_CASE("Bad C API usage without crash") {
   ASSERT_WEBVIEW_FAILED(webview_destroy(w));
 }
 
-typedef struct {
-  std::condition_variable cv{};
+typedef struct worker_ctx_t {
+  std::condition_variable cv;
   std::atomic<bool> ready{false};
   webview::webview *w{};
 } worker_ctx_t;

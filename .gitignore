@@ -2,8 +2,9 @@
 /build
 /Testing
 
-# Alternate dev contexts
+# Dev contexts
 /.cache
 /.vscode
 .clangd
 compile_commands.json
+makefile
