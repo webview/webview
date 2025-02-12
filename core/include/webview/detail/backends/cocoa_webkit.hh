@@ -707,8 +707,10 @@ private:
     }
   }
 
-  std::thread::id GetCurrentThreadId() { return std::this_thread::get_id(); }
-  bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
+  std::thread::id GetCurrentThreadId() const {
+    return std::this_thread::get_id();
+  }
+  bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
 
   bool m_debug{};
   id m_app_delegate{};
@@ -717,7 +719,7 @@ private:
   id m_widget{};
   id m_webview{};
   id m_manager{};
-  auto m_main_thread = GetCurrentThreadId();
+  auto const m_main_thread = GetCurrentThreadId();
   bool m_owns_window{};
 };
 
