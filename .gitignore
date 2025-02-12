@@ -5,6 +5,7 @@
 # Dev contexts
 /.cache
 /.vscode
+/.devutils
 .clangd
 compile_commands.json
 makefile

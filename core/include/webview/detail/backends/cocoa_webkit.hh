@@ -45,10 +45,13 @@
 #include "../user_script.hh"
 
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/NSObjCRuntime.h>
@@ -191,7 +194,12 @@ protected:
   }
 
   noresult terminate_impl() override {
-    stop_run_loop();
+    auto f = [](stop_run_loop(););
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
+    };
     return {};
   }
 
@@ -273,34 +281,61 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    objc::autoreleasepool arp;
-    // URI is null before content has begun loading.
-    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
-    if (!nsurl) {
-      return {};
+    auto f = [js]() {
+      objc::autoreleasepool arp;
+      // URI is null before content has begun loading.
+      auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+      if (!nsurl) {
+        return {};
+      }
+      objc::msg_send<void>(
+          m_webview, "evaluateJavaScript:completionHandler:"_sel,
+          objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                             js.c_str()),
+          nullptr);
+    };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
     }
-    objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
-                         objc::msg_send<id>("NSString"_cls,
-                                            "stringWithUTF8String:"_sel,
-                                            js.c_str()),
-                         nullptr);
     return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
-    objc::autoreleasepool arp;
-    auto wk_script = objc::msg_send<id>(
-        objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
-        "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                           js.c_str()),
-        WKUserScriptInjectionTimeAtDocumentStart, YES);
-    // Script is retained when added.
-    objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-    user_script script{
-        js, user_script::impl_ptr{new user_script::impl{wk_script},
-                                  [](user_script::impl *p) { delete p; }}};
-    objc::msg_send<void>(wk_script, "release"_sel);
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> allDone{false};
+    auto const isCrossThread = isCrossThreaded();
+    user_script script;
+
+    auto f = [&]() {
+      objc::autoreleasepool arp;
+      auto wk_script = objc::msg_send<id>(
+          objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
+          "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+          objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                             js.c_str()),
+          WKUserScriptInjectionTimeAtDocumentStart, YES);
+      // Script is retained when added.
+      objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
+      script{js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                       [](user_script::impl *p) { delete p; }}};
+      objc::msg_send<void>(wk_script, "release"_sel);
+      if (isCrossThread) {
+        std::unique_lock<std::mutex> lock(mtx);
+        allDone.store(true, std::memory_order_release);
+        cv.notify_one();
+      }
+    };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+      std::unique_lock<std::mutex> lock(mtx);
+      cv.wait(lock,
+              [&allDone] { return allDone.load(std::memory_order_acquire); });
+    } else {
+      f();
+    }
     return script;
   }
 
@@ -669,6 +704,16 @@ private:
     }
   }
 
+  uint64_t GetCurrentThreadId() {
+    Class NSThread = objc_getClass("NSThread");
+    SEL currentThreadSel = sel_registerName("currentThread");
+    SEL threadIDSel = sel_registerName("threadID");
+    id currentThread =
+        ((id(*)(Class, SEL))objc_msgSend)(NSThread, currentThreadSel);
+    return ((uint64_t (*)(id, SEL))objc_msgSend)(currentThread, threadIDSel);
+  }
+  bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
+
   bool m_debug{};
   id m_app_delegate{};
   id m_window_delegate{};
@@ -677,6 +722,7 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_owns_window{};
+  auto m_main_thread = GetCurrentThreadId();
 };
 
 } // namespace detail
