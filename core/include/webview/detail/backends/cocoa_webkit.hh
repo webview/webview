@@ -308,9 +308,8 @@ protected:
     auto const isCrossThread = isCrossThreaded();
     alignas(user_script) char buffer[sizeof(user_script)];
     user_script *scriptPtr = nullptr;
-    user_script script;
 
-    auto f = [&, js]() {
+    auto f = [&, js]() -> user_script {
       objc::autoreleasepool arp;
       auto wk_script = objc::msg_send<id>(
           objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
@@ -320,8 +319,9 @@ protected:
           WKUserScriptInjectionTimeAtDocumentStart, YES);
       // Script is retained when added.
       objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-      script{js, user_script::impl_ptr{new user_script::impl{wk_script},
-                                       [](user_script::impl *p) { delete p; }}};
+      user_script script{
+          js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                    [](user_script::impl *p) { delete p; }}};
       objc::msg_send<void>(wk_script, "release"_sel);
       if (isCrossThread) {
         std::unique_lock<std::mutex> lock(mtx);
@@ -329,16 +329,16 @@ protected:
         allDone.store(true, std::memory_order_release);
         cv.notify_one();
       }
+      return script;
     };
     if (isCrossThreaded()) {
-      dispatch_impl(f);
+      dispatch_impl([&] { f(); });
       std::unique_lock<std::mutex> lock(mtx);
       cv.wait(lock,
               [&allDone] { return allDone.load(std::memory_order_acquire); });
       return std::move(*scriptPtr);
     } else {
-      f();
-      return script;
+      return f();
     }
   }
 
