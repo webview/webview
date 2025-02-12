@@ -427,9 +427,9 @@ TEST_CASE("Bad C API usage without crash") {
 }
 
 typedef struct {
-  std::condition_variable cv;
-  std::atomic<bool> ready;
-  webview::webview *w;
+  std::condition_variable cv{};
+  std::atomic<bool> ready{false};
+  webview::webview *w{};
 } worker_ctx_t;
 
 void *makeWorkerThread(void *arg) {
@@ -447,7 +447,6 @@ TEST_CASE("Ensure that terminate can execute across threads") {
   std::unique_lock<std::mutex> lock(mtx);
   pthread_t workerThread;
   worker_ctx_t ctx;
-  ctx.ready.store(false);
   pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
   ctx.cv.wait(lock,
               [&ctx] { return ctx.ready.load(std::memory_order_acquire); });
@@ -492,7 +491,6 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
       throw std::runtime_error("Cross thread terminate failed.");
     }
   });
-  ctx.ready.store(false);
   pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
   ctx.cv.wait(lock, [&] { return ctx.ready.load(std::memory_order_acquire); });
 
