@@ -194,7 +194,7 @@ protected:
   }
 
   noresult terminate_impl() override {
-    auto f = [](stop_run_loop(););
+    auto f = [&]() { stop_run_loop() };
     if (isCrossThreaded()) {
       dispatch_impl(f);
     } else {
@@ -281,7 +281,7 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    auto f = [js]() {
+    auto f = [&]() {
       objc::autoreleasepool arp;
       // URI is null before content has begun loading.
       auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
