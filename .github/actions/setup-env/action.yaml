@@ -64,5 +64,4 @@ runs:
           python-markupsafe:p
           python-pip:p
           toolchain:p
-          winpthreads:p
           ${{ inputs.msys-pacboy }}
