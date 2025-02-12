@@ -320,25 +320,27 @@ protected:
           WKUserScriptInjectionTimeAtDocumentStart, YES);
       // Script is retained when added.
       objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-      scriptPtr = new (buffer) user_script{
+      user_script script{
           js, user_script::impl_ptr{new user_script::impl{wk_script},
                                     [](user_script::impl *p) { delete p; }}};
       objc::msg_send<void>(wk_script, "release"_sel);
       if (isCrossThread) {
         std::unique_lock<std::mutex> lock(mtx);
+        scriptPtr = new (buffer) script;
         allDone.store(true, std::memory_order_release);
         cv.notify_one();
       }
+      return script
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
       std::unique_lock<std::mutex> lock(mtx);
       cv.wait(lock,
               [&allDone] { return allDone.load(std::memory_order_acquire); });
+      return *scriptPtr;
     } else {
-      f();
+      return f();
     }
-    return *scriptPtr;
   }
 
   void remove_all_user_scripts_impl(
