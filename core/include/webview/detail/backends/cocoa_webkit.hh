@@ -281,7 +281,7 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    auto f = [&]() {
+    noresult f = [&]() {
       objc::autoreleasepool arp;
       // URI is null before content has begun loading.
       auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
@@ -311,7 +311,7 @@ protected:
     alignas(user_script) char buffer[sizeof(user_script)];
     user_script *scriptPtr = nullptr;
 
-    auto f = [&, js]() {
+    user_script f = [&, js]() {
       objc::autoreleasepool arp;
       auto wk_script = objc::msg_send<id>(
           objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
