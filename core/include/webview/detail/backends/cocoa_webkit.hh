@@ -704,13 +704,13 @@ private:
     }
   }
 
-  uint64_t GetCurrentThreadId() {
+  id GetCurrentThreadId() {
     Class NSThread = objc_getClass("NSThread");
     SEL currentThreadSel = sel_registerName("currentThread");
     SEL threadIDSel = sel_registerName("threadID");
     id currentThread =
         ((id(*)(Class, SEL))objc_msgSend)(NSThread, currentThreadSel);
-    return ((uint64_t (*)(id, SEL))objc_msgSend)(currentThread, threadIDSel);
+    return ((id(*)(id, SEL))objc_msgSend)(currentThread, threadIDSel);
   }
   bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
 
@@ -721,8 +721,8 @@ private:
   id m_widget{};
   id m_webview{};
   id m_manager{};
+  id m_main_thread = GetCurrentThreadId();
   bool m_owns_window{};
-  auto m_main_thread = GetCurrentThreadId();
 };
 
 } // namespace detail
