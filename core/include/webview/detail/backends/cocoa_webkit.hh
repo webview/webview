@@ -50,8 +50,8 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <pthread.h>
 #include <string>
-#include <thread>
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <objc/NSObjCRuntime.h>
@@ -707,9 +707,6 @@ private:
     }
   }
 
-  std::thread::id GetCurrentThreadId() { return std::this_thread::get_id(); }
-  bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
-
   bool m_debug{};
   id m_app_delegate{};
   id m_window_delegate{};
@@ -718,9 +715,20 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_owns_window{};
-  std::thread::id m_main_thread = GetCurrentThreadId();
-};
 
+  static uint64_t GetCurrentThreadId() {
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return tid;
+  }
+  bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
+  static const uint64_t m_main_thread;
+};
+const uint64_t cocoa_wkwebview_engine::m_main_thread = [] {
+  uint64_t tid;
+  pthread_threadid_np(pthread_self(), &tid);
+  return tid;
+}();
 } // namespace detail
 
 using browser_engine = detail::cocoa_wkwebview_engine;
