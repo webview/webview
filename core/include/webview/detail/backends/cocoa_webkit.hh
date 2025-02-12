@@ -307,7 +307,7 @@ protected:
     std::condition_variable cv;
     std::atomic<bool> allDone{false};
     auto const isCrossThread = isCrossThreaded();
-    user_script *script;
+    std::shared_ptr<user_script> script;
 
     auto f = [&]() {
       objc::autoreleasepool arp;
@@ -319,8 +319,9 @@ protected:
           WKUserScriptInjectionTimeAtDocumentStart, YES);
       // Script is retained when added.
       objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-      script{js, user_script::impl_ptr{new user_script::impl{wk_script},
-                                       [](user_script::impl *p) { delete p; }}};
+      script = std::make_shared<user_script>{
+          js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                    [](user_script::impl *p) { delete p; }}};
       objc::msg_send<void>(wk_script, "release"_sel);
       if (isCrossThread) {
         std::unique_lock<std::mutex> lock(mtx);
