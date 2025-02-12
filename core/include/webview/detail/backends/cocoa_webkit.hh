@@ -307,7 +307,7 @@ protected:
     std::condition_variable cv;
     std::atomic<bool> allDone{false};
     auto const isCrossThread = isCrossThreaded();
-    user_script script;
+    user_script *script;
 
     auto f = [&]() {
       objc::autoreleasepool arp;
@@ -704,7 +704,7 @@ private:
     }
   }
 
-  id GetCurrentThreadId() {
+  id GetCurrentThreadId() const {
     Class NSThread = objc_getClass("NSThread");
     SEL currentThreadSel = sel_registerName("currentThread");
     SEL threadIDSel = sel_registerName("threadID");
