@@ -51,10 +51,12 @@
 #include "../utility/string.hh"
 
 #include <atomic>
+#include <condition_variable>
 #include <cstdlib>
 #include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -675,13 +677,13 @@ protected:
   }
 
   user_script add_user_script_impl(const std::string &js) override {
-    std::mutex m;
+    std::mutex mtx;
     std::condition_variable cv;
     std::atomic<bool> allDone{false};
     auto const isCrossThread = isCrossThreaded();
     auto wjs = widen_string(js);
     std::wstring script_id;
-    auto f = [this, wjs, &script_id, isCrossThread, &allDone, &m, &cv]() {
+    auto f = [&]() {
       bool done{};
       webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
         if (SUCCEEDED(res)) {
@@ -698,14 +700,14 @@ protected:
         }
       }
       if (isCrossThread) {
-        std::unique_lock<std::mutex> lock(m);
+        std::unique_lock<std::mutex> lock(mtx);
         allDone.store(true, std::memory_order_release);
         cv.notify_one();
       }
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
-      std::unique_lock<std::mutex> lock(m);
+      std::unique_lock<std::mutex> lock(mtx);
       cv.wait(lock,
               [&allDone] { return allDone.load(std::memory_order_acquire); });
     } else {

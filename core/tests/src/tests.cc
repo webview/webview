@@ -5,9 +5,10 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <memory>
 #include <mutex>
-#include <pthread.h>
+#include <stdexcept>
 #include <thread>
 
 #define WEBVIEW_VERSION_MAJOR 1
@@ -426,8 +427,8 @@ TEST_CASE("Bad C API usage without crash") {
   ASSERT_WEBVIEW_FAILED(webview_destroy(w));
 }
 
-typedef struct {
-  std::condition_variable cv{};
+typedef struct worker_ctx_t {
+  std::condition_variable cv;
   std::atomic<bool> ready{false};
   webview::webview *w{};
 } worker_ctx_t;
@@ -445,9 +446,8 @@ void *makeWorkerThread(void *arg) {
 TEST_CASE("Ensure that terminate can execute across threads") {
   std::mutex mtx;
   std::unique_lock<std::mutex> lock(mtx);
-  pthread_t workerThread;
   worker_ctx_t ctx;
-  pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
+  std::thread workerThread(makeWorkerThread, &ctx);
   ctx.cv.wait(lock,
               [&ctx] { return ctx.ready.load(std::memory_order_acquire); });
   try {
@@ -457,13 +457,12 @@ TEST_CASE("Ensure that terminate can execute across threads") {
     throw std::runtime_error("Cross thread terminate failed.");
   }
 
-  pthread_join(workerThread, nullptr);
+  workerThread.join();
 }
 
 TEST_CASE("Ensure that bind and eval can execute across threads") {
   std::mutex mtx;
   std::unique_lock<std::mutex> lock(mtx);
-  pthread_t workerThread;
   worker_ctx_t ctx;
   auto bindIndex = 0;
 
@@ -491,7 +490,7 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
       throw std::runtime_error("Cross thread terminate failed.");
     }
   });
-  pthread_create(&workerThread, nullptr, makeWorkerThread, &ctx);
+  std::thread workerThread(makeWorkerThread, &ctx);
   ctx.cv.wait(lock, [&] { return ctx.ready.load(std::memory_order_acquire); });
 
   ctx.w->bind("boundFn", bindFn, &done);
@@ -499,7 +498,7 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
   ctx.w->eval(jsFn);
 
-  pthread_join(workerThread, nullptr);
+  workerThread.join();
 }
 
 #if _WIN32
