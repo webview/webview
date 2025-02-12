@@ -307,9 +307,10 @@ protected:
     std::condition_variable cv;
     std::atomic<bool> allDone{false};
     auto const isCrossThread = isCrossThreaded();
-    std::shared_ptr<user_script> script;
+    alignas(user_script) char buffer[sizeof(user_script)];
+    user_script *scriptPtr = nullptr;
 
-    auto f = [&]() {
+    auto f = [&, js]() {
       objc::autoreleasepool arp;
       auto wk_script = objc::msg_send<id>(
           objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
@@ -319,7 +320,7 @@ protected:
           WKUserScriptInjectionTimeAtDocumentStart, YES);
       // Script is retained when added.
       objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-      script = std::make_shared<user_script>{
+      scriptPtr = new (buffer) user_script{
           js, user_script::impl_ptr{new user_script::impl{wk_script},
                                     [](user_script::impl *p) { delete p; }}};
       objc::msg_send<void>(wk_script, "release"_sel);
@@ -337,7 +338,7 @@ protected:
     } else {
       f();
     }
-    return script;
+    return *scriptPtr;
   }
 
   void remove_all_user_scripts_impl(
