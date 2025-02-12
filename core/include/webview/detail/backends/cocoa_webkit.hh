@@ -194,7 +194,7 @@ protected:
   }
 
   noresult terminate_impl() override {
-    auto f = [&]() { stop_run_loop(); };
+    void f = [&]() { stop_run_loop(); };
     if (isCrossThreaded()) {
       dispatch_impl(f);
     } else {
@@ -281,26 +281,25 @@ protected:
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    noresult f = [&]() {
+    void f = [&]() {
       objc::autoreleasepool arp;
       // URI is null before content has begun loading.
       auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
       if (!nsurl) {
-        return {};
+        return;
       }
       objc::msg_send<void>(
           m_webview, "evaluateJavaScript:completionHandler:"_sel,
           objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                              js.c_str()),
           nullptr);
-      return {};
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
-      return {};
     } else {
-      return f();
+      f();
     }
+    return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
@@ -310,8 +309,9 @@ protected:
     auto const isCrossThread = isCrossThreaded();
     alignas(user_script) char buffer[sizeof(user_script)];
     user_script *scriptPtr = nullptr;
+    user_script script;
 
-    user_script f = [&, js]() {
+    void f = [&, js]() {
       objc::autoreleasepool arp;
       auto wk_script = objc::msg_send<id>(
           objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
@@ -321,9 +321,8 @@ protected:
           WKUserScriptInjectionTimeAtDocumentStart, YES);
       // Script is retained when added.
       objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
-      user_script script{
-          js, user_script::impl_ptr{new user_script::impl{wk_script},
-                                    [](user_script::impl *p) { delete p; }}};
+      script{js, user_script::impl_ptr{new user_script::impl{wk_script},
+                                       [](user_script::impl *p) { delete p; }}};
       objc::msg_send<void>(wk_script, "release"_sel);
       if (isCrossThread) {
         std::unique_lock<std::mutex> lock(mtx);
@@ -331,7 +330,6 @@ protected:
         allDone.store(true, std::memory_order_release);
         cv.notify_one();
       }
-      return script;
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
@@ -340,7 +338,8 @@ protected:
               [&allDone] { return allDone.load(std::memory_order_acquire); });
       return std::move(*scriptPtr);
     } else {
-      return f();
+      f();
+      return script;
     }
   }
 
