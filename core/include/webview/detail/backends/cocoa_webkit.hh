@@ -326,18 +326,18 @@ protected:
       objc::msg_send<void>(wk_script, "release"_sel);
       if (isCrossThread) {
         std::unique_lock<std::mutex> lock(mtx);
-        scriptPtr = new (buffer) script;
+        scriptPtr = new (buffer) user_script(std::move(script));
         allDone.store(true, std::memory_order_release);
         cv.notify_one();
       }
-      return script
+      return script;
     };
     if (isCrossThreaded()) {
       dispatch_impl(f);
       std::unique_lock<std::mutex> lock(mtx);
       cv.wait(lock,
               [&allDone] { return allDone.load(std::memory_order_acquire); });
-      return *scriptPtr;
+      return std::move(*scriptPtr);
     } else {
       return f();
     }
