@@ -194,7 +194,7 @@ protected:
   }
 
   noresult terminate_impl() override {
-    auto f = [&]() { stop_run_loop() };
+    auto f = [&]() { stop_run_loop(); };
     if (isCrossThreaded()) {
       dispatch_impl(f);
     } else {
