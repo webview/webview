@@ -4,7 +4,7 @@ add_executable(webview_core_tests)
 find_package(Threads REQUIRED)
 
 if(MSVC)
-    add_compile_options(/utf-8 /MT)
+    add_compile_options(/utf-8)
 endif()
 
 target_sources(webview_core_tests PRIVATE src/tests.cc)

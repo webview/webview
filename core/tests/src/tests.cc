@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <pthread.h>
+#include <stdexcept>
 #include <thread>
 
 #define WEBVIEW_VERSION_MAJOR 1
