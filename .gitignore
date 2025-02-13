@@ -1,2 +1,8 @@
 # Build artifacts
 /build
+
+# Alternate dev contexts
+/.cache
+/.vscode
+.clangd
+compile_commands.json
