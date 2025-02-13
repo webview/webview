@@ -9,7 +9,9 @@
 #include "webview/webview.h"
 
 #include <cassert>
+#include <chrono>
 #include <cstdint>
+#include <thread>
 
 TEST_CASE("Start app loop and terminate it") {
   webview::webview w(false, nullptr);
@@ -485,3 +487,15 @@ TEST_CASE("Ensure that narrow/wide string conversion works on Windows") {
   REQUIRE(narrow_string(std::wstring(2, L'\0')) == std::string(2, '\0'));
 }
 #endif
+
+TEST_CASE("Temporary test to ensure that timeout works (9s)") {
+  std::this_thread::sleep_for(std::chrono::seconds{9});
+}
+
+TEST_CASE("Temporary test to ensure that timeout works (10s)") {
+  std::this_thread::sleep_for(std::chrono::seconds{10});
+}
+
+TEST_CASE("Temporary test to ensure that timeout works (11s)") {
+  std::this_thread::sleep_for(std::chrono::seconds{11});
+}
