@@ -717,7 +717,7 @@ private:
   id m_manager{};
   bool m_owns_window{};
 
-  uint64_t GetCurrentThreadId() {
+  uint64_t GetCurrentThreadId() const {
     return static_cast<uint64_t>(pthread_mach_thread_np(pthread_self()));
   }
   bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
