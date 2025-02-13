@@ -720,7 +720,7 @@ private:
   uint64_t GetCurrentThreadId() {
     id currentThread = ((id(*)(Class, SEL))objc_msgSend)(
         objc_getClass("NSThread"), sel_registerName("currentThread"));
-    auto ID = ((uint64_t (*)(id, SEL))objc_msgSend)(
+    auto ID = ((uint64_t(*)(id, SEL))objc_msgSend)(
         currentThread, sel_registerName("threadID"));
     return ID;
   }
