@@ -56,13 +56,13 @@ inputs:
     description: CMake source directory
     required: false
     default: .
-  test-wrapper-cmd:
-    description: Test wrapper command
-    required: false
   test-timeout:
     description: Test timeout in seconds
     required: false
     default: '60'
+  test-wrapper-cmd:
+    description: Test wrapper command
+    required: false
   upload-coverage-artifacts:
     description: Upload coverage artifacts?
     required: false
