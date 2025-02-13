@@ -86,7 +86,8 @@ public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug},
         m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
+        m_owns_window{!window},
+        m_main_thread{GetCurrentThreadId()} {
     auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
@@ -722,7 +723,7 @@ private:
     return tid;
   }
   bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
-  uint64_t m_main_thread = GetCurrentThreadId();
+  uint64_t m_main_thread{};
 };
 
 } // namespace detail
