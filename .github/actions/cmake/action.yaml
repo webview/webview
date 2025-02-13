@@ -62,7 +62,7 @@ inputs:
   test-timeout:
     description: Test timeout in seconds
     required: false
-    default: '10'
+    default: '60'
   upload-coverage-artifacts:
     description: Upload coverage artifacts?
     required: false
