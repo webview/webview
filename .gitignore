@@ -1,2 +1,11 @@
 # Build artifacts
 /build
+/Testing
+
+# Dev contexts
+/.cache
+/.vscode
+/.devutils
+.clangd
+compile_commands.json
+makefile

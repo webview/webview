@@ -54,10 +54,12 @@
 #include "../utility/string.hh"
 
 #include <atomic>
+#include <condition_variable>
 #include <cstdlib>
 #include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -605,7 +607,12 @@ protected:
     return error_info{WEBVIEW_ERROR_INVALID_STATE};
   }
   noresult terminate_impl() override {
-    PostQuitMessage(0);
+    auto f = []() { PostQuitMessage(0); };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
+    };
     return {};
   }
   noresult dispatch_impl(dispatch_fn_t f) override {
@@ -656,8 +663,14 @@ protected:
   noresult eval_impl(const std::string &js) override {
     // TODO: Skip if no content has begun loading yet. Can't check with
     //       ICoreWebView2::get_Source because it returns "about:blank".
+
     auto wjs = widen_string(js);
-    m_webview->ExecuteScript(wjs.c_str(), nullptr);
+    auto f = [this, wjs]() { m_webview->ExecuteScript(wjs.c_str(), nullptr); };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+    } else {
+      f();
+    }
     return {};
   }
 
@@ -667,23 +680,43 @@ protected:
   }
 
   user_script add_user_script_impl(const std::string &js) override {
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> allDone{false};
+    auto const isCrossThread = isCrossThreaded();
     auto wjs = widen_string(js);
     std::wstring script_id;
-    bool done{};
-    webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
+    auto f = [&]() {
+      bool done{};
+      webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
+        if (SUCCEEDED(res)) {
+          script_id = id;
+        }
+        done = true;
+      }};
+      auto res =
+          m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
       if (SUCCEEDED(res)) {
-        script_id = id;
+        // Sadly we need to pump the even loop in order to get the script ID.
+        while (!done) {
+          deplete_run_loop_event_queue();
+        }
       }
-      done = true;
-    }};
-    auto res =
-        m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
-    if (SUCCEEDED(res)) {
-      // Sadly we need to pump the even loop in order to get the script ID.
-      while (!done) {
-        deplete_run_loop_event_queue();
+      if (isCrossThread) {
+        std::unique_lock<std::mutex> lock(mtx);
+        allDone.store(true, std::memory_order_release);
+        cv.notify_one();
       }
+    };
+    if (isCrossThreaded()) {
+      dispatch_impl(f);
+      std::unique_lock<std::mutex> lock(mtx);
+      cv.wait(lock,
+              [&allDone] { return allDone.load(std::memory_order_acquire); });
+    } else {
+      f();
     }
+
     // TODO: There's a non-zero chance that we didn't get the script ID.
     //       We need to convey the error somehow.
     return user_script{
@@ -867,6 +900,7 @@ private:
       }
     }
   }
+  bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
 
   // The app is expected to call CoInitializeEx before
   // CreateCoreWebView2EnvironmentWithOptions.
@@ -885,7 +919,6 @@ private:
   int m_dpi{};
   bool m_owns_window{};
 };
-
 } // namespace detail
 
 using browser_engine = detail::win32_edge_engine;
