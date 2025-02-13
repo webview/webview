@@ -718,11 +718,7 @@ private:
   bool m_owns_window{};
 
   uint64_t GetCurrentThreadId() {
-    id currentThread = ((id(*)(Class, SEL))objc_msgSend)(
-        objc_getClass("NSThread"), sel_registerName("currentThread"));
-    auto ID = ((uint64_t(*)(id, SEL))objc_msgSend)(
-        currentThread, sel_registerName("threadID"));
-    return ID;
+    return static_cast<uint64_t>(pthread_mach_thread_np(pthread_self()));
   }
   bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
   uint64_t m_main_thread{};
