@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_DPI_HH) &&                               \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_DPI_HH
 #define WEBVIEW_PLATFORM_WINDOWS_DPI_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 //
 // ====================================================================
@@ -153,4 +156,5 @@ inline SIZE make_window_frame_size(HWND window, int width, int height,
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_DPI_HH

@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH) &&                           \
-    defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
+#ifndef WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
 
 #include "../../../native_library.hh"
 #include "../iid.hh"
@@ -372,4 +375,5 @@ static constexpr auto add_script_to_execute_on_document_created_completed =
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
