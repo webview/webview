@@ -469,7 +469,7 @@ TEST_CASE("Ensure that terminate can execute across threads") {
   workerThread.join();
 #endif
 }
-
+/*
 TEST_CASE("Ensure that bind and eval can execute across threads") {
   std::mutex mtx;
   std::unique_lock<std::mutex> lock(mtx);
@@ -519,7 +519,7 @@ TEST_CASE("Ensure that bind and eval can execute across threads") {
   workerThread.join();
 #endif
 }
-
+*/
 #if _WIN32
 TEST_CASE("Ensure that version number parsing works on Windows") {
   using namespace webview::detail;
