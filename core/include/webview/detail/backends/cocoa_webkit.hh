@@ -721,7 +721,7 @@ private:
     return static_cast<uint64_t>(pthread_mach_thread_np(pthread_self()));
   }
   bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
-  uint64_t m_main_thread{};
+  uint64_t const m_main_thread{};
 };
 
 } // namespace detail
