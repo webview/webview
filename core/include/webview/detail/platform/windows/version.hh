@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_VERSION_HH) &&                           \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 #define WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 #include "ntdll.hh"
 
@@ -140,4 +143,5 @@ inline int compare_os_version(unsigned int major, unsigned int minor,
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_VERSION_HH

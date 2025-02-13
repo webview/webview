@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_DARWIN_OBJC_HH) &&                               \
-    defined(WEBVIEW_PLATFORM_DARWIN)
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN)
 
 #include <cstddef>
 
@@ -109,4 +112,5 @@ inline id operator"" _str(const char *s, std::size_t) {
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH

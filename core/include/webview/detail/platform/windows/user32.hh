@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_USER32_HH) &&                            \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_USER32_HH
 #define WEBVIEW_PLATFORM_WINDOWS_USER32_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 #include "../../native_library.hh"
 
@@ -80,4 +83,5 @@ constexpr auto AreDpiAwarenessContextsEqual =
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_USER32_HH

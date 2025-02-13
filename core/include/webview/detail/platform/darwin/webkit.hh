@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH) &&                             \
-    defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
 #define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include <objc/NSObjCRuntime.h>
 
@@ -39,4 +42,5 @@ enum WKUserScriptInjectionTime : NSInteger {
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
