@@ -59,6 +59,10 @@ inputs:
   test-wrapper-cmd:
     description: Test wrapper command
     required: false
+  test-timeout:
+    description: Test timeout in seconds
+    required: false
+    default: '10'
   upload-coverage-artifacts:
     description: Upload coverage artifacts?
     required: false
@@ -147,6 +151,9 @@ runs:
             --output-on-failure
             --build-config "${config}"
           )
+          if [[ ! -z "${{ inputs.test-timeout }}" ]]; then
+            cmake_cmd+=(--timeout "${{ inputs.test-timeout }}")
+          fi
           "${cmake_cmd[@]}"
         done
       shell: ${{ inputs.shell }}
