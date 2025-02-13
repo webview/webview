@@ -716,19 +716,15 @@ private:
   id m_manager{};
   bool m_owns_window{};
 
-  static uint64_t GetCurrentThreadId() {
+  uint64_t GetCurrentThreadId() {
     uint64_t tid;
     pthread_threadid_np(pthread_self(), &tid);
     return tid;
   }
-  bool isCrossThreaded() const { return m_main_thread != GetCurrentThreadId(); }
-  static const uint64_t m_main_thread;
+  bool isCrossThreaded() { return m_main_thread != GetCurrentThreadId(); }
+  uint64_t m_main_thread = GetCurrentThreadId();
 };
-const uint64_t cocoa_wkwebview_engine::m_main_thread = [] {
-  uint64_t tid;
-  pthread_threadid_np(pthread_self(), &tid);
-  return tid;
-}();
+
 } // namespace detail
 
 using browser_engine = detail::cocoa_wkwebview_engine;
