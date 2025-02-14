@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH) &&                             \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH
 #define WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 #include "../../native_library.hh"
 
@@ -48,4 +51,5 @@ constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_NTDLL_HH

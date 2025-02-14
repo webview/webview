@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH) &&                             \
-    defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH
+
+#include "../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 
 //
 // ====================================================================
@@ -333,4 +336,5 @@ using browser_engine = detail::gtk_webkit_engine;
 
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_H

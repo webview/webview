@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_IID_HH) &&                               \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_IID_HH
 #define WEBVIEW_PLATFORM_WINDOWS_IID_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -68,4 +71,5 @@ To *cast_if_equal_iid(From *from, REFIID riid, const cast_info_t<To> &info,
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_IID_HH

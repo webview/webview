@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH) &&                  \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH
 #define WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 //
 // ====================================================================
@@ -112,4 +115,5 @@ private:
 } // namespace detail
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH

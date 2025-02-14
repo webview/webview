@@ -23,9 +23,12 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_BACKENDS_COCOA_WEBKIT_HH) &&                              \
-    defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#ifndef WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 #define WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
+
+#include "../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 //
 // ====================================================================
@@ -685,4 +688,5 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 
 } // namespace webview
 
+#endif
 #endif // WEBVIEW_BACKENDS_COCOA_WEBKIT_H
