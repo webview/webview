@@ -1,8 +1,11 @@
 # Build artifacts
 /build
+/Testing
 
-# Alternate dev contexts
+# Dev contexts
 /.cache
 /.vscode
+/.devutils
 .clangd
 compile_commands.json
+makefile
