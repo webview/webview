@@ -515,6 +515,10 @@ private:
       objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
 
       on_window_created();
+
+      constexpr const int initial_width = 640;
+      constexpr const int initial_height = 480;
+      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     }
 
     set_up_web_view();
