@@ -412,9 +412,6 @@ public:
       on_window_created();
 
       m_dpi = get_window_dpi(m_window);
-      constexpr const int initial_width = 640;
-      constexpr const int initial_height = 480;
-      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
     } else {
       m_window = IsWindow(static_cast<HWND>(window))
                      ? static_cast<HWND>(window)

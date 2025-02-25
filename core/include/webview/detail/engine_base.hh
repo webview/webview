@@ -128,12 +128,20 @@ window.__webview__.onUnbind(" +
   result<void *> window() { return window_impl(); }
   result<void *> widget() { return widget_impl(); }
   result<void *> browser_controller() { return browser_controller_impl(); }
-  noresult run() { return run_impl(); }
+  noresult run() {
+    if (!is_size_set) {
+      constexpr const int initial_width = 640;
+      constexpr const int initial_height = 480;
+      set_size(initial_width, initial_height, WEBVIEW_HINT_NONE);
+    }
+    return run_impl();
+  }
   noresult terminate() { return terminate_impl(); }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
   noresult set_title(const std::string &title) { return set_title_impl(title); }
 
   noresult set_size(int width, int height, webview_hint_t hints) {
+    is_size_set = true;
     return set_size_impl(width, height, hints);
   }
 
@@ -315,6 +323,7 @@ protected:
       }
     }
   }
+  bool is_size_set = false;
 
 private:
   static std::atomic_uint &window_ref_count() {
