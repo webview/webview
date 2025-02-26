@@ -508,12 +508,6 @@ public:
       throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
     }
 
-    if (m_owns_window) {
-      ShowWindow(m_window, SW_SHOW);
-      UpdateWindow(m_window);
-      SetFocus(m_window);
-    }
-
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
@@ -640,6 +634,11 @@ protected:
       SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
+    }
+    if (m_owns_window && !m_is_size_set) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
     }
     return {};
   }
