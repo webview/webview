@@ -747,6 +747,7 @@ private:
     bool got_quit_msg = false;
     MSG msg;
     while (flag.test_and_set() && !got_quit_msg) {
+      Sleep(1);
       while (PeekMessageW(&msg, nullptr, 0, 0, PM_NOREMOVE)) {
         if (0 >= GetMessageW(&msg, nullptr, 0, 0)) {
           got_quit_msg = true;
