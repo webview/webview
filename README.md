@@ -223,10 +223,10 @@ An amalgamated library can be built when building the project using CMake, or th
 The latter is described below.
 
 ```sh
-python3 scripts/amalgamate.py --output webview_amalgamation.h core/include/webview/webview.h
+python3 scripts/amalgamate/amalgamate.py --search core/include --output webview_amalgamation.h core/src/
 ```
 
-See `python3 scripts/amalgamate.py --help` for script usage.
+See `python3 scripts/amalgamate/amalgamate.py --help` for script usage.
 
 ### Non-CMake Usage
 

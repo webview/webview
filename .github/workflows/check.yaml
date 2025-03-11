@@ -14,6 +14,7 @@ jobs:
   amalgamate:
     runs-on: ${{ matrix.image }}
     strategy:
+      fail-fast: false
       matrix:
         image:
           - macos-14
@@ -24,25 +25,105 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+        build-type:
+          - header
+          - shared
+          - static
         include:
           - image: macos-14
             clang-format-exe: clang-format
           - image: ubuntu-22.04
             clang-format-exe: clang-format-15
+            test-wrapper-cmd: xvfb-run
           - image: windows-2022
             clang-format-exe: clang-format
     steps:
       - uses: actions/checkout@v4
-      - if: runner.os == 'Linux'
+
+      - name: Set up environment
+        uses: ./.github/actions/setup-env
+        with:
+          apt: gcc-12 g++-12
+          msys-pacboy: clang-tools-extra:p
+          webkitgtk-api: "6.0"
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y clang-format-15
-      - if: runner.os == 'macOS'
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
         run: brew install clang-format
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: |
-          python3 scripts/amalgamate.py \
-            "--clang-format-exe=${{ matrix.clang-format-exe }}" \
-            --base core/include/webview \
-            --output webviev_amalgamation.h webview.h
+
+      - name: Generate amalgamated header
+        run: |
+          python3 amalgamate.py \
+            --clang-format-exe "${{ matrix.clang-format-exe }}" \
+            --search ../../core/include \
+            --output generated/webview_amalgamation.h \
+            ../../core/src/
         shell: bash
+        working-directory: scripts/amalgamate
+
+      - name: Test (${{ matrix.build-type }}, Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p build
+          if [[ "${{ matrix.build-type }}" == "header" ]]; then
+            c++ main.cc --std=c++11 $(pkg-config --cflags --libs gtk4 webkitgtk-6.0) -ldl -I../generated -o build/main
+          elif [[ "${{ matrix.build-type }}" == "shared" ]]; then
+            c++ webview.cc --shared --std=c++11 -fPIC $(pkg-config --cflags --libs gtk4 webkitgtk-6.0) -ldl -I../generated -DWEBVIEW_BUILD_SHARED -o build/libwebview.so
+            cc main.c build/libwebview.so --std=c99 -I../generated -DWEBVIEW_SHARED -o build/main
+          elif [[ "${{ matrix.build-type }}" == "static" ]]; then
+            c++ webview.cc -c --std=c++11 $(pkg-config --cflags gtk4 webkitgtk-6.0) -ldl -I../generated -DWEBVIEW_STATIC -o build/webview.o
+            cc main.c build/webview.o --std=c99 $(pkg-config --libs gtk4 webkitgtk-6.0) -lstdc++ -I../generated -DWEBVIEW_STATIC -o build/main
+          fi
+          xvfb-run build/main
+        shell: bash
+        working-directory: scripts/amalgamate/test
+
+      - name: Test (${{ matrix.build-type }}, macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p build
+          if [[ "${{ matrix.build-type }}" == "header" ]]; then
+            c++ main.cc --std=c++11 -framework WebKit -ldl -I../generated -o build/main
+          elif [[ "${{ matrix.build-type }}" == "shared" ]]; then
+            c++ webview.cc --shared --std=c++11 -fPIC -framework WebKit -ldl -I../generated -DWEBVIEW_BUILD_SHARED -o build/libwebview.so
+            cc main.c build/libwebview.so --std=c99 -I../generated -DWEBVIEW_SHARED -o build/main
+          elif [[ "${{ matrix.build-type }}" == "static" ]]; then
+            c++ webview.cc -c --std=c++11 -framework WebKit -ldl -I../generated -DWEBVIEW_STATIC -o build/webview.o
+            cc main.c build/webview.o --std=c99 -framework WebKit -lstdc++ -I../generated -DWEBVIEW_STATIC -o build/main
+          fi
+          build/main
+        shell: bash
+        working-directory: scripts/amalgamate/test
+
+      - name: Test (${{ matrix.build-type }}, Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mswebview2_version=1.0.1150.38
+          mswebview2_zip=$(mktemp)
+          mswebview2_dir=$(mktemp -d)
+          mswebview2_include_dir="${mswebview2_dir}/build/native/include"
+          curl -sSLo "${mswebview2_zip}" "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${mswebview2_version}"
+          unzip -q "${mswebview2_zip}" -d "${mswebview2_dir}"
+          libs=(-ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
+          mkdir -p build
+          if [[ "${{ matrix.build-type }}" == "header" ]]; then
+            g++ main.cc --std=c++14  "${libs[@]}" "-I${mswebview2_include_dir}" -I../generated -o build/main
+          elif [[ "${{ matrix.build-type }}" == "shared" ]]; then
+            g++ webview.cc --shared --std=c++14 -fPIC  "${libs[@]}" "-I${mswebview2_include_dir}" -I../generated -DWEBVIEW_BUILD_SHARED -o build/libwebview.so
+            gcc main.c build/libwebview.so --std=c99 -I../generated -DWEBVIEW_SHARED -o build/main
+          elif [[ "${{ matrix.build-type }}" == "static" ]]; then
+            g++ webview.cc -c --std=c++14 "-I${mswebview2_include_dir}" -I../generated -DWEBVIEW_STATIC -o build/webview.o
+            gcc main.c build/webview.o --std=c99 "${libs[@]}" -lstdc++ -I../generated -DWEBVIEW_STATIC -o build/main
+          fi
+          build/main
+        shell: bash
+        working-directory: scripts/amalgamate/test

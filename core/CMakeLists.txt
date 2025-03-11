@@ -62,6 +62,7 @@ if(WEBVIEW_BUILD_AMALGAMATION)
         webview_find_clang_format(${WEBVIEW_IS_CI})
         if(WEBVIEW_CLANG_FORMAT_EXE)
             file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS include/**)
+            file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS src/**)
             set(AMALGAMATION_STAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h.stamp")
 
             add_custom_command(
@@ -69,11 +70,11 @@ if(WEBVIEW_BUILD_AMALGAMATION)
                 COMMAND "${CMAKE_COMMAND}" -E touch "${AMALGAMATION_STAMP_FILE}"
                 COMMAND ${Python3_EXECUTABLE}
                     "${PROJECT_SOURCE_DIR}/scripts/amalgamate.py"
-                    --base "${CMAKE_CURRENT_SOURCE_DIR}/include/webview"
                     --clang-format-exe "${WEBVIEW_CLANG_FORMAT_EXE}"
+                    --search "${CMAKE_CURRENT_SOURCE_DIR}/include"
                     --output "${CMAKE_CURRENT_BINARY_DIR}/amalgamation/webview.h"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/include/webview/webview.h"
-                DEPENDS ${HEADER_FILES}
+                    ${SOURCE_FILES}
+                DEPENDS ${HEADER_FILES} ${SOURCE_FILES}
                 COMMENT "Building amalgamation..."
                 VERBATIM)
 
