@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_TYPES_HH
 #define WEBVIEW_TYPES_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "detail/basic_result.hh"
 #include "errors.hh"
 
@@ -42,4 +44,5 @@ using noresult = detail::basic_result<void, error_info, exception>;
 
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_TYPES_HH

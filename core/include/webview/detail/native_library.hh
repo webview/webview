@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
 #define WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "utility/string.hh"
 
 #include <string>
@@ -164,4 +166,5 @@ private:
 } // namespace detail
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
