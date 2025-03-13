@@ -636,6 +636,7 @@ protected:
                        SWP_FRAMECHANGED);
     }
     if (m_owns_window && !m_is_size_set) {
+      m_is_size_set = true;
       ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
       SetFocus(m_window);
@@ -880,6 +881,7 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
+  bool m_is_size_set{false};
 };
 
 } // namespace detail

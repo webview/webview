@@ -322,9 +322,6 @@ protected:
       }
     }
   }
-  bool m_is_size_set = false;
-  const int m_initial_width = 640;
-  const int m_initial_height = 480;
 
 private:
   static std::atomic_uint &window_ref_count() {
@@ -345,6 +342,10 @@ private:
   std::map<std::string, binding_ctx_t> bindings;
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;
+
+  bool m_is_size_set{false};
+  static const int m_initial_width = 640;
+  static const int m_initial_height = 480;
 };
 
 } // namespace detail
