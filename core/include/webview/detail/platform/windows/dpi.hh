@@ -117,8 +117,7 @@ inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
 }
 
 constexpr int get_default_window_dpi() {
-  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
-  return default_dpi;
+  return 96; // USER_DEFAULT_SCREEN_DPI
 }
 
 inline int get_window_dpi(HWND window) {
@@ -135,9 +134,8 @@ constexpr int scale_value_for_dpi(int value, int from_dpi, int to_dpi) {
 }
 
 constexpr SIZE scale_size(int width, int height, int from_dpi, int to_dpi) {
-  auto scaled_width = scale_value_for_dpi(width, from_dpi, to_dpi);
-  auto scaled_height = scale_value_for_dpi(height, from_dpi, to_dpi);
-  return {scaled_width, scaled_height};
+  return {scale_value_for_dpi(width, from_dpi, to_dpi),
+          scale_value_for_dpi(height, from_dpi, to_dpi)};
 }
 
 inline SIZE make_window_frame_size(HWND window, int width, int height,
