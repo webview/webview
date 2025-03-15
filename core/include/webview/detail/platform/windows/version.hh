@@ -26,7 +26,7 @@
 #ifndef WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 #define WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../../macros.h"
 

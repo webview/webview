@@ -26,7 +26,7 @@
 #ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../../../macros.h"
 
