@@ -98,7 +98,10 @@ public:
 
   com_init_wrapper(const com_init_wrapper &other) = delete;
   com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
-  com_init_wrapper(com_init_wrapper &&other) noexcept { *this = std::move(other); }
+
+  com_init_wrapper(com_init_wrapper &&other) noexcept {
+    *this = std::move(other);
+  }
 
   com_init_wrapper &operator=(com_init_wrapper &&other) noexcept {
     if (this == &other) {
