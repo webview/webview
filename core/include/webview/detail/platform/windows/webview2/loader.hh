@@ -201,10 +201,19 @@ public:
 private:
 #if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
   struct client_info_t {
-    bool found = false;
+    bool found{};
     std::wstring dll_path;
     std::wstring version;
-    webview2_runtime_type runtime_type;
+    webview2_runtime_type runtime_type{};
+
+    client_info_t() = default;
+
+    client_info_t(bool found, std::wstring dll_path, std::wstring version,
+                  webview2_runtime_type runtime_type)
+        : found{found},
+          dll_path{std::move(dll_path)},
+          version{std::move(version)},
+          runtime_type{runtime_type} {}
   };
 
   HRESULT create_environment_with_options_impl(
@@ -307,7 +316,7 @@ private:
     }
 
     auto client_dll_path = make_client_dll_path(ebwebview_value);
-    return {true, client_dll_path, client_version_string,
+    return {true, std::move(client_dll_path), std::move(client_version_string),
             webview2_runtime_type::installed};
   }
 
@@ -322,7 +331,7 @@ private:
       return {};
     }
 
-    return {true, client_dll_path, client_version_string,
+    return {true, std::move(client_dll_path), std::move(client_version_string),
             webview2_runtime_type::embedded};
   }
 
