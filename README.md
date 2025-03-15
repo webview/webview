@@ -26,7 +26,7 @@ The most up-to-date documentation is right in the source code. Improving the doc
 
 ## Prerequisites
 
-Your compiler must support minimum C++11 except for platforms that require a more modern version.
+Your compiler must support minimum C++11.
 
 This project uses CMake and Ninja, and while recommended for your convenience, these tools aren't required for using the library.
 
