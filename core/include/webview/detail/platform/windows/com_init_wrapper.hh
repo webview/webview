@@ -104,7 +104,8 @@ public:
     if (this == &other) {
       return *this;
     }
-    m_initialized = std::exchange(other.m_initialized, false);
+    m_initialized = other.m_initialized;
+    other.m_initialized = false;
     return *this;
   }
 
