@@ -115,8 +115,7 @@ inline bool enable_non_client_dpi_scaling_if_needed(HWND window) {
 }
 
 constexpr int get_default_window_dpi() {
-  constexpr const int default_dpi = 96; // USER_DEFAULT_SCREEN_DPI
-  return default_dpi;
+  return 96; // USER_DEFAULT_SCREEN_DPI
 }
 
 inline int get_window_dpi(HWND window) {
