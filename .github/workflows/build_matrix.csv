@@ -27,8 +27,8 @@ package,linux,ubuntu-22.04,host,11,llvm,-15,Ninja Multi-Config,FALSE,TRUE,TRUE,F
 package,linux,ubuntu-22.04,host,14,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,17,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
 package,linux,ubuntu-22.04,host,20,llvm,-15,Ninja Multi-Config,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-15 clang++-15 clang-tidy-15,,,xvfb-run,4.0,", webkitgtk4.0",
-package,linux,ubuntu-20.04,host,11,gnu,-10,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-10 g++-10,,,xvfb-run,4.0,", webkitgtk4.0",
-package,linux,ubuntu-20.04,host,11,llvm,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-12 clang++-12 clang-tidy-12,,,xvfb-run,4.0,", webkitgtk4.0",
+package,linux,ubuntu-22.04,host,11,gnu,-10,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,gcc-10 g++-10,,,xvfb-run,4.0,", webkitgtk4.0",Previously used the ubuntu-20.04 image where GCC 10 was latest
+package,linux,ubuntu-22.04,host,11,llvm,-12,Ninja Multi-Config,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,clang-12 clang++-12 clang-tidy-12,,,xvfb-run,4.0,", webkitgtk4.0",Previously used the ubuntu-20.04 image where Clang 12 was latest
 package,macos,macos-14,universal,11,macos-llvm,,Xcode,FALSE,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,bash,,,,,,10.9,,,,
 package,macos,macos-14,universal,14,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
 package,macos,macos-14,universal,17,macos-llvm,,Xcode,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,bash,,,,,,10.9,,,,
