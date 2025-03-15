@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_ERRORS_HH
 #define WEBVIEW_ERRORS_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "errors.h"
 
 #include <exception>
@@ -79,4 +81,5 @@ private:
 
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_ERRORS_HH

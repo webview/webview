@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
@@ -45,7 +47,7 @@
 
 #include <objbase.h>
 
-#include "WebView2.h"
+#include "WebView2.h" // amalgamate(skip)
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
@@ -375,5 +377,6 @@ static constexpr auto add_script_to_execute_on_document_created_completed =
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
