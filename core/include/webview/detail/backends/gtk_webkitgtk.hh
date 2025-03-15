@@ -340,4 +340,4 @@ using browser_engine = detail::gtk_webkit_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_H
+#endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH

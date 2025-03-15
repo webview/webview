@@ -692,4 +692,4 @@ using browser_engine = detail::cocoa_wkwebview_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_BACKENDS_COCOA_WEBKIT_H
+#endif // WEBVIEW_BACKENDS_COCOA_WEBKIT_HH

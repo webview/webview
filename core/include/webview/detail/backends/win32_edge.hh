@@ -896,4 +896,4 @@ using browser_engine = detail::win32_edge_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_BACKENDS_WIN32_EDGE_H
+#endif // WEBVIEW_BACKENDS_WIN32_EDGE_HH
