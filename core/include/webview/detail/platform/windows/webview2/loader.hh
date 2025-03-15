@@ -216,7 +216,7 @@ private:
     if (!found_client.found) {
       return -1;
     }
-    auto client_dll = native_library(found_client.dll_path.c_str());
+    auto client_dll = native_library(found_client.dll_path);
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
       return fn(true, found_client.runtime_type, user_data_dir, env_options,
