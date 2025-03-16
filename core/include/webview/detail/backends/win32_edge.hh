@@ -512,6 +512,7 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_widget, debug, cb).ensure_ok();
+    set_size_default();
   }
 
   virtual ~win32_edge_engine() {

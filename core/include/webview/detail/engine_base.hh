@@ -128,12 +128,7 @@ window.__webview__.onUnbind(" +
   result<void *> window() { return window_impl(); }
   result<void *> widget() { return widget_impl(); }
   result<void *> browser_controller() { return browser_controller_impl(); }
-  noresult run() {
-    if (!m_is_size_set) {
-      set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
-    }
-    return run_impl();
-  }
+  noresult run() { return run_impl(); }
   noresult terminate() { return terminate_impl(); }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
   noresult set_title(const std::string &title) { return set_title_impl(title); }
@@ -154,6 +149,14 @@ window.__webview__.onUnbind(" +
   noresult eval(const std::string &js) { return eval_impl(js); }
 
 protected:
+  noresult set_size_default() {
+    dispatch([&]() {
+      if (!m_is_size_set) {
+        set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
+      }
+    });
+    return noresult{};
+  }
   virtual noresult navigate_impl(const std::string &url) = 0;
   virtual result<void *> window_impl() = 0;
   virtual result<void *> widget_impl() = 0;

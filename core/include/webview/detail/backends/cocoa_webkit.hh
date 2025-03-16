@@ -117,6 +117,7 @@ public:
         }
       }
     }
+    set_size_default();
   }
 
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
@@ -234,22 +235,24 @@ protected:
       style =
           static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
     }
-    objc::msg_send<void>(m_window, "setStyleMask:"_sel, style);
+    auto fn = []this, style, hints, width, height]() {
+      objc::msg_send<void>(m_window, "setStyleMask:"_sel, style);
 
-    if (hints == WEBVIEW_HINT_MIN) {
-      objc::msg_send<void>(m_window, "setContentMinSize:"_sel,
-                           CGSizeMake(width, height));
-    } else if (hints == WEBVIEW_HINT_MAX) {
-      objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
-                           CGSizeMake(width, height));
-    } else {
-      CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
-      objc::msg_send<void>(
-          m_window, "setFrame:display:animate:"_sel,
-          CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
-    }
-    objc::msg_send<void>(m_window, "center"_sel);
-
+      if (hints == WEBVIEW_HINT_MIN) {
+        objc::msg_send<void>(m_window, "setContentMinSize:"_sel,
+                             CGSizeMake(width, height));
+      } else if (hints == WEBVIEW_HINT_MAX) {
+        objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
+                             CGSizeMake(width, height));
+      } else {
+        CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
+        objc::msg_send<void>(
+            m_window, "setFrame:display:animate:"_sel,
+            CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
+      }
+      objc::msg_send<void>(m_window, "center"_sel);
+    };
+    dispatch(fn);
     return {};
   }
   noresult navigate_impl(const std::string &url) override {
