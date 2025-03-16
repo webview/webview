@@ -653,17 +653,14 @@ private:
     return temp;
   }
 
-  // Blocks while depleting the run loop of events.
-  void deplete_run_loop_event_queue() {
+  void run_event_loop_while(std::function<bool()> fn) override {
     objc::autoreleasepool arp;
     auto app = get_shared_application();
-    bool done{};
-    dispatch([&] { done = true; });
     auto mask = NSUIntegerMax; // NSEventMaskAny
     // NSDefaultRunLoopMode
     auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                                    "kCFRunLoopDefaultMode");
-    while (!done) {
+    while (fn()) {
       objc::autoreleasepool arp2;
       auto event = objc::msg_send<id>(
           app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
