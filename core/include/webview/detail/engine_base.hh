@@ -149,14 +149,6 @@ window.__webview__.onUnbind(" +
   noresult eval(const std::string &js) { return eval_impl(js); }
 
 protected:
-  noresult set_size_default() {
-    dispatch([&]() {
-      if (!m_is_size_set) {
-        set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
-      }
-    });
-    return noresult{};
-  }
   virtual noresult navigate_impl(const std::string &url) = 0;
   virtual result<void *> window_impl() = 0;
   virtual result<void *> widget_impl() = 0;
@@ -324,6 +316,13 @@ protected:
         terminate();
       }
     }
+  }
+  void set_size_default() {
+    dispatch([this]() {
+      if (!m_is_size_set) {
+        set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
+      }
+    });
   }
 
 private:
