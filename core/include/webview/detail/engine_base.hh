@@ -163,8 +163,13 @@ protected:
   virtual noresult eval_impl(const std::string &js) = 0;
 
   virtual user_script *add_user_script(const std::string &js) {
-    return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
-                                                  add_user_script_impl(js)));
+    auto size_set_state = m_is_size_set;
+    m_is_size_set =
+        true; // prevents premature run-loop triggering of default window size
+    auto script = std::addressof(*m_user_scripts.emplace(
+        m_user_scripts.end(), add_user_script_impl(js)));
+    m_is_size_set = size_set_state;
+    return script;
   }
 
   virtual user_script add_user_script_impl(const std::string &js) = 0;
