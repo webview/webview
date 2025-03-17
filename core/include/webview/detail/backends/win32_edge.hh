@@ -512,7 +512,9 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_widget, debug, cb).ensure_ok();
-    dispatch_size_default();
+    if (m_owns_window) {
+      dispatch_size_default();
+    }
   }
 
   virtual ~win32_edge_engine() {
@@ -868,7 +870,7 @@ private:
       }
     }
     // add the default window size event back to the event queue
-    if (!m_is_window_shown) {
+    if (m_owns_window && !m_is_window_shown) {
       set_is_size_set(false);
       dispatch_size_default();
     }

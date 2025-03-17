@@ -116,8 +116,8 @@ public:
           set_up_window();
         }
       }
+      dispatch_size_default();
     }
-    dispatch_size_default();
   }
 
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
