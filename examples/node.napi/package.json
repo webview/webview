@@ -1,0 +1,16 @@
+{
+  "name": "webview-napi-example",
+  "version": "0.0.0",
+  "scripts": {
+    "preinstall": "node ./dist/windows.preinstall.js",
+    "install": "node-gyp configure && node-gyp build"
+  },
+  "author": "Michael Jonker",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "bindings": "^1.5.0",
+    "node-addon-api": "^8.3.0",
+    "node-gyp": "^11.0.0",
+    "typescript": "^5.7.3"
+  }
+}
