@@ -146,7 +146,7 @@ public:
       gtk_widget_grab_focus(GTK_WIDGET(m_webview));
       gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
     }
-    set_size_default();
+    dispatch_size_default();
   }
 
   gtk_webkit_engine(const gtk_webkit_engine &) = delete;
