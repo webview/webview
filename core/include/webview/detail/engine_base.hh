@@ -163,16 +163,8 @@ protected:
   virtual noresult eval_impl(const std::string &js) = 0;
 
   virtual user_script *add_user_script(const std::string &js) {
-    auto size_state = m_is_size_set;
-    m_is_size_set =
-        true; // prevents premature run-loop triggering of default window size
-    auto script = std::addressof(*m_user_scripts.emplace(
-        m_user_scripts.end(), add_user_script_impl(js)));
-    m_is_size_set = size_state;
-    if (!m_is_size_set) {
-      set_size_default();
-    }
-    return script;
+    return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
+                                                  add_user_script_impl(js)));
   }
 
   virtual user_script add_user_script_impl(const std::string &js) = 0;
@@ -325,13 +317,16 @@ protected:
       }
     }
   }
-  void set_size_default() {
+
+  void dispatch_size_default() {
     dispatch([this]() {
       if (!m_is_size_set) {
         set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
       }
     });
   }
+
+  void set_is_size_set(bool flag) { m_is_size_set = flag; }
 
 private:
   static std::atomic_uint &window_ref_count() {
@@ -353,7 +348,7 @@ private:
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;
 
-  bool m_is_size_set{false};
+  bool m_is_size_set{};
   static const int m_initial_width = 640;
   static const int m_initial_height = 480;
 };

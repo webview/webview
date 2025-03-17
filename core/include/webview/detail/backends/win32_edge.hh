@@ -512,7 +512,7 @@ public:
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
 
     embed(m_widget, debug, cb).ensure_ok();
-    set_size_default();
+    dispatch_size_default();
   }
 
   virtual ~win32_edge_engine() {
@@ -636,11 +636,11 @@ protected:
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
-    if (m_owns_window && !m_is_size_set) {
-      m_is_size_set = true;
+    if (m_owns_window && !m_is_window_shown) {
       ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
       SetFocus(m_window);
+      m_is_window_shown = true;
     }
     return {};
   }
@@ -855,6 +855,9 @@ private:
 
   // Blocks while depleting the run loop of events.
   void deplete_run_loop_event_queue() {
+    // prevent premature run loop triggering of the default window size
+    set_is_size_set(true);
+
     bool done{};
     dispatch([&] { done = true; });
     while (!done) {
@@ -863,6 +866,11 @@ private:
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
       }
+    }
+    // add the default window size event back to the event queue
+    if (!m_is_window_shown) {
+      set_is_size_set(false);
+      dispatch_size_default();
     }
   }
 
@@ -882,7 +890,7 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_owns_window{};
-  bool m_is_size_set{false};
+  bool m_is_window_shown{};
 };
 
 } // namespace detail
