@@ -235,28 +235,22 @@ protected:
       style =
           static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
     }
-    auto fn = [this, style, hints, width, height]() {
-      objc::msg_send<void>(m_window, "setStyleMask:"_sel, style);
+    objc::msg_send<void>(m_window, "setStyleMask:"_sel, style);
 
-      if (hints == WEBVIEW_HINT_MIN) {
-        objc::msg_send<void>(m_window, "setContentMinSize:"_sel,
-                             CGSizeMake(width, height));
-      } else if (hints == WEBVIEW_HINT_MAX) {
-        objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
-                             CGSizeMake(width, height));
-      } else {
-        CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
-        objc::msg_send<void>(
-            m_window, "setFrame:display:animate:"_sel,
-            CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
-      }
-      objc::msg_send<void>(m_window, "center"_sel);
-    };
-    if (is_main_thread()) {
-      fn();
+    if (hints == WEBVIEW_HINT_MIN) {
+      objc::msg_send<void>(m_window, "setContentMinSize:"_sel,
+                           CGSizeMake(width, height));
+    } else if (hints == WEBVIEW_HINT_MAX) {
+      objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
+                           CGSizeMake(width, height));
     } else {
-      dispatch(fn);
+      CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
+      objc::msg_send<void>(
+          m_window, "setFrame:display:animate:"_sel,
+          CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
     }
+    objc::msg_send<void>(m_window, "center"_sel);
+
     return {};
   }
   noresult navigate_impl(const std::string &url) override {
@@ -656,10 +650,6 @@ private:
       first = false;
     }
     return temp;
-  }
-  static bool is_main_thread() {
-    mach_port_t pid = getpid();
-    return pid == pthread_mach_thread_np(pthread_self());
   }
 
   // Blocks while depleting the run loop of events.
