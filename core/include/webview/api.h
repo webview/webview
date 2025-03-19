@@ -83,7 +83,10 @@ WEBVIEW_API webview_error_t webview_terminate(webview_t w);
 
 /**
  * Schedules a function to be invoked on the thread with the run/event loop.
- * Use this function e.g. to interact with the library or native handles.
+ *
+ * Since library functions generally do not have thread safety guarantees,
+ * this function can be used to schedule code to execute on the main/GUI
+ * thread and thereby make that execution safe in multi-threaded applications.
  *
  * @param w The webview instance.
  * @param fn The function to be invoked.
@@ -217,6 +220,8 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 
 /**
  * Responds to a binding call from the JS side.
+ *
+ * This function is safe to call from another thread.
  *
  * @param w The webview instance.
  * @param id The identifier of the binding call. Pass along the value received
