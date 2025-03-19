@@ -221,6 +221,8 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 /**
  * Responds to a binding call from the JS side.
  *
+ * This function is safe to call from another thread.
+ *
  * @param w The webview instance.
  * @param id The identifier of the binding call. Pass along the value received
  *           in the binding handler (see webview_bind()).
