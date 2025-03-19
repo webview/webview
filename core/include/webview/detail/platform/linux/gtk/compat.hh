@@ -103,6 +103,8 @@ public:
   }
 
   static void window_set_size(GtkWindow *window, int width, int height) {
+    // GTK 4 can set a default window size, but unlike GTK 3 it can't resize
+    // the window after it has been set up.
 #if GTK_MAJOR_VERSION >= 4
     gtk_window_set_default_size(window, width, height);
 #else
