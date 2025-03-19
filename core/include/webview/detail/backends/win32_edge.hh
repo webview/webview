@@ -306,215 +306,11 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
-    if (!is_webview2_available()) {
-      throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
-                      "WebView2 is unavailable"};
-    }
-
-    HINSTANCE hInstance = GetModuleHandle(nullptr);
-
-    if (m_owns_window) {
-      m_com_init = {COINIT_APARTMENTTHREADED};
-      enable_dpi_awareness();
-
-      HICON icon = (HICON)LoadImage(
-          hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
-          GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
-
-      // Create a top-level window.
-      WNDCLASSEXW wc;
-      ZeroMemory(&wc, sizeof(WNDCLASSEX));
-      wc.cbSize = sizeof(WNDCLASSEX);
-      wc.hInstance = hInstance;
-      wc.lpszClassName = L"webview";
-      wc.hIcon = icon;
-      wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
-                                     LPARAM lp) -> LRESULT {
-        win32_edge_engine *w{};
-
-        if (msg == WM_NCCREATE) {
-          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
-          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
-          w->m_window = hwnd;
-          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
-          enable_non_client_dpi_scaling_if_needed(hwnd);
-          apply_window_theme(hwnd);
-        } else {
-          w = reinterpret_cast<win32_edge_engine *>(
-              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-        }
-
-        if (!w) {
-          return DefWindowProcW(hwnd, msg, wp, lp);
-        }
-
-        switch (msg) {
-        case WM_SIZE:
-          w->resize_widget();
-          break;
-        case WM_CLOSE:
-          DestroyWindow(hwnd);
-          break;
-        case WM_DESTROY:
-          w->m_window = nullptr;
-          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-          w->on_window_destroyed();
-          break;
-        case WM_GETMINMAXINFO: {
-          auto lpmmi = (LPMINMAXINFO)lp;
-          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-            lpmmi->ptMaxSize = w->m_maxsz;
-            lpmmi->ptMaxTrackSize = w->m_maxsz;
-          }
-          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-            lpmmi->ptMinTrackSize = w->m_minsz;
-          }
-        } break;
-        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
-          auto dpi = static_cast<int>(wp);
-          auto *size{reinterpret_cast<SIZE *>(lp)};
-          *size = w->get_scaled_size(w->m_dpi, dpi);
-          return TRUE;
-        }
-        case 0x02E0 /*WM_DPICHANGED*/: {
-          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
-          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
-          // Due to this difference, don't use the suggested bounds.
-          auto dpi = static_cast<int>(HIWORD(wp));
-          w->on_dpi_changed(dpi);
-          break;
-        }
-        case WM_SETTINGCHANGE: {
-          auto *area = reinterpret_cast<const wchar_t *>(lp);
-          if (area) {
-            w->on_system_setting_change(area);
-          }
-          break;
-        }
-        case WM_ACTIVATE:
-          if (LOWORD(wp) != WA_INACTIVE) {
-            w->focus_webview();
-          }
-          break;
-        default:
-          return DefWindowProcW(hwnd, msg, wp, lp);
-        }
-        return 0;
-      });
-      RegisterClassExW(&wc);
-
-      CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                    CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
-      if (!m_window) {
-        throw exception{WEBVIEW_ERROR_INVALID_STATE, "Window is null"};
-      }
-      on_window_created();
-
-      m_dpi = get_window_dpi(m_window);
-    } else {
-      m_window = IsWindow(static_cast<HWND>(window))
-                     ? static_cast<HWND>(window)
-                     : *(static_cast<HWND *>(window));
-      m_dpi = get_window_dpi(m_window);
-    }
-
-    // Create a window that WebView2 will be embedded into.
-    WNDCLASSEXW widget_wc{};
-    widget_wc.cbSize = sizeof(WNDCLASSEX);
-    widget_wc.hInstance = hInstance;
-    widget_wc.lpszClassName = L"webview_widget";
-    widget_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
-                                          LPARAM lp) -> LRESULT {
-      win32_edge_engine *w{};
-
-      if (msg == WM_NCCREATE) {
-        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
-        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
-        w->m_widget = hwnd;
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
-      } else {
-        w = reinterpret_cast<win32_edge_engine *>(
-            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-      }
-
-      if (!w) {
-        return DefWindowProcW(hwnd, msg, wp, lp);
-      }
-
-      switch (msg) {
-      case WM_SIZE:
-        w->resize_webview();
-        break;
-      case WM_DESTROY:
-        w->m_widget = nullptr;
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-        break;
-      default:
-        return DefWindowProcW(hwnd, msg, wp, lp);
-      }
-      return 0;
-    });
-    RegisterClassExW(&widget_wc);
-    CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
-                    0, 0, 0, 0, m_window, nullptr, hInstance, this);
-    if (!m_widget) {
-      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Widget window is null"};
-    }
-
-    // Create a message-only window for internal messaging.
-    WNDCLASSEXW message_wc{};
-    message_wc.cbSize = sizeof(WNDCLASSEX);
-    message_wc.hInstance = hInstance;
-    message_wc.lpszClassName = L"webview_message";
-    message_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
-                                           LPARAM lp) -> LRESULT {
-      win32_edge_engine *w{};
-
-      if (msg == WM_NCCREATE) {
-        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
-        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
-        w->m_message_window = hwnd;
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
-      } else {
-        w = reinterpret_cast<win32_edge_engine *>(
-            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-      }
-
-      if (!w) {
-        return DefWindowProcW(hwnd, msg, wp, lp);
-      }
-
-      switch (msg) {
-      case WM_APP:
-        if (auto f = (dispatch_fn_t *)(lp)) {
-          (*f)();
-          delete f;
-        }
-        break;
-      case WM_DESTROY:
-        w->m_message_window = nullptr;
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-        break;
-      default:
-        return DefWindowProcW(hwnd, msg, wp, lp);
-      }
-      return 0;
-    });
-    RegisterClassExW(&message_wc);
-    CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
-                    nullptr, hInstance, this);
-    if (!m_message_window) {
-      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
-    }
-
-    auto cb =
-        std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
-
-    embed(m_widget, debug, cb).ensure_ok();
-    if (m_owns_window) {
-      dispatch_size_default();
-    }
+  win32_edge_engine(bool debug, void *window)
+      : window_ptr{window}, m_owns_window{!window} {
+    m_window_init();
+    m_window_settings(debug);
+    dispatch_size_default(m_owns_window);
   }
 
   virtual ~win32_edge_engine() {
@@ -638,13 +434,7 @@ protected:
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
-    if (m_owns_window && !m_is_window_shown) {
-      ShowWindow(m_window, SW_SHOW);
-      UpdateWindow(m_window);
-      SetFocus(m_window);
-      m_is_window_shown = true;
-    }
-    return {};
+    return m_window_show();
   }
 
   noresult navigate_impl(const std::string &url) override {
@@ -707,6 +497,222 @@ protected:
   }
 
 private:
+  void m_window_init() {
+    if (!is_webview2_available()) {
+      throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
+                      "WebView2 is unavailable"};
+    }
+
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+    if (m_owns_window) {
+      m_com_init = {COINIT_APARTMENTTHREADED};
+      enable_dpi_awareness();
+
+      HICON icon = (HICON)LoadImage(
+          hInstance, IDI_APPLICATION, IMAGE_ICON, GetSystemMetrics(SM_CXICON),
+          GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+
+      // Create a top-level window.
+      WNDCLASSEXW wc;
+      ZeroMemory(&wc, sizeof(WNDCLASSEX));
+      wc.cbSize = sizeof(WNDCLASSEX);
+      wc.hInstance = hInstance;
+      wc.lpszClassName = L"webview";
+      wc.hIcon = icon;
+      wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                     LPARAM lp) -> LRESULT {
+        win32_edge_engine *w{};
+
+        if (msg == WM_NCCREATE) {
+          auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+          w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+          w->m_window = hwnd;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+          enable_non_client_dpi_scaling_if_needed(hwnd);
+          apply_window_theme(hwnd);
+        } else {
+          w = reinterpret_cast<win32_edge_engine *>(
+              GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+        }
+
+        if (!w) {
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+
+        switch (msg) {
+        case WM_SIZE:
+          w->resize_widget();
+          break;
+        case WM_CLOSE:
+          DestroyWindow(hwnd);
+          break;
+        case WM_DESTROY:
+          w->m_window = nullptr;
+          SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+          w->on_window_destroyed();
+          break;
+        case WM_GETMINMAXINFO: {
+          auto lpmmi = (LPMINMAXINFO)lp;
+          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+            lpmmi->ptMaxSize = w->m_maxsz;
+            lpmmi->ptMaxTrackSize = w->m_maxsz;
+          }
+          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+            lpmmi->ptMinTrackSize = w->m_minsz;
+          }
+        } break;
+        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
+          auto dpi = static_cast<int>(wp);
+          auto *size{reinterpret_cast<SIZE *>(lp)};
+          *size = w->get_scaled_size(w->m_dpi, dpi);
+          return TRUE;
+        }
+        case 0x02E0 /*WM_DPICHANGED*/: {
+          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
+          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
+          // Due to this difference, don't use the suggested bounds.
+          auto dpi = static_cast<int>(HIWORD(wp));
+          w->on_dpi_changed(dpi);
+          break;
+        }
+        case WM_SETTINGCHANGE: {
+          auto *area = reinterpret_cast<const wchar_t *>(lp);
+          if (area) {
+            w->on_system_setting_change(area);
+          }
+          break;
+        }
+        case WM_ACTIVATE:
+          if (LOWORD(wp) != WA_INACTIVE) {
+            w->focus_webview();
+          }
+          break;
+        default:
+          return DefWindowProcW(hwnd, msg, wp, lp);
+        }
+        return 0;
+      });
+      RegisterClassExW(&wc);
+
+      CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                    CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
+      if (!m_window) {
+        throw exception{WEBVIEW_ERROR_INVALID_STATE, "Window is null"};
+      }
+      on_window_created();
+
+      m_dpi = get_window_dpi(m_window);
+    } else {
+      m_window = IsWindow(static_cast<HWND>(window_ptr))
+                     ? static_cast<HWND>(window_ptr)
+                     : *(static_cast<HWND *>(window_ptr));
+      m_dpi = get_window_dpi(m_window);
+    }
+    // Create a window that WebView2 will be embedded into.
+    WNDCLASSEXW widget_wc{};
+    widget_wc.cbSize = sizeof(WNDCLASSEX);
+    widget_wc.hInstance = hInstance;
+    widget_wc.lpszClassName = L"webview_widget";
+    widget_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                          LPARAM lp) -> LRESULT {
+      win32_edge_engine *w{};
+
+      if (msg == WM_NCCREATE) {
+        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+        w->m_widget = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+      } else {
+        w = reinterpret_cast<win32_edge_engine *>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+      }
+
+      if (!w) {
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+
+      switch (msg) {
+      case WM_SIZE:
+        w->resize_webview();
+        break;
+      case WM_DESTROY:
+        w->m_widget = nullptr;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+        break;
+      default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+      return 0;
+    });
+    RegisterClassExW(&widget_wc);
+    CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
+                    0, 0, 0, 0, m_window, nullptr, hInstance, this);
+    if (!m_widget) {
+      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Widget window is null"};
+    }
+
+    // Create a message-only window for internal messaging.
+    WNDCLASSEXW message_wc{};
+    message_wc.cbSize = sizeof(WNDCLASSEX);
+    message_wc.hInstance = hInstance;
+    message_wc.lpszClassName = L"webview_message";
+    message_wc.lpfnWndProc = (WNDPROC)(+[](HWND hwnd, UINT msg, WPARAM wp,
+                                           LPARAM lp) -> LRESULT {
+      win32_edge_engine *w{};
+
+      if (msg == WM_NCCREATE) {
+        auto *lpcs{reinterpret_cast<LPCREATESTRUCT>(lp)};
+        w = static_cast<win32_edge_engine *>(lpcs->lpCreateParams);
+        w->m_message_window = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
+      } else {
+        w = reinterpret_cast<win32_edge_engine *>(
+            GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+      }
+
+      if (!w) {
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+
+      switch (msg) {
+      case WM_APP:
+        if (auto f = (dispatch_fn_t *)(lp)) {
+          (*f)();
+          delete f;
+        }
+        break;
+      case WM_DESTROY:
+        w->m_message_window = nullptr;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+        break;
+      default:
+        return DefWindowProcW(hwnd, msg, wp, lp);
+      }
+      return 0;
+    });
+    RegisterClassExW(&message_wc);
+    CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
+                    nullptr, hInstance, this);
+    if (!m_message_window) {
+      throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
+    }
+  }
+
+  void m_window_settings(bool debug) {
+    auto cb =
+        std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
+    embed(m_widget, debug, cb).ensure_ok();
+  }
+
+  noresult m_window_show() {
+    if (m_owns_window && !m_is_window_shown) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
+      m_is_window_shown = true;
+    }
+    return {};
+  }
   noresult embed(HWND wnd, bool debug, msg_cb_t cb) {
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
     flag.test_and_set();
@@ -870,9 +876,9 @@ private:
       }
     }
     // add the default window size event back to the event queue
-    if (m_owns_window && !m_is_window_shown) {
+    if (!m_is_window_shown) {
       set_is_size_set(false);
-      dispatch_size_default();
+      dispatch_size_default(m_owns_window);
     }
   }
 
@@ -880,6 +886,7 @@ private:
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
+  void *window_ptr = nullptr;
   HWND m_window = nullptr;
   HWND m_widget = nullptr;
   HWND m_message_window = nullptr;

@@ -317,7 +317,10 @@ protected:
     }
   }
 
-  void dispatch_size_default() {
+  void dispatch_size_default(bool m_owns_window) {
+    if (!m_owns_window) {
+      return;
+    };
     dispatch([this]() {
       if (!m_is_size_set) {
         set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
