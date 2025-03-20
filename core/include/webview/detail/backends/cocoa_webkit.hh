@@ -628,8 +628,6 @@ private:
     if (!get_and_set_is_first_instance()) {
       return setup_delegate_fnc();
     }
-    // prevent premature run-loop triggering the default sizing
-    set_is_size_set(true);
 
     // Start the main run loop so that the app delegate gets the
     // NSApplicationDidFinishLaunchingNotification notification after the run
@@ -640,12 +638,6 @@ private:
     // because the launch event is only sent once. Instead, proceed to
     // create a window.
     objc::msg_send<void>(m_app, "run"_sel);
-
-    // dispatch default sizing back onto the event queue
-    if (!m_is_window_shown) {
-      set_is_size_set(false);
-      dispatch_size_default(m_owns_window);
-    }
   }
   noresult m_window_show() {
     objc::autoreleasepool arp;

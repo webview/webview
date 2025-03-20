@@ -506,6 +506,7 @@ private:
     }
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
+
     if (m_owns_window) {
       m_com_init = {COINIT_APARTMENTTHREADED};
       enable_dpi_awareness();
