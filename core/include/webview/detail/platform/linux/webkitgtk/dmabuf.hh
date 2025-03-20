@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
@@ -160,5 +162,6 @@ static inline void apply_webkit_dmabuf_workaround() {
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH

@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH
 #define WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
@@ -98,13 +100,17 @@ public:
 
   com_init_wrapper(const com_init_wrapper &other) = delete;
   com_init_wrapper &operator=(const com_init_wrapper &other) = delete;
-  com_init_wrapper(com_init_wrapper &&other) { *this = std::move(other); }
 
-  com_init_wrapper &operator=(com_init_wrapper &&other) {
+  com_init_wrapper(com_init_wrapper &&other) noexcept {
+    *this = std::move(other);
+  }
+
+  com_init_wrapper &operator=(com_init_wrapper &&other) noexcept {
     if (this == &other) {
       return *this;
     }
-    m_initialized = std::exchange(other.m_initialized, false);
+    m_initialized = other.m_initialized;
+    other.m_initialized = false;
     return *this;
   }
 
@@ -115,5 +121,6 @@ private:
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH

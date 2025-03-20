@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH
 #define WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
@@ -101,6 +103,8 @@ public:
   }
 
   static void window_set_size(GtkWindow *window, int width, int height) {
+    // GTK 4 can set a default window size, but unlike GTK 3 it can't resize
+    // the window after it has been set up.
 #if GTK_MAJOR_VERSION >= 4
     gtk_window_set_default_size(window, width, height);
 #else
@@ -128,5 +132,6 @@ public:
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_PLATFORM_LINUX_GTK_COMPAT_HH

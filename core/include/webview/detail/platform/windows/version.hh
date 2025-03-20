@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 #define WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
@@ -54,7 +56,8 @@ namespace detail {
 template <typename T>
 std::array<unsigned int, 4>
 parse_version(const std::basic_string<T> &version) noexcept {
-  auto parse_component = [](auto sb, auto se) -> unsigned int {
+  using iterator = typename std::basic_string<T>::const_iterator;
+  auto parse_component = [](iterator sb, iterator se) -> unsigned int {
     try {
       auto n = std::stol(std::basic_string<T>(sb, se));
       return n < 0 ? 0 : n;
@@ -82,7 +85,7 @@ parse_version(const std::basic_string<T> &version) noexcept {
 }
 
 template <typename T, std::size_t Length>
-auto parse_version(const T (&version)[Length]) noexcept {
+std::array<unsigned int, 4> parse_version(const T (&version)[Length]) noexcept {
   return parse_version(std::basic_string<T>(version, Length));
 }
 
@@ -143,5 +146,6 @@ inline int compare_os_version(unsigned int major, unsigned int minor,
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_PLATFORM_WINDOWS_VERSION_HH

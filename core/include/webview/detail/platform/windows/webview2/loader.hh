@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
@@ -45,7 +47,7 @@
 
 #include <objbase.h>
 
-#include "WebView2.h"
+#include "WebView2.h" // amalgamate(skip)
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
@@ -201,10 +203,19 @@ public:
 private:
 #if WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL == 1
   struct client_info_t {
-    bool found = false;
+    bool found{};
     std::wstring dll_path;
     std::wstring version;
-    webview2_runtime_type runtime_type;
+    webview2_runtime_type runtime_type{};
+
+    client_info_t() = default;
+
+    client_info_t(bool found, std::wstring dll_path, std::wstring version,
+                  webview2_runtime_type runtime_type)
+        : found{found},
+          dll_path{std::move(dll_path)},
+          version{std::move(version)},
+          runtime_type{runtime_type} {}
   };
 
   HRESULT create_environment_with_options_impl(
@@ -216,7 +227,7 @@ private:
     if (!found_client.found) {
       return -1;
     }
-    auto client_dll = native_library(found_client.dll_path.c_str());
+    auto client_dll = native_library(found_client.dll_path);
     if (auto fn = client_dll.get(
             webview2_symbols::CreateWebViewEnvironmentWithOptionsInternal)) {
       return fn(true, found_client.runtime_type, user_data_dir, env_options,
@@ -307,7 +318,7 @@ private:
     }
 
     auto client_dll_path = make_client_dll_path(ebwebview_value);
-    return {true, client_dll_path, client_version_string,
+    return {true, std::move(client_dll_path), std::move(client_version_string),
             webview2_runtime_type::installed};
   }
 
@@ -322,7 +333,7 @@ private:
       return {};
     }
 
-    return {true, client_dll_path, client_version_string,
+    return {true, std::move(client_dll_path), std::move(client_version_string),
             webview2_runtime_type::embedded};
   }
 
@@ -375,5 +386,6 @@ static constexpr auto add_script_to_execute_on_document_created_completed =
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH

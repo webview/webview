@@ -27,11 +27,6 @@
 #define WEBVIEW_H
 
 #include "api.h"
-
-#ifdef __cplusplus
-#ifndef WEBVIEW_HEADER
 #include "c_api_impl.hh"
-#endif
-#endif
 
 #endif // WEBVIEW_H

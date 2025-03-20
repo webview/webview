@@ -15,6 +15,6 @@ if(MSWebView2_FOUND)
         add_library(MSWebView2::headers INTERFACE IMPORTED)
         set_target_properties(MSWebView2::headers PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES "${MSWebView2_INCLUDE_DIR}")
-        target_compile_features(MSWebView2::headers INTERFACE cxx_std_14)
+        target_compile_features(MSWebView2::headers INTERFACE cxx_std_11)
     endif()
 endif()

@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_DETAIL_JSON_HH
 #define WEBVIEW_DETAIL_JSON_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -328,4 +330,5 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 } // namespace detail
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_DETAIL_JSON_HH

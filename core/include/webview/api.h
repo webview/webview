@@ -83,7 +83,10 @@ WEBVIEW_API webview_error_t webview_terminate(webview_t w);
 
 /**
  * Schedules a function to be invoked on the thread with the run/event loop.
- * Use this function e.g. to interact with the library or native handles.
+ *
+ * Since library functions generally do not have thread safety guarantees,
+ * this function can be used to schedule code to execute on the main/GUI
+ * thread and thereby make that execution safe in multi-threaded applications.
  *
  * @param w The webview instance.
  * @param fn The function to be invoked.
@@ -130,6 +133,9 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  *   supported with GTK 4 because X11-specific functions such as
  *   gtk_window_set_geometry_hints were removed. This option has no effect
  *   when using GTK 4.
+ * - GTK 4 can set a default/initial window size if done early enough;
+ *   otherwise, this function has no effect. GTK 4 (unlike 3) can't resize
+ *   a window after it has been set up.
  *
  * @param w The webview instance.
  * @param width New width.
@@ -217,6 +223,8 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 
 /**
  * Responds to a binding call from the JS side.
+ *
+ * This function is safe to call from another thread.
  *
  * @param w The webview instance.
  * @param id The identifier of the binding call. Pass along the value received
