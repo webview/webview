@@ -88,12 +88,12 @@ inline webview *cast_to_webview(void *w) {
 } // namespace detail
 } // namespace webview
 
-WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
+WEBVIEW_API webview_t webview_create(int debug, void *wnd, void *env) {
   using namespace webview::detail;
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {
-        return new webview::webview{static_cast<bool>(debug), wnd};
+        return new webview::webview{static_cast<bool>(debug), wnd, env};
       },
       [&](webview::webview *w_) { w = w_; });
   if (err == WEBVIEW_ERROR_OK) {
