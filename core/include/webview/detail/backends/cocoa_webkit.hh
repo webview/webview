@@ -87,8 +87,8 @@ class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_app{get_shared_application()}, m_owns_window{!window} {
-    m_window_init(window);
-    m_window_settings(debug);
+    window_init(window);
+    window_settings(debug);
     dispatch_size_default(m_owns_window);
   }
 
@@ -460,7 +460,7 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
-    m_window_init();
+    window_init();
   }
   void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
@@ -469,7 +469,7 @@ private:
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
-  void m_window_settings(bool debug) {
+  void window_settings(bool debug) {
     objc::autoreleasepool arp;
 
     auto config = objc::autoreleased(
@@ -597,7 +597,7 @@ private:
     }
     return temp;
   }
-  void m_window_init(void *window = nullptr) {
+  void window_init(void *window = nullptr) {
     if (!m_window) {
       m_window = static_cast<id>(window);
     }
@@ -605,7 +605,7 @@ private:
       return;
     }
     objc::autoreleasepool arp;
-    auto setup_delegate_fnc = [this]() {
+    auto window_init_proceed = [this]() {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
       auto style = NSWindowStyleMaskTitled;
       m_window = objc::msg_send<id>(
@@ -621,7 +621,7 @@ private:
     auto delegate = objc::msg_send<id>(m_app, "delegate"_sel);
     // Only set the app delegate if it hasn't already been set.
     if (delegate) {
-      return setup_delegate_fnc();
+      return window_init_proceed();
     }
     // See comments related to application lifecycle in create_app_delegate().
     m_app_delegate = create_app_delegate();
@@ -629,7 +629,7 @@ private:
                              OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
     if (!get_and_set_is_first_instance()) {
-      return setup_delegate_fnc();
+      return window_init_proceed();
     }
 
     // Start the main run loop so that the app delegate gets the

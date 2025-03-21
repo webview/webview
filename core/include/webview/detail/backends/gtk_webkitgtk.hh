@@ -100,8 +100,8 @@ private:
 class gtk_webkit_engine : public engine_base {
 public:
   gtk_webkit_engine(bool debug, void *window) : m_owns_window{!window} {
-    m_window_init(window);
-    m_window_settings(debug);
+    window_init(window);
+    window_settings(debug);
     dispatch_size_default(m_owns_window);
   }
 
@@ -271,7 +271,7 @@ private:
   }
 #endif
 
-  void m_window_init(void *window) {
+  void window_init(void *window) {
     m_window = static_cast<GtkWidget *>(window);
     if (m_owns_window) {
       if (!gtk_compat::init_check()) {
@@ -305,7 +305,7 @@ private:
 }");
   }
 
-  void m_window_settings(bool debug) {
+  void window_settings(bool debug) {
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
     webkit_settings_set_javascript_can_access_clipboard(settings, true);

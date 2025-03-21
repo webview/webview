@@ -309,8 +309,8 @@ private:
 class win32_edge_engine : public engine_base {
 public:
   win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
-    m_window_init(window);
-    m_window_settings(debug);
+    window_init(window);
+    window_settings(debug);
     dispatch_size_default(m_owns_window);
   }
 
@@ -498,7 +498,7 @@ protected:
   }
 
 private:
-  void m_window_init(void *window) {
+  void window_init(void *window) {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -700,7 +700,7 @@ private:
     }
   }
 
-  void m_window_settings(bool debug) {
+  void window_settings(bool debug) {
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
     embed(m_widget, debug, cb).ensure_ok();
