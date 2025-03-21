@@ -435,7 +435,7 @@ protected:
                    SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE |
                        SWP_FRAMECHANGED);
     }
-    return m_window_show();
+    return window_show();
   }
 
   noresult navigate_impl(const std::string &url) override {
@@ -706,7 +706,7 @@ private:
     embed(m_widget, debug, cb).ensure_ok();
   }
 
-  noresult m_window_show() {
+  noresult window_show() {
     if (m_owns_window && !m_is_window_shown) {
       ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);

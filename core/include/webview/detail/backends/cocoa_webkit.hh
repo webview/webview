@@ -221,7 +221,7 @@ protected:
     }
     objc::msg_send<void>(m_window, "center"_sel);
 
-    return m_window_show();
+    return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;
@@ -642,7 +642,7 @@ private:
     // create a window.
     objc::msg_send<void>(m_app, "run"_sel);
   }
-  noresult m_window_show() {
+  noresult window_show() {
     objc::autoreleasepool arp;
     if (m_is_window_shown) {
       return {};

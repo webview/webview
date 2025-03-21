@@ -191,7 +191,7 @@ protected:
     } else {
       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
     }
-    return m_window_show();
+    return window_show();
   }
 
   noresult navigate_impl(const std::string &url) override {
@@ -316,7 +316,7 @@ private:
     }
   }
 
-  noresult m_window_show() {
+  noresult window_show() {
     if (m_is_window_shown) {
       return {};
     }
