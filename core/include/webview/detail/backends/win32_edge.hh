@@ -353,7 +353,7 @@ public:
     if (m_owns_window) {
       // Not strictly needed for windows to close immediately but aligns
       // behavior across backends.
-      deplete_run_loop_event_queue(true);
+      deplete_run_loop_event_queue();
     }
     // We need the message window in order to deplete the event queue.
     if (m_message_window) {
@@ -470,9 +470,18 @@ protected:
     auto res =
         m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
     if (SUCCEEDED(res)) {
+      // prevent premature run loop triggering of the default window size
+      default_size_backstop(true);
+
       // Sadly we need to pump the even loop in order to get the script ID.
       while (!done) {
         deplete_run_loop_event_queue();
+      }
+
+      // conditionally add the default window size event back to the event queue
+      if (!m_is_window_shown) {
+        default_size_backstop(false);
+        dispatch_size_default(m_owns_window);
       }
     }
     // TODO: There's a non-zero chance that we didn't get the script ID.
@@ -864,10 +873,7 @@ private:
   }
 
   // Blocks while depleting the run loop of events.
-  void deplete_run_loop_event_queue(bool is_destructor = false) {
-    // prevent premature run loop triggering of the default window size
-    default_size_backstop(true);
-
+  void deplete_run_loop_event_queue() {
     bool done{};
     dispatch([&] { done = true; });
     while (!done) {
@@ -876,11 +882,6 @@ private:
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
       }
-    }
-    // add the default window size event back to the event queue
-    if (!m_is_window_shown && !is_destructor) {
-      default_size_backstop(false);
-      dispatch_size_default(m_owns_window);
     }
   }
 
