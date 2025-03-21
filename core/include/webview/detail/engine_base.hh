@@ -330,7 +330,7 @@ protected:
     });
   }
 
-  void set_is_size_set(bool flag) { m_is_size_set = flag; }
+  void default_size_backstop(bool flag) { m_is_size_set = flag; }
 
 private:
   static std::atomic_uint &window_ref_count() {

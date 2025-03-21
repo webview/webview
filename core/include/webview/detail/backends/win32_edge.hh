@@ -354,7 +354,7 @@ public:
     if (m_owns_window) {
       // Not strictly needed for windows to close immediately but aligns
       // behavior across backends.
-      deplete_run_loop_event_queue();
+      deplete_run_loop_event_queue(true);
     }
     // We need the message window in order to deplete the event queue.
     if (m_message_window) {
@@ -865,9 +865,9 @@ private:
   }
 
   // Blocks while depleting the run loop of events.
-  void deplete_run_loop_event_queue() {
+  void deplete_run_loop_event_queue(bool is_destructor = false) {
     // prevent premature run loop triggering of the default window size
-    set_is_size_set(true);
+    default_size_backstop(true);
 
     bool done{};
     dispatch([&] { done = true; });
@@ -879,8 +879,8 @@ private:
       }
     }
     // add the default window size event back to the event queue
-    if (!m_is_window_shown) {
-      set_is_size_set(false);
+    if (!m_is_window_shown && !is_destructor) {
+      default_size_backstop(false);
       dispatch_size_default(m_owns_window);
     }
   }
