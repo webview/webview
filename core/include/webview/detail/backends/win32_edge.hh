@@ -308,9 +308,8 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window)
-      : window_ptr{window}, m_owns_window{!window} {
-    m_window_init();
+  win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
+    m_window_init(window);
     m_window_settings(debug);
     dispatch_size_default(m_owns_window);
   }
@@ -499,7 +498,7 @@ protected:
   }
 
 private:
-  void m_window_init() {
+  void m_window_init(void *window) {
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -606,9 +605,9 @@ private:
 
       m_dpi = get_window_dpi(m_window);
     } else {
-      m_window = IsWindow(static_cast<HWND>(window_ptr))
-                     ? static_cast<HWND>(window_ptr)
-                     : *(static_cast<HWND *>(window_ptr));
+      m_window = IsWindow(static_cast<HWND>(window))
+                     ? static_cast<HWND>(window)
+                     : *(static_cast<HWND *>(window));
       m_dpi = get_window_dpi(m_window);
     }
     // Create a window that WebView2 will be embedded into.
@@ -785,8 +784,8 @@ private:
                         "put_IsStatusBarEnabled failed"};
     }
     add_init_script("function(message) {\n\
-  return window.chrome.webview.postMessage(message);\n\
-}");
+   return window.chrome.webview.postMessage(message);\n\
+ }");
     resize_webview();
     m_controller->put_IsVisible(TRUE);
     ShowWindow(m_widget, SW_SHOW);
@@ -889,7 +888,6 @@ private:
   // CreateCoreWebView2EnvironmentWithOptions.
   // Source: https://docs.microsoft.com/en-us/microsoft-edge/webview2/reference/win32/webview2-idl#createcorewebview2environmentwithoptions
   com_init_wrapper m_com_init;
-  void *window_ptr = nullptr;
   HWND m_window = nullptr;
   HWND m_widget = nullptr;
   HWND m_message_window = nullptr;

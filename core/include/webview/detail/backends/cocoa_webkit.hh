@@ -86,10 +86,8 @@ private:
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{get_shared_application()},
-        m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
-    m_window_init();
+      : m_app{get_shared_application()}, m_owns_window{!window} {
+    m_window_init(window);
     m_window_settings(debug);
     dispatch_size_default(m_owns_window);
   }
@@ -560,7 +558,10 @@ private:
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
     set_up_widget();
-    objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
+    if (m_owns_window) {
+      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+    }
   }
   void set_up_widget() {
     objc::autoreleasepool arp;
@@ -573,7 +574,6 @@ private:
     objc::msg_send<void>(m_widget, "addSubview:"_sel, m_webview);
     objc::msg_send<void>(m_webview, "setFrame:"_sel,
                          objc::msg_send_stret<CGRect>(m_widget, "bounds"_sel));
-    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
   }
   void stop_run_loop() {
     objc::autoreleasepool arp;
@@ -597,7 +597,10 @@ private:
     }
     return temp;
   }
-  void m_window_init() {
+  void m_window_init(void *window = nullptr) {
+    if (!m_window) {
+      m_window = static_cast<id>(window);
+    }
     if (!m_owns_window) {
       return;
     }
