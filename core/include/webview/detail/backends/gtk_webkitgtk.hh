@@ -99,55 +99,10 @@ private:
 
 class gtk_webkit_engine : public engine_base {
 public:
-  gtk_webkit_engine(bool debug, void *window)
-      : m_owns_window{!window}, m_window(static_cast<GtkWidget *>(window)) {
-    if (m_owns_window) {
-      if (!gtk_compat::init_check()) {
-        throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
-      }
-      m_window = gtk_compat::window_new();
-      on_window_created();
-      auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
-        auto *w = static_cast<gtk_webkit_engine *>(arg);
-        w->m_window = nullptr;
-        w->on_window_destroyed();
-      };
-      g_signal_connect(G_OBJECT(m_window), "destroy",
-                       G_CALLBACK(on_window_destroy), this);
-    }
-    webkit_dmabuf::apply_webkit_dmabuf_workaround();
-    // Initialize webview widget
-    m_webview = webkit_web_view_new();
-    g_object_ref_sink(m_webview);
-    WebKitUserContentManager *manager = m_user_content_manager =
-        webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
-    webkitgtk_compat::connect_script_message_received(
-        manager, "__webview__",
-        [this](WebKitUserContentManager *, const std::string &r) {
-          on_message(r);
-        });
-    webkitgtk_compat::user_content_manager_register_script_message_handler(
-        manager, "__webview__");
-    add_init_script("function(message) {\n\
-  return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
-}");
-
-    gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
-    gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
-
-    WebKitSettings *settings =
-        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
-    webkit_settings_set_javascript_can_access_clipboard(settings, true);
-    if (debug) {
-      webkit_settings_set_enable_write_console_messages_to_stdout(settings,
-                                                                  true);
-      webkit_settings_set_enable_developer_extras(settings, true);
-    }
-
-    if (m_owns_window) {
-      gtk_widget_grab_focus(GTK_WIDGET(m_webview));
-      gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
-    }
+  gtk_webkit_engine(bool debug, void *window) : m_owns_window{!window} {
+    window_init(window);
+    window_settings(debug);
+    dispatch_size_default(m_owns_window);
   }
 
   gtk_webkit_engine(const gtk_webkit_engine &) = delete;
@@ -236,7 +191,7 @@ protected:
     } else {
       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
     }
-    return {};
+    return window_show();
   }
 
   noresult navigate_impl(const std::string &url) override {
@@ -316,6 +271,66 @@ private:
   }
 #endif
 
+  void window_init(void *window) {
+    m_window = static_cast<GtkWidget *>(window);
+    if (m_owns_window) {
+      if (!gtk_compat::init_check()) {
+        throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
+      }
+      m_window = gtk_compat::window_new();
+      on_window_created();
+      auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
+        auto *w = static_cast<gtk_webkit_engine *>(arg);
+        w->m_window = nullptr;
+        w->on_window_destroyed();
+      };
+      g_signal_connect(G_OBJECT(m_window), "destroy",
+                       G_CALLBACK(on_window_destroy), this);
+    }
+    webkit_dmabuf::apply_webkit_dmabuf_workaround();
+    // Initialize webview widget
+    m_webview = webkit_web_view_new();
+    g_object_ref_sink(m_webview);
+    WebKitUserContentManager *manager = m_user_content_manager =
+        webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
+    webkitgtk_compat::connect_script_message_received(
+        manager, "__webview__",
+        [this](WebKitUserContentManager *, const std::string &r) {
+          on_message(r);
+        });
+    webkitgtk_compat::user_content_manager_register_script_message_handler(
+        manager, "__webview__");
+    add_init_script("function(message) {\n\
+  return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
+}");
+  }
+
+  void window_settings(bool debug) {
+    WebKitSettings *settings =
+        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
+    webkit_settings_set_javascript_can_access_clipboard(settings, true);
+    if (debug) {
+      webkit_settings_set_enable_write_console_messages_to_stdout(settings,
+                                                                  true);
+      webkit_settings_set_enable_developer_extras(settings, true);
+    }
+  }
+
+  noresult window_show() {
+    if (m_is_window_shown) {
+      return {};
+    }
+    gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
+    gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
+
+    if (m_owns_window) {
+      gtk_widget_grab_focus(GTK_WIDGET(m_webview));
+      gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
+    }
+    m_is_window_shown = true;
+    return {};
+  }
+
   void run_event_loop_while(std::function<bool()> fn) override {
     while (fn()) {
       g_main_context_iteration(nullptr, TRUE);
@@ -327,6 +342,7 @@ private:
   GtkWidget *m_webview{};
   WebKitUserContentManager *m_user_content_manager{};
   bool m_stop_run_loop{};
+  bool m_is_window_shown{};
 };
 
 } // namespace detail
