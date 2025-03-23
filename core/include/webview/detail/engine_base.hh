@@ -318,6 +318,16 @@ protected:
     }
   }
 
+  // Runs the event loop until the currently queued events have been processed.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    run_event_loop_while([&] { return !done; });
+  }
+
+  // Runs the event loop while the passed-in function returns true.
+  virtual void run_event_loop_while(std::function<bool()> fn) = 0;
+
 private:
   static std::atomic_uint &window_ref_count() {
     static std::atomic_uint ref_count{0};

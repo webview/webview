@@ -316,11 +316,8 @@ private:
   }
 #endif
 
-  // Blocks while depleting the run loop of events.
-  void deplete_run_loop_event_queue() {
-    bool done{};
-    dispatch([&] { done = true; });
-    while (!done) {
+  void run_event_loop_while(std::function<bool()> fn) override {
+    while (fn()) {
       g_main_context_iteration(nullptr, TRUE);
     }
   }
