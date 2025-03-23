@@ -351,9 +351,10 @@ public:
       m_window = nullptr;
     }
     if (m_owns_window) {
+      bool done{};
       // Not strictly needed for windows to close immediately but aligns
       // behavior across backends.
-      deplete_run_loop_event_queue();
+      deplete_run_loop_event_queue(done, [&] { done = true; });
     }
     // We need the message window in order to deplete the event queue.
     if (m_message_window) {
@@ -461,31 +462,35 @@ protected:
     auto wjs = widen_string(js);
     std::wstring script_id;
     bool done{};
-    webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
-      if (SUCCEEDED(res)) {
-        script_id = id;
-      }
-      done = true;
-    }};
-    auto res =
-        m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
-    if (SUCCEEDED(res)) {
-      // prevent premature run loop triggering of the default window size
-      default_size_backstop(true);
+    webview2_user_script_added_handler script_handler{
+        [&](HRESULT res, LPCWSTR id) {
+          if (SUCCEEDED(res)) {
+            script_id = id;
+          }
+          done = true;
+        }};
+    auto wv2_script = [&]() {
+      auto res = m_webview->AddScriptToExecuteOnDocumentCreated(
+          wjs.c_str(), &script_handler);
+      if (!SUCCEEDED(res)) {
+        // There's a non-zero chance that we didn't get the script ID.
+        // We convey the error and fail fast by throwing.
+        throw exception(WEBVIEW_ERROR_UNSPECIFIED, "Failed to bind script.");
+      };
+    };
 
-      // Sadly we need to pump the even loop in order to get the script ID.
-      while (!done) {
-        deplete_run_loop_event_queue();
-      }
+    // Sadly we need to pump the even loop in order to get the script ID, however
+    // we firstly guard against premature execution of the default window size
+    default_size_guard(true);
+    deplete_run_loop_event_queue(done, wv2_script);
 
-      // conditionally add the default window size event back to the event queue
-      if (!m_is_window_shown) {
-        default_size_backstop(false);
-        dispatch_size_default(m_owns_window);
-      }
+    // We conditionally reset the default size guard and
+    // add put the sizing event back onto to the queue
+    if (!m_is_window_shown) {
+      default_size_guard(false);
+      dispatch_size_default(m_owns_window);
     }
-    // TODO: There's a non-zero chance that we didn't get the script ID.
-    //       We need to convey the error somehow.
+
     return user_script{
         js, user_script::impl_ptr{new user_script::impl{script_id, wjs},
                                   [](user_script::impl *p) { delete p; }}};
@@ -873,9 +878,8 @@ private:
   }
 
   // Blocks while depleting the run loop of events.
-  void deplete_run_loop_event_queue() {
-    bool done{};
-    dispatch([&] { done = true; });
+  void deplete_run_loop_event_queue(bool &done, std::function<void()> f) {
+    dispatch(f);
     while (!done) {
       MSG msg;
       if (GetMessageW(&msg, nullptr, 0, 0) > 0) {

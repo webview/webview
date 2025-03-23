@@ -201,6 +201,7 @@ protected:
 
   void add_init_script(const std::string &post_fn) {
     add_user_script(create_init_script(post_fn));
+    m_script_is_init = false;
   }
 
   std::string create_init_script(const std::string &post_fn) {
@@ -320,7 +321,7 @@ protected:
   }
 
   void dispatch_size_default(bool m_owns_window) {
-    if (!m_owns_window) {
+    if (!m_owns_window || m_script_is_init) {
       return;
     };
     dispatch([this]() {
@@ -330,7 +331,7 @@ protected:
     });
   }
 
-  void default_size_backstop(bool flag) { m_is_size_set = flag; }
+  void default_size_guard(bool flag) { m_is_size_set = flag; }
 
 private:
   static std::atomic_uint &window_ref_count() {
@@ -352,6 +353,7 @@ private:
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;
 
+  bool m_script_is_init{true};
   bool m_is_size_set{};
   static const int m_initial_width = 640;
   static const int m_initial_height = 480;
