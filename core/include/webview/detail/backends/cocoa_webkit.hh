@@ -85,8 +85,7 @@ private:
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{get_shared_application()}, m_owns_window{!window} {
+  cocoa_wkwebview_engine(bool debug, void *window) : m_owns_window{!window} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default(m_owns_window);
@@ -130,7 +129,8 @@ public:
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
-      objc::msg_send<void>(m_app, "setDelegate:"_sel, nullptr);
+      auto app = get_shared_application();
+      objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
       // Make sure to release the delegate we created.
       objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
@@ -171,7 +171,8 @@ protected:
   }
 
   noresult run_impl() override {
-    objc::msg_send<void>(m_app, "run"_sel);
+    auto app = get_shared_application();
+    objc::msg_send<void>(app, "run"_sel);
     return {};
   }
 
@@ -577,8 +578,9 @@ private:
   }
   void stop_run_loop() {
     objc::autoreleasepool arp;
+    auto app = get_shared_application();
     // Request the run loop to stop. This doesn't immediately stop the loop.
-    objc::msg_send<void>(m_app, "stop:"_sel, nullptr);
+    objc::msg_send<void>(app, "stop:"_sel, nullptr);
     // The run loop will stop after processing an NSEvent.
     // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
     //             NSApplicationDefined (macOS 10.0–10.12)
@@ -587,7 +589,7 @@ private:
         "NSEvent"_cls,
         "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
         type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
-    objc::msg_send<void>(m_app, "postEvent:atStart:"_sel, event, YES);
+    objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
   }
   static bool get_and_set_is_first_instance() noexcept {
     static std::atomic_bool first{true};
@@ -605,6 +607,7 @@ private:
       return;
     }
     objc::autoreleasepool arp;
+    auto app = get_shared_application();
     auto window_init_proceed = [this]() {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
       auto style = NSWindowStyleMaskTitled;
@@ -618,7 +621,7 @@ private:
       on_window_created();
     };
 
-    auto delegate = objc::msg_send<id>(m_app, "delegate"_sel);
+    auto delegate = objc::msg_send<id>(app, "delegate"_sel);
     // Only set the app delegate if it hasn't already been set.
     if (delegate) {
       return window_init_proceed();
@@ -627,7 +630,7 @@ private:
     m_app_delegate = create_app_delegate();
     objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
+    objc::msg_send<void>(app, "setDelegate:"_sel, m_app_delegate);
     if (!get_and_set_is_first_instance()) {
       return window_init_proceed();
     }
@@ -640,7 +643,7 @@ private:
     // Skip the main loop if this isn't the first instance of this class
     // because the launch event is only sent once. Instead, proceed to
     // create a window.
-    objc::msg_send<void>(m_app, "run"_sel);
+    objc::msg_send<void>(app, "run"_sel);
   }
   noresult window_show() {
     objc::autoreleasepool arp;
@@ -654,6 +657,7 @@ private:
   // Blocks while depleting the run loop of events.
   void deplete_run_loop_event_queue() {
     objc::autoreleasepool arp;
+    auto app = get_shared_application();
     bool done{};
     dispatch([&] { done = true; });
     auto mask = NSUIntegerMax; // NSEventMaskAny
@@ -663,15 +667,14 @@ private:
     while (!done) {
       objc::autoreleasepool arp2;
       auto event = objc::msg_send<id>(
-          m_app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+          app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
           nullptr, mode, YES);
       if (event) {
-        objc::msg_send<void>(m_app, "sendEvent:"_sel, event);
+        objc::msg_send<void>(app, "sendEvent:"_sel, event);
       }
     }
   }
 
-  id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
   id m_window{};
