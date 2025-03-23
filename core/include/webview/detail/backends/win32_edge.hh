@@ -856,12 +856,10 @@ private:
   }
 
   void run_event_loop_while(std::function<bool()> fn) override {
-    while (fn()) {
-      MSG msg;
-      while (fn() && GetMessageW(&msg, nullptr, 0, 0) > 0) {
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-      }
+    MSG msg;
+    while (fn() && GetMessageW(&msg, nullptr, 0, 0) > 0) {
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
     }
   }
 
