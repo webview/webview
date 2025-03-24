@@ -475,7 +475,7 @@ protected:
       // Sadly we need to pump the event loop in order to get the script ID.
       run_event_loop_while([&] { return !done; });
       // The user's `set_size` may have been executed from the depleted event queue,
-      // so guard against putting the default `set_size` back onto the queue.
+      // and if so, guard against putting the default `set_size` back onto the queue.
       if (!m_is_window_shown) {
         default_size_guard(false);
         dispatch_size_default(m_owns_window);
