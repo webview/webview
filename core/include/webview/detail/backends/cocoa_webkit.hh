@@ -86,10 +86,10 @@ private:
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{get_shared_application()}, m_owns_window{!window} {
+      : m_app{get_shared_application()} {
     window_init(window);
     window_settings(debug);
-    dispatch_size_default(m_owns_window);
+    dispatch_size_default();
   }
 
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
@@ -116,7 +116,7 @@ public:
         objc::msg_send<void>(m_widget, "release"_sel);
         m_widget = nullptr;
       }
-      if (m_owns_window) {
+      if (owns_window()) {
         // Replace delegate to avoid callbacks and other bad things during
         // destruction.
         objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
@@ -135,7 +135,7 @@ public:
       objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
     }
-    if (m_owns_window) {
+    if (owns_window()) {
       // Needed for the window to close immediately.
       deplete_run_loop_event_queue();
     }
@@ -436,7 +436,7 @@ private:
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
     // See comments related to application lifecycle in create_app_delegate().
-    if (m_owns_window) {
+    if (owns_window()) {
       // Stop the main run loop so that we can return
       // from the constructor.
       stop_run_loop();
@@ -460,7 +460,7 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
-    window_init();
+    window_init(nullptr);
   }
   void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
@@ -559,7 +559,7 @@ private:
 }");
     set_up_widget();
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
-    if (m_owns_window) {
+    if (owns_window()) {
       objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
     }
   }
@@ -597,11 +597,15 @@ private:
     }
     return temp;
   }
-  void window_init(void *window = nullptr) {
+  void window_init(void *window) {
+    if (!m_is_window_initialised) {
+      set_owns_window(!window);
+      m_is_window_initialised = true;
+    }
     if (!m_window) {
       m_window = static_cast<id>(window);
     }
-    if (!m_owns_window) {
+    if (!owns_window()) {
       return;
     }
     objc::autoreleasepool arp;
@@ -675,8 +679,8 @@ private:
   id m_widget{};
   id m_webview{};
   id m_manager{};
-  bool m_owns_window{};
   bool m_is_window_shown{};
+  bool m_is_window_initialised{};
 };
 
 } // namespace detail
