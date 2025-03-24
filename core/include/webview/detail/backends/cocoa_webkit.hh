@@ -668,7 +668,6 @@ private:
     }
   }
 
-  id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
   id m_window{};
