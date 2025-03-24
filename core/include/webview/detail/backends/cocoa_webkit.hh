@@ -87,22 +87,22 @@ class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
       : m_debug{debug},
+        m_app{get_shared_application()},
         m_window{static_cast<id>(window)},
         m_owns_window{!window} {
-    auto app = get_shared_application();
     // See comments related to application lifecycle in create_app_delegate().
     if (!m_owns_window) {
       set_up_window();
     } else {
       // Only set the app delegate if it hasn't already been set.
-      auto delegate = objc::msg_send<id>(app, "delegate"_sel);
+      auto delegate = objc::msg_send<id>(m_app, "delegate"_sel);
       if (delegate) {
         set_up_window();
       } else {
         m_app_delegate = create_app_delegate();
         objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                                  OBJC_ASSOCIATION_ASSIGN);
-        objc::msg_send<void>(app, "setDelegate:"_sel, m_app_delegate);
+        objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
 
         // Start the main run loop so that the app delegate gets the
         // NSApplicationDidFinishLaunchingNotification notification after the run
@@ -113,7 +113,7 @@ public:
         // because the launch event is only sent once. Instead, proceed to
         // create a window.
         if (get_and_set_is_first_instance()) {
-          objc::msg_send<void>(app, "run"_sel);
+          objc::msg_send<void>(m_app, "run"_sel);
         } else {
           set_up_window();
         }
@@ -159,8 +159,7 @@ public:
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
-      auto app = get_shared_application();
-      objc::msg_send<void>(app, "setDelegate:"_sel, nullptr);
+      objc::msg_send<void>(m_app, "setDelegate:"_sel, nullptr);
       // Make sure to release the delegate we created.
       objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
@@ -201,8 +200,7 @@ protected:
   }
 
   noresult run_impl() override {
-    auto app = get_shared_application();
-    objc::msg_send<void>(app, "run"_sel);
+    objc::msg_send<void>(m_app, "run"_sel);
     return {};
   }
 
@@ -631,9 +629,8 @@ private:
   }
   void stop_run_loop() {
     objc::autoreleasepool arp;
-    auto app = get_shared_application();
     // Request the run loop to stop. This doesn't immediately stop the loop.
-    objc::msg_send<void>(app, "stop:"_sel, nullptr);
+    objc::msg_send<void>(m_app, "stop:"_sel, nullptr);
     // The run loop will stop after processing an NSEvent.
     // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
     //             NSApplicationDefined (macOS 10.0–10.12)
@@ -642,7 +639,7 @@ private:
         "NSEvent"_cls,
         "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
         type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
-    objc::msg_send<void>(app, "postEvent:atStart:"_sel, event, YES);
+    objc::msg_send<void>(m_app, "postEvent:atStart:"_sel, event, YES);
   }
   static bool get_and_set_is_first_instance() noexcept {
     static std::atomic_bool first{true};
@@ -655,7 +652,6 @@ private:
 
   void run_event_loop_while(std::function<bool()> fn) override {
     objc::autoreleasepool arp;
-    auto app = get_shared_application();
     auto mask = NSUIntegerMax; // NSEventMaskAny
     // NSDefaultRunLoopMode
     auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
@@ -663,15 +659,16 @@ private:
     while (fn()) {
       objc::autoreleasepool arp2;
       auto event = objc::msg_send<id>(
-          app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+          m_app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
           nullptr, mode, YES);
       if (event) {
-        objc::msg_send<void>(app, "sendEvent:"_sel, event);
+        objc::msg_send<void>(m_app, "sendEvent:"_sel, event);
       }
     }
   }
 
   bool m_debug{};
+  id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
   id m_window{};
