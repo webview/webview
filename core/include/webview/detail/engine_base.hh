@@ -330,8 +330,8 @@ protected:
   // Runs the event loop while the passed-in function returns true.
   virtual void run_event_loop_while(std::function<bool()> fn) = 0;
 
-  void dispatch_size_default(bool m_owns_window) {
-    if (!m_owns_window || !m_is_init_script_added) {
+  void dispatch_size_default() {
+    if (!owns_window() || !m_is_init_script_added) {
       return;
     };
     dispatch([this]() {
@@ -342,6 +342,10 @@ protected:
   }
 
   void default_size_guard(bool flag) { m_is_size_set = flag; }
+
+  void set_owns_window(bool owns_window) { m_owns_window = owns_window; }
+
+  bool owns_window() const { return m_owns_window; }
 
 private:
   static std::atomic_uint &window_ref_count() {
@@ -365,6 +369,7 @@ private:
 
   bool m_is_init_script_added{};
   bool m_is_size_set{};
+  bool m_owns_window{};
   static const int m_initial_width = 640;
   static const int m_initial_height = 480;
 };
