@@ -136,8 +136,9 @@ window.__webview__.onUnbind(" +
   noresult set_title(const std::string &title) { return set_title_impl(title); }
 
   noresult set_size(int width, int height, webview_hint_t hints) {
+    auto res = set_size_impl(width, height, hints);
     m_is_size_set = true;
-    return set_size_impl(width, height, hints);
+    return res;
   }
 
   noresult set_html(const std::string &html) { return set_html_impl(html); }
