@@ -342,7 +342,7 @@ protected:
     });
   }
 
-  void default_size_guard(bool flag) { m_is_size_set = flag; }
+  void set_default_size_guard(bool guarded) { m_is_size_set = guarded; }
 
   void set_owns_window(bool owns_window) { m_owns_window = owns_window; }
 

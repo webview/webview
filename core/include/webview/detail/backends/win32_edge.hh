@@ -471,13 +471,13 @@ protected:
         m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
     if (SUCCEEDED(res)) {
       // We want to guard against executing the default `set_size` prematurely
-      default_size_guard(true);
+      set_default_size_guard(true);
       // Sadly we need to pump the event loop in order to get the script ID.
       run_event_loop_while([&] { return !done; });
       // The user's `set_size` may have been executed from the depleted event queue,
       // and if so, guard against putting the default `set_size` back onto the queue.
       if (!m_is_window_shown) {
-        default_size_guard(false);
+        set_default_size_guard(false);
         dispatch_size_default();
       }
     }
