@@ -598,9 +598,9 @@ private:
     return temp;
   }
   void window_init(void *window) {
-    if (!m_is_window_initialised) {
+    if (!m_has_window_init_started) {
       set_owns_window(!window);
-      m_is_window_initialised = true;
+      m_has_window_init_started = true;
     }
     if (!m_window) {
       m_window = static_cast<id>(window);
@@ -680,7 +680,7 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_is_window_shown{};
-  bool m_is_window_initialised{};
+  bool m_has_window_init_started{};
 };
 
 } // namespace detail
