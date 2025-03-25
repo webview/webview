@@ -28,126 +28,81 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../errors.hh"
 #include "../types.h"
 #include "../types.hh"
-#include "json.hh"
 #include "user_script.hh"
-
 #include <atomic>
-#include <functional>
 #include <list>
 #include <map>
-#include <string>
+
+using binding_t = std::function<void(std::string, std::string, void *)>;
+using sync_binding_t = std::function<std::string(std::string)>;
 
 namespace webview {
 namespace detail {
 
+class binding_ctx_t {
+public:
+  /**
+   * user-defined type for the internal `webview_bind` API
+   * callback function and arg handling
+   */
+  binding_ctx_t(binding_t callback, void *arg);
+  /**
+   * Executes the bound JS function
+   */
+  void call(std::string id, std::string args) const;
+
+private:
+  /** 
+  * This function is called upon execution of the bound JS function 
+  */
+  binding_t m_callback;
+  /**
+   * This user-supplied argument is passed to the callback
+   */
+  void *m_arg;
+};
+/**
+ * Common internal API methods for all three backend Webview constructors:
+ * - cocoa_webkit
+ * - gtk_webkitgtk
+ * - win32_edge
+ */
 class engine_base {
 public:
-  virtual ~engine_base() = default;
+  virtual ~engine_base();
 
-  noresult navigate(const std::string &url) {
-    if (url.empty()) {
-      return navigate_impl("about:blank");
-    }
-    return navigate_impl(url);
-  }
+  /** Internal API implementation of `webview_navigate` */
+  noresult navigate(const std::string &url);
 
-  using binding_t = std::function<void(std::string, std::string, void *)>;
-  class binding_ctx_t {
-  public:
-    binding_ctx_t(binding_t callback, void *arg)
-        : m_callback(callback), m_arg(arg) {}
-    void call(std::string id, std::string args) const {
-      if (m_callback) {
-        m_callback(id, args, m_arg);
-      }
-    }
+  /** Internal API implementation of synchronous`webview_bind` */
+  noresult bind(const std::string &name, sync_binding_t fn);
 
-  private:
-    // This function is called upon execution of the bound JS function
-    binding_t m_callback;
-    // This user-supplied argument is passed to the callback
-    void *m_arg;
-  };
+  /** Internal API implementation of asynchronous`webview_bind` */
+  noresult bind(const std::string &name, binding_t fn, void *arg);
 
-  using sync_binding_t = std::function<std::string(std::string)>;
-
-  // Synchronous bind
-  noresult bind(const std::string &name, sync_binding_t fn) {
-    auto wrapper = [this, fn](const std::string &id, const std::string &req,
-                              void * /*arg*/) { resolve(id, 0, fn(req)); };
-    return bind(name, wrapper, nullptr);
-  }
-
-  // Asynchronous bind
-  noresult bind(const std::string &name, binding_t fn, void *arg) {
-    // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
-    if (bindings.count(name) > 0) {
-      return error_info{WEBVIEW_ERROR_DUPLICATE};
-    }
-    bindings.emplace(name, binding_ctx_t(fn, arg));
-    replace_bind_script();
-    // Notify that a binding was created if the init script has already
-    // set things up.
-    eval("if (window.__webview__) {\n\
-window.__webview__.onBind(" +
-         json_escape(name) + ")\n\
-}");
-    return {};
-  }
-
-  noresult unbind(const std::string &name) {
-    auto found = bindings.find(name);
-    if (found == bindings.end()) {
-      return error_info{WEBVIEW_ERROR_NOT_FOUND};
-    }
-    bindings.erase(found);
-    replace_bind_script();
-    // Notify that a binding was created if the init script has already
-    // set things up.
-    eval("if (window.__webview__) {\n\
-window.__webview__.onUnbind(" +
-         json_escape(name) + ")\n\
-}");
-    return {};
-  }
+  /** Internal API implementation of `webview_unbind` */
+  noresult unbind(const std::string &name);
 
   noresult resolve(const std::string &id, int status,
-                   const std::string &result) {
-    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-    return dispatch(std::bind(
-        [id, status, this](std::string escaped_result) {
-          std::string js = "window.__webview__.onReply(" + json_escape(id) +
-                           ", " + std::to_string(status) + ", " +
-                           escaped_result + ")";
-          eval(js);
-        },
-        result.empty() ? "undefined" : json_escape(result)));
-  }
+                   const std::string &result);
 
-  result<void *> window() { return window_impl(); }
-  result<void *> widget() { return widget_impl(); }
-  result<void *> browser_controller() { return browser_controller_impl(); }
-  noresult run() { return run_impl(); }
-  noresult terminate() { return terminate_impl(); }
-  noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
-  noresult set_title(const std::string &title) { return set_title_impl(title); }
+  result<void *> window();
+  result<void *> widget();
+  result<void *> browser_controller();
+  noresult run();
+  noresult terminate();
+  noresult dispatch(std::function<void()> f);
+  noresult set_title(const std::string &title);
 
-  noresult set_size(int width, int height, webview_hint_t hints) {
-    m_is_size_set = true;
-    return set_size_impl(width, height, hints);
-  }
+  noresult set_size(int width, int height, webview_hint_t hints);
 
-  noresult set_html(const std::string &html) { return set_html_impl(html); }
+  noresult set_html(const std::string &html);
 
-  noresult init(const std::string &js) {
-    add_user_script(js);
-    return {};
-  }
+  noresult init(const std::string &js);
 
-  noresult eval(const std::string &js) { return eval_impl(js); }
+  noresult eval(const std::string &js);
 
 protected:
   virtual noresult navigate_impl(const std::string &url) = 0;
@@ -163,10 +118,7 @@ protected:
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
 
-  virtual user_script *add_user_script(const std::string &js) {
-    return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
-                                                  add_user_script_impl(js)));
-  }
+  virtual user_script *add_user_script(const std::string &js);
 
   virtual user_script add_user_script_impl(const std::string &js) = 0;
 
@@ -177,195 +129,69 @@ protected:
                                            const user_script &second) = 0;
 
   virtual user_script *replace_user_script(const user_script &old_script,
-                                           const std::string &new_script_code) {
-    remove_all_user_scripts_impl(m_user_scripts);
-    user_script *old_script_ptr{};
-    for (auto &script : m_user_scripts) {
-      auto is_old_script = are_user_scripts_equal_impl(script, old_script);
-      script = add_user_script_impl(is_old_script ? new_script_code
-                                                  : script.get_code());
-      if (is_old_script) {
-        old_script_ptr = std::addressof(script);
-      }
-    }
-    return old_script_ptr;
-  }
+                                           const std::string &new_script_code);
 
-  void replace_bind_script() {
-    if (m_bind_script) {
-      m_bind_script = replace_user_script(*m_bind_script, create_bind_script());
-    } else {
-      m_bind_script = add_user_script(create_bind_script());
-    }
-  }
+  void replace_bind_script();
 
-  void add_init_script(const std::string &post_fn) {
-    add_user_script(create_init_script(post_fn));
-    m_is_init_script_added = true;
-  }
+  void add_init_script(const std::string &post_fn);
 
-  std::string create_init_script(const std::string &post_fn) {
-    auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  function generateId() {\n\
-    var crypto = window.crypto || window.msCrypto;\n\
-    var bytes = new Uint8Array(16);\n\
-    crypto.getRandomValues(bytes);\n\
-    return Array.prototype.slice.call(bytes).map(function(n) {\n\
-      var s = n.toString(16);\n\
-      return ((s.length % 2) == 1 ? '0' : '') + s;\n\
-    }).join('');\n\
-  }\n\
-  var Webview = (function() {\n\
-    var _promises = {};\n\
-    function Webview_() {}\n\
-    Webview_.prototype.post = function(message) {\n\
-      return (" +
-              post_fn + ")(message);\n\
-    };\n\
-    Webview_.prototype.call = function(method) {\n\
-      var _id = generateId();\n\
-      var _params = Array.prototype.slice.call(arguments, 1);\n\
-      var promise = new Promise(function(resolve, reject) {\n\
-        _promises[_id] = { resolve, reject };\n\
-      });\n\
-      this.post(JSON.stringify({\n\
-        id: _id,\n\
-        method: method,\n\
-        params: _params\n\
-      }));\n\
-      return promise;\n\
-    };\n\
-    Webview_.prototype.onReply = function(id, status, result) {\n\
-      var promise = _promises[id];\n\
-      if (result !== undefined) {\n\
-        try {\n\
-          result = JSON.parse(result);\n\
-        } catch (e) {\n\
-          promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
-          return;\n\
-        }\n\
-      }\n\
-      if (status === 0) {\n\
-        promise.resolve(result);\n\
-      } else {\n\
-        promise.reject(result);\n\
-      }\n\
-    };\n\
-    Webview_.prototype.onBind = function(name) {\n\
-      if (window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" already exists');\n\
-      }\n\
-      window[name] = (function() {\n\
-        var params = [name].concat(Array.prototype.slice.call(arguments));\n\
-        return Webview_.prototype.call.apply(this, params);\n\
-      }).bind(this);\n\
-    };\n\
-    Webview_.prototype.onUnbind = function(name) {\n\
-      if (!window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" does not exist');\n\
-      }\n\
-      delete window[name];\n\
-    };\n\
-    return Webview_;\n\
-  })();\n\
-  window.__webview__ = new Webview();\n\
-})()";
-    return js;
-  }
+  std::string create_init_script(const std::string &post_fn);
 
-  std::string create_bind_script() {
-    std::string js_names = "[";
-    bool first = true;
-    for (const auto &binding : bindings) {
-      if (first) {
-        first = false;
-      } else {
-        js_names += ",";
-      }
-      js_names += json_escape(binding.first);
-    }
-    js_names += "]";
+  std::string create_bind_script();
 
-    auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  var methods = " +
-              js_names + ";\n\
-  methods.forEach(function(name) {\n\
-    window.__webview__.onBind(name);\n\
-  });\n\
-})()";
-    return js;
-  }
+  virtual void on_message(const std::string &msg);
 
-  virtual void on_message(const std::string &msg) {
-    auto id = json_parse(msg, "id", 0);
-    auto name = json_parse(msg, "method", 0);
-    auto args = json_parse(msg, "params", 0);
-    auto found = bindings.find(name);
-    if (found == bindings.end()) {
-      return;
-    }
-    const auto &context = found->second;
-    dispatch([=] { context.call(id, args); });
-  }
+  virtual void on_window_created();
 
-  virtual void on_window_created() { inc_window_count(); }
+  virtual void on_window_destroyed(bool skip_termination = false);
 
-  virtual void on_window_destroyed(bool skip_termination = false) {
-    if (dec_window_count() <= 0) {
-      if (!skip_termination) {
-        terminate();
-      }
-    }
-  }
+  /**
+   * Various internal backend scenarious require instant event queue depletion.
+   * This runs the event loop until the currently queued events have been processed.
+   */
+  void deplete_run_loop_event_queue();
 
-  // Runs the event loop until the currently queued events have been processed.
-  void deplete_run_loop_event_queue() {
-    bool done{};
-    dispatch([&] { done = true; });
-    run_event_loop_while([&] { return !done; });
-  }
-
-  // Runs the event loop while the passed-in function returns true.
+  /**
+   * Various internal backend sccenarios require temporary running of the event loop.
+   * This runs the event loop while the passed-in function returns true.
+   */
   virtual void run_event_loop_while(std::function<bool()> fn) = 0;
 
-  void dispatch_size_default(bool m_owns_window) {
-    if (!m_owns_window || !m_is_init_script_added) {
-      return;
-    };
-    dispatch([this]() {
-      if (!m_is_size_set) {
-        set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
-      }
-    });
-  }
+  /**
+   * Dispatches the default window size settings to the event queue.
+   * The event will be guarded if the user sets their own size with `webview_set_size`.
+   */
+  void dispatch_size_default(bool m_owns_window);
 
-  void default_size_guard(bool flag) { m_is_size_set = flag; }
+  /**
+   * Overrides the guard against setting a default window size.
+   * This is needed for Windows, which temporarily depletes the event queue
+   * during `webview_bind`
+   */
+  void set_default_size_guard(bool guarded);
 
 private:
-  static std::atomic_uint &window_ref_count() {
-    static std::atomic_uint ref_count{0};
-    return ref_count;
-  }
+  static std::atomic_uint &window_ref_count();
 
-  static unsigned int inc_window_count() { return ++window_ref_count(); }
+  static unsigned int inc_window_count();
 
-  static unsigned int dec_window_count() {
-    auto &count = window_ref_count();
-    if (count > 0) {
-      return --count;
-    }
-    return 0;
-  }
+  static unsigned int dec_window_count();
 
+  /** A map of user defined bound functions */
   std::map<std::string, binding_ctx_t> bindings;
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;
 
+  /** Flags if the initial system script has been bound to the window */
   bool m_is_init_script_added{};
+  /**
+   * Flags if the initial window size has been set.
+   * This acts as a guard against the default size overriding a user set size
+   */
   bool m_is_size_set{};
+  /** The default window width */
   static const int m_initial_width = 640;
+  /** The default window height */
   static const int m_initial_height = 480;
 };
 
