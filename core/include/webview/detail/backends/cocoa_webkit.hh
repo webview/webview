@@ -622,6 +622,8 @@ private:
     }
   }
   void window_init_proceed() {
+    objc::autoreleasepool arp;
+
     m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
     auto style = NSWindowStyleMaskTitled;
     m_window = objc::msg_send<id>(
