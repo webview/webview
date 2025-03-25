@@ -460,7 +460,7 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
-    window_init();
+    window_init(nullptr, true);
   }
   void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
@@ -597,15 +597,10 @@ private:
     }
     return temp;
   }
-  void window_init(void *window = nullptr) {
-    if (!m_window) {
-      m_window = static_cast<id>(window);
-    }
-    if (!m_owns_window) {
-      return;
-    }
+  void window_init(void *window, bool called_from_delegate = false) {
     objc::autoreleasepool arp;
-    auto window_init_proceed = [this]() {
+
+    if (called_from_delegate) {
       m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
       auto style = NSWindowStyleMaskTitled;
       m_window = objc::msg_send<id>(
@@ -616,21 +611,19 @@ private:
                                OBJC_ASSOCIATION_ASSIGN);
       objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
       on_window_created();
-    };
 
-    auto delegate = objc::msg_send<id>(m_app, "delegate"_sel);
-    // Only set the app delegate if it hasn't already been set.
-    if (delegate) {
-      return window_init_proceed();
+      return;
     }
-    // See comments related to application lifecycle in create_app_delegate().
+
+    m_window = static_cast<id>(window);
+    if (!m_owns_window) {
+      return;
+    }
+
     m_app_delegate = create_app_delegate();
     objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
-    if (!get_and_set_is_first_instance()) {
-      return window_init_proceed();
-    }
 
     // Start the main run loop so that the app delegate gets the
     // NSApplicationDidFinishLaunchingNotification notification after the run
@@ -638,10 +631,12 @@ private:
     // We need to return from this constructor so this run loop is only
     // temporary.
     // Skip the main loop if this isn't the first instance of this class
-    // because the launch event is only sent once. Instead, proceed to
-    // create a window.
-    objc::msg_send<void>(m_app, "run"_sel);
+    // because the launch event is only sent once.
+    if (get_and_set_is_first_instance()) {
+      objc::msg_send<void>(m_app, "run"_sel);
+    }
   }
+
   noresult window_show() {
     objc::autoreleasepool arp;
     if (m_is_window_shown) {
