@@ -86,39 +86,10 @@ private:
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_debug{debug},
-        m_app{get_shared_application()},
-        m_window{static_cast<id>(window)},
-        m_owns_window{!window} {
-    // See comments related to application lifecycle in create_app_delegate().
-    if (!m_owns_window) {
-      set_up_window();
-    } else {
-      // Only set the app delegate if it hasn't already been set.
-      auto delegate = objc::msg_send<id>(m_app, "delegate"_sel);
-      if (delegate) {
-        set_up_window();
-      } else {
-        m_app_delegate = create_app_delegate();
-        objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
-                                 OBJC_ASSOCIATION_ASSIGN);
-        objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
-
-        // Start the main run loop so that the app delegate gets the
-        // NSApplicationDidFinishLaunchingNotification notification after the run
-        // loop has started in order to perform further initialization.
-        // We need to return from this constructor so this run loop is only
-        // temporary.
-        // Skip the main loop if this isn't the first instance of this class
-        // because the launch event is only sent once. Instead, proceed to
-        // create a window.
-        if (get_and_set_is_first_instance()) {
-          objc::msg_send<void>(m_app, "run"_sel);
-        } else {
-          set_up_window();
-        }
-      }
-    }
+      : m_app{get_shared_application()}, m_owns_window{!window} {
+    window_init(window);
+    window_settings(debug);
+    dispatch_size_default(m_owns_window);
   }
 
   cocoa_wkwebview_engine(const cocoa_wkwebview_engine &) = delete;
@@ -250,7 +221,7 @@ protected:
     }
     objc::msg_send<void>(m_window, "center"_sel);
 
-    return {};
+    return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;
@@ -489,7 +460,7 @@ private:
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
     }
 
-    set_up_window();
+    window_init_proceed();
   }
   void on_window_will_close(id /*delegate*/, id /*window*/) {
     // Widget destroyed along with window.
@@ -498,35 +469,7 @@ private:
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
-  void set_up_window() {
-    objc::autoreleasepool arp;
-
-    // Main window
-    if (m_owns_window) {
-      m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
-      auto style = NSWindowStyleMaskTitled;
-      m_window = objc::msg_send<id>(
-          m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
-          CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
-
-      m_window_delegate = create_window_delegate();
-      objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
-                               OBJC_ASSOCIATION_ASSIGN);
-      objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
-
-      on_window_created();
-    }
-
-    set_up_web_view();
-    set_up_widget();
-
-    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
-
-    if (m_owns_window) {
-      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
-    }
-  }
-  void set_up_web_view() {
+  void window_settings(bool debug) {
     objc::autoreleasepool arp;
 
     auto config = objc::autoreleased(
@@ -539,7 +482,7 @@ private:
     auto yes_value =
         objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES);
 
-    if (m_debug) {
+    if (debug) {
       // Equivalent Obj-C:
       // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
       objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
@@ -584,7 +527,7 @@ private:
                              OBJC_ASSOCIATION_ASSIGN);
     objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
 
-    if (m_debug) {
+    if (debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
       // disable the feature by default (macOS 13.3 and later) and support
       // enabling it. According to Apple, the behavior on older OS versions is
@@ -614,6 +557,11 @@ private:
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
+    set_up_widget();
+    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
+    if (m_owns_window) {
+      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+    }
   }
   void set_up_widget() {
     objc::autoreleasepool arp;
@@ -649,6 +597,56 @@ private:
     }
     return temp;
   }
+  void window_init(void *window) {
+    objc::autoreleasepool arp;
+
+    m_window = static_cast<id>(window);
+    if (!m_owns_window) {
+      return;
+    }
+
+    // Skip application setup if this isn't the first instance of this class
+    // because the launch event is only sent once.
+    if (!get_and_set_is_first_instance()) {
+      window_init_proceed();
+      return;
+    }
+
+    m_app_delegate = create_app_delegate();
+    objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
+    objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
+
+    // Start the main run loop so that the app delegate gets the
+    // NSApplicationDidFinishLaunchingNotification notification after the run
+    // loop has started in order to perform further initialization.
+    // We need to return from this constructor so this run loop is only
+    // temporary.
+    objc::msg_send<void>(m_app, "run"_sel);
+  }
+  void window_init_proceed() {
+    objc::autoreleasepool arp;
+
+    m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
+    auto style = NSWindowStyleMaskTitled;
+    m_window = objc::msg_send<id>(
+        m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
+        CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
+    m_window_delegate = create_window_delegate();
+    objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
+                             OBJC_ASSOCIATION_ASSIGN);
+    objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
+    on_window_created();
+  }
+
+  noresult window_show() {
+    objc::autoreleasepool arp;
+    if (m_is_window_shown) {
+      return {};
+    }
+    m_is_window_shown = true;
+    return {};
+  }
 
   void run_event_loop_while(std::function<bool()> fn) override {
     objc::autoreleasepool arp;
@@ -667,7 +665,6 @@ private:
     }
   }
 
-  bool m_debug{};
   id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
@@ -676,6 +673,7 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_owns_window{};
+  bool m_is_window_shown{};
 };
 
 } // namespace detail
