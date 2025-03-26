@@ -271,7 +271,7 @@ private:
   }
 #endif
 
-  void window_init(void *window) {
+  void window_init(void *window) override {
     set_owns_window(!window);
     m_window = static_cast<GtkWidget *>(window);
     if (owns_window()) {
@@ -306,7 +306,7 @@ private:
 }");
   }
 
-  void window_settings(bool debug) {
+  void window_settings(bool debug) override {
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
     webkit_settings_set_javascript_can_access_clipboard(settings, true);

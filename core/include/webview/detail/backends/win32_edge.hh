@@ -504,7 +504,7 @@ protected:
   }
 
 private:
-  void window_init(void *window) {
+  void window_init(void *window) override {
     set_owns_window(!window);
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
@@ -707,7 +707,7 @@ private:
     }
   }
 
-  void window_settings(bool debug) {
+  void window_settings(bool debug) override {
     auto cb =
         std::bind(&win32_edge_engine::on_message, this, std::placeholders::_1);
     embed(m_widget, debug, cb).ensure_ok();

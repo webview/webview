@@ -469,7 +469,7 @@ private:
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
-  void window_settings(bool debug) {
+  void window_settings(bool debug) override {
     objc::autoreleasepool arp;
 
     auto config = objc::autoreleased(
@@ -597,11 +597,12 @@ private:
     }
     return temp;
   }
-  void window_init(void *window) {
+  void window_init(void *window) override {
     objc::autoreleasepool arp;
 
+    set_owns_window(!window);
     m_window = static_cast<id>(window);
-    if (!m_owns_window) {
+    if (!owns_window()) {
       return;
     }
 
@@ -672,7 +673,6 @@ private:
   id m_widget{};
   id m_webview{};
   id m_manager{};
-  bool m_owns_window{};
   bool m_is_window_shown{};
 };
 
