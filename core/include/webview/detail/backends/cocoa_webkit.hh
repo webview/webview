@@ -605,6 +605,13 @@ private:
       return;
     }
 
+    // Skip application setup if this isn't the first instance of this class
+    // because the launch event is only sent once.
+    if (!get_and_set_is_first_instance()) {
+      window_init_proceed();
+      return;
+    }
+
     m_app_delegate = create_app_delegate();
     objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
@@ -615,11 +622,7 @@ private:
     // loop has started in order to perform further initialization.
     // We need to return from this constructor so this run loop is only
     // temporary.
-    // Skip the main loop if this isn't the first instance of this class
-    // because the launch event is only sent once.
-    if (get_and_set_is_first_instance()) {
-      objc::msg_send<void>(m_app, "run"_sel);
-    }
+    objc::msg_send<void>(m_app, "run"_sel);
   }
   void window_init_proceed() {
     objc::autoreleasepool arp;
