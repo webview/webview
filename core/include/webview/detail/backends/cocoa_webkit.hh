@@ -469,7 +469,7 @@ private:
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
-  void window_settings(bool debug) override {
+  void window_settings(bool debug) {
     objc::autoreleasepool arp;
 
     auto config = objc::autoreleased(
@@ -597,7 +597,7 @@ private:
     }
     return temp;
   }
-  void window_init(void *window) override {
+  void window_init(void *window) {
     objc::autoreleasepool arp;
 
     set_owns_window(!window);
