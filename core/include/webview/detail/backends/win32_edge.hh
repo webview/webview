@@ -308,10 +308,10 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) : m_owns_window{!window} {
+  win32_edge_engine(bool debug, void *window) {
     window_init(window);
     window_settings(debug);
-    dispatch_size_default(m_owns_window);
+    dispatch_size_default();
   }
 
   virtual ~win32_edge_engine() {
@@ -336,7 +336,7 @@ public:
     if (m_widget) {
       SetWindowLongPtrW(m_widget, GWLP_WNDPROC, wndproc);
     }
-    if (m_window && m_owns_window) {
+    if (m_window && owns_window()) {
       SetWindowLongPtrW(m_window, GWLP_WNDPROC, wndproc);
     }
     if (m_widget) {
@@ -344,13 +344,13 @@ public:
       m_widget = nullptr;
     }
     if (m_window) {
-      if (m_owns_window) {
+      if (owns_window()) {
         DestroyWindow(m_window);
         on_window_destroyed(true);
       }
       m_window = nullptr;
     }
-    if (m_owns_window) {
+    if (owns_window()) {
       // Not strictly needed for windows to close immediately but aligns
       // behavior across backends.
       deplete_run_loop_event_queue();
@@ -471,14 +471,14 @@ protected:
         m_webview->AddScriptToExecuteOnDocumentCreated(wjs.c_str(), &handler);
     if (SUCCEEDED(res)) {
       // We want to guard against executing the default `set_size` prematurely
-      default_size_guard(true);
+      set_default_size_guard(true);
       // Sadly we need to pump the event loop in order to get the script ID.
       run_event_loop_while([&] { return !done; });
       // The user's `set_size` may have been executed from the depleted event queue,
       // and if so, guard against putting the default `set_size` back onto the queue.
       if (!m_is_window_shown) {
-        default_size_guard(false);
-        dispatch_size_default(m_owns_window);
+        set_default_size_guard(false);
+        dispatch_size_default();
       }
     }
     // TODO: There's a non-zero chance that we didn't get the script ID.
@@ -505,6 +505,7 @@ protected:
 
 private:
   void window_init(void *window) {
+    set_owns_window(!window);
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
@@ -512,7 +513,7 @@ private:
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
 
-    if (m_owns_window) {
+    if (owns_window()) {
       m_com_init = {COINIT_APARTMENTTHREADED};
       enable_dpi_awareness();
 
@@ -713,7 +714,7 @@ private:
   }
 
   noresult window_show() {
-    if (m_owns_window && !m_is_window_shown) {
+    if (owns_window() && !m_is_window_shown) {
       ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
       SetFocus(m_window);
@@ -796,7 +797,7 @@ private:
     m_controller->put_IsVisible(TRUE);
     ShowWindow(m_widget, SW_SHOW);
     UpdateWindow(m_widget);
-    if (m_owns_window) {
+    if (owns_window()) {
       focus_webview();
     }
     return {};
@@ -892,7 +893,6 @@ private:
   webview2_com_handler *m_com_handler = nullptr;
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
-  bool m_owns_window{};
   bool m_is_window_shown{};
 };
 

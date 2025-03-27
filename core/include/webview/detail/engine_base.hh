@@ -86,7 +86,17 @@ public:
   noresult unbind(const std::string &name);
 
   noresult resolve(const std::string &id, int status,
-                   const std::string &result);
+                   const std::string &result) {
+    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
+    return dispatch(std::bind(
+        [id, status, this](std::string escaped_result) {
+          std::string js = "window.__webview__.onReply(" + json_escape(id) +
+                           ", " + std::to_string(status) + ", " +
+                           escaped_result + ")";
+          eval(js);
+        },
+        result.empty() ? "undefined" : json_escape(result)));
+  }
 
   result<void *> window();
   result<void *> widget();
@@ -157,18 +167,11 @@ protected:
    */
   virtual void run_event_loop_while(std::function<bool()> fn) = 0;
 
-  /**
-   * Dispatches the default window size settings to the event queue.
-   * The event will be guarded if the user sets their own size with `webview_set_size`.
-   */
-  void dispatch_size_default(bool m_owns_window);
+  void dispatch_size_default(bool m_owns_window)
 
-  /**
-   * Overrides the guard against setting a default window size.
-   * This is needed for Windows, which temporarily depletes the event queue
-   * during `webview_bind`
-   */
-  void set_default_size_guard(bool guarded);
+      void default_size_guard(bool flag) {
+    m_is_size_set = flag;
+  }
 
 private:
   static std::atomic_uint &window_ref_count();
