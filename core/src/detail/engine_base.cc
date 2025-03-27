@@ -26,7 +26,7 @@
 #pragma once
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "webview/detail/engine_base.hh"
+#include "webview/detail/engine_base.h"
 #include "webview/detail/json.hh"
 #include <functional>
 #include <string>

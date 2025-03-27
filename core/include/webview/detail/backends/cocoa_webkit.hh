@@ -43,7 +43,7 @@
 //
 
 #include "../../types.hh"
-#include "../engine_base.hh"
+#include "../engine_base.h"
 #include "../platform/darwin/cocoa.hh"
 #include "../platform/darwin/objc.hh"
 #include "../platform/darwin/webkit.hh"
