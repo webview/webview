@@ -38,6 +38,8 @@ using sync_binding_t = std::function<std::string(std::string)>;
 namespace webview {
 namespace detail {
 
+using noresult = webview::noresult;
+
 class binding_ctx_t {
 public:
   /**

@@ -24,15 +24,13 @@
  */
 
 #pragma once
-#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "webview/detail/engine_base.h"
+#include "webview/detail/engine_base.hh"
 #include "webview/detail/json.hh"
 #include <functional>
 #include <string>
 
-using namespace webview;
-using namespace detail;
+using namespace webview::detail;
 
 binding_ctx_t::binding_ctx_t(binding_t callback, void *arg)
     : m_callback(callback), m_arg(arg) {}
@@ -102,11 +100,11 @@ noresult engine_base::resolve(const std::string &id, int status,
       result.empty() ? "undefined" : json_escape(result)));
 }
 
-result<void *> engine_base::window() { return window_impl(); }
+webview::result<void *> engine_base::window() { return window_impl(); }
 
-result<void *> engine_base::widget() { return widget_impl(); }
+webview::result<void *> engine_base::widget() { return widget_impl(); }
 
-result<void *> engine_base::browser_controller() {
+webview::result<void *> engine_base::browser_controller() {
   return browser_controller_impl();
 }
 
@@ -329,5 +327,3 @@ unsigned int engine_base::dec_window_count() {
   }
   return 0;
 }
-
-#endif // (__cplusplus) && !defined(WEBVIEW_HEADER)

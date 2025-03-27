@@ -43,7 +43,7 @@
 
 #include "../../errors.hh"
 #include "../../types.hh"
-#include "../engine_base.h"
+#include "../engine_base.hh"
 #include "../native_library.hh"
 #include "../platform/windows/com_init_wrapper.hh"
 #include "../platform/windows/dpi.hh"

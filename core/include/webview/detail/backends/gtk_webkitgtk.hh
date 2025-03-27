@@ -47,7 +47,7 @@
 
 #include "../../errors.hh"
 #include "../../types.hh"
-#include "../engine_base.h"
+#include "../engine_base.hh"
 #include "../platform/linux/gtk/compat.hh"
 #include "../platform/linux/webkitgtk/compat.hh"
 #include "../platform/linux/webkitgtk/dmabuf.hh"
