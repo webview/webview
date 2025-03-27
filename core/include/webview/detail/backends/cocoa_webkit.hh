@@ -214,7 +214,7 @@ protected:
           m_window, NSRectMake(rect.origin.x, rect.origin.y, width, height),
           true, false);
     }
-    objc::msg_send<void>(m_window, "center"_sel);
+    cocoa::NSWindow_center(m_window);
 
     return window_show();
   }

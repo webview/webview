@@ -102,6 +102,11 @@ inline void NSWindow_set_delegate(id window, id delegate) {
   objc::msg_send<void>(window, "setDelegate:"_sel, delegate);
 }
 
+inline void NSWindow_center(id window) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "center"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
