@@ -47,6 +47,7 @@
 #include "../platform/darwin/cocoa/NSApplication.hh"
 #include "../platform/darwin/cocoa/NSBundle.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
+#include "../platform/darwin/cocoa/NSString.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
 #include "../platform/darwin/webkit.hh"
@@ -422,8 +423,7 @@ private:
       return false;
     }
     auto bundle_path = NSBundle_get_bundle_path(bundle);
-    auto bundled =
-        objc::msg_send<BOOL>(bundle_path, "hasSuffix:"_sel, ".app"_str);
+    auto bundled = NSString_has_suffix(bundle_path, ".app"_str);
     return !!bundled;
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
