@@ -24,6 +24,7 @@
  */
 
 #pragma once
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../types.h"
 #include "../types.hh"
@@ -188,3 +189,5 @@ private:
 
 } // namespace detail
 } // namespace webview
+
+#endif
