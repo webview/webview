@@ -98,6 +98,7 @@ public:
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
 
   virtual ~cocoa_wkwebview_engine() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
@@ -110,8 +111,8 @@ public:
         m_webview = nullptr;
       }
       if (m_widget) {
-        if (m_widget == cocoa::NSWindow_get_content_view(m_window)) {
-          cocoa::NSWindow_set_content_view(m_window, nullptr);
+        if (m_widget == NSWindow_get_content_view(m_window)) {
+          NSWindow_set_content_view(m_window, nullptr);
         }
         objc::msg_send<void>(m_widget, "release"_sel);
         m_widget = nullptr;
@@ -119,8 +120,8 @@ public:
       if (owns_window()) {
         // Replace delegate to avoid callbacks and other bad things during
         // destruction.
-        cocoa::NSWindow_set_delegate(m_window, nullptr);
-        cocoa::NSWindow_close(m_window);
+        NSWindow_set_delegate(m_window, nullptr);
+        NSWindow_close(m_window);
         on_window_destroyed(true);
       }
       m_window = nullptr;
@@ -203,16 +204,16 @@ protected:
     NSWindow_set_style_mask(m_window, style);
 
     if (hints == WEBVIEW_HINT_MIN) {
-      cocoa::NSWindow_set_content_min_size(m_window, CGSizeMake(width, height));
+      NSWindow_set_content_min_size(m_window, CGSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
-      cocoa::NSWindow_set_content_max_size(m_window, CGSizeMake(width, height));
+      NSWindow_set_content_max_size(m_window, CGSizeMake(width, height));
     } else {
       auto rect{NSWindow_get_frame(m_window)};
       NSWindow_set_frame(
           m_window, NSRectMake(rect.origin.x, rect.origin.y, width, height),
           true, false);
     }
-    cocoa::NSWindow_center(m_window);
+    NSWindow_center(m_window);
 
     return window_show();
   }
@@ -463,6 +464,7 @@ private:
     dispatch([this] { on_window_destroyed(); });
   }
   void window_settings(bool debug) {
+    using namespace cocoa;
     objc::autoreleasepool arp;
 
     auto config = objc::autoreleased(
@@ -551,9 +553,9 @@ private:
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
     set_up_widget();
-    cocoa::NSWindow_set_content_view(m_window, m_widget);
+    NSWindow_set_content_view(m_window, m_widget);
     if (owns_window()) {
-      cocoa::NSWindow_make_key_and_order_front(m_window);
+      NSWindow_make_key_and_order_front(m_window);
     }
   }
   void set_up_widget() {
@@ -627,7 +629,7 @@ private:
     m_window_delegate = create_window_delegate();
     objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    cocoa::NSWindow_set_delegate(m_window, m_window_delegate);
+    NSWindow_set_delegate(m_window, m_window_delegate);
     on_window_created();
   }
 
