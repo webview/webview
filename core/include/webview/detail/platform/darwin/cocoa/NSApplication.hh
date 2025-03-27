@@ -54,6 +54,11 @@ inline void NSApplication_stop(id app, id sender = nullptr) {
   objc::msg_send<void>(app, "stop:"_sel, sender);
 }
 
+inline id NSApplication_get_shared_application() {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

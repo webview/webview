@@ -88,7 +88,7 @@ private:
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{get_shared_application()} {
+      : m_app{cocoa::NSApplication_get_shared_application()} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -407,9 +407,6 @@ private:
       objc_registerClassPair(cls);
     }
     return objc::msg_send<id>((id)cls, "new"_sel);
-  }
-  static id get_shared_application() {
-    return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
   }
   static cocoa_wkwebview_engine *get_associated_webview(id object) {
     auto w =
