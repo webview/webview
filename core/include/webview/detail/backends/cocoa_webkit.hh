@@ -119,7 +119,7 @@ public:
       if (owns_window()) {
         // Replace delegate to avoid callbacks and other bad things during
         // destruction.
-        objc::msg_send<void>(m_window, "setDelegate:"_sel, nullptr);
+        cocoa::NSWindow_set_delegate(m_window, nullptr);
         cocoa::NSWindow_close(m_window);
         on_window_destroyed(true);
       }
@@ -629,7 +629,7 @@ private:
     m_window_delegate = create_window_delegate();
     objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    objc::msg_send<void>(m_window, "setDelegate:"_sel, m_window_delegate);
+    cocoa::NSWindow_set_delegate(m_window, m_window_delegate);
     on_window_created();
   }
 

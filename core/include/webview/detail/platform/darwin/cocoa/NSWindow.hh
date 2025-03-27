@@ -97,6 +97,11 @@ inline id NSWindow_get_content_view(id window) {
   return objc::msg_send<id>(window, "contentView"_sel);
 }
 
+inline void NSWindow_set_delegate(id window, id delegate) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setDelegate:"_sel, delegate);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
