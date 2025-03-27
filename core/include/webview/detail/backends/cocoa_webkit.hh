@@ -421,7 +421,7 @@ private:
     if (!bundle) {
       return false;
     }
-    auto bundle_path = objc::msg_send<id>(bundle, "bundlePath"_sel);
+    auto bundle_path = NSBundle_get_bundle_path(bundle);
     auto bundled =
         objc::msg_send<BOOL>(bundle_path, "hasSuffix:"_sel, ".app"_str);
     return !!bundled;
