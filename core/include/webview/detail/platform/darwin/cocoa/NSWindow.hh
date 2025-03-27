@@ -36,6 +36,8 @@
 #include "NSRect.hh"
 #include "types.hh"
 
+#include <string>
+
 namespace webview {
 namespace detail {
 namespace cocoa {
@@ -69,6 +71,15 @@ inline void NSWindow_set_frame(id window, NSRect frame_rect, bool display,
 inline void NSWindow_set_style_mask(id window, NSWindowStyleMask style) {
   using namespace objc::literals;
   objc::msg_send<void>(window, "setStyleMask:"_sel, style);
+}
+
+inline void NSWindow_set_title(id window, const std::string &title) {
+  using namespace objc::literals;
+  objc::autoreleasepool arp;
+  objc::msg_send<void>(window, "setTitle:"_sel,
+                       objc::msg_send<id>("NSString"_cls,
+                                          "stringWithUTF8String:"_sel,
+                                          title.c_str()));
 }
 
 } // namespace cocoa

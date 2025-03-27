@@ -186,13 +186,7 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    objc::autoreleasepool arp;
-
-    objc::msg_send<void>(m_window, "setTitle:"_sel,
-                         objc::msg_send<id>("NSString"_cls,
-                                            "stringWithUTF8String:"_sel,
-                                            title.c_str()));
-
+    cocoa::NSWindow_set_title(m_window, title);
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
