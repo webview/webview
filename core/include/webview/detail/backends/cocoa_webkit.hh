@@ -48,6 +48,7 @@
 #include "../platform/darwin/cocoa/NSBundle.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
 #include "../platform/darwin/cocoa/NSString.hh"
+#include "../platform/darwin/cocoa/NSURL.hh"
 #include "../platform/darwin/cocoa/NSView.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
@@ -226,8 +227,7 @@ protected:
     using namespace cocoa;
     objc::autoreleasepool arp;
 
-    auto nsurl = objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel,
-                                    NSString_string_with_utf8_string(url));
+    auto nsurl = NSURL_url_with_string(url);
 
     objc::msg_send<void>(
         m_webview, "loadRequest:"_sel,
