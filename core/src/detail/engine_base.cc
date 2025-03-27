@@ -23,8 +23,7 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_ENGINE_BASE_CC
-#define WEBVIEW_DETAIL_ENGINE_BASE_CC
+#pragma once
 
 #include "webview/detail/engine_base.hh"
 #include "webview/detail/json.hh"
@@ -297,8 +296,8 @@ void engine_base::deplete_run_loop_event_queue() {
   run_event_loop_while([&] { return !done; });
 }
 
-void engine_base::dispatch_size_default(bool m_owns_window) {
-  if (!m_owns_window || !m_is_init_script_added) {
+void engine_base::dispatch_size_default() {
+  if (!owns_window() || !m_is_init_script_added) {
     return;
   };
   dispatch([this]() {
@@ -311,6 +310,12 @@ void engine_base::dispatch_size_default(bool m_owns_window) {
 void engine_base::set_default_size_guard(bool guarded) {
   m_is_size_set = guarded;
 }
+
+void engine_base::set_owns_window(bool owns_window) {
+  m_owns_window = owns_window;
+}
+
+bool engine_base::owns_window() const { return m_owns_window; }
 
 std::atomic_uint &engine_base::window_ref_count() {
   static std::atomic_uint ref_count{0};
@@ -326,5 +331,3 @@ unsigned int engine_base::dec_window_count() {
   }
   return 0;
 }
-
-#endif // WEBVIEW_DETAIL_ENGINE_BASE_CC

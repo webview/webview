@@ -86,18 +86,7 @@ public:
   noresult unbind(const std::string &name);
 
   noresult resolve(const std::string &id, int status,
-                   const std::string &result) {
-    // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-    return dispatch(std::bind(
-        [id, status, this](std::string escaped_result) {
-          std::string js = "window.__webview__.onReply(" + json_escape(id) +
-                           ", " + std::to_string(status) + ", " +
-                           escaped_result + ")";
-          eval(js);
-        },
-        result.empty() ? "undefined" : json_escape(result)));
-  }
-
+                   const std::string &result);
   result<void *> window();
   result<void *> widget();
   result<void *> browser_controller();
@@ -167,11 +156,10 @@ protected:
    */
   virtual void run_event_loop_while(std::function<bool()> fn) = 0;
 
-  void dispatch_size_default(bool m_owns_window)
-
-      void default_size_guard(bool flag) {
-    m_is_size_set = flag;
-  }
+  void dispatch_size_default();
+  void set_default_size_guard(bool guarded);
+  void set_owns_window(bool owns_window);
+  bool owns_window() const;
 
 private:
   static std::atomic_uint &window_ref_count();
@@ -192,6 +180,7 @@ private:
    * This acts as a guard against the default size overriding a user set size
    */
   bool m_is_size_set{};
+  bool m_owns_window{};
   /** The default window width */
   static const int m_initial_width = 640;
   /** The default window height */
