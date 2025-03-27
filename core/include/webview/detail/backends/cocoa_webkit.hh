@@ -45,6 +45,7 @@
 #include "../../types.hh"
 #include "../engine_base.hh"
 #include "../platform/darwin/cocoa/NSApplication.hh"
+#include "../platform/darwin/cocoa/NSBundle.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
@@ -414,11 +415,9 @@ private:
     assert(w);
     return w;
   }
-  static id get_main_bundle() noexcept {
-    return objc::msg_send<id>("NSBundle"_cls, "mainBundle"_sel);
-  }
   static bool is_app_bundled() noexcept {
-    auto bundle = get_main_bundle();
+    using namespace cocoa;
+    auto bundle = NSBundle_get_main_bundle();
     if (!bundle) {
       return false;
     }
