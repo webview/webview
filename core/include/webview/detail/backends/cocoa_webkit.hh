@@ -111,7 +111,7 @@ public:
       }
       if (m_widget) {
         if (m_widget == objc::msg_send<id>(m_window, "contentView"_sel)) {
-          objc::msg_send<void>(m_window, "setContentView:"_sel, nullptr);
+          cocoa::NSWindow_set_content_view(m_window, nullptr);
         }
         objc::msg_send<void>(m_widget, "release"_sel);
         m_widget = nullptr;
@@ -553,7 +553,7 @@ private:
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
     set_up_widget();
-    objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
+    cocoa::NSWindow_set_content_view(m_window, m_widget);
     if (owns_window()) {
       cocoa::NSWindow_make_key_and_order_front(m_window);
     }

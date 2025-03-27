@@ -87,6 +87,11 @@ inline void NSWindow_make_key_and_order_front(id window, id sender = nullptr) {
   objc::msg_send<void>(window, "makeKeyAndOrderFront:"_sel, sender);
 }
 
+inline void NSWindow_set_content_view(id window, id view) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setContentView:"_sel, view);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
