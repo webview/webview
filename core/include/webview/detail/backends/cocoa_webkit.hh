@@ -203,8 +203,7 @@ protected:
     NSWindow_set_style_mask(m_window, style);
 
     if (hints == WEBVIEW_HINT_MIN) {
-      objc::msg_send<void>(m_window, "setContentMinSize:"_sel,
-                           CGSizeMake(width, height));
+      cocoa::NSWindow_set_content_min_size(m_window, CGSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
       objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
                            CGSizeMake(width, height));

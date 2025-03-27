@@ -34,6 +34,7 @@
 
 #include "../objc.hh"
 #include "NSRect.hh"
+#include "NSSize.hh"
 #include "types.hh"
 
 #include <string>
@@ -105,6 +106,11 @@ inline void NSWindow_set_delegate(id window, id delegate) {
 inline void NSWindow_center(id window) {
   using namespace objc::literals;
   objc::msg_send<void>(window, "center"_sel);
+}
+
+inline void NSWindow_set_content_min_size(id window, NSSize size) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setContentMinSize:"_sel, size);
 }
 
 } // namespace cocoa
