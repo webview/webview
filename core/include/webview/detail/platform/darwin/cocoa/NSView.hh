@@ -60,6 +60,11 @@ inline void NSView_add_subview(id view, id subview) {
   objc::msg_send<void>(view, "addSubview:"_sel, subview);
 }
 
+inline NSRect NSView_get_bounds(id view) {
+  using namespace objc::literals;
+  return objc::msg_send_stret<NSRect>(view, "bounds"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

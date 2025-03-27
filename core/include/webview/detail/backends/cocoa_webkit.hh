@@ -559,7 +559,7 @@ private:
     NSView_set_autoresizes_subviews(m_widget, true);
     NSView_add_subview(m_widget, m_webview);
     objc::msg_send<void>(m_webview, "setFrame:"_sel,
-                         objc::msg_send_stret<CGRect>(m_widget, "bounds"_sel));
+                         NSView_get_bounds(m_widget));
   }
   void stop_run_loop() {
     using namespace cocoa;
