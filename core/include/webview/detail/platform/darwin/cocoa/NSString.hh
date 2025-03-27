@@ -45,6 +45,12 @@ inline bool NSString_has_suffix(id string, id suffix) {
       objc::msg_send<BOOL>(string, "hasSuffix:"_sel, suffix));
 }
 
+inline id NSString_string_with_utf8_string(const char *utf8_string) {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+                            utf8_string);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

@@ -641,11 +641,11 @@ private:
   }
 
   void run_event_loop_while(std::function<bool()> fn) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     auto mask = NSUIntegerMax; // NSEventMaskAny
     // NSDefaultRunLoopMode
-    auto mode = objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                                   "kCFRunLoopDefaultMode");
+    auto mode = NSString_string_with_utf8_string("kCFRunLoopDefaultMode");
     while (fn()) {
       objc::autoreleasepool arp2;
       auto event = objc::msg_send<id>(
