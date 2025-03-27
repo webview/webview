@@ -42,12 +42,16 @@ namespace cocoa {
 
 inline id NSWindow_new(NSRect content_rect, NSWindowStyleMask style,
                        NSBackingStoreType backing_store_type, bool defer) {
-  using namespace objc;
   using namespace objc::literals;
-  return msg_send<id>(msg_send<id>("NSWindow"_cls, "alloc"_sel),
-                      "initWithContentRect:styleMask:backing:defer:"_sel,
-                      content_rect, style, backing_store_type,
-                      static_cast<BOOL>(defer));
+  return objc::msg_send<id>(objc::msg_send<id>("NSWindow"_cls, "alloc"_sel),
+                            "initWithContentRect:styleMask:backing:defer:"_sel,
+                            content_rect, style, backing_store_type,
+                            static_cast<BOOL>(defer));
+}
+
+inline void NSWindow_close(id window) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "close"_sel);
 }
 
 } // namespace cocoa
