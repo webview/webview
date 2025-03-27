@@ -196,6 +196,7 @@ protected:
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
 
     auto style = static_cast<NSWindowStyleMask>(
@@ -214,7 +215,7 @@ protected:
       objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
                            CGSizeMake(width, height));
     } else {
-      CGRect rect = objc::msg_send_stret<CGRect>(m_window, "frame"_sel);
+      auto rect{NSWindow_get_frame(m_window)};
       objc::msg_send<void>(
           m_window, "setFrame:display:animate:"_sel,
           CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);

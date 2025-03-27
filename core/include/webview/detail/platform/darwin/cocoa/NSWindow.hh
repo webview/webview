@@ -54,6 +54,11 @@ inline void NSWindow_close(id window) {
   objc::msg_send<void>(window, "close"_sel);
 }
 
+inline NSRect NSWindow_get_frame(id window) {
+  using namespace objc::literals;
+  return objc::msg_send_stret<NSRect>(window, "frame"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
