@@ -59,6 +59,13 @@ inline NSRect NSWindow_get_frame(id window) {
   return objc::msg_send_stret<NSRect>(window, "frame"_sel);
 }
 
+inline void NSWindow_set_frame(id window, NSRect frame_rect, bool display,
+                               bool animate) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setFrame:display:animate:"_sel, frame_rect,
+                       static_cast<BOOL>(display), static_cast<BOOL>(animate));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

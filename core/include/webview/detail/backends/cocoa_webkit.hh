@@ -216,9 +216,9 @@ protected:
                            CGSizeMake(width, height));
     } else {
       auto rect{NSWindow_get_frame(m_window)};
-      objc::msg_send<void>(
-          m_window, "setFrame:display:animate:"_sel,
-          CGRectMake(rect.origin.x, rect.origin.y, width, height), YES, NO);
+      NSWindow_set_frame(
+          m_window, NSRectMake(rect.origin.x, rect.origin.y, width, height),
+          true, false);
     }
     objc::msg_send<void>(m_window, "center"_sel);
 
