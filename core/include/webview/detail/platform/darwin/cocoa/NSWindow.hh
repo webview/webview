@@ -82,6 +82,11 @@ inline void NSWindow_set_title(id window, const std::string &title) {
                                           title.c_str()));
 }
 
+inline void NSWindow_make_key_and_order_front(id window, id sender = nullptr) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "makeKeyAndOrderFront:"_sel, sender);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

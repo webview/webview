@@ -555,7 +555,7 @@ private:
     set_up_widget();
     objc::msg_send<void>(m_window, "setContentView:"_sel, m_widget);
     if (owns_window()) {
-      objc::msg_send<void>(m_window, "makeKeyAndOrderFront:"_sel, nullptr);
+      cocoa::NSWindow_make_key_and_order_front(m_window);
     }
   }
   void set_up_widget() {
