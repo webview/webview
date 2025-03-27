@@ -35,6 +35,8 @@
 #include "../objc.hh"
 #include <objc/objc.h>
 
+#include <string>
+
 namespace webview {
 namespace detail {
 namespace cocoa {
@@ -49,6 +51,10 @@ inline id NSString_string_with_utf8_string(const char *utf8_string) {
   using namespace objc::literals;
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                             utf8_string);
+}
+
+inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
+  return NSString_string_with_utf8_string(utf8_string.c_str());
 }
 
 } // namespace cocoa

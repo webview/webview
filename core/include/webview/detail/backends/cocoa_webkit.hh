@@ -222,12 +222,11 @@ protected:
     return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
 
-    auto nsurl = objc::msg_send<id>(
-        "NSURL"_cls, "URLWithString:"_sel,
-        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                           url.c_str()));
+    auto nsurl = objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel,
+                                    NSString_string_with_utf8_string(url));
 
     objc::msg_send<void>(
         m_webview, "loadRequest:"_sel,
@@ -236,15 +235,14 @@ protected:
     return {};
   }
   noresult set_html_impl(const std::string &html) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
-                         objc::msg_send<id>("NSString"_cls,
-                                            "stringWithUTF8String:"_sel,
-                                            html.c_str()),
-                         nullptr);
+                         NSString_string_with_utf8_string(html), nullptr);
     return {};
   }
   noresult eval_impl(const std::string &js) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     // URI is null before content has begun loading.
     auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
@@ -252,21 +250,18 @@ protected:
       return {};
     }
     objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
-                         objc::msg_send<id>("NSString"_cls,
-                                            "stringWithUTF8String:"_sel,
-                                            js.c_str()),
-                         nullptr);
+                         NSString_string_with_utf8_string(js), nullptr);
     return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
+    using namespace cocoa;
     objc::autoreleasepool arp;
-    auto wk_script = objc::msg_send<id>(
-        objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
-        "initWithSource:injectionTime:forMainFrameOnly:"_sel,
-        objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
-                           js.c_str()),
-        WKUserScriptInjectionTimeAtDocumentStart, YES);
+    auto wk_script =
+        objc::msg_send<id>(objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),
+                           "initWithSource:injectionTime:forMainFrameOnly:"_sel,
+                           NSString_string_with_utf8_string(js),
+                           WKUserScriptInjectionTimeAtDocumentStart, YES);
     // Script is retained when added.
     objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
     user_script script{
