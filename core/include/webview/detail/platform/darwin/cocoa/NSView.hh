@@ -49,6 +49,12 @@ inline id NSView_init_with_frame(id view, NSRect frame_rect) {
   return objc::msg_send<id>(view, "initWithFrame:"_sel, frame_rect);
 }
 
+inline void NSView_set_autoresizes_subviews(id view, bool resizes) {
+  using namespace objc::literals;
+  objc::msg_send<void>(view, "setAutoresizesSubviews:"_sel,
+                       static_cast<BOOL>(resizes));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

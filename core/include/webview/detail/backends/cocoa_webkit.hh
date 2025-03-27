@@ -556,7 +556,7 @@ private:
     // Create a new view that can contain both the web view and the Web Inspector pane
     m_widget = NSView_init_with_frame(NSView_alloc(), NSRectMake(0, 0, 0, 0));
     // Autoresizing is needed because the Web Inspector pane is a sibling of the web view
-    objc::msg_send<void>(m_widget, "setAutoresizesSubviews:"_sel, YES);
+    NSView_set_autoresizes_subviews(m_widget, true);
     objc::msg_send<void>(m_widget, "addSubview:"_sel, m_webview);
     objc::msg_send<void>(m_webview, "setFrame:"_sel,
                          objc::msg_send_stret<CGRect>(m_widget, "bounds"_sel));
