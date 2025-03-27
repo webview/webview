@@ -174,7 +174,7 @@ protected:
   }
 
   noresult run_impl() override {
-    objc::msg_send<void>(m_app, "run"_sel);
+    cocoa::NSApplication_run(m_app);
     return {};
   }
 
@@ -619,7 +619,7 @@ private:
     // loop has started in order to perform further initialization.
     // We need to return from this constructor so this run loop is only
     // temporary.
-    objc::msg_send<void>(m_app, "run"_sel);
+    NSApplication_run(m_app);
   }
   void window_init_proceed() {
     using namespace cocoa;

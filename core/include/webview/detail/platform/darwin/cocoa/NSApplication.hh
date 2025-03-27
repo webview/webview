@@ -44,6 +44,11 @@ inline void NSApplication_set_delegate(id app, id delegate) {
   objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
 }
 
+inline void NSApplication_run(id app) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "run"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
