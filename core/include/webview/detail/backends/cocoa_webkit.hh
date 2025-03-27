@@ -206,7 +206,7 @@ protected:
       style =
           static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
     }
-    objc::msg_send<void>(m_window, "setStyleMask:"_sel, style);
+    NSWindow_set_style_mask(m_window, style);
 
     if (hints == WEBVIEW_HINT_MIN) {
       objc::msg_send<void>(m_window, "setContentMinSize:"_sel,

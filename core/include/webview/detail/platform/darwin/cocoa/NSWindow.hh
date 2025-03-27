@@ -66,6 +66,11 @@ inline void NSWindow_set_frame(id window, NSRect frame_rect, bool display,
                        static_cast<BOOL>(display), static_cast<BOOL>(animate));
 }
 
+inline void NSWindow_set_style_mask(id window, NSWindowStyleMask style) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setStyleMask:"_sel, style);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
