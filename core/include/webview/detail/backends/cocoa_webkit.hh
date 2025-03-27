@@ -205,8 +205,7 @@ protected:
     if (hints == WEBVIEW_HINT_MIN) {
       cocoa::NSWindow_set_content_min_size(m_window, CGSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
-      objc::msg_send<void>(m_window, "setContentMaxSize:"_sel,
-                           CGSizeMake(width, height));
+      cocoa::NSWindow_set_content_max_size(m_window, CGSizeMake(width, height));
     } else {
       auto rect{NSWindow_get_frame(m_window)};
       NSWindow_set_frame(

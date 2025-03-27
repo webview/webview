@@ -113,6 +113,11 @@ inline void NSWindow_set_content_min_size(id window, NSSize size) {
   objc::msg_send<void>(window, "setContentMinSize:"_sel, size);
 }
 
+inline void NSWindow_set_content_max_size(id window, NSSize size) {
+  using namespace objc::literals;
+  objc::msg_send<void>(window, "setContentMaxSize:"_sel, size);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
