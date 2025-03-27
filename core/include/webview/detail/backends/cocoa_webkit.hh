@@ -44,6 +44,7 @@
 
 #include "../../types.hh"
 #include "../engine_base.hh"
+#include "../platform/darwin/cocoa/NSApplication.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
@@ -132,7 +133,7 @@ public:
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
-      objc::msg_send<void>(m_app, "setDelegate:"_sel, nullptr);
+      NSApplication_set_delegate(m_app, nullptr);
       // Make sure to release the delegate we created.
       objc::msg_send<void>(m_app_delegate, "release"_sel);
       m_app_delegate = nullptr;
@@ -592,6 +593,7 @@ private:
     return temp;
   }
   void window_init(void *window) {
+    using namespace cocoa;
     objc::autoreleasepool arp;
 
     set_owns_window(!window);
@@ -610,7 +612,7 @@ private:
     m_app_delegate = create_app_delegate();
     objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    objc::msg_send<void>(m_app, "setDelegate:"_sel, m_app_delegate);
+    NSApplication_set_delegate(m_app, m_app_delegate);
 
     // Start the main run loop so that the app delegate gets the
     // NSApplicationDidFinishLaunchingNotification notification after the run
