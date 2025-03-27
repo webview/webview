@@ -44,7 +44,8 @@
 
 #include "../../types.hh"
 #include "../engine_base.hh"
-#include "../platform/darwin/cocoa.hh"
+#include "../platform/darwin/cocoa/NSNumber.hh"
+#include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
 #include "../platform/darwin/webkit.hh"
 #include "../user_script.hh"
