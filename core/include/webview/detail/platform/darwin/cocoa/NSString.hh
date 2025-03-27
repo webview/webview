@@ -41,10 +41,28 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+enum NSStringEncoding : NSUInteger {
+  NSASCIIStringEncoding = 1,
+  NSUTF8StringEncoding = 4
+};
+
 inline bool NSString_has_suffix(id string, id suffix) {
   using namespace objc::literals;
   return static_cast<bool>(
       objc::msg_send<BOOL>(string, "hasSuffix:"_sel, suffix));
+}
+
+inline id NSString_alloc() {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSString"_cls, "alloc"_sel);
+}
+
+inline id NSString_init_with_bytes(id string, const void *bytes,
+                                   NSUInteger length,
+                                   NSStringEncoding encoding) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(string, "initWithBytes:length:encoding:"_sel, bytes,
+                            length, encoding);
 }
 
 inline id NSString_string_with_utf8_string(const char *utf8_string) {
@@ -54,7 +72,9 @@ inline id NSString_string_with_utf8_string(const char *utf8_string) {
 }
 
 inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
-  return NSString_string_with_utf8_string(utf8_string.c_str());
+  return objc::autoreleased(NSString_init_with_bytes(
+      NSString_alloc(), utf8_string.data(),
+      static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
 }
 
 } // namespace cocoa
