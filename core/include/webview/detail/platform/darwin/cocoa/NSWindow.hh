@@ -92,6 +92,11 @@ inline void NSWindow_set_content_view(id window, id view) {
   objc::msg_send<void>(window, "setContentView:"_sel, view);
 }
 
+inline id NSWindow_get_content_view(id window) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(window, "contentView"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

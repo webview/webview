@@ -110,7 +110,7 @@ public:
         m_webview = nullptr;
       }
       if (m_widget) {
-        if (m_widget == objc::msg_send<id>(m_window, "contentView"_sel)) {
+        if (m_widget == cocoa::NSWindow_get_content_view(m_window)) {
           cocoa::NSWindow_set_content_view(m_window, nullptr);
         }
         objc::msg_send<void>(m_widget, "release"_sel);
