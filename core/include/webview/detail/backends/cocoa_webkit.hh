@@ -558,8 +558,7 @@ private:
     // Autoresizing is needed because the Web Inspector pane is a sibling of the web view
     NSView_set_autoresizes_subviews(m_widget, true);
     NSView_add_subview(m_widget, m_webview);
-    objc::msg_send<void>(m_webview, "setFrame:"_sel,
-                         NSView_get_bounds(m_widget));
+    NSView_set_frame(m_webview, NSView_get_bounds(m_widget));
   }
   void stop_run_loop() {
     using namespace cocoa;

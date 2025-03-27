@@ -65,6 +65,11 @@ inline NSRect NSView_get_bounds(id view) {
   return objc::msg_send_stret<NSRect>(view, "bounds"_sel);
 }
 
+inline void NSView_set_frame(id view, NSRect frame) {
+  using namespace objc::literals;
+  objc::msg_send<void>(view, "setFrame:"_sel, frame);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
