@@ -48,6 +48,7 @@
 #include "../platform/darwin/cocoa/NSBundle.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
 #include "../platform/darwin/cocoa/NSString.hh"
+#include "../platform/darwin/cocoa/NSView.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
 #include "../platform/darwin/objc.hh"
 #include "../platform/darwin/webkit.hh"
@@ -550,9 +551,10 @@ private:
     }
   }
   void set_up_widget() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     // Create a new view that can contain both the web view and the Web Inspector pane
-    m_widget = objc::msg_send<id>("NSView"_cls, "alloc"_sel);
+    m_widget = NSView_alloc();
     objc::msg_send<void>(m_widget, "initWithFrame:"_sel,
                          CGRectMake(0, 0, 0, 0));
     // Autoresizing is needed because the Web Inspector pane is a sibling of the web view
