@@ -626,13 +626,11 @@ private:
     objc::msg_send<void>(m_app, "run"_sel);
   }
   void window_init_proceed() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
 
-    m_window = objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
-    auto style = NSWindowStyleMaskTitled;
-    m_window = objc::msg_send<id>(
-        m_window, "initWithContentRect:styleMask:backing:defer:"_sel,
-        CGRectMake(0, 0, 0, 0), style, NSBackingStoreBuffered, NO);
+    m_window = window_new(NSRectMake(0, 0, 0, 0), NSWindowStyleMaskTitled,
+                          NSBackingStoreBuffered, false);
     m_window_delegate = create_window_delegate();
     objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);

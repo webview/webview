@@ -32,7 +32,9 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include <objc/NSObjCRuntime.h>
+#include "objc.hh"
+
+#include <CoreGraphics/CoreGraphics.h>
 
 namespace webview {
 namespace detail {
@@ -61,6 +63,25 @@ enum NSAutoresizingMaskOptions : NSUInteger {
   NSViewMaxYMargin = 32
 };
 
+namespace cocoa {
+
+using NSRect = CGRect;
+
+constexpr inline NSRect NSRectMake(CGFloat x, CGFloat y, CGFloat w, CGFloat h) {
+  return CGRectMake(x, y, w, h);
+}
+
+inline id window_new(NSRect content_rect, NSWindowStyleMask style,
+                     NSBackingStoreType backing_store_type, bool defer) {
+  using namespace objc;
+  using namespace objc::literals;
+  return msg_send<id>(msg_send<id>("NSWindow"_cls, "alloc"_sel),
+                      "initWithContentRect:styleMask:backing:defer:"_sel,
+                      content_rect, style, backing_store_type,
+                      static_cast<BOOL>(defer));
+}
+
+} // namespace cocoa
 } // namespace detail
 } // namespace webview
 
