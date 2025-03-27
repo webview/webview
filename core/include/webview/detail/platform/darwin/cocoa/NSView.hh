@@ -44,6 +44,11 @@ inline id NSView_alloc() {
   return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
 }
 
+inline id NSView_init_with_frame(id view, NSRect frame_rect) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(view, "initWithFrame:"_sel, frame_rect);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
