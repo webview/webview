@@ -23,17 +23,37 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include "cocoa/NSWindow.hh"
+#include "../objc.hh"
+#include "NSRect.hh"
+#include "types.hh"
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline id NSWindow_new(NSRect content_rect, NSWindowStyleMask style,
+                       NSBackingStoreType backing_store_type, bool defer) {
+  using namespace objc;
+  using namespace objc::literals;
+  return msg_send<id>(msg_send<id>("NSWindow"_cls, "alloc"_sel),
+                      "initWithContentRect:styleMask:backing:defer:"_sel,
+                      content_rect, style, backing_store_type,
+                      static_cast<BOOL>(defer));
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH

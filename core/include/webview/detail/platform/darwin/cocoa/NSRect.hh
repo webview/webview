@@ -23,17 +23,31 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSRECT_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSRECT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include "cocoa/NSWindow.hh"
+#include <CoreGraphics/CoreGraphics.h>
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+using NSRect = CGRect;
+
+constexpr inline NSRect NSRectMake(CGFloat x, CGFloat y, CGFloat w, CGFloat h) {
+  return CGRectMake(x, y, w, h);
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSRECT_HH
