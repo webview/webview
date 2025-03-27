@@ -49,6 +49,11 @@ inline void NSApplication_run(id app) {
   objc::msg_send<void>(app, "run"_sel);
 }
 
+inline void NSApplication_stop(id app, id sender = nullptr) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "stop:"_sel, sender);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

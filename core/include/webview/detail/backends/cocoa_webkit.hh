@@ -571,9 +571,10 @@ private:
                          objc::msg_send_stret<CGRect>(m_widget, "bounds"_sel));
   }
   void stop_run_loop() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     // Request the run loop to stop. This doesn't immediately stop the loop.
-    objc::msg_send<void>(m_app, "stop:"_sel, nullptr);
+    NSApplication_stop(m_app);
     // The run loop will stop after processing an NSEvent.
     // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
     //             NSApplicationDefined (macOS 10.0–10.12)
