@@ -55,6 +55,11 @@ inline void NSView_set_autoresizes_subviews(id view, bool resizes) {
                        static_cast<BOOL>(resizes));
 }
 
+inline void NSView_add_subview(id view, id subview) {
+  using namespace objc::literals;
+  objc::msg_send<void>(view, "addSubview:"_sel, subview);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
