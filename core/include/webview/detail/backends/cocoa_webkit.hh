@@ -474,8 +474,7 @@ private:
     m_webview = objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 
     auto preferences = objc::msg_send<id>(config, "preferences"_sel);
-    auto yes_value =
-        objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES);
+    auto yes_value = NSNumber_number_with_bool(true);
 
     if (debug) {
       // Equivalent Obj-C:
@@ -532,9 +531,8 @@ private:
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
       if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
-        objc::msg_send<void>(
-            m_webview, "setInspectable:"_sel,
-            objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel, YES));
+        objc::msg_send<void>(m_webview, "setInspectable:"_sel,
+                             NSNumber_number_with_bool(true));
       }
 #else
 #error __builtin_available not supported by compiler

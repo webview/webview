@@ -23,18 +23,32 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSNUMBER_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSNUMBER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include "cocoa/NSNumber.hh"
-#include "cocoa/NSWindow.hh"
+#include "../objc.hh"
+#include <objc/objc.h>
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline id NSNumber_number_with_bool(bool value) {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel,
+                            static_cast<BOOL>(value));
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSNUMBER_HH
