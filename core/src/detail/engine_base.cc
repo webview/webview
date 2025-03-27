@@ -24,17 +24,15 @@
  */
 
 #pragma once
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "webview/detail/engine_base.hh"
 #include "webview/detail/json.hh"
-#include <atomic>
 #include <functional>
-#include <list>
-#include <map>
 #include <string>
 
 using namespace webview;
-using namespace webview::detail;
+using namespace detail;
 
 binding_ctx_t::binding_ctx_t(binding_t callback, void *arg)
     : m_callback(callback), m_arg(arg) {}
@@ -331,3 +329,5 @@ unsigned int engine_base::dec_window_count() {
   }
   return 0;
 }
+
+#endif // (__cplusplus) && !defined(WEBVIEW_HEADER)
