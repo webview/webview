@@ -46,10 +46,6 @@ enum NSWindowStyleMask : NSUInteger {
   NSWindowStyleMaskResizable = 8
 };
 
-enum NSApplicationActivationPolicy : NSInteger {
-  NSApplicationActivationPolicyRegular = 0
-};
-
 enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 enum NSAutoresizingMaskOptions : NSUInteger {

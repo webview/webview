@@ -423,6 +423,7 @@ private:
     return !!bundled;
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
+    using namespace cocoa;
     // See comments related to application lifecycle in create_app_delegate().
     if (owns_window()) {
       // Stop the main run loop so that we can return
@@ -441,8 +442,8 @@ private:
     if (!is_app_bundled()) {
       // "setActivationPolicy:" must be invoked before
       // "activateIgnoringOtherApps:" for activation to work.
-      objc::msg_send<void>(app, "setActivationPolicy:"_sel,
-                           NSApplicationActivationPolicyRegular);
+      NSApplication_set_activation_policy(app,
+                                          NSApplicationActivationPolicyRegular);
       // Activate the app regardless of other active apps.
       // This can be obtrusive so we only do it when necessary.
       objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);

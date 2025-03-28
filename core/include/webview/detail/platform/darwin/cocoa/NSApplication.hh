@@ -41,6 +41,10 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+enum NSApplicationActivationPolicy : NSInteger {
+  NSApplicationActivationPolicyRegular = 0
+};
+
 enum NSEventMask : NSUInteger { NSEventMaskAny = NSUIntegerMax };
 
 namespace NSRunLoopMode {
@@ -81,6 +85,13 @@ inline id NSApplication_next_event_matching_mask(id app, NSEventMask mask,
   return objc::msg_send<id>(
       app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
       expiration, mode, dequeue);
+}
+
+inline void
+NSApplication_set_activation_policy(id app,
+                                    NSApplicationActivationPolicy policy) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "setActivationPolicy:"_sel, policy);
 }
 
 } // namespace cocoa
