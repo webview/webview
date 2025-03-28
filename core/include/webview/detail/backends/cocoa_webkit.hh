@@ -574,7 +574,7 @@ private:
         "NSEvent"_cls,
         "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
         type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
-    objc::msg_send<void>(m_app, "postEvent:atStart:"_sel, event, YES);
+    NSApplication_post_event(m_app, event, true);
   }
   static bool get_and_set_is_first_instance() noexcept {
     static std::atomic_bool first{true};

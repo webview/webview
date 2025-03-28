@@ -100,6 +100,12 @@ inline void NSApplication_activate_ignoring_other_apps(id app, bool ignore) {
                        static_cast<BOOL>(ignore));
 }
 
+inline void NSApplication_post_event(id app, id event, bool at_start) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "postEvent:atStart:"_sel, event,
+                       static_cast<BOOL>(at_start));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
