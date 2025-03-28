@@ -637,15 +637,11 @@ private:
   void run_event_loop_while(std::function<bool()> fn) override {
     using namespace cocoa;
     objc::autoreleasepool arp;
-    auto mask = NSUIntegerMax; // NSEventMaskAny
-    // NSDefaultRunLoopMode
-    auto mode = NSString_string_with_utf8_string("kCFRunLoopDefaultMode");
     while (fn()) {
       objc::autoreleasepool arp2;
-      auto event = objc::msg_send<id>(
-          m_app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
-          nullptr, mode, YES);
-      if (event) {
+      if (auto event{NSApplication_next_event_matching_mask(
+              m_app, NSEventMaskAny, nullptr,
+              NSRunLoopMode::NSDefaultRunLoopMode(), true)}) {
         NSApplication_send_event(m_app, event);
       }
     }

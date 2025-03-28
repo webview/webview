@@ -33,11 +33,21 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc.hh"
+#include "NSString.hh"
+
 #include <objc/objc.h>
 
 namespace webview {
 namespace detail {
 namespace cocoa {
+
+enum NSEventMask : NSUInteger { NSEventMaskAny = NSUIntegerMax };
+
+namespace NSRunLoopMode {
+inline id NSDefaultRunLoopMode() {
+  return NSString_string_with_utf8_string("kCFRunLoopDefaultMode");
+}
+} // namespace NSRunLoopMode
 
 inline void NSApplication_set_delegate(id app, id delegate) {
   using namespace objc::literals;
@@ -62,6 +72,15 @@ inline id NSApplication_get_shared_application() {
 inline void NSApplication_send_event(id app, id event) {
   using namespace objc::literals;
   objc::msg_send<void>(app, "sendEvent:"_sel, event);
+}
+
+inline id NSApplication_next_event_matching_mask(id app, NSEventMask mask,
+                                                 id expiration, id mode,
+                                                 bool dequeue) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(
+      app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+      expiration, mode, dequeue);
 }
 
 } // namespace cocoa
