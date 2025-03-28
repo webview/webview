@@ -94,6 +94,12 @@ NSApplication_set_activation_policy(id app,
   objc::msg_send<void>(app, "setActivationPolicy:"_sel, policy);
 }
 
+inline void NSApplication_activate_ignoring_other_apps(id app, bool ignore) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel,
+                       static_cast<BOOL>(ignore));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

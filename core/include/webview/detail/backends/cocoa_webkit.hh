@@ -446,7 +446,7 @@ private:
                                           NSApplicationActivationPolicyRegular);
       // Activate the app regardless of other active apps.
       // This can be obtrusive so we only do it when necessary.
-      objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel, YES);
+      NSApplication_activate_ignoring_other_apps(app, true);
     }
 
     window_init_proceed();
