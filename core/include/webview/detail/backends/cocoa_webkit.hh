@@ -46,7 +46,9 @@
 #include "../engine_base.hh"
 #include "../platform/darwin/cocoa/NSApplication.hh"
 #include "../platform/darwin/cocoa/NSBundle.hh"
+#include "../platform/darwin/cocoa/NSEvent.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
+#include "../platform/darwin/cocoa/NSPoint.hh"
 #include "../platform/darwin/cocoa/NSString.hh"
 #include "../platform/darwin/cocoa/NSURL.hh"
 #include "../platform/darwin/cocoa/NSView.hh"
@@ -567,13 +569,9 @@ private:
     // Request the run loop to stop. This doesn't immediately stop the loop.
     NSApplication_stop(m_app);
     // The run loop will stop after processing an NSEvent.
-    // Event type: NSEventTypeApplicationDefined (macOS 10.12+),
-    //             NSApplicationDefined (macOS 10.0–10.12)
-    int type = 15;
-    auto event = objc::msg_send<id>(
-        "NSEvent"_cls,
-        "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
-        type, CGPointMake(0, 0), 0, 0, 0, nullptr, 0, 0, 0);
+    auto event{NSEvent_other_event_with_type(
+        NSEventTypeApplicationDefined, NSPointMake(0, 0),
+        NSEventModifierFlags{}, 0, 0, nullptr, 0, 0, 0)};
     NSApplication_post_event(m_app, event, true);
   }
   static bool get_and_set_is_first_instance() noexcept {
