@@ -59,6 +59,11 @@ inline id NSApplication_get_shared_application() {
   return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
 }
 
+inline void NSApplication_send_event(id app, id event) {
+  using namespace objc::literals;
+  objc::msg_send<void>(app, "sendEvent:"_sel, event);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

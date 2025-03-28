@@ -646,7 +646,7 @@ private:
           m_app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
           nullptr, mode, YES);
       if (event) {
-        objc::msg_send<void>(m_app, "sendEvent:"_sel, event);
+        NSApplication_send_event(m_app, event);
       }
     }
   }
