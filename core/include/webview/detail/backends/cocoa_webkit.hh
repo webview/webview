@@ -47,6 +47,7 @@
 #include "../platform/darwin/cocoa/NSApplication.hh"
 #include "../platform/darwin/cocoa/NSBundle.hh"
 #include "../platform/darwin/cocoa/NSEvent.hh"
+#include "../platform/darwin/cocoa/NSNotification.hh"
 #include "../platform/darwin/cocoa/NSNumber.hh"
 #include "../platform/darwin/cocoa/NSPoint.hh"
 #include "../platform/darwin/cocoa/NSString.hh"
@@ -288,6 +289,7 @@ protected:
 
 private:
   id create_app_delegate() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
@@ -303,8 +305,7 @@ private:
                       (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
       class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
                       (IMP)(+[](id self, SEL, id notification) {
-                        auto app =
-                            objc::msg_send<id>(notification, "object"_sel);
+                        auto app{NSNotification_get_object(notification)};
                         auto w = get_associated_webview(self);
                         w->on_application_did_finish_launching(self, app);
                       }),
