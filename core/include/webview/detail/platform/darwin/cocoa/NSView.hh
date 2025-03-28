@@ -34,6 +34,7 @@
 
 #include "../objc.hh"
 #include "NSRect.hh"
+#include "types.hh"
 
 namespace webview {
 namespace detail {
@@ -68,6 +69,12 @@ inline NSRect NSView_get_bounds(id view) {
 inline void NSView_set_frame(id view, NSRect frame) {
   using namespace objc::literals;
   objc::msg_send<void>(view, "setFrame:"_sel, frame);
+}
+
+inline void NSView_set_autoresizing_mask(id view,
+                                         NSAutoresizingMaskOptions mask) {
+  using namespace objc::literals;
+  objc::msg_send<void>(view, "setAutoresizingMask:"_sel, mask);
 }
 
 } // namespace cocoa
