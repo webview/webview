@@ -11,6 +11,21 @@
 #include <cassert>
 #include <cstdint>
 
+// This test should only run on Windows to enable us to perform a controlled
+// "warm-up" of MS WebView2 in order to avoid the initial test from
+// occationally timing out in CI.
+#ifdef WEBVIEW_PLATFORM_WINDOWS
+#include <iostream>
+
+TEST_CASE("# Warm-up") {
+  // Signal to the test runner that this may be a slow test.
+  std::cerr << "[[slow]]" << std::endl; // NOLINT(performance-avoid-endl)
+  webview::webview w(false, nullptr);
+  w.dispatch([&]() { w.terminate(); });
+  w.run();
+}
+#endif
+
 TEST_CASE("Start app loop and terminate it") {
   webview::webview w(false, nullptr);
   w.dispatch([&]() { w.terminate(); });
