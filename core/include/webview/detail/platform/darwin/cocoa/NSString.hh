@@ -77,6 +77,11 @@ inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
       static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
 }
 
+inline const char *NSString_utf8_string(id string) {
+  using namespace objc::literals;
+  return objc::msg_send<const char *>(string, "UTF8String"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
