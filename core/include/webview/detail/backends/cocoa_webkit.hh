@@ -74,11 +74,9 @@ using namespace objc::literals;
 
 class user_script::impl {
 public:
-  impl(id script) : m_script{script} {
-    objc::msg_send<void>(script, "retain"_sel);
-  }
+  impl(id script) : m_script{objc::retain(script)} {}
 
-  ~impl() { objc::msg_send<void>(m_script, "release"_sel); }
+  ~impl() { objc::release(m_script); }
 
   impl(const impl &) = delete;
   impl &operator=(const impl &) = delete;
@@ -113,16 +111,16 @@ public:
         if (auto ui_delegate =
                 objc::msg_send<id>(m_webview, "UIDelegate"_sel)) {
           objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, nullptr);
-          objc::msg_send<void>(ui_delegate, "release"_sel);
+          objc::release(ui_delegate);
         }
-        objc::msg_send<void>(m_webview, "release"_sel);
+        objc::release(m_webview);
         m_webview = nullptr;
       }
       if (m_widget) {
         if (m_widget == NSWindow_get_content_view(m_window)) {
           NSWindow_set_content_view(m_window, nullptr);
         }
-        objc::msg_send<void>(m_widget, "release"_sel);
+        objc::release(m_widget);
         m_widget = nullptr;
       }
       if (owns_window()) {
@@ -135,13 +133,13 @@ public:
       m_window = nullptr;
     }
     if (m_window_delegate) {
-      objc::msg_send<void>(m_window_delegate, "release"_sel);
+      objc::release(m_window_delegate);
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
       NSApplication_set_delegate(m_app, nullptr);
       // Make sure to release the delegate we created.
-      objc::msg_send<void>(m_app_delegate, "release"_sel);
+      objc::release(m_app_delegate);
       m_app_delegate = nullptr;
     }
     if (owns_window()) {
@@ -270,7 +268,7 @@ protected:
     user_script script{
         js, user_script::impl_ptr{new user_script::impl{wk_script},
                                   [](user_script::impl *p) { delete p; }}};
-    objc::msg_send<void>(wk_script, "release"_sel);
+    objc::release(wk_script);
     return script;
   }
 

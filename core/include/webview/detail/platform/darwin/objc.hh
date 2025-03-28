@@ -93,6 +93,14 @@ inline id autorelease(id object) {
   return msg_send<id>(object, sel_registerName("autorelease"));
 }
 
+inline id retain(id object) {
+  return msg_send<id>(object, sel_registerName("retain"));
+}
+
+inline void release(id object) {
+  msg_send<void>(object, sel_registerName("release"));
+}
+
 namespace literals {
 
 // Convenient conversion of string literals.
