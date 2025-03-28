@@ -89,9 +89,8 @@ private:
   id m_pool{};
 };
 
-inline id autoreleased(id object) {
-  msg_send<void>(object, sel_registerName("autorelease"));
-  return object;
+inline id autorelease(id object) {
+  return msg_send<id>(object, sel_registerName("autorelease"));
 }
 
 namespace literals {

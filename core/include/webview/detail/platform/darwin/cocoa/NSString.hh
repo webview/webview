@@ -72,7 +72,7 @@ inline id NSString_string_with_utf8_string(const char *utf8_string) {
 }
 
 inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
-  return objc::autoreleased(NSString_init_with_bytes(
+  return objc::autorelease(NSString_init_with_bytes(
       NSString_alloc(), utf8_string.data(),
       static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
 }

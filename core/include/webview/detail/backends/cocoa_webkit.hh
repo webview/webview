@@ -464,7 +464,7 @@ private:
     using namespace cocoa;
     objc::autoreleasepool arp;
 
-    auto config = objc::autoreleased(
+    auto config = objc::autorelease(
         objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel));
 
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
@@ -540,7 +540,7 @@ private:
     }
 
     auto script_message_handler =
-        objc::autoreleased(create_script_message_handler());
+        objc::autorelease(create_script_message_handler());
     objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
                          script_message_handler, "__webview__"_str);
 
