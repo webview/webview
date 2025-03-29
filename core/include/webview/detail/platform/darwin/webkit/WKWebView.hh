@@ -26,8 +26,6 @@
 #ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKWEBVIEW_HH
 #define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKWEBVIEW_HH
 
-#include "webview/detail/platform/darwin/objc/memory.hh"
-#include <Block.h>
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../../../macros.h"

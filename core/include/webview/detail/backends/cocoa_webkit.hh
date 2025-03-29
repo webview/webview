@@ -26,7 +26,6 @@
 #ifndef WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 #define WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 
-#include "webview/detail/platform/darwin/cocoa/NSNotification.hh"
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../macros.h"
