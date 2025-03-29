@@ -255,7 +255,7 @@ protected:
         NSString_string_with_utf8_string(js),
         WKUserScriptInjectionTimeAtDocumentStart, true)};
     // Script is retained when added.
-    objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
+    WKUserContentController_add_user_script(m_manager, wk_script);
     user_script script{
         js, user_script::impl_ptr{new user_script::impl{wk_script},
                                   [](user_script::impl *p) { delete p; }}};

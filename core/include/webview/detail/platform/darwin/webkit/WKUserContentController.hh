@@ -46,6 +46,11 @@ inline void WKUserContentController_add_script_message_handler(id self,
                        name);
 }
 
+inline void WKUserContentController_add_user_script(id self, id user_script) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "addUserScript:"_sel, user_script);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview
