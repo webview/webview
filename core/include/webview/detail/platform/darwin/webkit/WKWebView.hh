@@ -34,6 +34,8 @@
 
 #include "../objc/objc.hh"
 
+#include <CoreGraphics/CoreGraphics.h>
+
 namespace webview {
 namespace detail {
 namespace webkit {
@@ -41,6 +43,12 @@ namespace webkit {
 inline id WKWebView_alloc() {
   using namespace objc::literals;
   return objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
+}
+
+inline id WKWebView_init_with_frame(id self, CGRect frame, id configuration) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "initWithFrame:configuration:"_sel, frame,
+                            configuration);
 }
 
 } // namespace webkit

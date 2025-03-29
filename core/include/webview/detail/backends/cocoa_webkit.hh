@@ -494,9 +494,8 @@ private:
 #endif
 
     auto ui_delegate = create_webkit_ui_delegate();
-    m_webview = objc::msg_send<id>(WKWebView_alloc(),
-                                   "initWithFrame:configuration:"_sel,
-                                   CGRectMake(0, 0, 0, 0), config);
+    m_webview = WKWebView_init_with_frame(WKWebView_alloc(),
+                                          CGRectMake(0, 0, 0, 0), config);
     // Autoresizing mask is needed to prevent the Web Inspector pane from
     // pushing the main web view out of bounds
     auto autoresizing_mask = static_cast<NSAutoresizingMaskOptions>(
