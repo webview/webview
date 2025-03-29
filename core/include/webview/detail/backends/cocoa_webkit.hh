@@ -603,9 +603,9 @@ private:
     using namespace cocoa;
     objc::autoreleasepool arp;
 
-    m_window = NSWindow_with_content_rect(NSRectMake(0, 0, 0, 0),
-                                          NSWindowStyleMaskTitled,
-                                          NSBackingStoreBuffered, false);
+    m_window = objc::retain(NSWindow_with_content_rect(
+        NSRectMake(0, 0, 0, 0), NSWindowStyleMaskTitled, NSBackingStoreBuffered,
+        false));
     m_window_delegate = create_window_delegate();
     objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);

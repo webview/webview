@@ -53,9 +53,9 @@ inline id NSWindow_with_content_rect(NSRect content_rect,
                                      NSBackingStoreType backing_store_type,
                                      bool defer) {
   using namespace objc::literals;
-  return objc::msg_send<id>(
+  return objc::autorelease(objc::msg_send<id>(
       NSWindow_alloc(), "initWithContentRect:styleMask:backing:defer:"_sel,
-      content_rect, style, backing_store_type, static_cast<BOOL>(defer));
+      content_rect, style, backing_store_type, static_cast<BOOL>(defer)));
 }
 
 inline void NSWindow_close(id window) {
