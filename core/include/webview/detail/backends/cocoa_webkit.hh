@@ -507,8 +507,8 @@ private:
 
     auto script_message_handler =
         objc::autorelease(create_script_message_handler());
-    objc::msg_send<void>(m_manager, "addScriptMessageHandler:name:"_sel,
-                         script_message_handler, "__webview__"_str);
+    WKUserContentController_add_script_message_handler(
+        m_manager, script_message_handler, "__webview__"_str);
 
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
