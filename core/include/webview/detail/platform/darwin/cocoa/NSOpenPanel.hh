@@ -43,6 +43,12 @@ inline id NSOpenPanel_open_panel() {
   return objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
 }
 
+inline void NSOpenPanel_set_can_choose_files(id self, bool value) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setCanChooseFiles:"_sel,
+                       static_cast<BOOL>(value));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
