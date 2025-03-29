@@ -251,15 +251,14 @@ protected:
     using namespace cocoa;
     using namespace webkit;
     objc::autoreleasepool arp;
-    auto wk_script = WKUserScript_init_with_source(
-        WKUserScript_alloc(), NSString_string_with_utf8_string(js),
-        WKUserScriptInjectionTimeAtDocumentStart, true);
+    auto wk_script{WKUserScript_with_source(
+        NSString_string_with_utf8_string(js),
+        WKUserScriptInjectionTimeAtDocumentStart, true)};
     // Script is retained when added.
     objc::msg_send<void>(m_manager, "addUserScript:"_sel, wk_script);
     user_script script{
         js, user_script::impl_ptr{new user_script::impl{wk_script},
                                   [](user_script::impl *p) { delete p; }}};
-    objc::release(wk_script);
     return script;
   }
 

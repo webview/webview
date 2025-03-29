@@ -57,6 +57,14 @@ WKUserScript_init_with_source(id script, id source,
       injection_time, static_cast<BOOL>(for_main_frame_only));
 }
 
+inline id WKUserScript_with_source(id source,
+                                   WKUserScriptInjectionTime injection_time,
+                                   bool for_main_frame_only) {
+  using namespace objc::literals;
+  return objc::autorelease(WKUserScript_init_with_source(
+      WKUserScript_alloc(), source, injection_time, for_main_frame_only));
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview
