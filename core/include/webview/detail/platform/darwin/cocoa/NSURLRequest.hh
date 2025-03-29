@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSURLREQUEST_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSURLREQUEST_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,22 +32,21 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-// IWYU pragma: begin_exports
-#include "NSApplication.hh"
-#include "NSBundle.hh"
-#include "NSEvent.hh"
-#include "NSNotification.hh"
-#include "NSNumber.hh"
-#include "NSPoint.hh"
-#include "NSRect.hh"
-#include "NSSize.hh"
-#include "NSString.hh"
-#include "NSURL.hh"
-#include "NSURLRequest.hh"
-#include "NSView.hh"
-#include "NSWindow.hh"
-// IWYU pragma: end_exports
+#include "../objc/objc.hh"
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline id NSURLRequest_request_with_url(id url) {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, url);
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSURLREQUEST_HH

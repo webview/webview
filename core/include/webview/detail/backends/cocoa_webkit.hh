@@ -217,13 +217,12 @@ protected:
   }
   noresult navigate_impl(const std::string &url) override {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
-
-    auto nsurl = NSURL_url_with_string(url);
 
     objc::msg_send<void>(
         m_webview, "loadRequest:"_sel,
-        objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, nsurl));
+        NSURLRequest_request_with_url(NSURL_url_with_string(url)));
 
     return {};
   }
