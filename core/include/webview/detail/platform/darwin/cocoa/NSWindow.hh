@@ -48,14 +48,23 @@ inline id NSWindow_alloc() {
   return objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
 }
 
+inline id NSWindow_init_with_content_rect(id window, NSRect content_rect,
+                                          NSWindowStyleMask style,
+                                          NSBackingStoreType backing_store_type,
+                                          bool defer) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(
+      window, "initWithContentRect:styleMask:backing:defer:"_sel, content_rect,
+      style, backing_store_type, static_cast<BOOL>(defer));
+}
+
 inline id NSWindow_with_content_rect(NSRect content_rect,
                                      NSWindowStyleMask style,
                                      NSBackingStoreType backing_store_type,
                                      bool defer) {
   using namespace objc::literals;
-  return objc::autorelease(objc::msg_send<id>(
-      NSWindow_alloc(), "initWithContentRect:styleMask:backing:defer:"_sel,
-      content_rect, style, backing_store_type, static_cast<BOOL>(defer)));
+  return objc::autorelease(NSWindow_init_with_content_rect(
+      NSWindow_alloc(), content_rect, style, backing_store_type, defer));
 }
 
 inline void NSWindow_close(id window) {
