@@ -450,13 +450,13 @@ private:
   }
   void window_settings(bool debug) {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
 
     auto config = objc::autorelease(
         objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel));
 
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
-    m_webview = objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 
     auto preferences = objc::msg_send<id>(config, "preferences"_sel);
     auto yes_value = NSNumber_number_with_bool(true);
@@ -494,8 +494,9 @@ private:
 #endif
 
     auto ui_delegate = create_webkit_ui_delegate();
-    objc::msg_send<void>(m_webview, "initWithFrame:configuration:"_sel,
-                         CGRectMake(0, 0, 0, 0), config);
+    m_webview = objc::msg_send<id>(WKWebView_alloc(),
+                                   "initWithFrame:configuration:"_sel,
+                                   CGRectMake(0, 0, 0, 0), config);
     // Autoresizing mask is needed to prevent the Web Inspector pane from
     // pushing the main web view out of bounds
     auto autoresizing_mask = static_cast<NSAutoresizingMaskOptions>(
