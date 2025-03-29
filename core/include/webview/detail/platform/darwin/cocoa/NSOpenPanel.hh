@@ -61,6 +61,11 @@ inline void NSOpenPanel_set_set_allows_multiple_selection(id self, bool value) {
                        static_cast<BOOL>(value));
 }
 
+inline id NSOpenPanel_get_urls(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "URLs"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

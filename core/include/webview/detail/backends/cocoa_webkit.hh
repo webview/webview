@@ -358,9 +358,9 @@ private:
             // Get the URLs for the selected files. If the modal was canceled
             // then we pass null to the completion handler to signify
             // cancellation.
-            id urls = modal_response == NSModalResponseOK
-                          ? objc::msg_send<id>(panel, "URLs"_sel)
-                          : nullptr;
+            id urls{modal_response == NSModalResponseOK
+                        ? NSOpenPanel_get_urls(panel)
+                        : nullptr};
 
             // Invoke the completion handler block.
             auto sig = objc::msg_send<id>(
