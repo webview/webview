@@ -23,21 +23,33 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_CLASS_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_CLASS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/Class.hh"
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+#include "invoke.hh"
+#include "literals.hh"
 
-#endif // defined(WEBVIEW_PLATFORM_DARWIN)
+#include <objc/objc-runtime.h>
+
+namespace webview {
+namespace detail {
+namespace objc {
+
+inline id Class_new(Class class_) {
+  using namespace literals;
+  return msg_send<id>(class_, "new"_sel);
+}
+
+} // namespace objc
+} // namespace detail
+} // namespace webview
+
+#endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_CLASS_HH

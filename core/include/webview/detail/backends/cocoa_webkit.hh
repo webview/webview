@@ -312,7 +312,7 @@ private:
                       "v@:@");
       objc_registerClassPair(cls);
     }
-    return objc::msg_send<id>((id)cls, "new"_sel);
+    return objc::Class_new(cls);
   }
   id create_script_message_handler() {
     using namespace cocoa;
@@ -332,7 +332,7 @@ private:
                       "v@:@@");
       objc_registerClassPair(cls);
     }
-    auto instance = objc::msg_send<id>((id)cls, "new"_sel);
+    auto instance{objc::Class_new(cls)};
     objc_setAssociatedObject(instance, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
     return instance;
@@ -385,7 +385,7 @@ private:
           "v@:@@@@");
       objc_registerClassPair(cls);
     }
-    return objc::msg_send<id>((id)cls, "new"_sel);
+    return objc::Class_new(cls);
   }
   static id create_window_delegate() {
     objc::autoreleasepool arp;
@@ -405,7 +405,7 @@ private:
                       "v@:@");
       objc_registerClassPair(cls);
     }
-    return objc::msg_send<id>((id)cls, "new"_sel);
+    return objc::Class_new(cls);
   }
   static cocoa_wkwebview_engine *get_associated_webview(id object) {
     auto w =
