@@ -305,6 +305,7 @@ private:
   }
   id create_script_message_handler() {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKScriptMessageHandler";
     // Avoid crash due to registering same class twice
@@ -312,13 +313,13 @@ private:
     if (!cls) {
       cls = objc_allocateClassPair((Class) "NSResponder"_cls, class_name, 0);
       class_addProtocol(cls, objc_getProtocol("WKScriptMessageHandler"));
-      class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
-                      (IMP)(+[](id self, SEL, id, id msg) {
-                        auto w = get_associated_webview(self);
-                        w->on_message(NSString_utf8_string(
-                            objc::msg_send<id>(msg, "body"_sel)));
-                      }),
-                      "v@:@@");
+      class_addMethod(
+          cls, "userContentController:didReceiveScriptMessage:"_sel,
+          (IMP)(+[](id self, SEL, id, id msg) {
+            auto w = get_associated_webview(self);
+            w->on_message(NSString_utf8_string(WKScriptMessage_get_body(msg)));
+          }),
+          "v@:@@");
       objc_registerClassPair(cls);
     }
     auto instance{objc::Class_new(cls)};

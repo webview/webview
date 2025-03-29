@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
-#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKSCRIPTMESSAGE_HH
+#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKSCRIPTMESSAGE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,12 +32,21 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-// IWYU pragma: begin_exports
-#include "WKScriptMessage.hh"
-#include "WKUserScript.hh"
-#include "WKWebView.hh"
-// IWYU pragma: end_exports
+#include "../objc/objc.hh"
+
+namespace webview {
+namespace detail {
+namespace webkit {
+
+inline id WKScriptMessage_get_body(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "body"_sel);
+}
+
+} // namespace webkit
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKSCRIPTMESSAGE_HH
