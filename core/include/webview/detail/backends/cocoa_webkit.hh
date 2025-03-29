@@ -220,9 +220,8 @@ protected:
     using namespace webkit;
     objc::autoreleasepool arp;
 
-    objc::msg_send<void>(
-        m_webview, "loadRequest:"_sel,
-        NSURLRequest_request_with_url(NSURL_url_with_string(url)));
+    WKWebView_load_request(
+        m_webview, NSURLRequest_request_with_url(NSURL_url_with_string(url)));
 
     return {};
   }
