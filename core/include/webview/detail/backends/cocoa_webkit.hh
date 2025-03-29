@@ -228,9 +228,10 @@ protected:
   }
   noresult set_html_impl(const std::string &html) override {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
-    objc::msg_send<void>(m_webview, "loadHTMLString:baseURL:"_sel,
-                         NSString_string_with_utf8_string(html), nullptr);
+    WKWebView_load_html_string(m_webview,
+                               NSString_string_with_utf8_string(html), nullptr);
     return {};
   }
   noresult eval_impl(const std::string &js) override {

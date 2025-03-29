@@ -68,6 +68,12 @@ inline void WKWebView_set_ui_delegate(id self, id ui_delegate) {
   objc::msg_send<void>(self, "setUIDelegate:"_sel, ui_delegate);
 }
 
+inline id WKWebView_load_html_string(id self, id string, id base_url) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "loadHTMLString:baseURL:"_sel, string,
+                            base_url);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview
