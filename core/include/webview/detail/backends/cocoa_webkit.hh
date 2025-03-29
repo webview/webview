@@ -454,8 +454,7 @@ private:
     using namespace webkit;
     objc::autoreleasepool arp;
 
-    auto config = objc::autorelease(
-        objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel));
+    auto config{objc::autorelease(WKWebViewConfiguration_new())};
 
     m_manager = objc::msg_send<id>(config, "userContentController"_sel);
 
