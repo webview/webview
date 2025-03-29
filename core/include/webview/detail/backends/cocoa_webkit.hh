@@ -242,8 +242,8 @@ protected:
     if (!nsurl) {
       return {};
     }
-    objc::msg_send<void>(m_webview, "evaluateJavaScript:completionHandler:"_sel,
-                         NSString_string_with_utf8_string(js), nullptr);
+    WKWebVie_evaluate_javascript(m_webview,
+                                 NSString_string_with_utf8_string(js), nullptr);
     return {};
   }
 
