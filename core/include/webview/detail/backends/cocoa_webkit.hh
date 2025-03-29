@@ -26,6 +26,7 @@
 #ifndef WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 #define WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 
+#include "webview/detail/platform/darwin/cocoa/NSNotification.hh"
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../macros.h"
@@ -377,6 +378,7 @@ private:
     return objc::Class_new(cls);
   }
   static id create_window_delegate() {
+    using namespace cocoa;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewNSWindowDelegate";
     // Avoid crash due to registering same class twice
@@ -386,8 +388,7 @@ private:
       class_addProtocol(cls, objc_getProtocol("NSWindowDelegate"));
       class_addMethod(cls, "windowWillClose:"_sel,
                       (IMP)(+[](id self, SEL, id notification) {
-                        auto window =
-                            objc::msg_send<id>(notification, "object"_sel);
+                        auto window{NSNotification_get_object(notification)};
                         auto w = get_associated_webview(self);
                         w->on_window_will_close(self, window);
                       }),
