@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
-#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKOPENPANELPARAMETERS_HH
+#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKOPENPANELPARAMETERS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,15 +32,27 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-// IWYU pragma: begin_exports
-#include "WKOpenPanelParameters.hh"
-#include "WKScriptMessage.hh"
-#include "WKUserContentController.hh"
-#include "WKUserScript.hh"
-#include "WKWebView.hh"
-#include "WKWebViewConfiguration.hh"
-// IWYU pragma: end_exports
+#include "../objc/objc.hh"
+
+namespace webview {
+namespace detail {
+namespace webkit {
+
+inline bool WKOpenPanelParameters_allows_multiple_selection(id self) {
+  using namespace objc::literals;
+  return static_cast<bool>(
+      objc::msg_send<BOOL>(self, "allowsMultipleSelection"_sel));
+}
+
+inline bool WKOpenPanelParameters_allows_directories(id self) {
+  using namespace objc::literals;
+  return static_cast<bool>(objc::msg_send<BOOL>(self, "allowsDirectories"_sel));
+}
+
+} // namespace webkit
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKOPENPANELPARAMETERS_HH

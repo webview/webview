@@ -329,6 +329,7 @@ private:
     return instance;
   }
   static id create_webkit_ui_delegate() {
+    using namespace webkit;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKUIDelegate";
     // Avoid crash due to registering same class twice
@@ -340,10 +341,10 @@ private:
           cls,
           "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
           (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
-            auto allows_multiple_selection =
-                objc::msg_send<BOOL>(parameters, "allowsMultipleSelection"_sel);
-            auto allows_directories =
-                objc::msg_send<BOOL>(parameters, "allowsDirectories"_sel);
+            auto allows_multiple_selection{
+                WKOpenPanelParameters_allows_multiple_selection(parameters)};
+            auto allows_directories{
+                WKOpenPanelParameters_allows_directories(parameters)};
 
             // Show a panel for selecting files.
             auto panel = objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
