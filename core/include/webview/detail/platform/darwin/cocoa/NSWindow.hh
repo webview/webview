@@ -1,0 +1,142 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2017 Serge Zaitsev
+ * Copyright (c) 2022 Steffen André Langnes
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+
+#include "../objc/objc.hh"
+#include "NSRect.hh"
+#include "NSSize.hh"
+#include "types.hh"
+
+#include <string>
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline id NSWindow_alloc() {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
+}
+
+inline id NSWindow_init_with_content_rect(id self, NSRect content_rect,
+                                          NSWindowStyleMask style,
+                                          NSBackingStoreType backing_store_type,
+                                          bool defer) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(
+      self, "initWithContentRect:styleMask:backing:defer:"_sel, content_rect,
+      style, backing_store_type, static_cast<BOOL>(defer));
+}
+
+inline id NSWindow_with_content_rect(NSRect content_rect,
+                                     NSWindowStyleMask style,
+                                     NSBackingStoreType backing_store_type,
+                                     bool defer) {
+  using namespace objc::literals;
+  return objc::autorelease(NSWindow_init_with_content_rect(
+      NSWindow_alloc(), content_rect, style, backing_store_type, defer));
+}
+
+inline void NSWindow_close(id self) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "close"_sel);
+}
+
+inline NSRect NSWindow_get_frame(id self) {
+  using namespace objc::literals;
+  return objc::msg_send_stret<NSRect>(self, "frame"_sel);
+}
+
+inline void NSWindow_set_frame(id self, NSRect frame_rect, bool display,
+                               bool animate) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setFrame:display:animate:"_sel, frame_rect,
+                       static_cast<BOOL>(display), static_cast<BOOL>(animate));
+}
+
+inline void NSWindow_set_style_mask(id self, NSWindowStyleMask style) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setStyleMask:"_sel, style);
+}
+
+inline void NSWindow_set_title(id self, const std::string &title) {
+  using namespace objc::literals;
+  objc::autoreleasepool arp;
+  objc::msg_send<void>(self, "setTitle:"_sel,
+                       objc::msg_send<id>("NSString"_cls,
+                                          "stringWithUTF8String:"_sel,
+                                          title.c_str()));
+}
+
+inline void NSWindow_make_key_and_order_front(id self, id sender = nullptr) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "makeKeyAndOrderFront:"_sel, sender);
+}
+
+inline void NSWindow_set_content_view(id self, id view) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setContentView:"_sel, view);
+}
+
+inline id NSWindow_get_content_view(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "contentView"_sel);
+}
+
+inline void NSWindow_set_delegate(id self, id delegate) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setDelegate:"_sel, delegate);
+}
+
+inline void NSWindow_center(id self) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "center"_sel);
+}
+
+inline void NSWindow_set_content_min_size(id self, NSSize size) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setContentMinSize:"_sel, size);
+}
+
+inline void NSWindow_set_content_max_size(id self, NSSize size) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setContentMaxSize:"_sel, size);
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
+
+#endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSWINDOW_HH

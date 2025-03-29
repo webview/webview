@@ -23,47 +23,43 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERCONTENTCONTROLLER_HH
+#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERCONTENTCONTROLLER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include <objc/NSObjCRuntime.h>
+#include "../objc/objc.hh"
 
 namespace webview {
 namespace detail {
+namespace webkit {
 
-enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
+inline void WKUserContentController_add_script_message_handler(id self,
+                                                               id handler,
+                                                               id name) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "addScriptMessageHandler:name:"_sel, handler,
+                       name);
+}
 
-enum NSWindowStyleMask : NSUInteger {
-  NSWindowStyleMaskTitled = 1,
-  NSWindowStyleMaskClosable = 2,
-  NSWindowStyleMaskMiniaturizable = 4,
-  NSWindowStyleMaskResizable = 8
-};
+inline void WKUserContentController_add_user_script(id self, id user_script) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "addUserScript:"_sel, user_script);
+}
 
-enum NSApplicationActivationPolicy : NSInteger {
-  NSApplicationActivationPolicyRegular = 0
-};
+inline void WKUserContentController_remove_all_user_scripts(id self) {
+  using namespace objc::literals;
+  objc::msg_send<id>(self, "removeAllUserScripts"_sel);
+}
 
-enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
-
-enum NSAutoresizingMaskOptions : NSUInteger {
-  NSViewMinXMargin = 1,
-  NSViewWidthSizable = 2,
-  NSViewMaxXMargin = 4,
-  NSViewMinYMargin = 8,
-  NSViewHeightSizable = 16,
-  NSViewMaxYMargin = 32
-};
-
+} // namespace webkit
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERCONTENTCONTROLLER_HH

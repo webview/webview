@@ -23,27 +23,41 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
-#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include <objc/NSObjCRuntime.h>
+#include "../objc/objc.hh"
+#include "NSString.hh"
+
+#include <string>
 
 namespace webview {
 namespace detail {
+namespace cocoa {
 
-enum WKUserScriptInjectionTime : NSInteger {
-  WKUserScriptInjectionTimeAtDocumentStart = 0
-};
+inline id NSURL_url_with_string(id string) {
+  using namespace objc::literals;
+  return objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel, string);
+}
 
+inline id NSURL_url_with_string(const char *string) {
+  return NSURL_url_with_string(NSString_string_with_utf8_string(string));
+}
+
+inline id NSURL_url_with_string(const std::string &string) {
+  return NSURL_url_with_string(NSString_string_with_utf8_string(string));
+}
+
+} // namespace cocoa
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
