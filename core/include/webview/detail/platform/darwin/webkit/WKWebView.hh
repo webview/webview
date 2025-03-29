@@ -26,6 +26,7 @@
 #ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKWEBVIEW_HH
 #define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKWEBVIEW_HH
 
+#include "webview/detail/platform/darwin/objc/memory.hh"
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../../../../macros.h"
@@ -49,6 +50,12 @@ inline id WKWebView_init_with_frame(id self, CGRect frame, id configuration) {
   using namespace objc::literals;
   return objc::msg_send<id>(self, "initWithFrame:configuration:"_sel, frame,
                             configuration);
+}
+
+inline id WKWebView_with_frame(CGRect frame, id configuration) {
+  using namespace objc::literals;
+  return objc::autorelease(
+      WKWebView_init_with_frame(WKWebView_alloc(), frame, configuration));
 }
 
 } // namespace webkit
