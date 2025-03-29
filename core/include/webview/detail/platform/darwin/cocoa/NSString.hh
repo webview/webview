@@ -33,6 +33,8 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc.hh"
+
+#include <objc/NSObjCRuntime.h>
 #include <objc/objc.h>
 
 #include <string>
