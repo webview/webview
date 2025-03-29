@@ -366,8 +366,7 @@ private:
             auto sig{NSMethodSignature_signature_with_objc_types("v@?@")};
             auto invocation{NSInvocation_invocation_with_method_signature(sig)};
             NSInvocation_set_target(invocation, completion_handler);
-            objc::msg_send<void>(invocation, "setArgument:atIndex:"_sel, &urls,
-                                 1);
+            NSInvocation_set_argument(invocation, &urls, 1);
             objc::msg_send<void>(invocation, "invoke"_sel);
           }),
           "v@:@@@@");
