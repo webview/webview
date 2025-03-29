@@ -38,7 +38,9 @@ colours_t console::colours{33, 31};
 #include <handleapi.h>
 #include <io.h>
 #include <windows.h>
-
+#ifdef _MSC_VER
+#pragma comment(lib, "ole32.lib")
+#endif
 void console::init_console() {
   std::cout.flush();
   std::cerr.flush();
