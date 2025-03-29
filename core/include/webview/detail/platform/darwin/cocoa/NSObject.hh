@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,23 +32,21 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-// IWYU pragma: begin_exports
-#include "NSApplication.hh"
-#include "NSBundle.hh"
-#include "NSEvent.hh"
-#include "NSNotification.hh"
-#include "NSNumber.hh"
-#include "NSObject.hh"
-#include "NSPoint.hh"
-#include "NSRect.hh"
-#include "NSSize.hh"
-#include "NSString.hh"
-#include "NSURL.hh"
-#include "NSURLRequest.hh"
-#include "NSView.hh"
-#include "NSWindow.hh"
-// IWYU pragma: end_exports
+#include "../objc/objc.hh"
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline void NSObject_set_value_for_key(id self, id value, id key) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setValue:forKey:"_sel, value, key);
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH

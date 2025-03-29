@@ -462,29 +462,18 @@ private:
     auto yes_value = NSNumber_number_with_bool(true);
 
     if (debug) {
-      // Equivalent Obj-C:
-      // [[config preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
-      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                         "developerExtrasEnabled"_str);
+      NSObject_set_value_for_key(preferences, yes_value,
+                                 "developerExtrasEnabled"_str);
     }
 
-    // Equivalent Obj-C:
-    // [[config preferences] setValue:@YES forKey:@"fullScreenEnabled"];
-    objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                       "fullScreenEnabled"_str);
+    NSObject_set_value_for_key(preferences, yes_value, "fullScreenEnabled"_str);
 
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
     if (__builtin_available(macOS 10.13, *)) {
-      // Equivalent Obj-C:
-      // [[config preferences] setValue:@YES forKey:@"javaScriptCanAccessClipboard"];
-      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                         "javaScriptCanAccessClipboard"_str);
-
-      // Equivalent Obj-C:
-      // [[config preferences] setValue:@YES forKey:@"DOMPasteAllowed"];
-      objc::msg_send<id>(preferences, "setValue:forKey:"_sel, yes_value,
-                         "DOMPasteAllowed"_str);
+      NSObject_set_value_for_key(preferences, yes_value,
+                                 "javaScriptCanAccessClipboard"_str);
+      NSObject_set_value_for_key(preferences, yes_value, "DOMPasteAllowed"_str);
     }
 #else
 #error __builtin_available not supported by compiler
