@@ -43,8 +43,10 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSWindow_new(NSRect content_rect, NSWindowStyleMask style,
-                       NSBackingStoreType backing_store_type, bool defer) {
+inline id NSWindow_with_content_rect(NSRect content_rect,
+                                     NSWindowStyleMask style,
+                                     NSBackingStoreType backing_store_type,
+                                     bool defer) {
   using namespace objc::literals;
   return objc::msg_send<id>(objc::msg_send<id>("NSWindow"_cls, "alloc"_sel),
                             "initWithContentRect:styleMask:backing:defer:"_sel,
