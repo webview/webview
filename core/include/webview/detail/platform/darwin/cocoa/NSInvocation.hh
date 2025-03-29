@@ -55,6 +55,11 @@ inline void NSInvocation_set_argument(id self, void *location,
   objc::msg_send<void>(self, "setArgument:atIndex:"_sel, location, index);
 }
 
+inline void NSInvocation_invoke(id self) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "invoke"_sel);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

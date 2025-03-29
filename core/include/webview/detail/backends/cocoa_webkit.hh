@@ -367,7 +367,7 @@ private:
             auto invocation{NSInvocation_invocation_with_method_signature(sig)};
             NSInvocation_set_target(invocation, completion_handler);
             NSInvocation_set_argument(invocation, &urls, 1);
-            objc::msg_send<void>(invocation, "invoke"_sel);
+            NSInvocation_invoke(invocation);
           }),
           "v@:@@@@");
       objc_registerClassPair(cls);
