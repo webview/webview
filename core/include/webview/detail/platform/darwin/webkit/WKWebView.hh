@@ -74,6 +74,11 @@ inline id WKWebView_load_html_string(id self, id string, id base_url) {
                             base_url);
 }
 
+inline id WKWebView_get_url(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "URL"_sel);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview

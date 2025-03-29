@@ -236,9 +236,10 @@ protected:
   }
   noresult eval_impl(const std::string &js) override {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
     // URI is null before content has begun loading.
-    auto nsurl = objc::msg_send<id>(m_webview, "URL"_sel);
+    auto nsurl{WKWebView_get_url(m_webview)};
     if (!nsurl) {
       return {};
     }
