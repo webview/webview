@@ -26,6 +26,7 @@
 #ifndef WEBVIEW_H
 #define WEBVIEW_H
 
+#include "aggregate_utility.hh"
 #include "api.h"
 #include "c_api_impl.hh"
 
