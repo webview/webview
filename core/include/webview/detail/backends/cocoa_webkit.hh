@@ -329,6 +329,7 @@ private:
     return instance;
   }
   static id create_webkit_ui_delegate() {
+    using namespace cocoa;
     using namespace webkit;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKUIDelegate";
@@ -347,7 +348,7 @@ private:
                 WKOpenPanelParameters_allows_directories(parameters)};
 
             // Show a panel for selecting files.
-            auto panel = objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
+            auto panel{NSOpenPanel_open_panel()};
             objc::msg_send<void>(panel, "setCanChooseFiles:"_sel, YES);
             objc::msg_send<void>(panel, "setCanChooseDirectories:"_sel,
                                  allows_directories);
