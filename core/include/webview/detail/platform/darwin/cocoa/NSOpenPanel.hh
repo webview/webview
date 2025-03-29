@@ -49,6 +49,12 @@ inline void NSOpenPanel_set_can_choose_files(id self, bool value) {
                        static_cast<BOOL>(value));
 }
 
+inline void NSOpenPanel_set_can_choose_directories(id self, bool value) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setCanChooseDirectories:"_sel,
+                       static_cast<BOOL>(value));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

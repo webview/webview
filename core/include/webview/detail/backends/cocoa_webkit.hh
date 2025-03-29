@@ -350,8 +350,7 @@ private:
             // Show a panel for selecting files.
             auto panel{NSOpenPanel_open_panel()};
             NSOpenPanel_set_can_choose_files(panel, true);
-            objc::msg_send<void>(panel, "setCanChooseDirectories:"_sel,
-                                 allows_directories);
+            NSOpenPanel_set_can_choose_directories(panel, allows_directories);
             objc::msg_send<void>(panel, "setAllowsMultipleSelection:"_sel,
                                  allows_multiple_selection);
             auto modal_response =
