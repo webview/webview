@@ -353,8 +353,7 @@ private:
             NSOpenPanel_set_can_choose_directories(panel, allows_directories);
             NSOpenPanel_set_set_allows_multiple_selection(
                 panel, allows_multiple_selection);
-            auto modal_response =
-                objc::msg_send<NSModalResponse>(panel, "runModal"_sel);
+            auto modal_response{NSSavePanel_run_modal(panel)};
 
             // Get the URLs for the selected files. If the modal was canceled
             // then we pass null to the completion handler to signify
