@@ -32,10 +32,8 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include "../objc.hh"
+#include "../objc/objc.hh"
 #include "NSString.hh"
-
-#include <objc/objc.h>
 
 namespace webview {
 namespace detail {

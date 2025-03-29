@@ -54,7 +54,7 @@
 #include "../platform/darwin/cocoa/NSURL.hh"
 #include "../platform/darwin/cocoa/NSView.hh"
 #include "../platform/darwin/cocoa/NSWindow.hh"
-#include "../platform/darwin/objc.hh"
+#include "../platform/darwin/objc/objc.hh"
 #include "../platform/darwin/webkit.hh"
 #include "../user_script.hh"
 

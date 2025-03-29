@@ -23,21 +23,26 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_OBJC_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_OBJC_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/Class.hh"
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+// IWYU pragma: begin_exports
+#include "Class.hh"
+#include "autoreleasepool.hh"
+#include "invoke.hh"
+#include "literals.hh"
+#include "memory.hh"
+// IWYU pragma: end_exports
+
+#include <objc/NSObjCRuntime.h>
+#include <objc/objc-runtime.h>
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_OBJC_HH

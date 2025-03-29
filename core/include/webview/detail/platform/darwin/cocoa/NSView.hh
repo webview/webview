@@ -32,7 +32,7 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include "../objc.hh"
+#include "../objc/objc.hh"
 #include "NSRect.hh"
 #include "types.hh"
 
