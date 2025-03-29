@@ -58,6 +58,16 @@ inline id WKWebView_with_frame(CGRect frame, id configuration) {
       WKWebView_init_with_frame(WKWebView_alloc(), frame, configuration));
 }
 
+inline id WKWebView_get_ui_delegate(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "UIDelegate"_sel);
+}
+
+inline void WKWebView_set_ui_delegate(id self, id ui_delegate) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setUIDelegate:"_sel, ui_delegate);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview

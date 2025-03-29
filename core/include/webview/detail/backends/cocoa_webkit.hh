@@ -97,12 +97,12 @@ public:
 
   virtual ~cocoa_wkwebview_engine() {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
-        if (auto ui_delegate =
-                objc::msg_send<id>(m_webview, "UIDelegate"_sel)) {
-          objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, nullptr);
+        if (auto ui_delegate{WKWebView_get_ui_delegate(m_webview)}) {
+          WKWebView_set_ui_delegate(m_webview, nullptr);
           objc::release(ui_delegate);
         }
         objc::release(m_webview);
@@ -504,7 +504,7 @@ private:
     NSView_set_autoresizing_mask(m_webview, autoresizing_mask);
     objc_setAssociatedObject(ui_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
-    objc::msg_send<void>(m_webview, "setUIDelegate:"_sel, ui_delegate);
+    WKWebView_set_ui_delegate(m_webview, ui_delegate);
 
     if (debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
