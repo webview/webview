@@ -44,6 +44,11 @@ inline id NSInvocation_invocation_with_method_signature(id sig) {
                             "invocationWithMethodSignature:"_sel, sig);
 }
 
+inline void NSInvocation_set_target(id self, id target) {
+  using namespace objc::literals;
+  objc::msg_send<void>(self, "setTarget:"_sel, target);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
