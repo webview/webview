@@ -90,6 +90,22 @@ inline void WKWebVie_evaluate_javascript(id self, id js_string,
                               js_string, completion_handler);
 }
 
+inline void WKWebView_set_inspectable(id self, bool inspectable) {
+  using namespace objc::literals;
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_available)
+  if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
+    objc::msg_send<void>(self, "setInspectable:"_sel,
+                         static_cast<BOOL>(inspectable));
+  }
+#else
+#error __builtin_available not supported by compiler
+#endif
+#else
+#error __has_builtin not supported by compiler
+#endif
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview

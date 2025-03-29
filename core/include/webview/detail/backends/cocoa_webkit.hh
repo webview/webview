@@ -513,18 +513,7 @@ private:
       // for content to always be inspectable in "debug builds".
       // Testing shows that this is true for macOS 12.6 but somehow not 10.15.
       // https://webkit.org/blog/13936/enabling-the-inspection-of-web-content-in-apps/
-#if defined(__has_builtin)
-#if __has_builtin(__builtin_available)
-      if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
-        objc::msg_send<void>(m_webview, "setInspectable:"_sel,
-                             NSNumber_number_with_bool(true));
-      }
-#else
-#error __builtin_available not supported by compiler
-#endif
-#else
-#error __has_builtin not supported by compiler
-#endif
+      WKWebView_set_inspectable(m_webview, true);
     }
 
     auto script_message_handler =
