@@ -46,7 +46,7 @@
 #include "../engine_base.hh"
 #include "../platform/darwin/cocoa/cocoa.hh"
 #include "../platform/darwin/objc/objc.hh"
-#include "../platform/darwin/webkit.hh"
+#include "../platform/darwin/webkit/webkit.hh"
 #include "../user_script.hh"
 
 #include <atomic>
@@ -249,6 +249,7 @@ protected:
 
   user_script add_user_script_impl(const std::string &js) override {
     using namespace cocoa;
+    using namespace webkit;
     objc::autoreleasepool arp;
     auto wk_script =
         objc::msg_send<id>(objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel),

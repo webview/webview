@@ -23,12 +23,12 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
-#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERSCRIPt_HH
+#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERSCRIPt_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
@@ -36,14 +36,16 @@
 
 namespace webview {
 namespace detail {
+namespace webkit {
 
 enum WKUserScriptInjectionTime : NSInteger {
   WKUserScriptInjectionTimeAtDocumentStart = 0
 };
 
+} // namespace webkit
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKUSERSCRIPt_HH
