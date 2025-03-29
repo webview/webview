@@ -48,6 +48,11 @@ inline id WKWebViewConfiguration_get_user_content_controller(id self) {
   return objc::msg_send<id>(self, "userContentController"_sel);
 }
 
+inline id WKWebViewConfiguration_get_preferences(id self) {
+  using namespace objc::literals;
+  return objc::msg_send<id>(self, "preferences"_sel);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview

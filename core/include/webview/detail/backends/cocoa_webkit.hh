@@ -458,7 +458,7 @@ private:
 
     m_manager = WKWebViewConfiguration_get_user_content_controller(config);
 
-    auto preferences = objc::msg_send<id>(config, "preferences"_sel);
+    auto preferences = WKWebViewConfiguration_get_preferences(config);
     auto yes_value = NSNumber_number_with_bool(true);
 
     if (debug) {
