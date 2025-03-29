@@ -364,8 +364,7 @@ private:
 
             // Invoke the completion handler block.
             auto sig{NSMethodSignature_signature_with_objc_types("v@?@")};
-            auto invocation = objc::msg_send<id>(
-                "NSInvocation"_cls, "invocationWithMethodSignature:"_sel, sig);
+            auto invocation{NSInvocation_invocation_with_method_signature(sig)};
             objc::msg_send<void>(invocation, "setTarget:"_sel,
                                  completion_handler);
             objc::msg_send<void>(invocation, "setArgument:atIndex:"_sel, &urls,
