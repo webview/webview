@@ -51,6 +51,11 @@ inline void WKUserContentController_add_user_script(id self, id user_script) {
   objc::msg_send<void>(self, "addUserScript:"_sel, user_script);
 }
 
+inline void WKUserContentController_remove_all_user_scripts(id self) {
+  using namespace objc::literals;
+  objc::msg_send<id>(self, "removeAllUserScripts"_sel);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview

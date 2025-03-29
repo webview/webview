@@ -264,9 +264,10 @@ protected:
 
   void remove_all_user_scripts_impl(
       const std::list<user_script> & /*scripts*/) override {
+    using namespace webkit;
     objc::autoreleasepool arp;
     // Removing scripts decreases the retain count of each script.
-    objc::msg_send<id>(m_manager, "removeAllUserScripts"_sel);
+    WKUserContentController_remove_all_user_scripts(m_manager);
   }
 
   bool are_user_scripts_equal_impl(const user_script &first,
