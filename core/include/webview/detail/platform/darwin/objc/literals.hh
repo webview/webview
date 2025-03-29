@@ -23,20 +23,43 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_LITERALS_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_LITERALS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
+#include "invoke.hh"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+#include <cstddef>
+
+#include <objc/objc-runtime.h>
+
+namespace webview {
+namespace detail {
+namespace objc {
+namespace literals {
+
+// Convenient conversion of string literals.
+inline id operator"" _cls(const char *s, std::size_t) {
+  return (id)objc_getClass(s);
+}
+
+inline SEL operator"" _sel(const char *s, std::size_t) {
+  return sel_registerName(s);
+}
+
+inline id operator"" _str(const char *s, std::size_t) {
+  return msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
+}
+
+} // namespace literals
+} // namespace objc
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_LITERALS_HH

@@ -23,20 +23,49 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_AUTORELEASEPOOL_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_AUTORELEASEPOOL_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+#include "invoke.hh"
+
+#include <objc/objc-runtime.h>
+
+namespace webview {
+namespace detail {
+namespace objc {
+
+// Wrapper around NSAutoreleasePool that drains the pool on destruction.
+class autoreleasepool {
+public:
+  autoreleasepool()
+      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
+                            sel_registerName("new"))) {}
+
+  ~autoreleasepool() {
+    if (m_pool) {
+      msg_send<void>(m_pool, sel_registerName("drain"));
+    }
+  }
+
+  autoreleasepool(const autoreleasepool &) = delete;
+  autoreleasepool &operator=(const autoreleasepool &) = delete;
+  autoreleasepool(autoreleasepool &&) = delete;
+  autoreleasepool &operator=(autoreleasepool &&) = delete;
+
+private:
+  id m_pool{};
+};
+
+} // namespace objc
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_AUTORELEASEPOOL_HH

@@ -23,20 +23,51 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+#include <objc/objc-runtime.h>
+
+namespace webview {
+namespace detail {
+namespace objc {
+
+// A convenient template function for unconditionally casting the specified
+// C-like function into a function that can be called with the given return
+// type and arguments. Caller takes full responsibility for ensuring that
+// the function call is valid. It is assumed that the function will not
+// throw exceptions.
+template <typename Result, typename Callable, typename... Args>
+Result invoke(Callable callable, Args... args) noexcept {
+  return reinterpret_cast<Result (*)(Args...)>(callable)(args...);
+}
+
+// Calls objc_msgSend.
+template <typename Result, typename... Args>
+Result msg_send(Args... args) noexcept {
+  return invoke<Result>(objc_msgSend, args...);
+}
+
+// Calls objc_msgSend_stret or objc_msgSend depending on architecture.
+template <typename Result, typename... Args>
+Result msg_send_stret(Args... args) noexcept {
+#if defined(__arm64__)
+  return invoke<Result>(objc_msgSend, args...);
+#else
+  return invoke<Result>(objc_msgSend_stret, args...);
+#endif
+}
+
+} // namespace objc
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH

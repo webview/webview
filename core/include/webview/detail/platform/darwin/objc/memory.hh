@@ -23,20 +23,43 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
-#include "objc/autoreleasepool.hh"
-#include "objc/invoke.hh"
-#include "objc/literals.hh"
-#include "objc/memory.hh"
+#include "invoke.hh"
+#include "literals.hh"
+
+#include <objc/objc-runtime.h>
+
+namespace webview {
+namespace detail {
+namespace objc {
+
+inline id autorelease(id object) {
+  using namespace literals;
+  return msg_send<id>(object, "autorelease"_sel);
+}
+
+inline id retain(id object) {
+  using namespace literals;
+  return msg_send<id>(object, "retain"_sel);
+}
+
+inline void release(id object) {
+  using namespace literals;
+  msg_send<id>(object, "release"_sel);
+}
+
+} // namespace objc
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
