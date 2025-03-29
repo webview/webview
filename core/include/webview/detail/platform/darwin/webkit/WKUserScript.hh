@@ -32,7 +32,7 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include <objc/NSObjCRuntime.h>
+#include "../objc/objc.hh"
 
 namespace webview {
 namespace detail {
@@ -41,6 +41,11 @@ namespace webkit {
 enum WKUserScriptInjectionTime : NSInteger {
   WKUserScriptInjectionTimeAtDocumentStart = 0
 };
+
+inline id WKUserScript_alloc() {
+  using namespace objc::literals;
+  return objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel);
+}
 
 } // namespace webkit
 } // namespace detail
