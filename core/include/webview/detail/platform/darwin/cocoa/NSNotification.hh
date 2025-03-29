@@ -38,9 +38,9 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSNotification_get_object(id notification) {
+inline id NSNotification_get_object(id self) {
   using namespace objc::literals;
-  return objc::msg_send<id>(notification, "object"_sel);
+  return objc::msg_send<id>(self, "object"_sel);
 }
 
 } // namespace cocoa

@@ -45,36 +45,36 @@ inline id NSView_alloc() {
   return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
 }
 
-inline id NSView_init_with_frame(id view, NSRect frame_rect) {
+inline id NSView_init_with_frame(id self, NSRect frame_rect) {
   using namespace objc::literals;
-  return objc::msg_send<id>(view, "initWithFrame:"_sel, frame_rect);
+  return objc::msg_send<id>(self, "initWithFrame:"_sel, frame_rect);
 }
 
-inline void NSView_set_autoresizes_subviews(id view, bool resizes) {
+inline void NSView_set_autoresizes_subviews(id self, bool resizes) {
   using namespace objc::literals;
-  objc::msg_send<void>(view, "setAutoresizesSubviews:"_sel,
+  objc::msg_send<void>(self, "setAutoresizesSubviews:"_sel,
                        static_cast<BOOL>(resizes));
 }
 
-inline void NSView_add_subview(id view, id subview) {
+inline void NSView_add_subview(id self, id subview) {
   using namespace objc::literals;
-  objc::msg_send<void>(view, "addSubview:"_sel, subview);
+  objc::msg_send<void>(self, "addSubview:"_sel, subview);
 }
 
-inline NSRect NSView_get_bounds(id view) {
+inline NSRect NSView_get_bounds(id self) {
   using namespace objc::literals;
-  return objc::msg_send_stret<NSRect>(view, "bounds"_sel);
+  return objc::msg_send_stret<NSRect>(self, "bounds"_sel);
 }
 
-inline void NSView_set_frame(id view, NSRect frame) {
+inline void NSView_set_frame(id self, NSRect frame) {
   using namespace objc::literals;
-  objc::msg_send<void>(view, "setFrame:"_sel, frame);
+  objc::msg_send<void>(self, "setFrame:"_sel, frame);
 }
 
-inline void NSView_set_autoresizing_mask(id view,
+inline void NSView_set_autoresizing_mask(id self,
                                          NSAutoresizingMaskOptions mask) {
   using namespace objc::literals;
-  objc::msg_send<void>(view, "setAutoresizingMask:"_sel, mask);
+  objc::msg_send<void>(self, "setAutoresizingMask:"_sel, mask);
 }
 
 } // namespace cocoa

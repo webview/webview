@@ -51,19 +51,19 @@ inline id NSDefaultRunLoopMode() {
 }
 } // namespace NSRunLoopMode
 
-inline void NSApplication_set_delegate(id app, id delegate) {
+inline void NSApplication_set_delegate(id self, id delegate) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "setDelegate:"_sel, delegate);
+  objc::msg_send<void>(self, "setDelegate:"_sel, delegate);
 }
 
-inline void NSApplication_run(id app) {
+inline void NSApplication_run(id self) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "run"_sel);
+  objc::msg_send<void>(self, "run"_sel);
 }
 
-inline void NSApplication_stop(id app, id sender = nullptr) {
+inline void NSApplication_stop(id self, id sender = nullptr) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "stop:"_sel, sender);
+  objc::msg_send<void>(self, "stop:"_sel, sender);
 }
 
 inline id NSApplication_get_shared_application() {
@@ -71,36 +71,36 @@ inline id NSApplication_get_shared_application() {
   return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
 }
 
-inline void NSApplication_send_event(id app, id event) {
+inline void NSApplication_send_event(id self, id event) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "sendEvent:"_sel, event);
+  objc::msg_send<void>(self, "sendEvent:"_sel, event);
 }
 
-inline id NSApplication_next_event_matching_mask(id app, NSEventMask mask,
+inline id NSApplication_next_event_matching_mask(id self, NSEventMask mask,
                                                  id expiration, id mode,
                                                  bool dequeue) {
   using namespace objc::literals;
   return objc::msg_send<id>(
-      app, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
+      self, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
       expiration, mode, dequeue);
 }
 
 inline void
-NSApplication_set_activation_policy(id app,
+NSApplication_set_activation_policy(id self,
                                     NSApplicationActivationPolicy policy) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "setActivationPolicy:"_sel, policy);
+  objc::msg_send<void>(self, "setActivationPolicy:"_sel, policy);
 }
 
-inline void NSApplication_activate_ignoring_other_apps(id app, bool ignore) {
+inline void NSApplication_activate_ignoring_other_apps(id self, bool ignore) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "activateIgnoringOtherApps:"_sel,
+  objc::msg_send<void>(self, "activateIgnoringOtherApps:"_sel,
                        static_cast<BOOL>(ignore));
 }
 
-inline void NSApplication_post_event(id app, id event, bool at_start) {
+inline void NSApplication_post_event(id self, id event, bool at_start) {
   using namespace objc::literals;
-  objc::msg_send<void>(app, "postEvent:atStart:"_sel, event,
+  objc::msg_send<void>(self, "postEvent:atStart:"_sel, event,
                        static_cast<BOOL>(at_start));
 }
 

@@ -48,12 +48,12 @@ inline id WKUserScript_alloc() {
 }
 
 inline id
-WKUserScript_init_with_source(id script, id source,
+WKUserScript_init_with_source(id self, id source,
                               WKUserScriptInjectionTime injection_time,
                               bool for_main_frame_only) {
   using namespace objc::literals;
   return objc::msg_send<id>(
-      script, "initWithSource:injectionTime:forMainFrameOnly:"_sel, source,
+      self, "initWithSource:injectionTime:forMainFrameOnly:"_sel, source,
       injection_time, static_cast<BOOL>(for_main_frame_only));
 }
 

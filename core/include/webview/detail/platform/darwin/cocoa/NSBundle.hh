@@ -43,9 +43,9 @@ inline id NSBundle_get_main_bundle() {
   return objc::msg_send<id>("NSBundle"_cls, "mainBundle"_sel);
 }
 
-inline id NSBundle_get_bundle_path(id bundle) {
+inline id NSBundle_get_bundle_path(id self) {
   using namespace objc::literals;
-  return objc::msg_send<id>(bundle, "bundlePath"_sel);
+  return objc::msg_send<id>(self, "bundlePath"_sel);
 }
 
 } // namespace cocoa

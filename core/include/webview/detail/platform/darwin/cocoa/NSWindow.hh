@@ -48,13 +48,13 @@ inline id NSWindow_alloc() {
   return objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
 }
 
-inline id NSWindow_init_with_content_rect(id window, NSRect content_rect,
+inline id NSWindow_init_with_content_rect(id self, NSRect content_rect,
                                           NSWindowStyleMask style,
                                           NSBackingStoreType backing_store_type,
                                           bool defer) {
   using namespace objc::literals;
   return objc::msg_send<id>(
-      window, "initWithContentRect:styleMask:backing:defer:"_sel, content_rect,
+      self, "initWithContentRect:styleMask:backing:defer:"_sel, content_rect,
       style, backing_store_type, static_cast<BOOL>(defer));
 }
 
@@ -67,70 +67,70 @@ inline id NSWindow_with_content_rect(NSRect content_rect,
       NSWindow_alloc(), content_rect, style, backing_store_type, defer));
 }
 
-inline void NSWindow_close(id window) {
+inline void NSWindow_close(id self) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "close"_sel);
+  objc::msg_send<void>(self, "close"_sel);
 }
 
-inline NSRect NSWindow_get_frame(id window) {
+inline NSRect NSWindow_get_frame(id self) {
   using namespace objc::literals;
-  return objc::msg_send_stret<NSRect>(window, "frame"_sel);
+  return objc::msg_send_stret<NSRect>(self, "frame"_sel);
 }
 
-inline void NSWindow_set_frame(id window, NSRect frame_rect, bool display,
+inline void NSWindow_set_frame(id self, NSRect frame_rect, bool display,
                                bool animate) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setFrame:display:animate:"_sel, frame_rect,
+  objc::msg_send<void>(self, "setFrame:display:animate:"_sel, frame_rect,
                        static_cast<BOOL>(display), static_cast<BOOL>(animate));
 }
 
-inline void NSWindow_set_style_mask(id window, NSWindowStyleMask style) {
+inline void NSWindow_set_style_mask(id self, NSWindowStyleMask style) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setStyleMask:"_sel, style);
+  objc::msg_send<void>(self, "setStyleMask:"_sel, style);
 }
 
-inline void NSWindow_set_title(id window, const std::string &title) {
+inline void NSWindow_set_title(id self, const std::string &title) {
   using namespace objc::literals;
   objc::autoreleasepool arp;
-  objc::msg_send<void>(window, "setTitle:"_sel,
+  objc::msg_send<void>(self, "setTitle:"_sel,
                        objc::msg_send<id>("NSString"_cls,
                                           "stringWithUTF8String:"_sel,
                                           title.c_str()));
 }
 
-inline void NSWindow_make_key_and_order_front(id window, id sender = nullptr) {
+inline void NSWindow_make_key_and_order_front(id self, id sender = nullptr) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "makeKeyAndOrderFront:"_sel, sender);
+  objc::msg_send<void>(self, "makeKeyAndOrderFront:"_sel, sender);
 }
 
-inline void NSWindow_set_content_view(id window, id view) {
+inline void NSWindow_set_content_view(id self, id view) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setContentView:"_sel, view);
+  objc::msg_send<void>(self, "setContentView:"_sel, view);
 }
 
-inline id NSWindow_get_content_view(id window) {
+inline id NSWindow_get_content_view(id self) {
   using namespace objc::literals;
-  return objc::msg_send<id>(window, "contentView"_sel);
+  return objc::msg_send<id>(self, "contentView"_sel);
 }
 
-inline void NSWindow_set_delegate(id window, id delegate) {
+inline void NSWindow_set_delegate(id self, id delegate) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setDelegate:"_sel, delegate);
+  objc::msg_send<void>(self, "setDelegate:"_sel, delegate);
 }
 
-inline void NSWindow_center(id window) {
+inline void NSWindow_center(id self) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "center"_sel);
+  objc::msg_send<void>(self, "center"_sel);
 }
 
-inline void NSWindow_set_content_min_size(id window, NSSize size) {
+inline void NSWindow_set_content_min_size(id self, NSSize size) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setContentMinSize:"_sel, size);
+  objc::msg_send<void>(self, "setContentMinSize:"_sel, size);
 }
 
-inline void NSWindow_set_content_max_size(id window, NSSize size) {
+inline void NSWindow_set_content_max_size(id self, NSSize size) {
   using namespace objc::literals;
-  objc::msg_send<void>(window, "setContentMaxSize:"_sel, size);
+  objc::msg_send<void>(self, "setContentMaxSize:"_sel, size);
 }
 
 } // namespace cocoa
