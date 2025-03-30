@@ -36,6 +36,7 @@
 
 namespace webview {
 namespace detail {
+namespace cocoa {
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
 
@@ -59,6 +60,7 @@ enum NSAutoresizingMaskOptions : NSUInteger {
 
 using NSTimeInterval = double;
 
+} // namespace cocoa
 } // namespace detail
 } // namespace webview
 
