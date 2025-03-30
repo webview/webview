@@ -33,13 +33,13 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace webkit {
 
 inline id WKScriptMessage_get_body(id self) {
-  using namespace objc::literals;
   return objc::msg_send<id>(self, "body"_sel);
 }
 

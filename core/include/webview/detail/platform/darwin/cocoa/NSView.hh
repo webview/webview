@@ -34,6 +34,7 @@
 
 #include "../objc/objc.hh"
 #include "NSRect.hh"
+#include "literals.hh"
 #include "types.hh"
 
 namespace webview {
@@ -41,39 +42,32 @@ namespace detail {
 namespace cocoa {
 
 inline id NSView_alloc() {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
 }
 
 inline id NSView_init_with_frame(id self, NSRect frame_rect) {
-  using namespace objc::literals;
   return objc::msg_send<id>(self, "initWithFrame:"_sel, frame_rect);
 }
 
 inline void NSView_set_autoresizes_subviews(id self, bool resizes) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setAutoresizesSubviews:"_sel,
                        static_cast<BOOL>(resizes));
 }
 
 inline void NSView_add_subview(id self, id subview) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "addSubview:"_sel, subview);
 }
 
 inline NSRect NSView_get_bounds(id self) {
-  using namespace objc::literals;
   return objc::msg_send_stret<NSRect>(self, "bounds"_sel);
 }
 
 inline void NSView_set_frame(id self, NSRect frame) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setFrame:"_sel, frame);
 }
 
 inline void NSView_set_autoresizing_mask(id self,
                                          NSAutoresizingMaskOptions mask) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setAutoresizingMask:"_sel, mask);
 }
 

@@ -33,13 +33,13 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSMethodSignature_signature_with_objc_types(const char *types) {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSMethodSignature"_cls,
                             "signatureWithObjCTypes:"_sel, types);
 }

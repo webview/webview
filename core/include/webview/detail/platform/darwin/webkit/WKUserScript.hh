@@ -33,6 +33,7 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -43,7 +44,6 @@ enum WKUserScriptInjectionTime : NSInteger {
 };
 
 inline id WKUserScript_alloc() {
-  using namespace objc::literals;
   return objc::msg_send<id>("WKUserScript"_cls, "alloc"_sel);
 }
 
@@ -51,7 +51,6 @@ inline id
 WKUserScript_init_with_source(id self, id source,
                               WKUserScriptInjectionTime injection_time,
                               bool for_main_frame_only) {
-  using namespace objc::literals;
   return objc::msg_send<id>(
       self, "initWithSource:injectionTime:forMainFrameOnly:"_sel, source,
       injection_time, static_cast<BOOL>(for_main_frame_only));
@@ -60,7 +59,6 @@ WKUserScript_init_with_source(id self, id source,
 inline id WKUserScript_with_source(id source,
                                    WKUserScriptInjectionTime injection_time,
                                    bool for_main_frame_only) {
-  using namespace objc::literals;
   return objc::autorelease(WKUserScript_init_with_source(
       WKUserScript_alloc(), source, injection_time, for_main_frame_only));
 }

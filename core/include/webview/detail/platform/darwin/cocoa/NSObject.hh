@@ -33,13 +33,13 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline void NSObject_set_value_for_key(id self, id value, id key) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setValue:forKey:"_sel, value, key);
 }
 

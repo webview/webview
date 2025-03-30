@@ -33,19 +33,18 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace webkit {
 
 inline bool WKOpenPanelParameters_allows_multiple_selection(id self) {
-  using namespace objc::literals;
   return static_cast<bool>(
       objc::msg_send<BOOL>(self, "allowsMultipleSelection"_sel));
 }
 
 inline bool WKOpenPanelParameters_allows_directories(id self) {
-  using namespace objc::literals;
   return static_cast<bool>(objc::msg_send<BOOL>(self, "allowsDirectories"_sel));
 }
 

@@ -33,18 +33,17 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSBundle_get_main_bundle() {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSBundle"_cls, "mainBundle"_sel);
 }
 
 inline id NSBundle_get_bundle_path(id self) {
-  using namespace objc::literals;
   return objc::msg_send<id>(self, "bundlePath"_sel);
 }
 

@@ -34,6 +34,7 @@
 
 #include "../objc/objc.hh"
 #include "NSString.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -52,34 +53,28 @@ inline id NSDefaultRunLoopMode() {
 } // namespace NSRunLoopMode
 
 inline void NSApplication_set_delegate(id self, id delegate) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setDelegate:"_sel, delegate);
 }
 
 inline void NSApplication_run(id self) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "run"_sel);
 }
 
 inline void NSApplication_stop(id self, id sender = nullptr) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "stop:"_sel, sender);
 }
 
 inline id NSApplication_get_shared_application() {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
 }
 
 inline void NSApplication_send_event(id self, id event) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "sendEvent:"_sel, event);
 }
 
 inline id NSApplication_next_event_matching_mask(id self, NSEventMask mask,
                                                  id expiration, id mode,
                                                  bool dequeue) {
-  using namespace objc::literals;
   return objc::msg_send<id>(
       self, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
       expiration, mode, dequeue);
@@ -88,18 +83,15 @@ inline id NSApplication_next_event_matching_mask(id self, NSEventMask mask,
 inline void
 NSApplication_set_activation_policy(id self,
                                     NSApplicationActivationPolicy policy) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setActivationPolicy:"_sel, policy);
 }
 
 inline void NSApplication_activate_ignoring_other_apps(id self, bool ignore) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "activateIgnoringOtherApps:"_sel,
                        static_cast<BOOL>(ignore));
 }
 
 inline void NSApplication_post_event(id self, id event, bool at_start) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "postEvent:atStart:"_sel, event,
                        static_cast<BOOL>(at_start));
 }

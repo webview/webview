@@ -34,6 +34,7 @@
 
 #include "../objc/objc.hh"
 #include "NSString.hh"
+#include "literals.hh"
 
 #include <string>
 
@@ -42,7 +43,6 @@ namespace detail {
 namespace cocoa {
 
 inline id NSURL_url_with_string(id string) {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel, string);
 }
 

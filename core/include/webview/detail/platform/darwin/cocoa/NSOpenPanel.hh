@@ -33,36 +33,32 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSOpenPanel_open_panel() {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
 }
 
 inline void NSOpenPanel_set_can_choose_files(id self, bool value) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setCanChooseFiles:"_sel,
                        static_cast<BOOL>(value));
 }
 
 inline void NSOpenPanel_set_can_choose_directories(id self, bool value) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setCanChooseDirectories:"_sel,
                        static_cast<BOOL>(value));
 }
 
 inline void NSOpenPanel_set_set_allows_multiple_selection(id self, bool value) {
-  using namespace objc::literals;
   objc::msg_send<void>(self, "setAllowsMultipleSelection:"_sel,
                        static_cast<BOOL>(value));
 }
 
 inline id NSOpenPanel_get_urls(id self) {
-  using namespace objc::literals;
   return objc::msg_send<id>(self, "URLs"_sel);
 }
 

@@ -33,6 +33,7 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 
 #include <string>
 
@@ -46,26 +47,22 @@ enum NSStringEncoding : NSUInteger {
 };
 
 inline bool NSString_has_suffix(id self, id suffix) {
-  using namespace objc::literals;
   return static_cast<bool>(
       objc::msg_send<BOOL>(self, "hasSuffix:"_sel, suffix));
 }
 
 inline id NSString_alloc() {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSString"_cls, "alloc"_sel);
 }
 
 inline id NSString_init_with_bytes(id self, const void *bytes,
                                    NSUInteger length,
                                    NSStringEncoding encoding) {
-  using namespace objc::literals;
   return objc::msg_send<id>(self, "initWithBytes:length:encoding:"_sel, bytes,
                             length, encoding);
 }
 
 inline id NSString_string_with_utf8_string(const char *utf8_string) {
-  using namespace objc::literals;
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                             utf8_string);
 }
@@ -77,7 +74,6 @@ inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
 }
 
 inline const char *NSString_utf8_string(id self) {
-  using namespace objc::literals;
   return objc::msg_send<const char *>(self, "UTF8String"_sel);
 }
 

@@ -62,8 +62,6 @@
 namespace webview {
 namespace detail {
 
-using namespace objc::literals;
-
 class user_script::impl {
 public:
   impl(id script) : m_script{objc::retain(script)} {}

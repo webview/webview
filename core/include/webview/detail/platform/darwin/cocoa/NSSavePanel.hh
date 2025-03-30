@@ -33,6 +33,7 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "literals.hh"
 #include "types.hh"
 
 namespace webview {
@@ -40,7 +41,6 @@ namespace detail {
 namespace cocoa {
 
 inline NSModalResponse NSSavePanel_run_modal(id self) {
-  using namespace objc::literals;
   return objc::msg_send<NSModalResponse>(self, "runModal"_sel);
 }
 
