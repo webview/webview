@@ -44,6 +44,8 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
+
 enum NSWindowStyleMask : NSUInteger {
   NSWindowStyleMaskTitled = 1,
   NSWindowStyleMaskClosable = 2,

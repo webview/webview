@@ -38,8 +38,6 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
-
 enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 enum NSAutoresizingMaskOptions : NSUInteger {
