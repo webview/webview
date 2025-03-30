@@ -83,8 +83,8 @@ inline id WKWebView_load_request(id self, id request) {
   return objc::msg_send<id>(self, "loadRequest:"_sel, request);
 }
 
-inline void WKWebVie_evaluate_javascript(id self, id js_string,
-                                         const void *completion_handler) {
+inline void WKWebView_evaluate_javascript(id self, id js_string,
+                                          const void *completion_handler) {
   using namespace objc::literals;
   return objc::msg_send<void>(self, "evaluateJavaScript:completionHandler:"_sel,
                               js_string, completion_handler);

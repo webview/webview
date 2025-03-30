@@ -242,8 +242,8 @@ protected:
     if (!nsurl) {
       return {};
     }
-    WKWebVie_evaluate_javascript(m_webview,
-                                 NSString_string_with_utf8_string(js), nullptr);
+    WKWebView_evaluate_javascript(
+        m_webview, NSString_string_with_utf8_string(js), nullptr);
     return {};
   }
 
