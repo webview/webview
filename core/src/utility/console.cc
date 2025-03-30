@@ -32,12 +32,15 @@ std::string console::set_colour(int color, std::string message) {
 colours_t console::colours{33, 31};
 
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifdef _MSC_VER
+#define _WIN32_WINNT 0x0601
+#endif
 
-#include <handleapi.h>
-// consoleapi.h needs handleapi.h preceeding
-#include <consoleapi.h>
-#include <consoleapi3.h>
 #include <io.h>
+#include <windows.h>
 
 void console::init_console() {
   std::cout.flush();
