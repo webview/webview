@@ -200,9 +200,9 @@ protected:
     NSWindow_set_style_mask(m_window, style);
 
     if (hints == WEBVIEW_HINT_MIN) {
-      NSWindow_set_content_min_size(m_window, CGSizeMake(width, height));
+      NSWindow_set_content_min_size(m_window, NSSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
-      NSWindow_set_content_max_size(m_window, CGSizeMake(width, height));
+      NSWindow_set_content_max_size(m_window, NSSizeMake(width, height));
     } else {
       auto rect{NSWindow_get_frame(m_window)};
       NSWindow_set_frame(
