@@ -32,6 +32,14 @@
 
 using namespace webview::utility;
 
+void console::info(std::string message) {
+  init_console();
+  std::string prefix = "[WEBVIEW][INFO]: ";
+  message = set_colour(colours.dim, prefix + message);
+  printf("%s\n", message.c_str());
+  free_console();
+};
+
 void console::warn(std::string message) {
   init_console();
   std::string prefix = "[WEBVIEW][WARNING]: ";

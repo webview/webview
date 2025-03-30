@@ -41,6 +41,9 @@ namespace utility {
 /// A static utility class to log colourised warnings and errors to the process console.
 class console {
 public:
+  /// Logs info in dim to stdout
+  static void info(std::string message);
+
   /// Logs a warning in yellow to stdout
   static void warn(std::string message);
 
