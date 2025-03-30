@@ -63,7 +63,9 @@ colours_t console::colours{33, 31};
 #define WIN32_LEAN_AND_MEAN
 #endif
 #ifdef _MSC_VER
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601
+#endif
 #endif
 
 #include <io.h>
