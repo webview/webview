@@ -33,8 +33,8 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include "NSApplication.hh"
 #include "literals.hh"
-#include "types.hh"
 
 namespace webview {
 namespace detail {

@@ -35,7 +35,6 @@
 #include "../objc/objc.hh"
 #include "NSRect.hh"
 #include "literals.hh"
-#include "types.hh"
 
 namespace webview {
 namespace detail {

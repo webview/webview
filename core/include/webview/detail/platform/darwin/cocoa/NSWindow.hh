@@ -36,7 +36,6 @@
 #include "NSRect.hh"
 #include "NSSize.hh"
 #include "literals.hh"
-#include "types.hh"
 
 #include <string>
 
