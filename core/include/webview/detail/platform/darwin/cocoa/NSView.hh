@@ -41,6 +41,15 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+enum NSAutoresizingMaskOptions : NSUInteger {
+  NSViewMinXMargin = 1,
+  NSViewWidthSizable = 2,
+  NSViewMaxXMargin = 4,
+  NSViewMinYMargin = 8,
+  NSViewHeightSizable = 16,
+  NSViewMaxYMargin = 32
+};
+
 inline id NSView_alloc() {
   return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
 }
