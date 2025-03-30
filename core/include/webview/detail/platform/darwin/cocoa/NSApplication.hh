@@ -46,6 +46,8 @@ enum NSApplicationActivationPolicy : NSInteger {
 
 enum NSEventMask : NSUInteger { NSEventMaskAny = NSUIntegerMax };
 
+enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
+
 namespace NSRunLoopMode {
 inline id NSDefaultRunLoopMode() {
   return NSString_string_with_utf8_string("kCFRunLoopDefaultMode");

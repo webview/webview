@@ -38,8 +38,6 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
-
 using NSTimeInterval = double;
 
 } // namespace cocoa
