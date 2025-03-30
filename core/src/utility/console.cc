@@ -113,7 +113,7 @@ void console::init_console() {
   is_console_mode_set = stat_out && stat_err;
 
   info("Webview has attached the Windows console.\nIf you wish to mangage the "
-       "console, call `AttachConsole` before `webview_create`");
+       "console, call `AttachConsole` before `webview_create` in your code.");
   wv_has_console = true;
 };
 
