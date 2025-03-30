@@ -77,6 +77,15 @@ private:
   id m_script{};
 };
 
+// Encapsulate backend in its own namespace to avoid polluting the parent
+// namespace when pulling in commonly-used symbols from other namespaces.
+// Since those commmon symbols are used a lot, this reduces the overall
+// noise in the code.
+namespace cocoa_webkit {
+
+using namespace cocoa;
+using namespace webkit;
+
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
@@ -92,8 +101,6 @@ public:
   cocoa_wkwebview_engine &operator=(cocoa_wkwebview_engine &&) = delete;
 
   virtual ~cocoa_wkwebview_engine() {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
@@ -185,7 +192,6 @@ protected:
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-    using namespace cocoa;
     objc::autoreleasepool arp;
 
     auto style = static_cast<NSWindowStyleMask>(
@@ -212,8 +218,6 @@ protected:
     return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
 
     WKWebView_load_request(
@@ -222,16 +226,12 @@ protected:
     return {};
   }
   noresult set_html_impl(const std::string &html) override {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     WKWebView_load_html_string(m_webview,
                                NSString_string_with_utf8_string(html), nullptr);
     return {};
   }
   noresult eval_impl(const std::string &js) override {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     // URI is null before content has begun loading.
     auto nsurl{WKWebView_get_url(m_webview)};
@@ -244,8 +244,6 @@ protected:
   }
 
   user_script add_user_script_impl(const std::string &js) override {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     auto wk_script{WKUserScript_with_source(
         NSString_string_with_utf8_string(js),
@@ -260,7 +258,6 @@ protected:
 
   void remove_all_user_scripts_impl(
       const std::list<user_script> & /*scripts*/) override {
-    using namespace webkit;
     objc::autoreleasepool arp;
     // Removing scripts decreases the retain count of each script.
     WKUserContentController_remove_all_user_scripts(m_manager);
@@ -275,7 +272,6 @@ protected:
 
 private:
   id create_app_delegate() {
-    using namespace cocoa;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewAppDelegate";
     // Avoid crash due to registering same class twice
@@ -301,8 +297,6 @@ private:
     return objc::Class_new(cls);
   }
   id create_script_message_handler() {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKScriptMessageHandler";
     // Avoid crash due to registering same class twice
@@ -325,8 +319,6 @@ private:
     return instance;
   }
   static id create_webkit_ui_delegate() {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewWKUIDelegate";
     // Avoid crash due to registering same class twice
@@ -371,7 +363,6 @@ private:
     return objc::Class_new(cls);
   }
   static id create_window_delegate() {
-    using namespace cocoa;
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewNSWindowDelegate";
     // Avoid crash due to registering same class twice
@@ -397,7 +388,6 @@ private:
     return w;
   }
   static bool is_app_bundled() noexcept {
-    using namespace cocoa;
     auto bundle = NSBundle_get_main_bundle();
     if (!bundle) {
       return false;
@@ -407,7 +397,6 @@ private:
     return !!bundled;
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
-    using namespace cocoa;
     // See comments related to application lifecycle in create_app_delegate().
     if (owns_window()) {
       // Stop the main run loop so that we can return
@@ -443,8 +432,6 @@ private:
     dispatch([this] { on_window_destroyed(); });
   }
   void window_settings(bool debug) {
-    using namespace cocoa;
-    using namespace webkit;
     objc::autoreleasepool arp;
 
     auto config{objc::autorelease(WKWebViewConfiguration_new())};
@@ -513,7 +500,6 @@ private:
     }
   }
   void set_up_widget() {
-    using namespace cocoa;
     objc::autoreleasepool arp;
     // Create a new view that can contain both the web view and the Web Inspector pane
     m_widget = NSView_init_with_frame(NSView_alloc(), NSRectMake(0, 0, 0, 0));
@@ -523,7 +509,6 @@ private:
     NSView_set_frame(m_webview, NSView_get_bounds(m_widget));
   }
   void stop_run_loop() {
-    using namespace cocoa;
     objc::autoreleasepool arp;
     // Request the run loop to stop. This doesn't immediately stop the loop.
     NSApplication_stop(m_app);
@@ -542,7 +527,6 @@ private:
     return temp;
   }
   void window_init(void *window) {
-    using namespace cocoa;
     objc::autoreleasepool arp;
 
     set_owns_window(!window);
@@ -571,7 +555,6 @@ private:
     NSApplication_run(m_app);
   }
   void window_init_proceed() {
-    using namespace cocoa;
     objc::autoreleasepool arp;
 
     m_window = objc::retain(NSWindow_with_content_rect(
@@ -594,7 +577,6 @@ private:
   }
 
   void run_event_loop_while(std::function<bool()> fn) override {
-    using namespace cocoa;
     objc::autoreleasepool arp;
     while (fn()) {
       objc::autoreleasepool arp2;
@@ -616,9 +598,10 @@ private:
   bool m_is_window_shown{};
 };
 
+} // namespace cocoa_webkit
 } // namespace detail
 
-using browser_engine = detail::cocoa_wkwebview_engine;
+using browser_engine = detail::cocoa_webkit::cocoa_wkwebview_engine;
 
 } // namespace webview
 
