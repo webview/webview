@@ -55,8 +55,6 @@
 #include <memory>
 #include <string>
 
-#include <CoreGraphics/CoreGraphics.h>
-#include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>
 
 namespace webview {
