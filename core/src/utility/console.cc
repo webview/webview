@@ -56,7 +56,7 @@ std::string console::set_colour(int color, std::string message) {
   return message;
 }
 
-colours_t console::colours{33, 31};
+colours_t console::colours{93, 91, 90};
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN

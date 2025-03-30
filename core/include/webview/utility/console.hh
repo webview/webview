@@ -32,6 +32,7 @@
 struct colours_t {
   int yellow;
   int red;
+  int dim;
 };
 
 namespace webview {
