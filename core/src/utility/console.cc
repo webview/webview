@@ -52,7 +52,7 @@ std::string console::set_colour(int color, std::string message) {
   if (!is_console_mode_set) {
     return message;
   };
-  message = "\x1B[" + std::to_string(color) + "m" + message + "\033[0m";
+  message = "\033[" + std::to_string(color) + "m" + message + "\033[0m";
   return message;
 }
 
