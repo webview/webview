@@ -44,6 +44,13 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+enum NSWindowStyleMask : NSUInteger {
+  NSWindowStyleMaskTitled = 1,
+  NSWindowStyleMaskClosable = 2,
+  NSWindowStyleMaskMiniaturizable = 4,
+  NSWindowStyleMaskResizable = 8
+};
+
 inline id NSWindow_alloc() {
   return objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
 }

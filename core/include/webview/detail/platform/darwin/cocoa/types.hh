@@ -40,13 +40,6 @@ namespace cocoa {
 
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
 
-enum NSWindowStyleMask : NSUInteger {
-  NSWindowStyleMaskTitled = 1,
-  NSWindowStyleMaskClosable = 2,
-  NSWindowStyleMaskMiniaturizable = 4,
-  NSWindowStyleMaskResizable = 8
-};
-
 enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 enum NSAutoresizingMaskOptions : NSUInteger {
