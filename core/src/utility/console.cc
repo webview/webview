@@ -110,9 +110,10 @@ void console::init_console() {
       SetConsoleMode(h_out, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
   auto stat_err =
       SetConsoleMode(h_err, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-
   is_console_mode_set = stat_out && stat_err;
 
+  info("Webview has attached the Windows console.\nIf you wish to mangage the "
+       "console, call `AttachConsole` before `webview_create`");
   wv_has_console = true;
 };
 
