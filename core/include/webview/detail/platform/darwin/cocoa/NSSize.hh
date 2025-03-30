@@ -40,7 +40,7 @@ namespace cocoa {
 
 using NSSize = CGSize;
 
-constexpr inline NSSize NSSizetMake(CGFloat w, CGFloat h) {
+constexpr inline NSSize NSSizeMake(CGFloat w, CGFloat h) {
   return CGSizeMake(w, h);
 }
 
