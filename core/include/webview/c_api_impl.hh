@@ -34,7 +34,10 @@
 #include "json_deprecated.hh"
 #include "macros.h"
 #include "types.h"
+#include "utility/console.hh"
 #include "version.h"
+
+using namespace webview::utility;
 
 namespace webview {
 namespace detail {
@@ -90,6 +93,7 @@ inline webview *cast_to_webview(void *w) {
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   using namespace webview::detail;
+  console::attach("webview_create");
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {
