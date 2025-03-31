@@ -89,7 +89,7 @@ using namespace webkit;
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{cocoa::NSApplication_get_shared_application()} {
+      : m_app{NSApplication_get_shared_application()} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -173,7 +173,7 @@ protected:
   }
 
   noresult run_impl() override {
-    cocoa::NSApplication_run(m_app);
+    NSApplication_run(m_app);
     return {};
   }
 
@@ -188,7 +188,7 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    cocoa::NSWindow_set_title(m_window, title);
+    NSWindow_set_title(m_window, title);
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
