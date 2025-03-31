@@ -467,9 +467,9 @@ private:
         objc::retain(WKWebView_withFrame(CGRectMake(0, 0, 0, 0), config));
     // Autoresizing mask is needed to prevent the Web Inspector pane from
     // pushing the main web view out of bounds
-    auto autoresizing_mask = static_cast<NSAutoresizingMaskOptions>(
+    auto autoresizing_mask{static_cast<NSAutoresizingMaskOptions>(
         NSViewWidthSizable | NSViewMaxXMargin | NSViewHeightSizable |
-        NSViewMaxYMargin);
+        NSViewMaxYMargin)};
     NSView_set_autoresizingMask(m_webview, autoresizing_mask);
     objc_setAssociatedObject(ui_delegate, "webview", (id)this,
                              OBJC_ASSOCIATION_ASSIGN);
