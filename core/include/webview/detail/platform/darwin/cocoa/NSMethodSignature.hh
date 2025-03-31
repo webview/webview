@@ -39,7 +39,7 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSMethodSignature_signature_with_objc_types(const char *types) {
+inline id NSMethodSignature_signatureWithObjCTypes(const char *types) {
   return objc::msg_send<id>("NSMethodSignature"_cls,
                             "signatureWithObjCTypes:"_sel, types);
 }

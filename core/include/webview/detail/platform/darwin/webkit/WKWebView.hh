@@ -45,39 +45,39 @@ inline id WKWebView_alloc() {
   return objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
 }
 
-inline id WKWebView_init_with_frame(id self, CGRect frame, id configuration) {
+inline id WKWebView_initWithFrame(id self, CGRect frame, id configuration) {
   return objc::msg_send<id>(self, "initWithFrame:configuration:"_sel, frame,
                             configuration);
 }
 
-inline id WKWebView_with_frame(CGRect frame, id configuration) {
+inline id WKWebView_withFrame(CGRect frame, id configuration) {
   return objc::autorelease(
-      WKWebView_init_with_frame(WKWebView_alloc(), frame, configuration));
+      WKWebView_initWithFrame(WKWebView_alloc(), frame, configuration));
 }
 
-inline id WKWebView_get_ui_delegate(id self) {
+inline id WKWebView_get_UIDelegate(id self) {
   return objc::msg_send<id>(self, "UIDelegate"_sel);
 }
 
-inline void WKWebView_set_ui_delegate(id self, id ui_delegate) {
+inline void WKWebView_set_UIDelegate(id self, id ui_delegate) {
   objc::msg_send<void>(self, "setUIDelegate:"_sel, ui_delegate);
 }
 
-inline id WKWebView_load_html_string(id self, id string, id base_url) {
+inline id WKWebView_loadHTMLString(id self, id string, id base_url) {
   return objc::msg_send<id>(self, "loadHTMLString:baseURL:"_sel, string,
                             base_url);
 }
 
-inline id WKWebView_get_url(id self) {
+inline id WKWebView_get_URL(id self) {
   return objc::msg_send<id>(self, "URL"_sel);
 }
 
-inline id WKWebView_load_request(id self, id request) {
+inline id WKWebView_loadRequest(id self, id request) {
   return objc::msg_send<id>(self, "loadRequest:"_sel, request);
 }
 
-inline void WKWebView_evaluate_javascript(id self, id js_string,
-                                          const void *completion_handler) {
+inline void WKWebView_evaluateJavaScript(id self, id js_string,
+                                         const void *completion_handler) {
   return objc::msg_send<void>(self, "evaluateJavaScript:completionHandler:"_sel,
                               js_string, completion_handler);
 }

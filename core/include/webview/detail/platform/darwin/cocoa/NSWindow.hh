@@ -56,20 +56,19 @@ inline id NSWindow_alloc() {
   return objc::msg_send<id>("NSWindow"_cls, "alloc"_sel);
 }
 
-inline id NSWindow_init_with_content_rect(id self, NSRect content_rect,
-                                          NSWindowStyleMask style,
-                                          NSBackingStoreType backing_store_type,
-                                          bool defer) {
+inline id NSWindow_initWithContentRect(id self, NSRect content_rect,
+                                       NSWindowStyleMask style,
+                                       NSBackingStoreType backing_store_type,
+                                       bool defer) {
   return objc::msg_send<id>(
       self, "initWithContentRect:styleMask:backing:defer:"_sel, content_rect,
       style, backing_store_type, static_cast<BOOL>(defer));
 }
 
-inline id NSWindow_with_content_rect(NSRect content_rect,
-                                     NSWindowStyleMask style,
-                                     NSBackingStoreType backing_store_type,
-                                     bool defer) {
-  return objc::autorelease(NSWindow_init_with_content_rect(
+inline id NSWindow_withContentRect(NSRect content_rect, NSWindowStyleMask style,
+                                   NSBackingStoreType backing_store_type,
+                                   bool defer) {
+  return objc::autorelease(NSWindow_initWithContentRect(
       NSWindow_alloc(), content_rect, style, backing_store_type, defer));
 }
 
@@ -79,13 +78,13 @@ inline NSRect NSWindow_get_frame(id self) {
   return objc::msg_send_stret<NSRect>(self, "frame"_sel);
 }
 
-inline void NSWindow_set_frame(id self, NSRect frame_rect, bool display,
-                               bool animate) {
+inline void NSWindow_setFrame(id self, NSRect frame_rect, bool display,
+                              bool animate) {
   objc::msg_send<void>(self, "setFrame:display:animate:"_sel, frame_rect,
                        static_cast<BOOL>(display), static_cast<BOOL>(animate));
 }
 
-inline void NSWindow_set_style_mask(id self, NSWindowStyleMask style) {
+inline void NSWindow_set_styleMask(id self, NSWindowStyleMask style) {
   objc::msg_send<void>(self, "setStyleMask:"_sel, style);
 }
 
@@ -97,15 +96,15 @@ inline void NSWindow_set_title(id self, const std::string &title) {
                                           title.c_str()));
 }
 
-inline void NSWindow_make_key_and_order_front(id self, id sender = nullptr) {
+inline void NSWindow_makeKeyAndOrderFront(id self, id sender = nullptr) {
   objc::msg_send<void>(self, "makeKeyAndOrderFront:"_sel, sender);
 }
 
-inline void NSWindow_set_content_view(id self, id view) {
+inline void NSWindow_set_contentView(id self, id view) {
   objc::msg_send<void>(self, "setContentView:"_sel, view);
 }
 
-inline id NSWindow_get_content_view(id self) {
+inline id NSWindow_get_contentView(id self) {
   return objc::msg_send<id>(self, "contentView"_sel);
 }
 
@@ -117,11 +116,11 @@ inline void NSWindow_center(id self) {
   objc::msg_send<void>(self, "center"_sel);
 }
 
-inline void NSWindow_set_content_min_size(id self, NSSize size) {
+inline void NSWindow_set_contentMinSize(id self, NSSize size) {
   objc::msg_send<void>(self, "setContentMinSize:"_sel, size);
 }
 
-inline void NSWindow_set_content_max_size(id self, NSSize size) {
+inline void NSWindow_set_contentMaxSize(id self, NSSize size) {
   objc::msg_send<void>(self, "setContentMaxSize:"_sel, size);
 }
 

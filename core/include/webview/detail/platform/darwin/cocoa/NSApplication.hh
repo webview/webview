@@ -50,7 +50,7 @@ enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
 
 namespace NSRunLoopMode {
 inline id NSDefaultRunLoopMode() {
-  return NSString_string_with_utf8_string("kCFRunLoopDefaultMode");
+  return NSString_stringWithUTF8String("kCFRunLoopDefaultMode");
 }
 } // namespace NSRunLoopMode
 
@@ -66,34 +66,34 @@ inline void NSApplication_stop(id self, id sender = nullptr) {
   objc::msg_send<void>(self, "stop:"_sel, sender);
 }
 
-inline id NSApplication_get_shared_application() {
+inline id NSApplication_get_sharedApplication() {
   return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
 }
 
-inline void NSApplication_send_event(id self, id event) {
+inline void NSApplication_sendEvent(id self, id event) {
   objc::msg_send<void>(self, "sendEvent:"_sel, event);
 }
 
-inline id NSApplication_next_event_matching_mask(id self, NSEventMask mask,
-                                                 id expiration, id mode,
-                                                 bool dequeue) {
+inline id NSApplication_nextEventMatchingMask(id self, NSEventMask mask,
+                                              id expiration, id mode,
+                                              bool dequeue) {
   return objc::msg_send<id>(
       self, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
       expiration, mode, dequeue);
 }
 
 inline void
-NSApplication_set_activation_policy(id self,
-                                    NSApplicationActivationPolicy policy) {
+NSApplication_setActivationPolicy(id self,
+                                  NSApplicationActivationPolicy policy) {
   objc::msg_send<void>(self, "setActivationPolicy:"_sel, policy);
 }
 
-inline void NSApplication_activate_ignoring_other_apps(id self, bool ignore) {
+inline void NSApplication_activateIgnoringOtherApps(id self, bool ignore) {
   objc::msg_send<void>(self, "activateIgnoringOtherApps:"_sel,
                        static_cast<BOOL>(ignore));
 }
 
-inline void NSApplication_post_event(id self, id event, bool at_start) {
+inline void NSApplication_postEvent(id self, id event, bool at_start) {
   objc::msg_send<void>(self, "postEvent:atStart:"_sel, event,
                        static_cast<BOOL>(at_start));
 }

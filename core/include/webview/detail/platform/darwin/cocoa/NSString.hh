@@ -46,7 +46,7 @@ enum NSStringEncoding : NSUInteger {
   NSUTF8StringEncoding = 4
 };
 
-inline bool NSString_has_suffix(id self, id suffix) {
+inline bool NSString_hasSuffix(id self, id suffix) {
   return static_cast<bool>(
       objc::msg_send<BOOL>(self, "hasSuffix:"_sel, suffix));
 }
@@ -55,25 +55,24 @@ inline id NSString_alloc() {
   return objc::msg_send<id>("NSString"_cls, "alloc"_sel);
 }
 
-inline id NSString_init_with_bytes(id self, const void *bytes,
-                                   NSUInteger length,
-                                   NSStringEncoding encoding) {
+inline id NSString_initWithBytes(id self, const void *bytes, NSUInteger length,
+                                 NSStringEncoding encoding) {
   return objc::msg_send<id>(self, "initWithBytes:length:encoding:"_sel, bytes,
                             length, encoding);
 }
 
-inline id NSString_string_with_utf8_string(const char *utf8_string) {
+inline id NSString_stringWithUTF8String(const char *utf8_string) {
   return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
                             utf8_string);
 }
 
-inline id NSString_string_with_utf8_string(const std::string &utf8_string) {
-  return objc::autorelease(NSString_init_with_bytes(
+inline id NSString_stringWithUTF8String(const std::string &utf8_string) {
+  return objc::autorelease(NSString_initWithBytes(
       NSString_alloc(), utf8_string.data(),
       static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
 }
 
-inline const char *NSString_utf8_string(id self) {
+inline const char *NSString_get_UTF8String(id self) {
   return objc::msg_send<const char *>(self, "UTF8String"_sel);
 }
 

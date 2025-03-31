@@ -39,7 +39,7 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSInvocation_invocation_with_method_signature(id sig) {
+inline id NSInvocation_invocationWithMethodSignature(id sig) {
   return objc::msg_send<id>("NSInvocation"_cls,
                             "invocationWithMethodSignature:"_sel, sig);
 }
@@ -48,8 +48,7 @@ inline void NSInvocation_set_target(id self, id target) {
   objc::msg_send<void>(self, "setTarget:"_sel, target);
 }
 
-inline void NSInvocation_set_argument(id self, void *location,
-                                      NSInteger index) {
+inline void NSInvocation_setArgument(id self, void *location, NSInteger index) {
   objc::msg_send<void>(self, "setArgument:atIndex:"_sel, location, index);
 }
 

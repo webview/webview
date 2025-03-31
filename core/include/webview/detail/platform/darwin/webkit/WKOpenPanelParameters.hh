@@ -39,12 +39,12 @@ namespace webview {
 namespace detail {
 namespace webkit {
 
-inline bool WKOpenPanelParameters_allows_multiple_selection(id self) {
+inline bool WKOpenPanelParameters_get_allowsMultipleSelection(id self) {
   return static_cast<bool>(
       objc::msg_send<BOOL>(self, "allowsMultipleSelection"_sel));
 }
 
-inline bool WKOpenPanelParameters_allows_directories(id self) {
+inline bool WKOpenPanelParameters_get_allowsDirectories(id self) {
   return static_cast<bool>(objc::msg_send<BOOL>(self, "allowsDirectories"_sel));
 }
 

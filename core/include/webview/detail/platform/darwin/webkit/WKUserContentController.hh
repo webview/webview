@@ -39,18 +39,17 @@ namespace webview {
 namespace detail {
 namespace webkit {
 
-inline void WKUserContentController_add_script_message_handler(id self,
-                                                               id handler,
-                                                               id name) {
+inline void WKUserContentController_addScriptMessageHandler(id self, id handler,
+                                                            id name) {
   objc::msg_send<void>(self, "addScriptMessageHandler:name:"_sel, handler,
                        name);
 }
 
-inline void WKUserContentController_add_user_script(id self, id user_script) {
+inline void WKUserContentController_addUserScript(id self, id user_script) {
   objc::msg_send<void>(self, "addUserScript:"_sel, user_script);
 }
 
-inline void WKUserContentController_remove_all_user_scripts(id self) {
+inline void WKUserContentController_removeAllUserScripts(id self) {
   objc::msg_send<id>(self, "removeAllUserScripts"_sel);
 }
 

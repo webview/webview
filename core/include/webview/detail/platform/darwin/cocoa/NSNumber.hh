@@ -39,7 +39,7 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSNumber_number_with_bool(bool value) {
+inline id NSNumber_numberWithBool(bool value) {
   return objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel,
                             static_cast<BOOL>(value));
 }

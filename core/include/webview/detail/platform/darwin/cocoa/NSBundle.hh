@@ -39,11 +39,11 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSBundle_get_main_bundle() {
+inline id NSBundle_get_mainBundle() {
   return objc::msg_send<id>("NSBundle"_cls, "mainBundle"_sel);
 }
 
-inline id NSBundle_get_bundle_path(id self) {
+inline id NSBundle_get_bundlePath(id self) {
   return objc::msg_send<id>(self, "bundlePath"_sel);
 }
 

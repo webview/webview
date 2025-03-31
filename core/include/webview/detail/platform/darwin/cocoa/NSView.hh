@@ -53,16 +53,16 @@ inline id NSView_alloc() {
   return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
 }
 
-inline id NSView_init_with_frame(id self, NSRect frame_rect) {
+inline id NSView_initWithFrame(id self, NSRect frame_rect) {
   return objc::msg_send<id>(self, "initWithFrame:"_sel, frame_rect);
 }
 
-inline void NSView_set_autoresizes_subviews(id self, bool resizes) {
+inline void NSView_set_autoresizesSubviews(id self, bool resizes) {
   objc::msg_send<void>(self, "setAutoresizesSubviews:"_sel,
                        static_cast<BOOL>(resizes));
 }
 
-inline void NSView_add_subview(id self, id subview) {
+inline void NSView_addSubview(id self, id subview) {
   objc::msg_send<void>(self, "addSubview:"_sel, subview);
 }
 
@@ -74,8 +74,8 @@ inline void NSView_set_frame(id self, NSRect frame) {
   objc::msg_send<void>(self, "setFrame:"_sel, frame);
 }
 
-inline void NSView_set_autoresizing_mask(id self,
-                                         NSAutoresizingMaskOptions mask) {
+inline void NSView_set_autoresizingMask(id self,
+                                        NSAutoresizingMaskOptions mask) {
   objc::msg_send<void>(self, "setAutoresizingMask:"_sel, mask);
 }
 

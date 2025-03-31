@@ -49,12 +49,12 @@ enum NSEventType : NSUInteger {
 
 enum NSEventModifierFlags : NSUInteger {};
 
-inline id NSEvent_other_event_with_type(NSEventType type, NSPoint location,
-                                        NSEventModifierFlags modifier_flags,
-                                        NSTimeInterval timestamp,
-                                        NSInteger window_number, id context,
-                                        short subtype, NSInteger data1,
-                                        NSInteger data2) {
+inline id NSEvent_otherEventWithType(NSEventType type, NSPoint location,
+                                     NSEventModifierFlags modifier_flags,
+                                     NSTimeInterval timestamp,
+                                     NSInteger window_number, id context,
+                                     short subtype, NSInteger data1,
+                                     NSInteger data2) {
   return objc::msg_send<id>(
       "NSEvent"_cls,
       "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,

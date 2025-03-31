@@ -43,7 +43,7 @@ inline id WKWebViewConfiguration_new() {
   return objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
 }
 
-inline id WKWebViewConfiguration_get_user_content_controller(id self) {
+inline id WKWebViewConfiguration_get_userContentController(id self) {
   return objc::msg_send<id>(self, "userContentController"_sel);
 }
 

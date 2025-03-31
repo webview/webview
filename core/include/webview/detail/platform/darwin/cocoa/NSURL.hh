@@ -42,16 +42,16 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline id NSURL_url_with_string(id string) {
+inline id NSURL_URLWithString(id string) {
   return objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel, string);
 }
 
-inline id NSURL_url_with_string(const char *string) {
-  return NSURL_url_with_string(NSString_string_with_utf8_string(string));
+inline id NSURL_URLWithString(const char *string) {
+  return NSURL_URLWithString(NSString_stringWithUTF8String(string));
 }
 
-inline id NSURL_url_with_string(const std::string &string) {
-  return NSURL_url_with_string(NSString_string_with_utf8_string(string));
+inline id NSURL_URLWithString(const std::string &string) {
+  return NSURL_URLWithString(NSString_stringWithUTF8String(string));
 }
 
 } // namespace cocoa

@@ -40,7 +40,7 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline NSModalResponse NSSavePanel_run_modal(id self) {
+inline NSModalResponse NSSavePanel_runModal(id self) {
   return objc::msg_send<NSModalResponse>(self, "runModal"_sel);
 }
 

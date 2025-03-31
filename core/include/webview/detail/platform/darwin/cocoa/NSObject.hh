@@ -39,7 +39,7 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline void NSObject_set_value_for_key(id self, id value, id key) {
+inline void NSObject_setValue_forKey(id self, id value, id key) {
   objc::msg_send<void>(self, "setValue:forKey:"_sel, value, key);
 }
 
