@@ -31,6 +31,20 @@
 #include "webview/utility/console.hh"
 #include <iostream>
 
+// We repeat this from console.hh because MSVC is still complaining/erroring
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif // WIN32_LEAN_AND_MEAN
+#ifdef _MSC_VER
+#define _WIN32_WINNT 0x0601
+#endif // _MSC_VER
+
+#include <io.h>
+#include <windows.h>
+
+#endif // defined(_WIN32)
+
 using namespace webview::utility;
 
 std::mutex console::mutex;
@@ -63,6 +77,8 @@ void console::info(std::string message) {
 };
 
 std::string console::set_colour(int color, std::string message) {
+  // Windows failed to register ASCI escape console mode, so don't
+  // try to format the message string.
   if (!mode_set_success) {
     return message;
   };

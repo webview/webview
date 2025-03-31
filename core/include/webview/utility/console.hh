@@ -26,7 +26,6 @@
 
 #ifndef WEBVIEW_UTILITY_CONSOLE_HH
 #define WEBVIEW_UTILITY_CONSOLE_HH
-
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include <mutex>
@@ -76,17 +75,19 @@ public:
 
 private:
   /// Prepares the console for printing.
+  /// The internal implementation varies between Windows and *Nix.
   static void capture_console();
 
   /// Frees the console for Windows systems.
   /// - prevents hang/error at exit.
   /// - resets user managed console state.
+  /// NOOP for *Nix
   static void free_console();
 
-  /// Sets an appropriate colour to a message string.
+  /// Sets an ASCI escaped console colour to a message string.
   static std::string set_colour(int color, std::string message);
 
-  /// UTF console colour code int values.
+  /// ASCI colour int values.
   static console_colours_t colours;
 
   /// Message prefix strings.
