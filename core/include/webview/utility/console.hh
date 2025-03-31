@@ -37,6 +37,9 @@
 #endif // WIN32_LEAN_AND_MEAN
 #ifdef _MSC_VER
 #define _WIN32_WINNT 0x0601
+#ifndef WINBOOL
+#define WINBOOL BOOL
+#endif // WINBOOL
 #endif // _MSC_VER
 
 #include <io.h>
@@ -58,19 +61,22 @@ struct console_prefix_t {
 namespace webview {
 namespace utility {
 
-/// A static utility class to prints colourised warnings and errors to the process console.
+/// A static utility class that enables printing colourised warnings, errors and info
+/// to the process console.
 class console {
 public:
-  /// Prints info in dim to the console stdout.
+  /// Prints an info message in dim to the console stdout.
   static void info(std::string message);
 
-  /// Prints a warning in yellow to the console stdout.
+  /// Prints a warning message in yellow to the console stdout.
   static void warn(std::string message);
 
-  /// Prints an error in red to the console stderr.
+  /// Prints an error message in red to the console stderr.
   static void error(std::string message);
 
-  /// Attaches a Windows console to Webview if no user console is already attached.
+  /// Attaches a Webview owned Windows process console if no user console is already attached.
+  /// Informs the user of this process level change.
+  /// NOOP in *Nix.
   static void attach(std::string attach_location);
 
 private:
@@ -78,9 +84,9 @@ private:
   /// The internal implementation varies between Windows and *Nix.
   static void capture_console();
 
-  /// Frees the console for Windows systems.
-  /// - prevents hang/error at exit.
-  /// - resets user managed console state.
+  /// Frees the console on Windows.
+  /// - prevents hang/error at process exit if Webview owns console.
+  /// - resets user managed console state if user owns console.
   /// NOOP for *Nix
   static void free_console();
 
@@ -94,7 +100,7 @@ private:
   static console_prefix_t prefix;
 
   // Flags if the Windows console ASCI escape mode succeeded.
-  // This is always true for *Nix systems.
+  // This is initiated as always `true` for *Nix systems.
   static bool mode_set_success;
 
   static std::mutex mutex;
@@ -102,10 +108,10 @@ private:
 #if defined(_WIN32)
 
   /// Gets and stores the existing Windows console modes for `stdout` and `stderr`.
-  static void get_store_ex_modes();
+  static void store_ex_modes();
 
-  /// Re-sets the user's Windows console mode for `stdout` and `stderr`
-  /// back to stored original states.
+  /// Re-sets the user's Windows console modes back to stored original states
+  /// for `stdout` and `stderr`.
   static void reset_user_modes();
 
   /// Attempts to set `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
@@ -119,16 +125,16 @@ private:
   static void redirect_o_stream(_iobuf *stream);
 
   /// Determines if the user owns the console attached to the process.
-  /// @return Lazily initiated static const flag of ownership
+  /// @return Lazily initiated static const flag
   static bool user_owns_console();
 
   /// Flags if Webview is in ownership of an attached console
   static bool wv_owns_console;
 
-  /// The existing console `stdout` mode.
+  /// The stored existing console `stdout` mode.
   static DWORD out_mode;
 
-  /// The existing console `stderr` mode.
+  /// The stored existing console `stderr` mode.
   static DWORD err_mode;
 
   /// Handle to `stdout`.

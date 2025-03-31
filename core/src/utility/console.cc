@@ -31,23 +31,6 @@
 #include "webview/utility/console.hh"
 #include <iostream>
 
-// We repeat this from console.hh because MSVC is complaining/erroring
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif // WIN32_LEAN_AND_MEAN
-#ifdef _MSC_VER
-#define _WIN32_WINNT 0x0601
-#ifndef WINBOOL
-#define WINBOOL BOOL
-#endif // WINBOOL
-#endif // _MSC_VER
-
-#include <io.h>
-#include <windows.h>
-
-#endif // defined(_WIN32)
-
 using namespace webview::utility;
 
 std::mutex console::mutex;
@@ -120,7 +103,7 @@ void console::capture_console() {
   if (user_owns_console()) {
     std::cout.flush();
     std::cerr.flush();
-    get_store_ex_modes();
+    store_ex_modes();
     set_evtp_modes();
     return;
   }
@@ -135,7 +118,7 @@ void console::capture_console() {
 
   redirect_o_stream(stdout);
   redirect_o_stream(stderr);
-  get_store_ex_modes();
+  store_ex_modes();
   set_evtp_modes();
   wv_owns_console = true;
 };
@@ -155,7 +138,7 @@ bool console::user_owns_console() {
   return has_console;
 }
 
-void console::get_store_ex_modes() {
+void console::store_ex_modes() {
   if (h_out && h_err) {
     return;
   }
