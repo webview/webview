@@ -35,12 +35,12 @@
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-#endif
+#endif // WIN32_LEAN_AND_MEAN
 #ifdef _MSC_VER
 #ifndef _WIN32_WINNT 0x0601
 #define _WIN32_WINNT 0x0601
-#endif
-#endif
+#endif // _WIN32_WINNT 0x0601
+#endif // _MSC_VER
 
 #include <io.h>
 #include <windows.h>
