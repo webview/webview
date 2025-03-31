@@ -37,9 +37,9 @@
 #endif // WIN32_LEAN_AND_MEAN
 #ifdef _MSC_VER
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601
-#endif // _WIN32_WINNT
-#endif // _MSC_VER
+#define _WIN32_WINNT 0x0501 //Win XP
+#endif                      // _WIN32_WINNT
+#endif                      // _MSC_VER
 #include <io.h>
 #include <windows.h>
 #endif // defined(_WIN32)
