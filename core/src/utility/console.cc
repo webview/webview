@@ -64,7 +64,7 @@ void console::info(std::string message) {
 
 std::string console::set_colour(int color, std::string message) {
   // Windows failed to register ASCI escape console mode, so don't
-  // try to format the message string.
+  // format the message string.
   if (!stat_out_modes) {
     return message;
   };
@@ -89,10 +89,12 @@ void console::attach_console(std::string attach_location) {
   if (user_owns_console() || wv_owns_console) {
     return;
   };
-  auto message = "Webview will attach a console to the Windows process.\nIf "
-                 "you want to mangage the console yourself, direct your "
-                 "outputs and call `AttachConsole` before `" +
-                 attach_location + "` in your code.";
+  auto message =
+      "Webview has attached a console to the Windows process and re-directed "
+      "`stdout` and `stderr` to it.\n"
+      "If you want to disable this behaviour or manage a console yourself, "
+      "call `AttachConsole(...)` or `AllocConsole()` before `" +
+      attach_location + "` in your code.";
 
   // The `info` method includes the initialising call to `capture_console()`.
   info(message);
@@ -102,9 +104,9 @@ void console::capture_console() {
   if (user_owns_console()) {
     std::cout.flush();
     std::cerr.flush();
-    get_set_o_handles();
+    get_output_handles();
     get_ex_console_modes();
-    set_evtp_modes();
+    stat_out_modes = set_evtp_modes();
     return;
   }
 
@@ -117,11 +119,11 @@ void console::capture_console() {
   if (!got_console || wv_owns_console) {
     return;
   }
-  get_set_o_handles();
+  get_output_handles();
   redirect_o_stream(stdout);
   redirect_o_stream(stderr);
   get_ex_console_modes();
-  set_evtp_modes();
+  stat_out_modes = set_evtp_modes();
   wv_owns_console = true;
 };
 
@@ -145,23 +147,12 @@ void console::get_ex_console_modes() {
   GetConsoleMode(h_err, &err_mode);
 }
 
-void console::get_set_o_handles() {
+void console::get_output_handles() {
   if (h_out && h_err) {
     return;
   }
   h_out = GetStdHandle(STD_OUTPUT_HANDLE);
   h_err = GetStdHandle(STD_ERROR_HANDLE);
-  if (!user_owns_console()) {
-    return;
-  }
-  if (h_out == INVALID_HANDLE_VALUE) {
-    redirect_o_stream(stdout);
-    h_out = GetStdHandle(STD_OUTPUT_HANDLE);
-  }
-  if (h_err == INVALID_HANDLE_VALUE) {
-    redirect_o_stream(stderr);
-    h_err = GetStdHandle(STD_OUTPUT_HANDLE);
-  }
 }
 
 void console::reset_user_modes() {
@@ -169,10 +160,10 @@ void console::reset_user_modes() {
   SetConsoleMode(h_err, err_mode);
 }
 
-void console::set_evtp_modes() {
+bool console::set_evtp_modes() {
   // Webview only needs to set console modes once.
   if (wv_owns_console) {
-    return;
+    return true;
   }
   BOOL stat_out_mode = 0;
   BOOL stat_err_mode = 0;
@@ -186,9 +177,9 @@ void console::set_evtp_modes() {
     stat_err_mode = 1;
   } else {
     DWORD new_mode = err_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    stat_out_mode = SetConsoleMode(h_out, new_mode);
+    stat_err_mode = SetConsoleMode(h_err, new_mode);
   };
-  stat_out_modes = (stat_out_mode != 0) && (stat_err_mode != 0);
+  return (stat_out_mode != 0) && (stat_err_mode != 0);
 }
 
 bool console::has_evtp_mode(DWORD dw_mode) {
@@ -196,7 +187,7 @@ bool console::has_evtp_mode(DWORD dw_mode) {
 }
 
 void console::redirect_o_stream(_iobuf *stream) {
-  static_cast<void>(freopen_s(&dummy_out, "CONOUT$", "w", stream));
+  static_cast<void>(freopen("CONOUT$", "w", stream));
 }
 
 bool console::wv_owns_console{};

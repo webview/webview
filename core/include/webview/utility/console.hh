@@ -114,7 +114,8 @@ private:
 
   /// Attempts to set `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
   /// (enabling ASCI escaped colours) on modes for `stdout` and `stderr`.
-  static void set_evtp_modes();
+  /// @return `true` if successful
+  static bool set_evtp_modes();
 
   /// Checks if `ENABLE_VIRTUAL_TERMINAL_PROCESSING` is already set on a mode.
   static bool has_evtp_mode(DWORD dw_mode);
@@ -126,9 +127,9 @@ private:
   /// @return Lazily initiated static const flag
   static bool user_owns_console();
 
-  /// Sets the `stdout` and `stderr` file handles if not already set and
+  /// Gets the `stdout` and `stderr` file handles and
   /// assigns them to class properties.
-  static void get_set_o_handles();
+  static void get_output_handles();
 
   /// Flags if Webview is in ownership of an attached console
   static bool wv_owns_console;
