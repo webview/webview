@@ -143,21 +143,21 @@ bool console::user_owns_console() {
 }
 
 void console::get_ex_console_modes() {
-  GetConsoleMode(h_out, &out_mode);
-  GetConsoleMode(h_err, &err_mode);
+  GetConsoleMode(handles.out, &modes.out);
+  GetConsoleMode(handles.err, &modes.err);
 }
 
 void console::get_output_handles() {
-  if (h_out && h_err) {
+  if (handles.out && handles.err) {
     return;
   }
-  h_out = GetStdHandle(STD_OUTPUT_HANDLE);
-  h_err = GetStdHandle(STD_ERROR_HANDLE);
+  handles.out = GetStdHandle(STD_OUTPUT_HANDLE);
+  handles.err = GetStdHandle(STD_ERROR_HANDLE);
 }
 
 void console::reset_user_modes() {
-  SetConsoleMode(h_out, out_mode);
-  SetConsoleMode(h_err, err_mode);
+  SetConsoleMode(handles.out, modes.out);
+  SetConsoleMode(handles.err, modes.err);
 }
 
 bool console::set_evtp_modes() {
@@ -167,17 +167,17 @@ bool console::set_evtp_modes() {
   }
   BOOL stat_out_mode = 0;
   BOOL stat_err_mode = 0;
-  if (has_evtp_mode(out_mode)) {
+  if (has_evtp_mode(modes.out)) {
     stat_out_mode = 1;
   } else {
-    DWORD new_mode = out_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    stat_out_mode = SetConsoleMode(h_out, new_mode);
+    DWORD new_mode = modes.out | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    stat_out_mode = SetConsoleMode(handles.out, new_mode);
   }
-  if (has_evtp_mode(err_mode)) {
+  if (has_evtp_mode(modes.err)) {
     stat_err_mode = 1;
   } else {
-    DWORD new_mode = err_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    stat_err_mode = SetConsoleMode(h_err, new_mode);
+    DWORD new_mode = modes.err | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    stat_err_mode = SetConsoleMode(handles.err, new_mode);
   };
   return (stat_out_mode != 0) && (stat_err_mode != 0);
 }
@@ -192,10 +192,8 @@ void console::redirect_o_stream(_iobuf *stream) {
 
 bool console::wv_owns_console{};
 bool console::stat_out_modes{};
-DWORD console::out_mode = 0;
-DWORD console::err_mode = 0;
-HANDLE console::h_out;
-HANDLE console::h_err;
+modes_t console::modes{0, 0};
+handles_t console::handles{};
 
 #endif // !defined(_WIN32) #else
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

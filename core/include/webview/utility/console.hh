@@ -42,6 +42,14 @@
 #endif                      // _MSC_VER
 #include <io.h>
 #include <windows.h>
+struct modes_t {
+  DWORD out;
+  DWORD err;
+};
+struct handles_t {
+  HANDLE out;
+  HANDLE err;
+};
 #endif // defined(_WIN32)
 
 struct console_colours_t {
@@ -123,28 +131,22 @@ private:
   /// Reopens an output stream to point to an attached console.
   static void redirect_o_stream(_iobuf *stream);
 
-  /// Determines if the user owns the console attached to the process.
-  /// @return Lazily initiated static const flag
-  static bool user_owns_console();
-
   /// Gets the `stdout` and `stderr` file handles and
   /// assigns them to class properties.
   static void get_output_handles();
 
-  /// Flags if Webview is in ownership of an attached console
+  /// Determines if the user owns the console attached to the process.
+  /// @return Lazily initiated static const flag
+  static bool user_owns_console();
+
+  /// The stored existing console modes.
+  static modes_t modes;
+
+  /// Handles to the console out files.
+  static handles_t handles;
+
+  /// Flags if Webview owns the console.
   static bool wv_owns_console;
-
-  /// The stored existing console `stdout` mode.
-  static DWORD out_mode;
-
-  /// The stored existing console `stderr` mode.
-  static DWORD err_mode;
-
-  /// Handle to the `stdout` file.
-  static HANDLE h_out;
-
-  /// Handle to the `stderr` file.
-  static HANDLE h_err;
 
 #endif // defined(_WIN32)
 
