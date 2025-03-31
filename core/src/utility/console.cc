@@ -65,7 +65,7 @@ void console::info(std::string message) {
 std::string console::set_colour(int color, std::string message) {
   // Windows failed to register ASCI escape console mode, so don't
   // try to format the message string.
-  if (!mode_set_success) {
+  if (!stat_out_modes) {
     return message;
   };
   message = "\033[" + std::to_string(color) + "m" + message + "\033[0m";
@@ -80,45 +80,47 @@ void console::capture_console() {
 };
 
 void console::free_console() {}
-void console::attach(std::string /*attach_location*/) {}
-bool console::mode_set_success{true};
+void console::attach_console(std::string /*attach_location*/) {}
+bool console::stat_out_modes{true};
 
 #else // !defined(_WIN32)
 
-void console::attach(std::string attach_location) {
+void console::attach_console(std::string attach_location) {
   if (user_owns_console() || wv_owns_console) {
     return;
   };
-  auto message =
-      "Webview will attach the Windows "
-      "console.\nIf you want to mangage the "
-      "console yourself, direct your outputs and call `AttachConsole` before "
-      "`" +
-      attach_location + "` in your code.";
+  auto message = "Webview will attach a console to the Windows process.\nIf "
+                 "you want to mangage the console yourself, direct your "
+                 "outputs and call `AttachConsole` before `" +
+                 attach_location + "` in your code.";
+
+  // The `info` method includes the initialising call to `capture_console()`.
   info(message);
 };
 
 void console::capture_console() {
-
   if (user_owns_console()) {
     std::cout.flush();
     std::cerr.flush();
-    store_ex_modes();
+    get_set_o_handles();
+    get_ex_console_modes();
     set_evtp_modes();
     return;
   }
 
-  // We attach/free the Webview owned console after every log operation to avoid
-  // deeply embedding the console utility into the Webview class destructor.
-  // Console output usage should be minimal, and performance overhead negligable.
+  // We attach/free the Webview owned console after every print operation.
+  // This avoids needing to free the console in the Webview class destructor,
+  // thus improving encapsulation of this class.
+  //
+  // Console output usage should remain minimal, and performance overhead negligable.
   auto got_console = AttachConsole(ATTACH_PARENT_PROCESS);
   if (!got_console || wv_owns_console) {
     return;
   }
-
+  get_set_o_handles();
   redirect_o_stream(stdout);
   redirect_o_stream(stderr);
-  store_ex_modes();
+  get_ex_console_modes();
   set_evtp_modes();
   wv_owns_console = true;
 };
@@ -138,24 +140,28 @@ bool console::user_owns_console() {
   return has_console;
 }
 
-void console::store_ex_modes() {
+void console::get_ex_console_modes() {
+  GetConsoleMode(h_out, &out_mode);
+  GetConsoleMode(h_err, &err_mode);
+}
+
+void console::get_set_o_handles() {
   if (h_out && h_err) {
     return;
   }
   h_out = GetStdHandle(STD_OUTPUT_HANDLE);
-  // Maybe a user has attached a console, but not created a stream
+  h_err = GetStdHandle(STD_ERROR_HANDLE);
+  if (!user_owns_console()) {
+    return;
+  }
   if (h_out == INVALID_HANDLE_VALUE) {
     redirect_o_stream(stdout);
     h_out = GetStdHandle(STD_OUTPUT_HANDLE);
   }
-  h_err = GetStdHandle(STD_ERROR_HANDLE);
-  // Maybe a user has attached a console, but not created a stream
   if (h_err == INVALID_HANDLE_VALUE) {
     redirect_o_stream(stderr);
     h_err = GetStdHandle(STD_OUTPUT_HANDLE);
   }
-  GetConsoleMode(h_out, &out_mode);
-  GetConsoleMode(h_err, &err_mode);
 }
 
 void console::reset_user_modes() {
@@ -168,22 +174,21 @@ void console::set_evtp_modes() {
   if (wv_owns_console) {
     return;
   }
-  WINBOOL stat_out_mode = FALSE;
-  WINBOOL stat_err_mode = FALSE;
+  BOOL stat_out_mode = 0;
+  BOOL stat_err_mode = 0;
   if (has_evtp_mode(out_mode)) {
-    stat_out_mode = TRUE;
+    stat_out_mode = 1;
   } else {
-    stat_out_mode =
-        SetConsoleMode(h_out, out_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    DWORD new_mode = out_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    stat_out_mode = SetConsoleMode(h_out, new_mode);
   }
   if (has_evtp_mode(err_mode)) {
-    stat_err_mode = TRUE;
+    stat_err_mode = 1;
   } else {
-    stat_err_mode =
-        SetConsoleMode(h_err, err_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-  }
-
-  mode_set_success = stat_out_mode && stat_err_mode;
+    DWORD new_mode = err_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    stat_out_mode = SetConsoleMode(h_out, new_mode);
+  };
+  stat_out_modes = (stat_out_mode != 0) && (stat_err_mode != 0);
 }
 
 bool console::has_evtp_mode(DWORD dw_mode) {
@@ -195,7 +200,7 @@ void console::redirect_o_stream(_iobuf *stream) {
 }
 
 bool console::wv_owns_console{};
-bool console::mode_set_success{};
+bool console::stat_out_modes{};
 DWORD console::out_mode = 0;
 DWORD console::err_mode = 0;
 HANDLE console::h_out;

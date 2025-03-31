@@ -93,7 +93,7 @@ inline webview *cast_to_webview(void *w) {
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   using namespace webview::detail;
-  console::attach("webview_create");
+  console::attach_console("webview_create");
   webview::webview *w{};
   auto err = api_filter(
       [=]() -> webview::result<webview::webview *> {

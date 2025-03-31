@@ -39,9 +39,6 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601
 #endif // _WIN32_WINNT
-#ifndef WINBOOL
-#define WINBOOL BOOL
-#endif // WINBOOL
 #endif // _MSC_VER
 #include <io.h>
 #include <windows.h>
@@ -74,10 +71,10 @@ public:
   /// Prints an error message in red to the console stderr.
   static void error(std::string message);
 
-  /// Attaches a Webview owned Windows process console if no user console is already attached.
-  /// Informs the user of this process level change.
+  /// Attaches a Webview owned console to the  Windows process if no user console is already attached.
+  /// It informs the user of this process level change.
   /// NOOP in *Nix.
-  static void attach(std::string attach_location);
+  static void attach_console(std::string attach_location);
 
 private:
   /// Prepares the console for printing.
@@ -101,14 +98,15 @@ private:
 
   // Flags if the Windows console ASCI escape mode succeeded.
   // This is initiated as always `true` for *Nix systems.
-  static bool mode_set_success;
+  static bool stat_out_modes;
 
   static std::mutex mutex;
 
 #if defined(_WIN32)
 
-  /// Gets and stores the existing Windows console modes for `stdout` and `stderr`.
-  static void store_ex_modes();
+  /// Gets the existing console modes for `stdout` and `stderr`
+  /// and stores them to class properties.
+  static void get_ex_console_modes();
 
   /// Re-sets the user's Windows console modes back to stored original states
   /// for `stdout` and `stderr`.
@@ -128,6 +126,10 @@ private:
   /// @return Lazily initiated static const flag
   static bool user_owns_console();
 
+  /// Sets the `stdout` and `stderr` file handles if not already set and
+  /// assigns them to class properties.
+  static void get_set_o_handles();
+
   /// Flags if Webview is in ownership of an attached console
   static bool wv_owns_console;
 
@@ -137,10 +139,10 @@ private:
   /// The stored existing console `stderr` mode.
   static DWORD err_mode;
 
-  /// Handle to `stdout`.
+  /// Handle to the `stdout` file.
   static HANDLE h_out;
 
-  /// Handle to `stderr`.
+  /// Handle to the `stderr` file.
   static HANDLE h_err;
 
   /// Dummy out file
