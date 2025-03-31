@@ -146,9 +146,6 @@ private:
   /// Handle to the `stderr` file.
   static HANDLE h_err;
 
-  /// Dummy out file
-  static FILE *dummy_out;
-
 #endif // defined(_WIN32)
 
 }; // class console

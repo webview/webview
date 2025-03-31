@@ -196,7 +196,6 @@ DWORD console::out_mode = 0;
 DWORD console::err_mode = 0;
 HANDLE console::h_out;
 HANDLE console::h_err;
-FILE *console::dummy_out;
 
 #endif // !defined(_WIN32) #else
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

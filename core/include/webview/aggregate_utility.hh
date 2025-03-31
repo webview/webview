@@ -24,6 +24,9 @@
  * SOFTWARE.
  */
 
-#pragma once
+#ifndef WEBVIEW_AGGREGATE_UTILITY_HH
+#define WEBVIEW_AGGREGATE_UTILITY_HH
 
 #include "../../src/utility/console.cc"
+
+#endif // WEBVIEW_AGGREGATE_UTILITY_HH
