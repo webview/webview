@@ -24,7 +24,8 @@
  * SOFTWARE.
  */
 
-#pragma once
+#ifndef WEBVIEW_UTILITY_CONSOLE_HH
+#define WEBVIEW_UTILITY_CONSOLE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -36,7 +37,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #ifdef _MSC_VER
-#ifndef _WIN32_WINNT
+#ifndef _WIN32_WINNT 0x0601
 #define _WIN32_WINNT 0x0601
 #endif
 #endif
@@ -146,3 +147,4 @@ private:
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_UTILITY_CONSOLE_HH

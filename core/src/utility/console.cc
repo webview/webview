@@ -24,7 +24,8 @@
  * SOFTWARE.
  */
 
-#pragma once
+#ifndef WEBVIEW_UTILITY_CONSOLE_CC
+#define WEBVIEW_UTILITY_CONSOLE_CC
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "webview/utility/console.hh"
@@ -188,7 +189,7 @@ HANDLE console::h_out;
 HANDLE console::h_err;
 FILE *console::dummy_out;
 
-#else
+#else // defined(_WIN32)
 
 void console::capture_console() {
   std::cout.flush();
@@ -201,3 +202,4 @@ bool console::mode_set_success{true};
 
 #endif // defined(_WIN32) #else
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_UTILITY_CONSOLE_CC
