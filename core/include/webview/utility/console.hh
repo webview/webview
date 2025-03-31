@@ -101,25 +101,26 @@ private:
 
 #if defined(_WIN32)
 
-  /// Determines if the user owns a console attached to the process.
-  static bool user_owns_console();
+  /// Gets and stores the existing Windows console modes for `stdout` and `stderr`.
+  static void get_store_ex_modes();
 
-  /// Gets the existing Windows console modes for `stdout` and `stderr`.
-  static void get_ex_modes();
-
-  /// Sets the user's Windows console mode for `stdout` and `stderr`
-  /// back to original states.
+  /// Re-sets the user's Windows console mode for `stdout` and `stderr`
+  /// back to stored original states.
   static void reset_user_modes();
 
-  /// Attempts to enable virtual terminal processing (for ASCI escaped colours)
-  /// in all Windows consoles for `stdout` and `stderr`.
+  /// Attempts to set `ENABLE_VIRTUAL_TERMINAL_PROCESSING`
+  /// (enabling ASCI escaped colours) on modes for `stdout` and `stderr`.
   static void set_evtp_modes();
 
-  /// Checks if enable virtual terminal processing is already set on a mode.
+  /// Checks if `ENABLE_VIRTUAL_TERMINAL_PROCESSING` is already set on a mode.
   static bool has_evtp_mode(DWORD dw_mode);
 
-  /// Reopens `stdout` and `stderr` to point to a newly attached console.
-  static void redirect_stream(_iobuf *stream);
+  /// Reopens an output stream to point to an attached console.
+  static void redirect_o_stream(_iobuf *stream);
+
+  /// Determines if the user owns the console attached to the process.
+  /// @return Lazily initiated static const flag of ownership
+  static bool user_owns_console();
 
   /// Flags if Webview is in ownership of an attached console
   static bool wv_owns_console;

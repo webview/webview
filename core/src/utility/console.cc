@@ -31,13 +31,16 @@
 #include "webview/utility/console.hh"
 #include <iostream>
 
-// We repeat this from console.hh because MSVC is still complaining/erroring
+// We repeat this from console.hh because MSVC is complaining/erroring
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
 #ifdef _MSC_VER
 #define _WIN32_WINNT 0x0601
+#ifndef WINBOOL
+#define WINBOOL BOOL
+#endif // WINBOOL
 #endif // _MSC_VER
 
 #include <io.h>
@@ -86,7 +89,18 @@ std::string console::set_colour(int color, std::string message) {
   return message;
 }
 
-#if defined(_WIN32)
+#if !defined(_WIN32)
+
+void console::capture_console() {
+  std::cout.flush();
+  std::cerr.flush();
+};
+
+void console::free_console() {}
+void console::attach(std::string /*attach_location*/) {}
+bool console::mode_set_success{true};
+
+#else // !defined(_WIN32)
 
 void console::attach(std::string attach_location) {
   if (user_owns_console() || wv_owns_console) {
@@ -106,7 +120,7 @@ void console::capture_console() {
   if (user_owns_console()) {
     std::cout.flush();
     std::cerr.flush();
-    get_ex_modes();
+    get_store_ex_modes();
     set_evtp_modes();
     return;
   }
@@ -119,9 +133,9 @@ void console::capture_console() {
     return;
   }
 
-  redirect_stream(stdout);
-  redirect_stream(stderr);
-  get_ex_modes();
+  redirect_o_stream(stdout);
+  redirect_o_stream(stderr);
+  get_store_ex_modes();
   set_evtp_modes();
   wv_owns_console = true;
 };
@@ -141,20 +155,20 @@ bool console::user_owns_console() {
   return has_console;
 }
 
-void console::get_ex_modes() {
+void console::get_store_ex_modes() {
   if (h_out && h_err) {
     return;
   }
   h_out = GetStdHandle(STD_OUTPUT_HANDLE);
   // Maybe a user has attached a console, but not created a stream
   if (h_out == INVALID_HANDLE_VALUE) {
-    redirect_stream(stdout);
+    redirect_o_stream(stdout);
     h_out = GetStdHandle(STD_OUTPUT_HANDLE);
   }
   h_err = GetStdHandle(STD_ERROR_HANDLE);
   // Maybe a user has attached a console, but not created a stream
   if (h_err == INVALID_HANDLE_VALUE) {
-    redirect_stream(stderr);
+    redirect_o_stream(stderr);
     h_err = GetStdHandle(STD_OUTPUT_HANDLE);
   }
   GetConsoleMode(h_out, &out_mode);
@@ -171,16 +185,16 @@ void console::set_evtp_modes() {
   if (wv_owns_console) {
     return;
   }
-  WINBOOL stat_out_mode;
-  WINBOOL stat_err_mode;
+  WINBOOL stat_out_mode = FALSE;
+  WINBOOL stat_err_mode = FALSE;
   if (has_evtp_mode(out_mode)) {
-    stat_out_mode = true;
+    stat_out_mode = TRUE;
   } else {
     stat_out_mode =
         SetConsoleMode(h_out, out_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
   }
   if (has_evtp_mode(err_mode)) {
-    stat_err_mode = true;
+    stat_err_mode = TRUE;
   } else {
     stat_err_mode =
         SetConsoleMode(h_err, err_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
@@ -193,7 +207,7 @@ bool console::has_evtp_mode(DWORD dw_mode) {
   return (dw_mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
 }
 
-void console::redirect_stream(_iobuf *stream) {
+void console::redirect_o_stream(_iobuf *stream) {
   static_cast<void>(freopen_s(&dummy_out, "CONOUT$", "w", stream));
 }
 
@@ -205,17 +219,6 @@ HANDLE console::h_out;
 HANDLE console::h_err;
 FILE *console::dummy_out;
 
-#else // defined(_WIN32)
-
-void console::capture_console() {
-  std::cout.flush();
-  std::cerr.flush();
-};
-
-void console::free_console() {}
-void console::attach(std::string /*attach_location*/) {}
-bool console::mode_set_success{true};
-
-#endif // defined(_WIN32) #else
+#endif // !defined(_WIN32) #else
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_UTILITY_CONSOLE_CC
