@@ -57,6 +57,10 @@ inline id NSView_initWithFrame(id self, NSRect frame_rect) {
   return objc::msg_send<id>(self, "initWithFrame:"_sel, frame_rect);
 }
 
+inline id NSView_withFrame(NSRect frame_rect) {
+  return objc::autorelease(NSView_initWithFrame(NSView_alloc(), frame_rect));
+}
+
 inline void NSView_set_autoresizesSubviews(id self, bool resizes) {
   objc::msg_send<void>(self, "setAutoresizesSubviews:"_sel,
                        static_cast<BOOL>(resizes));
