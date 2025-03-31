@@ -36,15 +36,15 @@
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
 #ifdef _MSC_VER
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0601
+#endif // _WIN32_WINNT
 #ifndef WINBOOL
 #define WINBOOL BOOL
 #endif // WINBOOL
 #endif // _MSC_VER
-
 #include <io.h>
 #include <windows.h>
-
 #endif // defined(_WIN32)
 
 struct console_colours_t {
