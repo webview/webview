@@ -42,11 +42,11 @@
 #endif                      // _MSC_VER
 #include <io.h>
 #include <windows.h>
-struct modes_t {
+struct console_modes_t {
   DWORD out;
   DWORD err;
 };
-struct handles_t {
+struct console_handles_t {
   HANDLE out;
   HANDLE err;
 };
@@ -140,10 +140,10 @@ private:
   static bool user_owns_console();
 
   /// The stored existing console modes.
-  static modes_t modes;
+  static console_modes_t modes;
 
   /// Handles to the console out files.
-  static handles_t handles;
+  static console_handles_t handles;
 
   /// Flags if Webview owns the console.
   static bool wv_owns_console;

@@ -192,8 +192,8 @@ void console::redirect_o_stream(_iobuf *stream) {
 
 bool console::wv_owns_console{};
 bool console::stat_out_modes{};
-modes_t console::modes{0, 0};
-handles_t console::handles{};
+console_modes_t console::modes{0, 0};
+console_handles_t console::handles{};
 
 #endif // !defined(_WIN32) #else
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
