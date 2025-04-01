@@ -28,6 +28,7 @@
 #define WEBVIEW_UTILITY_CONSOLE_HH
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
+#include "webview/errors.h"
 #include <mutex>
 #include <string>
 
@@ -77,7 +78,9 @@ public:
   static void warn(std::string message);
 
   /// Prints an error message in red to the console stderr.
-  static void error(std::string message);
+  /// @par[in] err Optionally provide a Webview error code.
+  static void error(std::string message,
+                    webview_error_t err = WEBVIEW_ERROR_UNSPECIFIED);
 
   /// Attaches a Webview owned console to the  Windows process if no user console is already attached.
   /// It informs the user of this process level change.

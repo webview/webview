@@ -46,10 +46,11 @@ void console::warn(std::string message) {
   free_console();
 };
 
-void console::error(std::string message) {
+void console::error(std::string message, webview_error_t err) {
   std::lock_guard<std::mutex> lock(mutex);
   capture_console();
-  message = set_colour(colours.red, prefix.error + message);
+  auto err_string = "[" + std::to_string(err) + "]";
+  message = set_colour(colours.red, prefix.error + err_string + message);
   static_cast<void>(fprintf(stderr, "%s\n", message.c_str()));
   free_console();
 };
