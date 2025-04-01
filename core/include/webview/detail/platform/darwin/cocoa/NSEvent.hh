@@ -23,47 +23,49 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSEVENT_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSEVENT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../macros.h"
+#include "../../../../macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-#include <objc/NSObjCRuntime.h>
+#include "../objc/objc.hh"
+#include "NSPoint.hh"
+#include "literals.hh"
+#include "types.hh"
 
 namespace webview {
 namespace detail {
+namespace cocoa {
 
-enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
-
-enum NSWindowStyleMask : NSUInteger {
-  NSWindowStyleMaskTitled = 1,
-  NSWindowStyleMaskClosable = 2,
-  NSWindowStyleMaskMiniaturizable = 4,
-  NSWindowStyleMaskResizable = 8
+enum NSEventType : NSUInteger {
+  // For macOS 10.12+; replaces NSApplicationDefined (macOS 10.0–10.12)
+  // with the same value
+  NSEventTypeApplicationDefined = 15
 };
 
-enum NSApplicationActivationPolicy : NSInteger {
-  NSApplicationActivationPolicyRegular = 0
-};
+enum NSEventModifierFlags : NSUInteger {};
 
-enum NSModalResponse : NSInteger { NSModalResponseOK = 1 };
+inline id NSEvent_otherEventWithType(NSEventType type, NSPoint location,
+                                     NSEventModifierFlags modifier_flags,
+                                     NSTimeInterval timestamp,
+                                     NSInteger window_number, id context,
+                                     short subtype, NSInteger data1,
+                                     NSInteger data2) {
+  return objc::msg_send<id>(
+      "NSEvent"_cls,
+      "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
+      type, location, modifier_flags, timestamp, window_number, context,
+      subtype, data1, data2);
+}
 
-enum NSAutoresizingMaskOptions : NSUInteger {
-  NSViewMinXMargin = 1,
-  NSViewWidthSizable = 2,
-  NSViewMaxXMargin = 4,
-  NSViewMinYMargin = 8,
-  NSViewHeightSizable = 16,
-  NSViewMaxYMargin = 32
-};
-
+} // namespace cocoa
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSEVENT_HH
