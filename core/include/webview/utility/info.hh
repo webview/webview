@@ -24,10 +24,25 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_AGGREGATE_UTILITY_HH
-#define WEBVIEW_AGGREGATE_UTILITY_HH
+#ifndef WEBVIEW_UTILITY_INFO_HH
+#define WEBVIEW_UTILITY_INFO_HH
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../src/utility/console.cc"
-#include "../../src/utility/info.cc"
+#include <string>
 
-#endif // WEBVIEW_AGGREGATE_UTILITY_HH
+namespace webview {
+namespace utility {
+
+/// A static utility class to query contextual information
+class info {
+public:
+  /// Get the name of the operating system
+  static std::string os_type();
+
+}; // class info
+
+} // namespace utility
+} // namespace webview
+
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WWEBVIEW_UTILITY_INFO_HH

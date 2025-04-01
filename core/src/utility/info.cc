@@ -24,10 +24,27 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_AGGREGATE_UTILITY_HH
-#define WEBVIEW_AGGREGATE_UTILITY_HH
+#ifndef WEBVIEW_UTILITY_INFO_CC
+#define WEBVIEW_UTILITY_INFO_CC
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../src/utility/console.cc"
-#include "../../src/utility/info.cc"
+#include "webview/utility/info.hh"
 
-#endif // WEBVIEW_AGGREGATE_UTILITY_HH
+using namespace webview::utility;
+
+std::string info::os_type() {
+#ifdef _WIN32
+  return "Windows";
+#elif __APPLE__
+  return "Mac OS";
+#elif __linux__
+  return "Linux";
+#elif __unix__
+  return "Unknown Unix OS";
+#else
+  return "Unknown OS";
+#endif
+}
+
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WWEBVIEW_UTILITY_INFO_CC
