@@ -23,7 +23,8 @@
  * SOFTWARE.
  */
 
-#pragma once
+#ifndef WEBVIEW_DETAIL_ENGINE_BASE_CC
+#define WEBVIEW_DETAIL_ENGINE_BASE_CC
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "webview/detail/engine_base.hh"
@@ -329,4 +330,5 @@ unsigned int engine_base::dec_window_count() {
   return 0;
 }
 
-#endif
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_DETAIL_ENGINE_BASE_CC
