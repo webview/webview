@@ -33,33 +33,33 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSOpenPanel_openPanel() {
-  return objc::msg_send<id>("NSOpenPanel"_cls, "openPanel"_sel);
+  return objc::msg_send<id>(objc::get_class("NSOpenPanel"),
+                            objc::selector("openPanel"));
 }
 
 inline void NSOpenPanel_set_canChooseFiles(id self, bool value) {
-  objc::msg_send<void>(self, "setCanChooseFiles:"_sel,
+  objc::msg_send<void>(self, objc::selector("setCanChooseFiles:"),
                        static_cast<BOOL>(value));
 }
 
 inline void NSOpenPanel_set_canChooseDirectories(id self, bool value) {
-  objc::msg_send<void>(self, "setCanChooseDirectories:"_sel,
+  objc::msg_send<void>(self, objc::selector("setCanChooseDirectories:"),
                        static_cast<BOOL>(value));
 }
 
 inline void NSOpenPanel_set_allowsMultipleSelection(id self, bool value) {
-  objc::msg_send<void>(self, "setAllowsMultipleSelection:"_sel,
+  objc::msg_send<void>(self, objc::selector("setAllowsMultipleSelection:"),
                        static_cast<BOOL>(value));
 }
 
 inline id NSOpenPanel_get_URLs(id self) {
-  return objc::msg_send<id>(self, "URLs"_sel);
+  return objc::msg_send<id>(self, objc::selector("URLs"));
 }
 
 } // namespace cocoa

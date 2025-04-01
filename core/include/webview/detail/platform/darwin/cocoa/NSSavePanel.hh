@@ -34,14 +34,13 @@
 
 #include "../objc/objc.hh"
 #include "NSApplication.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline NSModalResponse NSSavePanel_runModal(id self) {
-  return objc::msg_send<NSModalResponse>(self, "runModal"_sel);
+  return objc::msg_send<NSModalResponse>(self, objc::selector("runModal"));
 }
 
 } // namespace cocoa

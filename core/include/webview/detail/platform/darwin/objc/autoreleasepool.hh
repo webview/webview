@@ -44,12 +44,11 @@ namespace objc {
 class autoreleasepool {
 public:
   autoreleasepool()
-      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
-                            sel_registerName("new"))) {}
+      : m_pool(msg_send<id>(get_class("NSAutoreleasePool"), selector("new"))) {}
 
   ~autoreleasepool() {
     if (m_pool) {
-      msg_send<void>(m_pool, sel_registerName("drain"));
+      msg_send<void>(m_pool, selector("drain"));
     }
   }
 

@@ -34,7 +34,6 @@
 
 #include "../objc/objc.hh"
 #include "NSString.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -55,46 +54,47 @@ inline id NSDefaultRunLoopMode() {
 } // namespace NSRunLoopMode
 
 inline void NSApplication_set_delegate(id self, id delegate) {
-  objc::msg_send<void>(self, "setDelegate:"_sel, delegate);
+  objc::msg_send<void>(self, objc::selector("setDelegate:"), delegate);
 }
 
 inline void NSApplication_run(id self) {
-  objc::msg_send<void>(self, "run"_sel);
+  objc::msg_send<void>(self, objc::selector("run"));
 }
 
 inline void NSApplication_stop(id self, id sender = nullptr) {
-  objc::msg_send<void>(self, "stop:"_sel, sender);
+  objc::msg_send<void>(self, objc::selector("stop:"), sender);
 }
 
 inline id NSApplication_get_sharedApplication() {
-  return objc::msg_send<id>("NSApplication"_cls, "sharedApplication"_sel);
+  return objc::msg_send<id>(objc::get_class("NSApplication"),
+                            objc::selector("sharedApplication"));
 }
 
 inline void NSApplication_sendEvent(id self, id event) {
-  objc::msg_send<void>(self, "sendEvent:"_sel, event);
+  objc::msg_send<void>(self, objc::selector("sendEvent:"), event);
 }
 
 inline id NSApplication_nextEventMatchingMask(id self, NSEventMask mask,
                                               id expiration, id mode,
                                               bool dequeue) {
   return objc::msg_send<id>(
-      self, "nextEventMatchingMask:untilDate:inMode:dequeue:"_sel, mask,
-      expiration, mode, dequeue);
+      self, objc::selector("nextEventMatchingMask:untilDate:inMode:dequeue:"),
+      mask, expiration, mode, dequeue);
 }
 
 inline void
 NSApplication_setActivationPolicy(id self,
                                   NSApplicationActivationPolicy policy) {
-  objc::msg_send<void>(self, "setActivationPolicy:"_sel, policy);
+  objc::msg_send<void>(self, objc::selector("setActivationPolicy:"), policy);
 }
 
 inline void NSApplication_activateIgnoringOtherApps(id self, bool ignore) {
-  objc::msg_send<void>(self, "activateIgnoringOtherApps:"_sel,
+  objc::msg_send<void>(self, objc::selector("activateIgnoringOtherApps:"),
                        static_cast<BOOL>(ignore));
 }
 
 inline void NSApplication_postEvent(id self, id event, bool at_start) {
-  objc::msg_send<void>(self, "postEvent:atStart:"_sel, event,
+  objc::msg_send<void>(self, objc::selector("postEvent:atStart:"), event,
                        static_cast<BOOL>(at_start));
 }
 

@@ -280,12 +280,14 @@ private:
       // Note: Avoid registering the class name "AppDelegate" as it is the
       // default name in projects created with Xcode, and using the same name
       // causes objc_registerClassPair to crash.
-      cls = objc_allocateClassPair((Class) "NSResponder"_cls, class_name, 0);
+      cls =
+          objc_allocateClassPair(objc::get_class("NSResponder"), class_name, 0);
       class_addProtocol(cls, objc_getProtocol("NSTouchBarProvider"));
-      class_addMethod(cls,
-                      "applicationShouldTerminateAfterLastWindowClosed:"_sel,
-                      (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
-      class_addMethod(cls, "applicationDidFinishLaunching:"_sel,
+      class_addMethod(
+          cls,
+          objc::selector("applicationShouldTerminateAfterLastWindowClosed:"),
+          (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
+      class_addMethod(cls, objc::selector("applicationDidFinishLaunching:"),
                       (IMP)(+[](id self, SEL, id notification) {
                         auto app{NSNotification_get_object(notification)};
                         auto w = get_associated_webview(self);
@@ -302,15 +304,17 @@ private:
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
     if (!cls) {
-      cls = objc_allocateClassPair((Class) "NSResponder"_cls, class_name, 0);
+      cls =
+          objc_allocateClassPair(objc::get_class("NSResponder"), class_name, 0);
       class_addProtocol(cls, objc_getProtocol("WKScriptMessageHandler"));
-      class_addMethod(cls, "userContentController:didReceiveScriptMessage:"_sel,
-                      (IMP)(+[](id self, SEL, id, id msg) {
-                        auto w = get_associated_webview(self);
-                        w->on_message(NSString_get_UTF8String(
-                            WKScriptMessage_get_body(msg)));
-                      }),
-                      "v@:@@");
+      class_addMethod(
+          cls, objc::selector("userContentController:didReceiveScriptMessage:"),
+          (IMP)(+[](id self, SEL, id, id msg) {
+            auto w = get_associated_webview(self);
+            w->on_message(
+                NSString_get_UTF8String(WKScriptMessage_get_body(msg)));
+          }),
+          "v@:@@");
       objc_registerClassPair(cls);
     }
     auto instance{objc::Class_new(cls)};
@@ -324,11 +328,12 @@ private:
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
     if (!cls) {
-      cls = objc_allocateClassPair((Class) "NSObject"_cls, class_name, 0);
+      cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
       class_addProtocol(cls, objc_getProtocol("WKUIDelegate"));
       class_addMethod(
           cls,
-          "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
+          objc::selector("webView:runOpenPanelWithParameters:initiatedByFrame:"
+                         "completionHandler:"),
           (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
             auto allows_multiple_selection{
                 WKOpenPanelParameters_get_allowsMultipleSelection(parameters)};
@@ -368,9 +373,9 @@ private:
     // Avoid crash due to registering same class twice
     auto cls = objc_lookUpClass(class_name);
     if (!cls) {
-      cls = objc_allocateClassPair((Class) "NSObject"_cls, class_name, 0);
+      cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
       class_addProtocol(cls, objc_getProtocol("NSWindowDelegate"));
-      class_addMethod(cls, "windowWillClose:"_sel,
+      class_addMethod(cls, objc::selector("windowWillClose:"),
                       (IMP)(+[](id self, SEL, id notification) {
                         auto window{NSNotification_get_object(notification)};
                         auto w = get_associated_webview(self);
@@ -393,7 +398,8 @@ private:
       return false;
     }
     auto bundle_path = NSBundle_get_bundlePath(bundle);
-    auto bundled = NSString_hasSuffix(bundle_path, ".app"_str);
+    auto bundled =
+        NSString_hasSuffix(bundle_path, NSString_stringWithUTF8String(".app"));
     return !!bundled;
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
@@ -442,18 +448,24 @@ private:
     auto yes_value = NSNumber_numberWithBool(true);
 
     if (debug) {
-      NSObject_setValue_forKey(preferences, yes_value,
-                               "developerExtrasEnabled"_str);
+      NSObject_setValue_forKey(
+          preferences, yes_value,
+          NSString_stringWithUTF8String("developerExtrasEnabled"));
     }
 
-    NSObject_setValue_forKey(preferences, yes_value, "fullScreenEnabled"_str);
+    NSObject_setValue_forKey(
+        preferences, yes_value,
+        NSString_stringWithUTF8String("fullScreenEnabled"));
 
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
     if (__builtin_available(macOS 10.13, *)) {
-      NSObject_setValue_forKey(preferences, yes_value,
-                               "javaScriptCanAccessClipboard"_str);
-      NSObject_setValue_forKey(preferences, yes_value, "DOMPasteAllowed"_str);
+      NSObject_setValue_forKey(
+          preferences, yes_value,
+          NSString_stringWithUTF8String("javaScriptCanAccessClipboard"));
+      NSObject_setValue_forKey(
+          preferences, yes_value,
+          NSString_stringWithUTF8String("DOMPasteAllowed"));
     }
 #else
 #error __builtin_available not supported by compiler
@@ -488,7 +500,8 @@ private:
     auto script_message_handler =
         objc::autorelease(create_script_message_handler());
     WKUserContentController_addScriptMessageHandler(
-        m_manager, script_message_handler, "__webview__"_str);
+        m_manager, script_message_handler,
+        NSString_stringWithUTF8String("__webview__"));
 
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\

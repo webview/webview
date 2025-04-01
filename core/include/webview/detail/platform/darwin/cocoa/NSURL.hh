@@ -34,7 +34,6 @@
 
 #include "../objc/objc.hh"
 #include "NSString.hh"
-#include "literals.hh"
 
 #include <string>
 
@@ -43,7 +42,8 @@ namespace detail {
 namespace cocoa {
 
 inline id NSURL_URLWithString(id string) {
-  return objc::msg_send<id>("NSURL"_cls, "URLWithString:"_sel, string);
+  return objc::msg_send<id>(objc::get_class("NSURL"),
+                            objc::selector("URLWithString:"), string);
 }
 
 inline id NSURL_URLWithString(const char *string) {

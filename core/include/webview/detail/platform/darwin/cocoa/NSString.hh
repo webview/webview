@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 #include <string>
 
@@ -48,21 +47,24 @@ enum NSStringEncoding : NSUInteger {
 
 inline bool NSString_hasSuffix(id self, id suffix) {
   return static_cast<bool>(
-      objc::msg_send<BOOL>(self, "hasSuffix:"_sel, suffix));
+      objc::msg_send<BOOL>(self, objc::selector("hasSuffix:"), suffix));
 }
 
 inline id NSString_alloc() {
-  return objc::msg_send<id>("NSString"_cls, "alloc"_sel);
+  return objc::msg_send<id>(objc::get_class("NSString"),
+                            objc::selector("alloc"));
 }
 
 inline id NSString_initWithBytes(id self, const void *bytes, NSUInteger length,
                                  NSStringEncoding encoding) {
-  return objc::msg_send<id>(self, "initWithBytes:length:encoding:"_sel, bytes,
-                            length, encoding);
+  return objc::msg_send<id>(self,
+                            objc::selector("initWithBytes:length:encoding:"),
+                            bytes, length, encoding);
 }
 
 inline id NSString_stringWithUTF8String(const char *utf8_string) {
-  return objc::msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel,
+  return objc::msg_send<id>(objc::get_class("NSString"),
+                            objc::selector("stringWithUTF8String:"),
                             utf8_string);
 }
 
@@ -73,7 +75,7 @@ inline id NSString_stringWithUTF8String(const std::string &utf8_string) {
 }
 
 inline const char *NSString_get_UTF8String(id self) {
-  return objc::msg_send<const char *>(self, "UTF8String"_sel);
+  return objc::msg_send<const char *>(self, objc::selector("UTF8String"));
 }
 
 } // namespace cocoa

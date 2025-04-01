@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
 #include "invoke.hh"
-#include "literals.hh"
 
 #include <objc/objc-runtime.h>
 
@@ -42,9 +41,10 @@ namespace detail {
 namespace objc {
 
 inline id Class_new(Class class_) {
-  using namespace literals;
-  return msg_send<id>(class_, "new"_sel);
+  return msg_send<id>(class_, selector("new"));
 }
+
+inline Class get_class(const char *name) { return objc_getClass(name); }
 
 } // namespace objc
 } // namespace detail

@@ -34,7 +34,6 @@
 
 #include "../objc/objc.hh"
 #include "NSPoint.hh"
-#include "literals.hh"
 #include "types.hh"
 
 namespace webview {
@@ -56,8 +55,9 @@ inline id NSEvent_otherEventWithType(NSEventType type, NSPoint location,
                                      short subtype, NSInteger data1,
                                      NSInteger data2) {
   return objc::msg_send<id>(
-      "NSEvent"_cls,
-      "otherEventWithType:location:modifierFlags:timestamp:windowNumber:context:subtype:data1:data2:"_sel,
+      objc::get_class("NSEvent"),
+      objc::selector("otherEventWithType:location:modifierFlags:timestamp:"
+                     "windowNumber:context:subtype:data1:data2:"),
       type, location, modifier_flags, timestamp, window_number, context,
       subtype, data1, data2);
 }
