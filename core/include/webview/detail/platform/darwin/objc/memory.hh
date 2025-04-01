@@ -46,7 +46,7 @@ inline id autorelease(id object) {
 
 inline id retain(id object) { return msg_send<id>(object, selector("retain")); }
 
-inline void release(id object) { msg_send<id>(object, selector("release")); }
+inline void release(id object) { msg_send<void>(object, selector("release")); }
 
 } // namespace objc
 } // namespace detail
