@@ -53,7 +53,7 @@ inline id retain(id object) {
 
 inline void release(id object) {
   using namespace literals;
-  msg_send<id>(object, "release"_sel);
+  msg_send<void>(object, "release"_sel);
 }
 
 } // namespace objc
