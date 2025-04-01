@@ -34,7 +34,6 @@
 
 #include "../objc/objc.hh"
 #include "NSRect.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -50,11 +49,11 @@ enum NSAutoresizingMaskOptions : NSUInteger {
 };
 
 inline id NSView_alloc() {
-  return objc::msg_send<id>("NSView"_cls, "alloc"_sel);
+  return objc::msg_send<id>(objc::get_class("NSView"), objc::selector("alloc"));
 }
 
 inline id NSView_initWithFrame(id self, NSRect frame_rect) {
-  return objc::msg_send<id>(self, "initWithFrame:"_sel, frame_rect);
+  return objc::msg_send<id>(self, objc::selector("initWithFrame:"), frame_rect);
 }
 
 inline id NSView_withFrame(NSRect frame_rect) {
@@ -62,25 +61,25 @@ inline id NSView_withFrame(NSRect frame_rect) {
 }
 
 inline void NSView_set_autoresizesSubviews(id self, bool resizes) {
-  objc::msg_send<void>(self, "setAutoresizesSubviews:"_sel,
+  objc::msg_send<void>(self, objc::selector("setAutoresizesSubviews:"),
                        static_cast<BOOL>(resizes));
 }
 
 inline void NSView_addSubview(id self, id subview) {
-  objc::msg_send<void>(self, "addSubview:"_sel, subview);
+  objc::msg_send<void>(self, objc::selector("addSubview:"), subview);
 }
 
 inline NSRect NSView_get_bounds(id self) {
-  return objc::msg_send_stret<NSRect>(self, "bounds"_sel);
+  return objc::msg_send_stret<NSRect>(self, objc::selector("bounds"));
 }
 
 inline void NSView_set_frame(id self, NSRect frame) {
-  objc::msg_send<void>(self, "setFrame:"_sel, frame);
+  objc::msg_send<void>(self, objc::selector("setFrame:"), frame);
 }
 
 inline void NSView_set_autoresizingMask(id self,
                                         NSAutoresizingMaskOptions mask) {
-  objc::msg_send<void>(self, "setAutoresizingMask:"_sel, mask);
+  objc::msg_send<void>(self, objc::selector("setAutoresizingMask:"), mask);
 }
 
 } // namespace cocoa

@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -41,16 +40,16 @@ namespace webkit {
 
 inline void WKUserContentController_addScriptMessageHandler(id self, id handler,
                                                             id name) {
-  objc::msg_send<void>(self, "addScriptMessageHandler:name:"_sel, handler,
-                       name);
+  objc::msg_send<void>(self, objc::selector("addScriptMessageHandler:name:"),
+                       handler, name);
 }
 
 inline void WKUserContentController_addUserScript(id self, id user_script) {
-  objc::msg_send<void>(self, "addUserScript:"_sel, user_script);
+  objc::msg_send<void>(self, objc::selector("addUserScript:"), user_script);
 }
 
 inline void WKUserContentController_removeAllUserScripts(id self) {
-  objc::msg_send<id>(self, "removeAllUserScripts"_sel);
+  objc::msg_send<id>(self, objc::selector("removeAllUserScripts"));
 }
 
 } // namespace webkit

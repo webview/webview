@@ -33,22 +33,22 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace webkit {
 
 inline id WKWebViewConfiguration_new() {
-  return objc::msg_send<id>("WKWebViewConfiguration"_cls, "new"_sel);
+  return objc::msg_send<id>(objc::get_class("WKWebViewConfiguration"),
+                            objc::selector("new"));
 }
 
 inline id WKWebViewConfiguration_get_userContentController(id self) {
-  return objc::msg_send<id>(self, "userContentController"_sel);
+  return objc::msg_send<id>(self, objc::selector("userContentController"));
 }
 
 inline id WKWebViewConfiguration_get_preferences(id self) {
-  return objc::msg_send<id>(self, "preferences"_sel);
+  return objc::msg_send<id>(self, objc::selector("preferences"));
 }
 
 } // namespace webkit

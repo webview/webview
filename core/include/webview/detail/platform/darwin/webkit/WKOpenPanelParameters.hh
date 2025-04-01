@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
@@ -41,11 +40,12 @@ namespace webkit {
 
 inline bool WKOpenPanelParameters_get_allowsMultipleSelection(id self) {
   return static_cast<bool>(
-      objc::msg_send<BOOL>(self, "allowsMultipleSelection"_sel));
+      objc::msg_send<BOOL>(self, objc::selector("allowsMultipleSelection")));
 }
 
 inline bool WKOpenPanelParameters_get_allowsDirectories(id self) {
-  return static_cast<bool>(objc::msg_send<BOOL>(self, "allowsDirectories"_sel));
+  return static_cast<bool>(
+      objc::msg_send<BOOL>(self, objc::selector("allowsDirectories")));
 }
 
 } // namespace webkit

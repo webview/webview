@@ -33,14 +33,14 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSURLRequest_requestWithURL(id url) {
-  return objc::msg_send<id>("NSURLRequest"_cls, "requestWithURL:"_sel, url);
+  return objc::msg_send<id>(objc::get_class("NSURLRequest"),
+                            objc::selector("requestWithURL:"), url);
 }
 
 } // namespace cocoa

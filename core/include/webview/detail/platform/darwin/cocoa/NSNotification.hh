@@ -33,14 +33,13 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSNotification_get_object(id self) {
-  return objc::msg_send<id>(self, "object"_sel);
+  return objc::msg_send<id>(self, objc::selector("object"));
 }
 
 } // namespace cocoa

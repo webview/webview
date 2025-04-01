@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 #include <CoreGraphics/CoreGraphics.h>
 
@@ -42,12 +41,14 @@ namespace detail {
 namespace webkit {
 
 inline id WKWebView_alloc() {
-  return objc::msg_send<id>("WKWebView"_cls, "alloc"_sel);
+  return objc::msg_send<id>(objc::get_class("WKWebView"),
+                            objc::selector("alloc"));
 }
 
 inline id WKWebView_initWithFrame(id self, CGRect frame, id configuration) {
-  return objc::msg_send<id>(self, "initWithFrame:configuration:"_sel, frame,
-                            configuration);
+  return objc::msg_send<id>(self,
+                            objc::selector("initWithFrame:configuration:"),
+                            frame, configuration);
 }
 
 inline id WKWebView_withFrame(CGRect frame, id configuration) {
@@ -56,37 +57,38 @@ inline id WKWebView_withFrame(CGRect frame, id configuration) {
 }
 
 inline id WKWebView_get_UIDelegate(id self) {
-  return objc::msg_send<id>(self, "UIDelegate"_sel);
+  return objc::msg_send<id>(self, objc::selector("UIDelegate"));
 }
 
 inline void WKWebView_set_UIDelegate(id self, id ui_delegate) {
-  objc::msg_send<void>(self, "setUIDelegate:"_sel, ui_delegate);
+  objc::msg_send<void>(self, objc::selector("setUIDelegate:"), ui_delegate);
 }
 
 inline id WKWebView_loadHTMLString(id self, id string, id base_url) {
-  return objc::msg_send<id>(self, "loadHTMLString:baseURL:"_sel, string,
-                            base_url);
+  return objc::msg_send<id>(self, objc::selector("loadHTMLString:baseURL:"),
+                            string, base_url);
 }
 
 inline id WKWebView_get_URL(id self) {
-  return objc::msg_send<id>(self, "URL"_sel);
+  return objc::msg_send<id>(self, objc::selector("URL"));
 }
 
 inline id WKWebView_loadRequest(id self, id request) {
-  return objc::msg_send<id>(self, "loadRequest:"_sel, request);
+  return objc::msg_send<id>(self, objc::selector("loadRequest:"), request);
 }
 
 inline void WKWebView_evaluateJavaScript(id self, id js_string,
                                          const void *completion_handler) {
-  return objc::msg_send<void>(self, "evaluateJavaScript:completionHandler:"_sel,
-                              js_string, completion_handler);
+  return objc::msg_send<void>(
+      self, objc::selector("evaluateJavaScript:completionHandler:"), js_string,
+      completion_handler);
 }
 
 inline void WKWebView_set_inspectable(id self, bool inspectable) {
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
   if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
-    objc::msg_send<void>(self, "setInspectable:"_sel,
+    objc::msg_send<void>(self, objc::selector("setInspectable:"),
                          static_cast<BOOL>(inspectable));
   }
 #else
