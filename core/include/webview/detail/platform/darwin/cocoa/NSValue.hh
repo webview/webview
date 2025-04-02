@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -38,13 +38,13 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
-inline void NSObject_setValue_forKey(id self, id value, id key) {
-  objc::msg_send<void>(self, objc::selector("setValue:forKey:"), value, key);
+inline id NSValue_valueWithPointer(const void *pointer) {
+  return objc::msg_send<id>(objc::get_class("NSValue"),
+                            objc::selector("valueWithPointer:"), pointer);
 }
 
-inline bool NSObject_isKindOfClass(id self, Class class_) {
-  return static_cast<bool>(
-      objc::msg_send<BOOL>(self, objc::selector("isKindOfClass:"), class_));
+inline void NSValue_getValue(id self, void *value, NSUInteger size) {
+  objc::msg_send<void>(self, objc::selector("getValue:size:"), value, size);
 }
 
 } // namespace cocoa
@@ -53,4 +53,4 @@ inline bool NSObject_isKindOfClass(id self, Class class_) {
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSOBJECT_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH
