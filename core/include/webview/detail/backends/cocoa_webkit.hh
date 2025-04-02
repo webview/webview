@@ -89,7 +89,7 @@ using namespace webkit;
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : m_app{NSApplication_get_sharedApplication()} {
+      : engine_base{!window}, m_app{NSApplication_get_sharedApplication()} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -548,7 +548,6 @@ private:
   void window_init(void *window) {
     objc::autoreleasepool arp;
 
-    set_owns_window(!window);
     m_window = static_cast<id>(window);
     if (!owns_window()) {
       return;

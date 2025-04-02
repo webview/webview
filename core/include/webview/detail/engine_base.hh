@@ -45,6 +45,8 @@ namespace detail {
 
 class engine_base {
 public:
+  engine_base(bool owns_window) : m_owns_window{owns_window} {}
+
   virtual ~engine_base() = default;
 
   noresult navigate(const std::string &url) {
@@ -343,8 +345,6 @@ protected:
   }
 
   void set_default_size_guard(bool guarded) { m_is_size_set = guarded; }
-
-  void set_owns_window(bool owns_window) { m_owns_window = owns_window; }
 
   bool owns_window() const { return m_owns_window; }
 
