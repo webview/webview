@@ -42,11 +42,6 @@ inline void NSObject_setValue_forKey(id self, id value, id key) {
   objc::msg_send<void>(self, objc::selector("setValue:forKey:"), value, key);
 }
 
-inline bool NSObject_isKindOfClass(id self, Class class_) {
-  return static_cast<bool>(
-      objc::msg_send<BOOL>(self, objc::selector("isKindOfClass:"), class_));
-}
-
 } // namespace cocoa
 } // namespace detail
 } // namespace webview
