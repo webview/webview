@@ -394,7 +394,6 @@ private:
     }
     cocoa_wkwebview_engine *w{};
     NSValue_getValue(assoc_obj, &w, sizeof(w));
-    assert(w);
     return w;
   }
   static void set_associated_webview(id object, cocoa_wkwebview_engine *w) {
