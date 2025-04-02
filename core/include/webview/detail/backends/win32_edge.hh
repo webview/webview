@@ -219,6 +219,8 @@ public:
       if (res == HRESULT_FROM_WIN32(ERROR_INVALID_STATE)) {
         return;
       }
+      // Wait for m_sleep_ms before trying again.
+      Sleep(m_sleep_ms);
       try_create_environment();
       return;
     }
@@ -232,7 +234,8 @@ private:
   webview2_com_handler_cb_t m_cb;
   std::atomic<ULONG> m_ref_count{1};
   std::function<HRESULT()> m_attempt_handler;
-  unsigned int m_max_attempts = 5;
+  unsigned int m_max_attempts = 60;
+  unsigned int m_sleep_ms = 200;
   unsigned int m_attempts = 0;
 };
 
