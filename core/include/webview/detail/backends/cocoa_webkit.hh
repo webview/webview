@@ -387,7 +387,7 @@ private:
   }
   static cocoa_wkwebview_engine *get_associated_webview(id object) {
     objc::autoreleasepool arp;
-    id assoc_obj = objc_getAssociatedObject(object, "webview");
+    id assoc_obj{objc_getAssociatedObject(object, "webview")};
     if (!assoc_obj ||
         !NSObject_isKindOfClass(assoc_obj, objc::get_class("NSValue"))) {
       return nullptr;
