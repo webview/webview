@@ -311,7 +311,7 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) {
+  win32_edge_engine(bool debug, void *window) : engine_base{!window} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -508,7 +508,6 @@ protected:
 
 private:
   void window_init(void *window) {
-    set_owns_window(!window);
     if (!is_webview2_available()) {
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
