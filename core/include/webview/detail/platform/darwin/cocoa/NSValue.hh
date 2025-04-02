@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,28 +32,25 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
-// IWYU pragma: begin_exports
-#include "NSApplication.hh"
-#include "NSBundle.hh"
-#include "NSEvent.hh"
-#include "NSInvocation.hh"
-#include "NSMethodSignature.hh"
-#include "NSNotification.hh"
-#include "NSNumber.hh"
-#include "NSObject.hh"
-#include "NSOpenPanel.hh"
-#include "NSPoint.hh"
-#include "NSRect.hh"
-#include "NSSavePanel.hh"
-#include "NSSize.hh"
-#include "NSString.hh"
-#include "NSURL.hh"
-#include "NSURLRequest.hh"
-#include "NSValue.hh"
-#include "NSView.hh"
-#include "NSWindow.hh"
-// IWYU pragma: end_exports
+#include "../objc/objc.hh"
+
+namespace webview {
+namespace detail {
+namespace cocoa {
+
+inline id NSValue_valueWithPointer(const void *pointer) {
+  return objc::msg_send<id>(objc::get_class("NSValue"),
+                            objc::selector("valueWithPointer:"), pointer);
+}
+
+inline void NSValue_getValue(id self, void *value, NSUInteger size) {
+  objc::msg_send<void>(self, objc::selector("getValue:size:"), value, size);
+}
+
+} // namespace cocoa
+} // namespace detail
+} // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_COCOA_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSVALUE_HH

@@ -318,8 +318,7 @@ private:
       objc_registerClassPair(cls);
     }
     auto instance{objc::Class_new(cls)};
-    objc_setAssociatedObject(instance, "webview", (id)this,
-                             OBJC_ASSOCIATION_ASSIGN);
+    set_associated_webview(instance, this);
     return instance;
   }
   static id create_webkit_ui_delegate() {
@@ -387,10 +386,18 @@ private:
     return objc::Class_new(cls);
   }
   static cocoa_wkwebview_engine *get_associated_webview(id object) {
-    auto w =
-        (cocoa_wkwebview_engine *)objc_getAssociatedObject(object, "webview");
-    assert(w);
-    return w;
+    objc::autoreleasepool arp;
+    if (id assoc_obj{objc_getAssociatedObject(object, "webview")}) {
+      cocoa_wkwebview_engine *w{};
+      NSValue_getValue(assoc_obj, &w, sizeof(w));
+      return w;
+    }
+    return nullptr;
+  }
+  static void set_associated_webview(id object, cocoa_wkwebview_engine *w) {
+    objc::autoreleasepool arp;
+    objc_setAssociatedObject(object, "webview", NSValue_valueWithPointer(w),
+                             OBJC_ASSOCIATION_RETAIN);
   }
   static bool is_app_bundled() noexcept {
     auto bundle = NSBundle_get_mainBundle();
@@ -483,8 +490,7 @@ private:
         NSViewWidthSizable | NSViewMaxXMargin | NSViewHeightSizable |
         NSViewMaxYMargin)};
     NSView_set_autoresizingMask(m_webview, autoresizing_mask);
-    objc_setAssociatedObject(ui_delegate, "webview", (id)this,
-                             OBJC_ASSOCIATION_ASSIGN);
+    set_associated_webview(ui_delegate, this);
     WKWebView_set_UIDelegate(m_webview, ui_delegate);
 
     if (debug) {
@@ -556,8 +562,7 @@ private:
     }
 
     m_app_delegate = create_app_delegate();
-    objc_setAssociatedObject(m_app_delegate, "webview", (id)this,
-                             OBJC_ASSOCIATION_ASSIGN);
+    set_associated_webview(m_app_delegate, this);
     NSApplication_set_delegate(m_app, m_app_delegate);
 
     // Start the main run loop so that the app delegate gets the
@@ -574,8 +579,7 @@ private:
         NSRectMake(0, 0, 0, 0), NSWindowStyleMaskTitled, NSBackingStoreBuffered,
         false));
     m_window_delegate = create_window_delegate();
-    objc_setAssociatedObject(m_window_delegate, "webview", (id)this,
-                             OBJC_ASSOCIATION_ASSIGN);
+    set_associated_webview(m_window_delegate, this);
     NSWindow_set_delegate(m_window, m_window_delegate);
     on_window_created();
   }
