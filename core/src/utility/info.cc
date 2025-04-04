@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2017 Serge Zaitsev
  * Copyright (c) 2022 Steffen André Langnes
+ * Copyright (c) 2025 Michael Jonker
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +24,27 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_UTILITY_INFO_CC
+#define WEBVIEW_UTILITY_INFO_CC
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "aggregate_utility.hh"
-#include "api.h"
-#include "c_api_impl.hh"
+#include "webview/utility/info.hh"
 
-#endif // WEBVIEW_H
+using namespace webview::utility;
+
+std::string info::os_type() {
+#ifdef _WIN32
+  return "Windows";
+#elif __APPLE__
+  return "Mac OS";
+#elif __linux__
+  return "Linux";
+#elif __unix__
+  return "Unknown Unix OS";
+#else
+  return "Unknown OS";
+#endif
+}
+
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WWEBVIEW_UTILITY_INFO_CC
