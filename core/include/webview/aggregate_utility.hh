@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2017 Serge Zaitsev
  * Copyright (c) 2022 Steffen André Langnes
+ * Copyright (c) 2025 Michael Jonker
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +24,9 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_H
-#define WEBVIEW_H
+#ifndef WEBVIEW_AGGREGATE_UTILITY_HH
+#define WEBVIEW_AGGREGATE_UTILITY_HH
 
-#include "aggregate_utility.hh"
-#include "api.h"
-#include "c_api_impl.hh"
+#include "../../src/utility/console.cc"
 
-#endif // WEBVIEW_H
+#endif // WEBVIEW_AGGREGATE_UTILITY_HH
