@@ -74,6 +74,14 @@ macro(webview_find_dependencies)
 endmacro()
 
 function(webview_fetch_mswebview2 VERSION)
+    find_file(CAINFO_FILE NAMES ca-certificates.crt ca-cert.crt cacert.pem
+        PATHS /etc/ssl/certs /usr/local/ssl/certs /opt/ssl/certs)
+    if(CAINFO_FILE)
+        set(CMAKE_TLS_CAINFO ${CAINFO_FILE})
+    else()
+        set(CMAKE_TLS_CAINFO ${CMAKE_CURRENT_LIST_DIR}/cmake/cacert.pem)
+    endif()
+
     cmake_policy(PUSH)
     # Avoid warning related to FetchContent and DOWNLOAD_EXTRACT_TIMESTAMP
     if(POLICY CMP0135)
