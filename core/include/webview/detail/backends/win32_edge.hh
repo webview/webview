@@ -456,7 +456,7 @@ protected:
   }
 
   noresult set_html_impl(const std::string &html) override {
-    m_webview->NavigateToString(widen_string(html).c_str());
+    user_html = html;
     return {};
   }
 
@@ -482,6 +482,12 @@ protected:
       if (!m_is_window_shown) {
         set_default_size_guard(false);
         dispatch_size_default();
+      }
+      // We navigate to the user string after the event queue is drained so that the
+      // user's init function is not prematurely made redundant.
+      if (user_html != "") {
+        m_webview->NavigateToString(widen_string(user_html).c_str());
+        user_html = "";
       }
     }
     // TODO: There's a non-zero chance that we didn't get the script ID.
@@ -896,6 +902,7 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_is_window_shown{};
+  std::string user_html = "";
 };
 
 } // namespace detail
