@@ -1,9 +1,11 @@
-macro(webview_options)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.1150.38" CACHE STRING "MS WebView2 version")
-        option(WEBVIEW_USE_BUILTIN_MSWEBVIEW2 "Use built-in MS WebView2" ON)
-    endif()
-endmacro()
+include(FetchContent)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.1150.38" CACHE STRING "MS WebView2 version")
+    option(WEBVIEW_USE_BUILTIN_MSWEBVIEW2 "Use built-in MS WebView2" ON)
+endif()
 
 macro(webview_find_dependencies)
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -79,15 +81,26 @@ function(webview_fetch_mswebview2 VERSION)
     if(POLICY CMP0135)
         cmake_policy(SET CMP0135 NEW)
     endif()
-    if(NOT COMMAND FetchContent_Declare)
-        include(FetchContent)
-    endif()
-    set(FC_NAME microsoft_web_webview2)
-    FetchContent_Declare(${FC_NAME}
+    FetchContent_Declare(microsoft_web_webview2
         URL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${VERSION}"
         CONFIGURE_COMMAND "")
-    FetchContent_MakeAvailable(${FC_NAME})
-    set(MSWebView2_ROOT "${${FC_NAME}_SOURCE_DIR}")
+    FetchContent_MakeAvailable(microsoft_web_webview2)
+    set(MSWebView2_ROOT "${microsoft_web_webview2_SOURCE_DIR}")
     set(MSWebView2_ROOT "${MSWebView2_ROOT}" PARENT_SCOPE)
     cmake_policy(POP)
 endfunction()
+
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+webview_find_dependencies()
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/alx-home/json
+    GIT_TAG 0.12.0)
+FetchContent_MakeAvailable(json)
+
+FetchContent_Declare(
+    promise
+    GIT_REPOSITORY https://github.com/alx-home/promise
+    GIT_TAG 0.12.0)
+FetchContent_MakeAvailable(promise)

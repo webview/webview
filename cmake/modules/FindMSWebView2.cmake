@@ -13,8 +13,7 @@ find_package_handle_standard_args(MSWebView2 REQUIRED_VARS MSWebView2_INCLUDE_DI
 if(MSWebView2_FOUND)
     if(NOT TARGET MSWebView2::headers)
         add_library(MSWebView2::headers INTERFACE IMPORTED)
-        set_target_properties(MSWebView2::headers PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${MSWebView2_INCLUDE_DIR}")
-        target_compile_features(MSWebView2::headers INTERFACE cxx_std_11)
+        target_include_directories(MSWebView2::headers INTERFACE "${MSWebView2_INCLUDE_DIR}")
+        target_compile_features(MSWebView2::headers INTERFACE cxx_std_23)
     endif()
 endif()
