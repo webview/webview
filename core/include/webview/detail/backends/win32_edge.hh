@@ -483,12 +483,6 @@ protected:
         set_default_size_guard(false);
         dispatch_size_default();
       }
-      // We navigate to the user string after the event queue is drained so that the
-      // user's init function is not prematurely made redundant.
-      if (user_html != "") {
-        m_webview->NavigateToString(widen_string(user_html).c_str());
-        user_html = "";
-      }
     }
     // TODO: There's a non-zero chance that we didn't get the script ID.
     //       We need to convey the error somehow.
@@ -712,6 +706,12 @@ private:
                     nullptr, hInstance, this);
     if (!m_message_window) {
       throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
+    }
+    // We navigate to the user string after the window is initialised so that the
+    // user's init function is not prematurely made redundant.
+    if (user_html != "") {
+      m_webview->NavigateToString(widen_string(user_html).c_str());
+      user_html = "";
     }
   }
 
