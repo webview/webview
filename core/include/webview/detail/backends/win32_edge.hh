@@ -456,7 +456,8 @@ protected:
   }
 
   noresult set_html_impl(const std::string &html) override {
-    user_html = html;
+    dispatch(
+        [=]() { m_webview->NavigateToString(widen_string(html).c_str()); });
     return {};
   }
 
@@ -707,12 +708,6 @@ private:
     if (!m_message_window) {
       throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
     }
-    // We navigate to the user string after the window is initialised so that the
-    // user's init function is not prematurely made redundant.
-    if (user_html != "") {
-      m_webview->NavigateToString(widen_string(user_html).c_str());
-      user_html = "";
-    }
   }
 
   void window_settings(bool debug) {
@@ -902,7 +897,6 @@ private:
   mswebview2::loader m_webview2_loader;
   int m_dpi{};
   bool m_is_window_shown{};
-  std::string user_html = "";
 };
 
 } // namespace detail
