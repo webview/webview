@@ -456,7 +456,8 @@ protected:
   }
 
   noresult set_html_impl(const std::string &html) override {
-    m_webview->NavigateToString(widen_string(html).c_str());
+    dispatch(
+        [=]() { m_webview->NavigateToString(widen_string(html).c_str()); });
     return {};
   }
 
