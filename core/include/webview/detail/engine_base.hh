@@ -94,7 +94,7 @@ public:
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
     if (resolve_is_complete.count(name) > 0) {
-      resolve_is_complete.at(name).store(true);
+      resolve_is_complete.find(name)->second.store(true);
     } else {
       resolve_is_complete.emplace(name, true);
     }
@@ -124,11 +124,11 @@ window.__webview__.onUnbind(" +
          json_escape(name) + ")\n\
 }");
     unbind_cv.wait_for(lock, std::chrono::milliseconds(20),
-                       atomic_acquire(&resolve_is_complete.at(name)));
+                       atomic_acquire(&resolve_is_complete.find(name)->second));
     if (is_terminating) {
       return {};
     }
-    resolve_is_complete.at(name).store(true);
+    resolve_is_complete.find(name)->second.store(true);
     bindings.erase(found);
     replace_bind_script();
     return {};
@@ -183,8 +183,10 @@ window.__webview__.onUnbind(" +
     std::unique_lock<std::mutex> lock(mtx);
     auto included_binds = eval_includes_binds(js);
     for (auto &name : included_binds) {
-      resolve_is_complete.at(name).store(false);
+      auto found = resolve_is_complete.find(name);
+      found->second.store(false);
     }
+
     return eval_impl(js);
   }
 
@@ -348,7 +350,7 @@ protected:
     if (found == bindings.end()) {
       return;
     }
-    resolve_is_complete.at(name).store(false);
+    resolve_is_complete.find(name)->second.store(false);
     unbind_cv.notify_all();
 
     const auto &context = found->second;
@@ -356,7 +358,7 @@ protected:
       std::mutex mtx;
       std::unique_lock<std::mutex> lock(mtx);
       context.call(id, args);
-      resolve_is_complete.at(name).store(true);
+      resolve_is_complete.find(name)->second.store(true);
       unbind_cv.notify_all();
     });
   }
