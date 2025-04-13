@@ -163,7 +163,7 @@ window.__webview__.onUnbind(" +
       flag.second.store(true);
     }
     unbind_cv.notify_all();
-    resolve_is_complete.clear();
+
     return terminate_impl();
   }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
@@ -438,7 +438,7 @@ private:
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
 
-    std::list<std::string> bind_list;
+    std::list<std::string> bind_list{};
     for (auto &atomic_flag : resolve_is_complete) {
       const std::string &name = atomic_flag.first;
       if (js.find(name + "(") != std::string::npos) {
