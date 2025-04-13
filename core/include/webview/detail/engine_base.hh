@@ -116,6 +116,13 @@ window.__webview__.onBind(" +
     if (found == bindings.end()) {
       return error_info{WEBVIEW_ERROR_NOT_FOUND};
     }
+
+    // Notify that a binding was created if the init script has already
+    // set things up.
+    eval("if (window.__webview__) {\n\
+window.__webview__.onUnbind(" +
+         json_escape(name) + ")\n\
+}");
     unbind_cv.wait_for(lock, std::chrono::milliseconds(20),
                        atomic_acquire(&resolve_is_complete.at(name)));
     if (is_terminating) {
@@ -124,12 +131,6 @@ window.__webview__.onBind(" +
     resolve_is_complete.at(name).store(true);
     bindings.erase(found);
     replace_bind_script();
-    // Notify that a binding was created if the init script has already
-    // set things up.
-    eval("if (window.__webview__) {\n\
-window.__webview__.onUnbind(" +
-         json_escape(name) + ")\n\
-}");
     return {};
   }
 
