@@ -35,9 +35,12 @@
 #include "user_script.hh"
 
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <list>
 #include <map>
+#include <mutex>
 #include <string>
 
 namespace webview {
@@ -85,11 +88,19 @@ public:
 
   // Asynchronous bind
   noresult bind(const std::string &name, binding_t fn, void *arg) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
     // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
     if (bindings.count(name) > 0) {
       return error_info{WEBVIEW_ERROR_DUPLICATE};
     }
     bindings.emplace(name, binding_ctx_t(fn, arg));
+    if (resolve_is_complete.count(name) > 0) {
+      resolve_is_complete.find(name)->second.store(true);
+    } else {
+      resolve_is_complete.emplace(name, true);
+    }
     replace_bind_script();
     // Notify that a binding was created if the init script has already
     // set things up.
@@ -101,18 +112,28 @@ window.__webview__.onBind(" +
   }
 
   noresult unbind(const std::string &name) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
     auto found = bindings.find(name);
     if (found == bindings.end()) {
       return error_info{WEBVIEW_ERROR_NOT_FOUND};
     }
-    bindings.erase(found);
-    replace_bind_script();
+
     // Notify that a binding was created if the init script has already
     // set things up.
     eval("if (window.__webview__) {\n\
 window.__webview__.onUnbind(" +
          json_escape(name) + ")\n\
 }");
+    unbind_cv.wait_for(lock, std::chrono::milliseconds(20),
+                       atomic_acquire(&resolve_is_complete.find(name)->second));
+    if (is_terminating) {
+      return {};
+    }
+    resolve_is_complete.find(name)->second.store(true);
+    bindings.erase(found);
+    replace_bind_script();
     return {};
   }
 
@@ -133,7 +154,18 @@ window.__webview__.onUnbind(" +
   result<void *> widget() { return widget_impl(); }
   result<void *> browser_controller() { return browser_controller_impl(); }
   noresult run() { return run_impl(); }
-  noresult terminate() { return terminate_impl(); }
+  noresult terminate() {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
+    is_terminating = true;
+    for (auto &flag : resolve_is_complete) {
+      flag.second.store(true);
+    }
+    unbind_cv.notify_all();
+
+    return terminate_impl();
+  }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
   noresult set_title(const std::string &title) { return set_title_impl(title); }
 
@@ -150,7 +182,17 @@ window.__webview__.onUnbind(" +
     return {};
   }
 
-  noresult eval(const std::string &js) { return eval_impl(js); }
+  noresult eval(const std::string &js) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
+    auto included_binds = eval_includes_binds(js);
+    for (auto &name : included_binds) {
+      resolve_is_complete.find(name)->second.store(false);
+    }
+
+    return eval_impl(js);
+  }
 
 protected:
   virtual noresult navigate_impl(const std::string &url) = 0;
@@ -302,6 +344,9 @@ protected:
   }
 
   virtual void on_message(const std::string &msg) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
     auto id = json_parse(msg, "id", 0);
     auto name = json_parse(msg, "method", 0);
     auto args = json_parse(msg, "params", 0);
@@ -309,8 +354,17 @@ protected:
     if (found == bindings.end()) {
       return;
     }
+    resolve_is_complete.find(name)->second.store(false);
+    unbind_cv.notify_all();
+
     const auto &context = found->second;
-    dispatch([=] { context.call(id, args); });
+    dispatch([context, id, args, name, this] {
+      std::mutex mtx;
+      std::unique_lock<std::mutex> lock(mtx);
+      context.call(id, args);
+      resolve_is_complete.find(name)->second.store(true);
+      unbind_cv.notify_all();
+    });
   }
 
   virtual void on_window_created() { inc_window_count(); }
@@ -371,8 +425,28 @@ private:
   bool m_is_init_script_added{};
   bool m_is_size_set{};
   bool m_owns_window{};
+  bool is_terminating{};
   static const int m_initial_width = 640;
   static const int m_initial_height = 480;
+
+  std::condition_variable unbind_cv;
+  std::map<std::string, std::atomic_bool> resolve_is_complete;
+  std::function<bool()> atomic_acquire(std::atomic_bool *flag) {
+    return [=]() { return flag->load(std::memory_order_acquire); };
+  }
+  std::list<std::string> eval_includes_binds(std::string js) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
+    std::list<std::string> bind_list{};
+    for (auto &atomic_flag : resolve_is_complete) {
+      const std::string &name = atomic_flag.first;
+      if (js.find(name + "(") != std::string::npos) {
+        bind_list.emplace_back(name);
+      }
+    }
+    return bind_list;
+  }
 };
 
 } // namespace detail
