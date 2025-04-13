@@ -88,6 +88,9 @@ public:
 
   // Asynchronous bind
   noresult bind(const std::string &name, binding_t fn, void *arg) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
     // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
     if (bindings.count(name) > 0) {
       return error_info{WEBVIEW_ERROR_DUPLICATE};
@@ -154,6 +157,7 @@ window.__webview__.onUnbind(" +
   noresult terminate() {
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
+
     is_terminating = true;
     for (auto &flag : resolve_is_complete) {
       flag.second.store(true);
@@ -181,6 +185,7 @@ window.__webview__.onUnbind(" +
   noresult eval(const std::string &js) {
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
+
     auto included_binds = eval_includes_binds(js);
     for (auto &name : included_binds) {
       resolve_is_complete.find(name)->second.store(false);
@@ -430,6 +435,9 @@ private:
     return [=]() { return flag->load(std::memory_order_acquire); };
   }
   std::list<std::string> eval_includes_binds(std::string js) {
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
+
     std::list<std::string> bind_list;
     for (auto &atomic_flag : resolve_is_complete) {
       const std::string &name = atomic_flag.first;
