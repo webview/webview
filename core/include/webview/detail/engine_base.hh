@@ -183,8 +183,7 @@ window.__webview__.onUnbind(" +
     std::unique_lock<std::mutex> lock(mtx);
     auto included_binds = eval_includes_binds(js);
     for (auto &name : included_binds) {
-      auto found = resolve_is_complete.find(name);
-      found->second.store(false);
+      resolve_is_complete.find(name)->second.store(false);
     }
 
     return eval_impl(js);
