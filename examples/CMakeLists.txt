@@ -11,6 +11,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     include(resources/windows/resources.cmake)
 endif()
 
+add_executable(webview_example_navigate_c MACOSX_BUNDLE WIN32)
+target_sources(webview_example_navigate_c PRIVATE navigate.c ${SHARED_SOURCES})
+target_link_libraries(webview_example_navigate_c PRIVATE webview::core_static)
+
 add_executable(webview_example_basic_c MACOSX_BUNDLE WIN32)
 target_sources(webview_example_basic_c PRIVATE basic.c ${SHARED_SOURCES})
 target_link_libraries(webview_example_basic_c PRIVATE webview::core_static)
