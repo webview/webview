@@ -36,6 +36,10 @@
 namespace webview {
 namespace detail {
 
+/// Bridges between the Webview `bind` implementation and the native
+/// backend implementation for the handling of bound functions.
+///
+/// It keeps a unique pointer reference and provides related methods.
 class user_script {
 public:
   class impl;

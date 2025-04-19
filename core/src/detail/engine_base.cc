@@ -25,24 +25,19 @@
 
 #ifndef WEBVIEW_DETAIL_ENGINE_BASE_CC
 #define WEBVIEW_DETAIL_ENGINE_BASE_CC
+
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "webview/detail/engine_base.hh"
+#include "webview/detail/engine_js.hh"
 #include "webview/detail/json.hh"
+#include <algorithm>
 #include <functional>
+#include <iterator>
 #include <string>
+#include <vector>
 
 using namespace webview::detail;
-
-binding_ctx_t::binding_ctx_t(binding_t callback, void *arg)
-    : m_callback(callback), m_arg(arg) {}
-void binding_ctx_t::call(std::string id, std::string args) const {
-  if (m_callback) {
-    m_callback(id, args, m_arg);
-  }
-}
-
-engine_base::~engine_base() = default;
 
 noresult engine_base::navigate(const std::string &url) {
   if (url.empty()) {
@@ -50,29 +45,23 @@ noresult engine_base::navigate(const std::string &url) {
   }
   return navigate_impl(url);
 }
-
 noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
   auto wrapper = [this, fn](const std::string &id, const std::string &req,
                             void * /*arg*/) { resolve(id, 0, fn(req)); };
   return bind(name, wrapper, nullptr);
 }
-
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
-  // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
   if (bindings.count(name) > 0) {
     return error_info{WEBVIEW_ERROR_DUPLICATE};
   }
   bindings.emplace(name, binding_ctx_t(fn, arg));
   replace_bind_script();
-  // Notify that a binding was created if the init script has already
-  // set things up.
-  eval("if (window.__webview__) {\n\
-window.__webview__.onBind(" +
-       json_escape(name) + ")\n\
-}");
+
+  printf("Webview: bind: \n%s\n", engine_js::onbind(name).c_str());
+
+  eval(engine_js::onbind(name));
   return {};
 }
-
 noresult engine_base::unbind(const std::string &name) {
   auto found = bindings.find(name);
   if (found == bindings.end()) {
@@ -80,64 +69,43 @@ noresult engine_base::unbind(const std::string &name) {
   }
   bindings.erase(found);
   replace_bind_script();
-  // Notify that a binding was created if the init script has already
-  // set things up.
-  eval("if (window.__webview__) {\n\
-window.__webview__.onUnbind(" +
-       json_escape(name) + ")\n\
-}");
+
+  printf("Webview: unbind: \n%s\n", engine_js::onunbind(name).c_str());
+
+  eval(engine_js::onunbind(name));
   return {};
 }
-
 noresult engine_base::resolve(const std::string &id, int status,
                               const std::string &result) {
-  // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-  return dispatch(std::bind(
-      [id, status, this](std::string escaped_result) {
-        std::string js = "window.__webview__.onReply(" + json_escape(id) +
-                         ", " + std::to_string(status) + ", " + escaped_result +
-                         ")";
-        eval(js);
-      },
-      result.empty() ? "undefined" : json_escape(result)));
+  const std::string &escaped_result =
+      result.empty() ? "undefined" : json_escape(result);
+
+  const std::string &promised_js =
+      engine_js::onreply(id, status, escaped_result);
+
+  return dispatch([this, promised_js] { eval(promised_js); });
 }
-
-webview::result<void *> engine_base::window() { return window_impl(); }
-
-webview::result<void *> engine_base::widget() { return widget_impl(); }
-
-webview::result<void *> engine_base::browser_controller() {
-  return browser_controller_impl();
-}
-
 noresult engine_base::run() { return run_impl(); }
-
 noresult engine_base::terminate() { return terminate_impl(); }
-
 noresult engine_base::dispatch(std::function<void()> f) {
   return dispatch_impl(f);
 }
-
 noresult engine_base::set_title(const std::string &title) {
   return set_title_impl(title);
 }
-
 noresult engine_base::set_size(int width, int height, webview_hint_t hints) {
+  auto res = set_size_impl(width, height, hints);
   m_is_size_set = true;
-  return set_size_impl(width, height, hints);
+  return res;
 }
-
 noresult engine_base::set_html(const std::string &html) {
   return set_html_impl(html);
 }
-
 noresult engine_base::init(const std::string &js) {
   add_user_script(js);
   return {};
 }
-
 noresult engine_base::eval(const std::string &js) { return eval_impl(js); }
-
 user_script *engine_base::add_user_script(const std::string &js) {
   return std::addressof(
       *m_user_scripts.emplace(m_user_scripts.end(), add_user_script_impl(js)));
@@ -158,114 +126,14 @@ engine_base::replace_user_script(const user_script &old_script,
   }
   return old_script_ptr;
 }
-
 void engine_base::replace_bind_script() {
+  auto replacement_js = create_bind_script();
   if (m_bind_script) {
-    m_bind_script = replace_user_script(*m_bind_script, create_bind_script());
+    m_bind_script = replace_user_script(*m_bind_script, replacement_js);
   } else {
-    m_bind_script = add_user_script(create_bind_script());
+    m_bind_script = add_user_script(replacement_js);
   }
 }
-
-void engine_base::add_init_script(const std::string &post_fn) {
-  add_user_script(create_init_script(post_fn));
-  m_is_init_script_added = true;
-}
-
-std::string engine_base::create_init_script(const std::string &post_fn) {
-  auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  function generateId() {\n\
-    var crypto = window.crypto || window.msCrypto;\n\
-    var bytes = new Uint8Array(16);\n\
-    crypto.getRandomValues(bytes);\n\
-    return Array.prototype.slice.call(bytes).map(function(n) {\n\
-      var s = n.toString(16);\n\
-      return ((s.length % 2) == 1 ? '0' : '') + s;\n\
-    }).join('');\n\
-  }\n\
-  var Webview = (function() {\n\
-    var _promises = {};\n\
-    function Webview_() {}\n\
-    Webview_.prototype.post = function(message) {\n\
-      return (" +
-            post_fn + ")(message);\n\
-    };\n\
-    Webview_.prototype.call = function(method) {\n\
-      var _id = generateId();\n\
-      var _params = Array.prototype.slice.call(arguments, 1);\n\
-      var promise = new Promise(function(resolve, reject) {\n\
-        _promises[_id] = { resolve, reject };\n\
-      });\n\
-      this.post(JSON.stringify({\n\
-        id: _id,\n\
-        method: method,\n\
-        params: _params\n\
-      }));\n\
-      return promise;\n\
-    };\n\
-    Webview_.prototype.onReply = function(id, status, result) {\n\
-      var promise = _promises[id];\n\
-      if (result !== undefined) {\n\
-        try {\n\
-          result = JSON.parse(result);\n\
-        } catch (e) {\n\
-          promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
-          return;\n\
-        }\n\
-      }\n\
-      if (status === 0) {\n\
-        promise.resolve(result);\n\
-      } else {\n\
-        promise.reject(result);\n\
-      }\n\
-    };\n\
-    Webview_.prototype.onBind = function(name) {\n\
-      if (window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" already exists');\n\
-      }\n\
-      window[name] = (function() {\n\
-        var params = [name].concat(Array.prototype.slice.call(arguments));\n\
-        return Webview_.prototype.call.apply(this, params);\n\
-      }).bind(this);\n\
-    };\n\
-    Webview_.prototype.onUnbind = function(name) {\n\
-      if (!window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" does not exist');\n\
-      }\n\
-      delete window[name];\n\
-    };\n\
-    return Webview_;\n\
-  })();\n\
-  window.__webview__ = new Webview();\n\
-})()";
-  return js;
-}
-
-std::string engine_base::create_bind_script() {
-  std::string js_names = "[";
-  bool first = true;
-  for (const auto &binding : bindings) {
-    if (first) {
-      first = false;
-    } else {
-      js_names += ",";
-    }
-    js_names += json_escape(binding.first);
-  }
-  js_names += "]";
-
-  auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  var methods = " +
-            js_names + ";\n\
-  methods.forEach(function(name) {\n\
-    window.__webview__.onBind(name);\n\
-  });\n\
-})()";
-  return js;
-}
-
 void engine_base::on_message(const std::string &msg) {
   auto id = json_parse(msg, "id", 0);
   auto name = json_parse(msg, "method", 0);
@@ -276,58 +144,6 @@ void engine_base::on_message(const std::string &msg) {
   }
   const auto &context = found->second;
   dispatch([=] { context.call(id, args); });
-}
-
-void engine_base::on_window_created() { inc_window_count(); }
-
-void engine_base::on_window_destroyed(bool skip_termination) {
-  if (dec_window_count() <= 0) {
-    if (!skip_termination) {
-      terminate();
-    }
-  }
-}
-
-void engine_base::deplete_run_loop_event_queue() {
-  bool done{};
-  dispatch([&] { done = true; });
-  run_event_loop_while([&] { return !done; });
-}
-
-void engine_base::dispatch_size_default() {
-  if (!owns_window() || !m_is_init_script_added) {
-    return;
-  };
-  dispatch([this]() {
-    if (!m_is_size_set) {
-      set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
-    }
-  });
-}
-
-void engine_base::set_default_size_guard(bool guarded) {
-  m_is_size_set = guarded;
-}
-
-void engine_base::set_owns_window(bool owns_window) {
-  m_owns_window = owns_window;
-}
-
-bool engine_base::owns_window() const { return m_owns_window; }
-
-std::atomic_uint &engine_base::window_ref_count() {
-  static std::atomic_uint ref_count{0};
-  return ref_count;
-}
-
-unsigned int engine_base::inc_window_count() { return ++window_ref_count(); }
-
-unsigned int engine_base::dec_window_count() {
-  auto &count = window_ref_count();
-  if (count > 0) {
-    return --count;
-  }
-  return 0;
 }
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
