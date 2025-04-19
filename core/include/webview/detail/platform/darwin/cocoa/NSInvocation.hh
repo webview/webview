@@ -33,27 +33,28 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSInvocation_invocationWithMethodSignature(id sig) {
-  return objc::msg_send<id>("NSInvocation"_cls,
-                            "invocationWithMethodSignature:"_sel, sig);
+  return objc::msg_send<id>(objc::get_class("NSInvocation"),
+                            objc::selector("invocationWithMethodSignature:"),
+                            sig);
 }
 
 inline void NSInvocation_set_target(id self, id target) {
-  objc::msg_send<void>(self, "setTarget:"_sel, target);
+  objc::msg_send<void>(self, objc::selector("setTarget:"), target);
 }
 
 inline void NSInvocation_setArgument(id self, void *location, NSInteger index) {
-  objc::msg_send<void>(self, "setArgument:atIndex:"_sel, location, index);
+  objc::msg_send<void>(self, objc::selector("setArgument:atIndex:"), location,
+                       index);
 }
 
 inline void NSInvocation_invoke(id self) {
-  objc::msg_send<void>(self, "invoke"_sel);
+  objc::msg_send<void>(self, objc::selector("invoke"));
 }
 
 } // namespace cocoa

@@ -33,7 +33,6 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
 #include "invoke.hh"
-#include "literals.hh"
 
 #include <objc/objc-runtime.h>
 
@@ -42,19 +41,12 @@ namespace detail {
 namespace objc {
 
 inline id autorelease(id object) {
-  using namespace literals;
-  return msg_send<id>(object, "autorelease"_sel);
+  return msg_send<id>(object, selector("autorelease"));
 }
 
-inline id retain(id object) {
-  using namespace literals;
-  return msg_send<id>(object, "retain"_sel);
-}
+inline id retain(id object) { return msg_send<id>(object, selector("retain")); }
 
-inline void release(id object) {
-  using namespace literals;
-  msg_send<id>(object, "release"_sel);
-}
+inline void release(id object) { msg_send<void>(object, selector("release")); }
 
 } // namespace objc
 } // namespace detail

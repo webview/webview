@@ -49,6 +49,7 @@
 #include "NSString.hh"
 #include "NSURL.hh"
 #include "NSURLRequest.hh"
+#include "NSValue.hh"
 #include "NSView.hh"
 #include "NSWindow.hh"
 // IWYU pragma: end_exports

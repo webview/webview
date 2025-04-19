@@ -64,6 +64,8 @@ Result msg_send_stret(Args... args) noexcept {
 #endif
 }
 
+inline SEL selector(const char *name) { return sel_registerName(name); }
+
 } // namespace objc
 } // namespace detail
 } // namespace webview

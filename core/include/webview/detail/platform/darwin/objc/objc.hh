@@ -36,7 +36,6 @@
 #include "Class.hh"
 #include "autoreleasepool.hh"
 #include "invoke.hh"
-#include "literals.hh"
 #include "memory.hh"
 // IWYU pragma: end_exports
 

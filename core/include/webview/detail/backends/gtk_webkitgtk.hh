@@ -99,7 +99,7 @@ private:
 
 class gtk_webkit_engine : public engine_base {
 public:
-  gtk_webkit_engine(bool debug, void *window) {
+  gtk_webkit_engine(bool debug, void *window) : engine_base{!window} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -272,7 +272,6 @@ private:
 #endif
 
   void window_init(void *window) {
-    set_owns_window(!window);
     m_window = static_cast<GtkWidget *>(window);
     if (owns_window()) {
       if (!gtk_compat::init_check()) {

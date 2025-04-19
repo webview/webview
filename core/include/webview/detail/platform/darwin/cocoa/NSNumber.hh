@@ -33,14 +33,14 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
-#include "literals.hh"
 
 namespace webview {
 namespace detail {
 namespace cocoa {
 
 inline id NSNumber_numberWithBool(bool value) {
-  return objc::msg_send<id>("NSNumber"_cls, "numberWithBool:"_sel,
+  return objc::msg_send<id>(objc::get_class("NSNumber"),
+                            objc::selector("numberWithBool:"),
                             static_cast<BOOL>(value));
 }
 
