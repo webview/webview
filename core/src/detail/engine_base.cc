@@ -56,9 +56,6 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   }
   bindings.emplace(name, binding_ctx_t(fn, arg));
   replace_bind_script();
-
-  printf("Webview: bind: \n%s\n", engine_js::onbind(name).c_str());
-
   eval(engine_js::onbind(name));
   return {};
 }
@@ -69,9 +66,6 @@ noresult engine_base::unbind(const std::string &name) {
   }
   bindings.erase(found);
   replace_bind_script();
-
-  printf("Webview: unbind: \n%s\n", engine_js::onunbind(name).c_str());
-
   eval(engine_js::onunbind(name));
   return {};
 }
