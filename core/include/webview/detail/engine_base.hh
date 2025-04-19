@@ -34,6 +34,7 @@
 #include "webview/detail/engine_js.hh"
 #include <algorithm>
 #include <atomic>
+#include <iterator>
 #include <list>
 #include <map>
 
