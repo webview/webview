@@ -25,13 +25,14 @@
 
 #ifndef WEBVIEW_DETAIL_ENGINE_BASE_HH
 #define WEBVIEW_DETAIL_ENGINE_BASE_HH
-#include "webview/detail/engine_js.hh"
-#include <algorithm>
+
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../types.h"
 #include "../types.hh"
 #include "user_script.hh"
+#include "webview/detail/engine_js.hh"
+#include <algorithm>
 #include <atomic>
 #include <list>
 #include <map>
