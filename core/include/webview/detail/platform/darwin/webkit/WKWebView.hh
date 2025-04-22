@@ -64,6 +64,15 @@ inline void WKWebView_set_UIDelegate(id self, id ui_delegate) {
   objc::msg_send<void>(self, objc::selector("setUIDelegate:"), ui_delegate);
 }
 
+inline id WKWebView_get_NavigationDelegate(id self) {
+  return objc::msg_send<id>(self, objc::selector("navigationDelegate"));
+}
+
+inline void WKWebView_set_NavigationDelegate(id self, id nav_delegate) {
+  objc::msg_send<void>(self, objc::selector("setNavigationDelegate:"),
+                       nav_delegate);
+}
+
 inline id WKWebView_loadHTMLString(id self, id string, id base_url) {
   return objc::msg_send<id>(self, objc::selector("loadHTMLString:baseURL:"),
                             string, base_url);

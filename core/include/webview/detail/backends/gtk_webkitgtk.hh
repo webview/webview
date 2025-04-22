@@ -271,6 +271,21 @@ private:
   }
 #endif
 
+  static webview_navigation_event_t webkitevent2webview(WebKitLoadEvent ev) {
+    switch (ev) {
+    case WEBKIT_LOAD_COMMITTED:
+      return WEBVIEW_LOAD_COMMITTED;
+    case WEBKIT_LOAD_FINISHED:
+      return WEBVIEW_LOAD_FINISHED;
+    case WEBKIT_LOAD_REDIRECTED:
+      return WEBVIEW_LOAD_REDIRECTED;
+    case WEBKIT_LOAD_STARTED:
+      return WEBVIEW_LOAD_STARTED;
+    default:
+      return WEBVIEW_LOAD_FINISHED;
+    }
+  }
+
   void window_init(void *window) {
     m_window = static_cast<GtkWidget *>(window);
     if (owns_window()) {
@@ -303,6 +318,15 @@ private:
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
+
+    auto on_load_changed = +[](WebKitWebView *self, WebKitLoadEvent load_event,
+                               gpointer user_data) {
+      auto *w = static_cast<gtk_webkit_engine *>(user_data);
+      auto uri = webkit_web_view_get_uri(self);
+      w->notify_navigation_listeners(uri, webkitevent2webview(load_event));
+    };
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "load-changed",
+                     G_CALLBACK(on_load_changed), this);
   }
 
   void window_settings(bool debug) {
