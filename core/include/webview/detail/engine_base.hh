@@ -72,9 +72,10 @@ public:
       return true;
     }
 
-    void call(std::string uri, webview_navigation_event_t type) const {
+    void call(engine_base *webview, std::string uri,
+              webview_navigation_event_t type) const {
       if (m_callback) {
-        m_callback(uri.c_str(), type, m_arg);
+        m_callback(webview, uri.c_str(), type, m_arg);
       }
     }
 
@@ -397,7 +398,7 @@ protected:
   void notify_navigation_listeners(const std::string &uri,
                                    webview_navigation_event_t type) {
     for (auto &ctx : m_navigation_listeners) {
-      ctx.call(uri, type);
+      ctx.call(this, uri, type);
     }
   }
 

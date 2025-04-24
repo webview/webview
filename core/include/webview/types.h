@@ -91,7 +91,7 @@ typedef enum {
 } webview_navigation_event_t;
 
 /// Navigation callback function type
-typedef void (*navigation_fn_t)(const char *uri,
+typedef void (*navigation_fn_t)(webview_t webview, const char *uri,
                                 webview_navigation_event_t type, void *arg);
 
 #endif // WEBVIEW_TYPES_H
