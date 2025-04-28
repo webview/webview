@@ -36,10 +36,17 @@
 namespace webview {
 namespace detail {
 
-/// Bridges between the Webview `bind` implementation and the native
-/// backend implementation for the handling of bound functions.
-///
-/// It keeps a unique pointer reference and provides related methods.
+/* ************************************************************************
+ * Handlers and types for managing the Webview
+ * `bind` -> JS call().then() -> `resolve`
+ * execution and promise resolution lifecycle.
+ **************************************************************************/
+
+/// Type definition for a native promise callback function,
+/// ie. `void callback("id", "params", arg)`;
+using binding_t = std::function<void(std::string, std::string, void *)>;
+
+/// Handlers for a bound JS function / native promise resolution lifecycle.
 class user_script {
 public:
   class impl;
@@ -71,6 +78,26 @@ public:
 private:
   std::string m_code;
   impl_ptr m_impl;
+};
+
+/// A type for handling a bound JS promise resolution on the native side.
+class binding_ctx_t {
+public:
+  binding_ctx_t(binding_t callback, void *arg)
+      : m_callback(callback), m_arg(arg) {}
+  /// Executes the bound JS function native promise resolution callback.
+  void call(std::string id, std::string args) const {
+    if (m_callback) {
+      m_callback(id, args, m_arg);
+    }
+  }
+
+private:
+  /// This native function is called upon execution of the bound JS function.
+  binding_t m_callback;
+  /// This user-supplied argument is passed to the native callback function,
+  /// ie. `webview_bind(w, "name", fn, **arg**);`
+  void *m_arg;
 };
 
 } // namespace detail
