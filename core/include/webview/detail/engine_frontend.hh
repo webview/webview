@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2017 Serge Zaitsev
  * Copyright (c) 2022 Steffen André Langnes
+  * Copyright (c) 2025 Michael Jonker
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +24,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_ENGINE_JS_HH
-#define WEBVIEW_DETAIL_ENGINE_JS_HH
+#ifndef WEBVIEW_DETAIL_ENGINE_FRONTEND_HH
+#define WEBVIEW_DETAIL_ENGINE_FRONTEND_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
@@ -32,32 +33,19 @@
 #include <string>
 #include <vector>
 
+// Containter: Template tokens
+namespace templates {
+
 #define NAME_TOKEN "_name_"
 #define ID_TOKEN "_id_"
 #define STATUS_TOKEN "_status_"
 #define RESULT_TOKEN "_result_"
 #define POST_FN_TOKEN "_post_fn_"
 #define JS_NAMES_TOKEN "_js_names_"
+} // namespace templates
 
-#define ON_BIND                                                                \
-  "if (window.__webview__) {\n"                                                \
-  "  window.__webview__.onBind(" NAME_TOKEN ")\n"                              \
-  "}"
-#define ON_UNBIND                                                              \
-  "if (window.__webview__) {\n"                                                \
-  "  window.__webview__.onUnbind(" NAME_TOKEN ")\n"                            \
-  "}"
-#define ON_REPLY                                                               \
-  "window.__webview__.onReply(" ID_TOKEN ", " STATUS_TOKEN ", " RESULT_TOKEN ")"
-
-#define BIND                                                                   \
-  "(function() {\n"                                                            \
-  " 'use strict';\n"                                                           \
-  " var methods = " JS_NAMES_TOKEN ";\n"                                       \
-  " methods.forEach(function(name) {\n"                                        \
-  "   window.__webview__.onBind(name);\n"                                      \
-  " });\n"                                                                     \
-  "})()"
+// Containter: Template for Webview JS init script
+namespace templates {
 
 #define INIT_JS                                                                \
   "(function() {\n"                                                            \
@@ -128,7 +116,37 @@
   "  window.__webview__ = new Webview();\n"                                    \
   "})()"
 
+} // namespace templates
+
+// Container: Templates for various JS functions and wrappers
+namespace templates {
+
+#define ON_BIND                                                                \
+  "if (window.__webview__) {\n"                                                \
+  "  window.__webview__.onBind(" NAME_TOKEN ")\n"                              \
+  "}"
+#define ON_UNBIND                                                              \
+  "if (window.__webview__) {\n"                                                \
+  "  window.__webview__.onUnbind(" NAME_TOKEN ")\n"                            \
+  "}"
+#define ON_REPLY                                                               \
+  "window.__webview__.onReply(" ID_TOKEN ", " STATUS_TOKEN ", " RESULT_TOKEN ")"
+
+#define BIND                                                                   \
+  "(function() {\n"                                                            \
+  " 'use strict';\n"                                                           \
+  " var methods = " JS_NAMES_TOKEN ";\n"                                       \
+  " methods.forEach(function(name) {\n"                                        \
+  "   window.__webview__.onBind(name);\n"                                      \
+  " });\n"                                                                     \
+  "})()"
+
+} // namespace templates
+
 namespace webview {
+namespace detail {
+
+// Container: Utility functions
 namespace utility {
 
 /// Performs string replacement for tokens.
@@ -166,46 +184,58 @@ std::string json_list(std::vector<std::string> &binding_names) {
 
   return json;
 }
+
 } // namespace utility
+} // namespace detail
 
+// Container: Class API
 namespace detail {
-namespace engine_js {
+using namespace utility;
 
-/// Returns a tokenised JS function string for `unbind` which notifies that
-/// a binding was destroyed after the init script has already set things up.
-std::string onunbind(const std::string &name) {
-  return utility::tokeniser(ON_UNBIND, NAME_TOKEN, json_escape(name));
-}
+struct front_end_t {
+  front_end_t() = default;
 
-/// Returns a tokenised JS function string for `bind` which notifies that
-/// a binding was created after the init script has already set things up.
-std::string onbind(const std::string &name) {
-  return utility::tokeniser(ON_BIND, NAME_TOKEN, json_escape(name));
-}
+  struct js_t {
+    /// Returns a tokenised JS function string for `unbind` which notifies that
+    /// a binding was destroyed after the init script has already set things up.
+    std::string onunbind(const std::string &name) const {
+      return utility::tokeniser(ON_UNBIND, NAME_TOKEN, json_escape(name));
+    }
 
-/// Returns a tokenised JS function string for a promise resolve/reject.
-std::string onreply(std::string id, int status, std::string escaped_result) {
-  std::string js = utility::tokeniser(ON_REPLY, ID_TOKEN, json_escape(id));
-  js = utility::tokeniser(js, STATUS_TOKEN, std::to_string(status));
-  js = utility::tokeniser(js, RESULT_TOKEN, escaped_result);
-  return js;
-}
+    /// Returns a tokenised JS function string for `bind` which notifies that
+    /// a binding was created after the init script has already set things up.
+    std::string onbind(const std::string &name) const {
+      return utility::tokeniser(ON_BIND, NAME_TOKEN, json_escape(name));
+    }
 
-/// Returns a tokenised JS function string for the Webview backend init function.
-std::string init(const std::string &post_fn) {
-  return utility::tokeniser(INIT_JS, POST_FN_TOKEN, post_fn);
-}
+    /// Returns a tokenised JS function string for a promise resolve/reject.
+    std::string onreply(std::string id, int status,
+                        std::string escaped_result) const {
+      std::string js = utility::tokeniser(ON_REPLY, ID_TOKEN, json_escape(id));
+      js = utility::tokeniser(js, STATUS_TOKEN, std::to_string(status));
+      js = utility::tokeniser(js, RESULT_TOKEN, escaped_result);
+      return js;
+    }
 
-/// Returns a tokenised JS function string for the Webview backend `bind` functions.
-std::string bind(std::vector<std::string> &bound_names) {
-  auto names = utility::json_list(bound_names);
-  auto js = utility::tokeniser(BIND, JS_NAMES_TOKEN, names);
-  printf("Webview: engine_js bind\n%s\n", js.c_str());
-  return js;
-}
+    /// Returns a tokenised JS function string for the Webview backend init function.
+    std::string init(const std::string &post_fn) const {
+      return utility::tokeniser(INIT_JS, POST_FN_TOKEN, post_fn);
+    }
 
-} // namespace engine_js
+    /// Returns a tokenised JS function string for the Webview backend `bind` functions.
+    std::string bind(std::vector<std::string> &bound_names) const {
+      auto names = utility::json_list(bound_names);
+      auto js = utility::tokeniser(BIND, JS_NAMES_TOKEN, names);
+      return js;
+    }
+
+  } js{};
+};
+/// API for generating HTML and JS related strings.
+static const front_end_t frontend{};
+
 } // namespace detail
 } // namespace webview
-#endif
-#endif
+
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_DETAIL_ENGINE_FRONTEND_HH

@@ -63,7 +63,7 @@ noresult engine_base::bind(str_arg_t name, binding_t fn, void *arg) {
   }
   bindings.emplace(name, binding_ctx_t(fn, arg));
   replace_bind_script();
-  eval(engine_js::onbind(name));
+  eval(frontend.js.onbind(name));
   return {};
 }
 
@@ -74,15 +74,23 @@ noresult engine_base::unbind(str_arg_t name) {
   }
   bindings.erase(found);
   replace_bind_script();
-  eval(engine_js::onunbind(name));
+  eval(frontend.js.onunbind(name));
   return {};
 }
 
 noresult engine_base::resolve(str_arg_t id, int status, str_arg_t result) {
   str_arg_t escaped_result = result.empty() ? "undefined" : json_escape(result);
-  str_arg_t promised_js = engine_js::onreply(id, status, escaped_result);
+  str_arg_t promised_js = frontend.js.onreply(id, status, escaped_result);
 
   return dispatch([this, promised_js] { eval(promised_js); });
+}
+
+result<void *> engine_base::window() { return window_impl(); }
+
+result<void *> engine_base::widget() { return widget_impl(); }
+
+result<void *> engine_base::browser_controller() {
+  return browser_controller_impl();
 }
 
 noresult engine_base::run() { return run_impl(); }
