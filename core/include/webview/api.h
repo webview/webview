@@ -74,7 +74,7 @@ WEBVIEW_API webview_error_t webview_destroy(webview_t w);
 WEBVIEW_API webview_error_t webview_run(webview_t w);
 
 /**
- * Stops the main loop. It is safe to call this function from another other
+ * Stops the main loop. It is safe to call this function from another
  * background thread.
  *
  * @param w The webview instance.
