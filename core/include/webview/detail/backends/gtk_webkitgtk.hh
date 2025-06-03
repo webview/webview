@@ -117,6 +117,7 @@ public:
         g_signal_handlers_disconnect_by_data(GTK_WINDOW(m_window), this);
         gtk_window_close(GTK_WINDOW(m_window));
         on_window_destroyed(true);
+        m_webview = nullptr; // Destroyed with window
       } else {
         gtk_compat::window_remove_child(GTK_WINDOW(m_window),
                                         GTK_WIDGET(m_webview));
@@ -297,6 +298,7 @@ private:
       auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
         auto *w = static_cast<gtk_webkit_engine *>(arg);
         w->m_window = nullptr;
+        w->m_webview = nullptr; // destroyed with window
         w->on_window_destroyed();
       };
       g_signal_connect(G_OBJECT(m_window), "destroy",
