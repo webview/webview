@@ -604,6 +604,17 @@ private:
     }
   }
 
+  result<int> pump_msgloop_impl(int) override {
+    //TODO: implement should_close and respect "block" parameter
+    objc::autoreleasepool arp;
+    if (auto event{NSApplication_nextEventMatchingMask(
+            m_app, NSEventMaskAny, nullptr,
+            NSRunLoopMode::NSDefaultRunLoopMode(), true)}) {
+      NSApplication_sendEvent(m_app, event);
+    }
+    return 1;
+  }
+
   id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
