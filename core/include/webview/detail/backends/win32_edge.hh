@@ -885,7 +885,7 @@ private:
     if (block) {
       if (GetMessageW(&msg, nullptr, 0, 0) < 1 /* error or WM_QUIT */) return 0; 
     } else {
-      if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) == 0) return 1; // no message, exit early
+      if (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE) == 0) return 1; // no message, exit early
       if (msg.message == WM_QUIT) return 0;
     }
     TranslateMessage(&msg);
