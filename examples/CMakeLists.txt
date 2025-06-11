@@ -9,6 +9,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     include(resources/macos/resources.cmake)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     include(resources/windows/resources.cmake)
+elseif (NOT "${WEBVIEW_QT}" STREQUAL "")
+    add_compile_options(-fPIC)
 endif()
 
 add_executable(webview_example_navigate_c MACOSX_BUNDLE WIN32)

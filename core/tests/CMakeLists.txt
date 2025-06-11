@@ -2,6 +2,10 @@ include(${PROJECT_SOURCE_DIR}/test_driver/cmake/discovery.cmake)
 
 if(MSVC)
     add_compile_options(/utf-8)
+else()
+   if (NOT "${WEBVIEW_QT}" STREQUAL "")
+      add_compile_options(-fPIC)
+   endif()
 endif()
 
 add_executable(webview_core_functional_tests)
