@@ -219,8 +219,8 @@
    void window_init(void *window) {
      m_window = static_cast<QMainWindow *>(window);
      if (owns_window()) {
-       int argc = 0;
-       m_app = new QApplication(argc, NULL);
+       m_argc = 0;
+       m_app = new QApplication(m_argc, NULL);
        m_window = qt_compat::window_new();
        on_window_created();
        auto on_window_destroy = +[](void* arg) {
@@ -249,6 +249,7 @@
      qt_compat::widget_set_visible(m_webview, true);
  
      if (owns_window()) {
+       m_window->show();
        m_webview->setFocus();
        //qt_compat::widget_set_visible(m_webview, true);
      }
@@ -262,6 +263,7 @@
      }
    }
  
+   int m_argc;
    QApplication *m_app{};
    QMainWindow *m_window{};
    QWebEngineView *m_webview{};
