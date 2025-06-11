@@ -168,6 +168,7 @@ protected:
   }
 
   noresult terminate_impl() override {
+    m_should_exit = true;
     stop_run_loop();
     return {};
   }
@@ -604,11 +605,18 @@ private:
     }
   }
 
-  result<int> pump_msgloop_impl(int) override {
-    //TODO: implement should_close and respect "block" parameter
+  result<int> pump_msgloop_impl(int block) override {
+    if (m_should_exit) return 0;
     objc::autoreleasepool arp;
+
+    id until = nullptr;
+
+    if (block) {
+      until = objc::msg_send<id>(objc::get_class("NSDate"), objc::selector("distantFuture"));
+    }
+
     if (auto event{NSApplication_nextEventMatchingMask(
-            m_app, NSEventMaskAny, nullptr,
+            m_app, NSEventMaskAny, until,
             NSRunLoopMode::NSDefaultRunLoopMode(), true)}) {
       NSApplication_sendEvent(m_app, event);
     }
@@ -623,6 +631,7 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_is_window_shown{};
+  bool m_should_exit{};
 };
 
 } // namespace cocoa_webkit
