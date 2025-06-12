@@ -35,7 +35,6 @@
 #endif
 #include <windows.h>
 
-#include "types/types.hh"
 #include <codecvt>
 #include <locale>
 #include <string>
@@ -43,19 +42,17 @@
 namespace webview {
 namespace detail {
 
-struct string {
-  // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-  static std::wstring widen_string(const std::string &input) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    return converter.from_bytes(input);
-  }
+// Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
+static std::wstring widen_string(const std::string &input) {
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+  return converter.from_bytes(input);
+}
 
-  // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
-  static std::string narrow_string(const std::wstring &input) {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    return converter.to_bytes(input);
-  }
-};
+// Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
+static std::string narrow_string(const std::wstring &input) {
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+  return converter.to_bytes(input);
+}
 
 } // namespace detail
 } // namespace webview
