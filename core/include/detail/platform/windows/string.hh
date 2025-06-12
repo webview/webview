@@ -45,7 +45,7 @@ namespace detail {
 
 struct string {
   // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
-  static std::wstring widen_string(cnst_str_r input) {
+  static std::wstring widen_string(const std::string &input) {
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     return converter.from_bytes(input);
   }
