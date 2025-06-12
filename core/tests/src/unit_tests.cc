@@ -1,5 +1,5 @@
-#include "webview/test_driver.hh"
-#include "webview/webview.h"
+#include "test_driver.hh"
+#include "webview.h"
 
 TEST_CASE("Ensure that JSON parsing works") {
   auto J = webview::detail::json_parse;

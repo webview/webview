@@ -203,7 +203,7 @@ function(webview_find_python3 REQUIRED)
 endfunction()
 
 macro(webview_extract_version)
-    file(READ "${WEBVIEW_ROOT_DIR}/core/include/webview/version.h" WEBVIEW_H_CONTENT)
+    file(READ "${WEBVIEW_ROOT_DIR}/core/include/version.h" WEBVIEW_H_CONTENT)
 
     if(NOT DEFINED WEBVIEW_VERSION_MAJOR)
         string(REGEX MATCH "#define WEBVIEW_VERSION_MAJOR ([0-9]+)" WEBVIEW_VERSION_MAJOR_MATCH "${WEBVIEW_H_CONTENT}")
@@ -236,13 +236,13 @@ endmacro()
 
 macro(webview_install_targets)
     # Install headers
-    install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include/webview"
+    install(DIRECTORY "${WEBVIEW_ROOT_DIR}/core/include"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
         COMPONENT webview_headers)
 
     # Install modules
     install(DIRECTORY "${WEBVIEW_CURRENT_CMAKE_DIR}/modules"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
         COMPONENT webview_cmake)
 
     # Install targets
@@ -283,7 +283,7 @@ macro(webview_install_targets)
             DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
     install(EXPORT webview_targets
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
         NAMESPACE webview::
         FILE webview-targets.cmake
         COMPONENT webview_cmake)
@@ -294,7 +294,7 @@ macro(webview_install_targets)
     configure_package_config_file(
         "${WEBVIEW_CURRENT_CMAKE_DIR}/webview-config.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/webview-config.cmake"
-        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
         NO_SET_AND_CHECK_MACRO
         NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
@@ -308,7 +308,7 @@ macro(webview_install_targets)
             "${WEBVIEW_CURRENT_CMAKE_DIR}/webview.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config.cmake"
             "${CMAKE_CURRENT_BINARY_DIR}/webview-config-version.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/webview"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
         COMPONENT webview_cmake)
 endmacro()
 
