@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_MACROS_H
-#define WEBVIEW_MACROS_H
+#ifndef WEBVIEW_LIB_MACROS_H
+#define WEBVIEW_LIB_MACROS_H
 
 /**
  * Used to specify function linkage such as extern, inline, etc.
@@ -120,4 +120,4 @@
 #endif // WEBVIEW_HEADER
 #endif // __cplusplus
 
-#endif // WEBVIEW_MACROS_H
+#endif // WEBVIEW_LIB_MACROS_H

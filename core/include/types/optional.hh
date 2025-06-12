@@ -23,13 +23,11 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_OPTIONAL_HH
-#define WEBVIEW_DETAIL_OPTIONAL_HH
+#ifndef WEBVIEW_TYPES_OPTIONAL_HH
+#define WEBVIEW_TYPES_OPTIONAL_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "exceptions.hh"
-
+#include "errors/exceptions.hh"
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -115,4 +113,4 @@ template <> class optional<void> {};
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_DETAIL_OPTIONAL_HH
+#endif // WEBVIEW_TYPES_OPTIONAL_HH

@@ -27,10 +27,21 @@
 #define WEBVIEW_BACKENDS_COCOA_WEBKIT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#include "detail/engine_base.hh"
+#include "detail/platform/darwin/cocoa/cocoa.hh"
+#include "detail/platform/darwin/objc/objc.hh"
+#include "detail/platform/darwin/webkit/webkit.hh"
+#include "detail/user/user_script.hh"
+#include "types/types.hh"
+#include <atomic>
+#include <functional>
+#include <list>
+#include <memory>
+#include <objc/objc-runtime.h>
+#include <string>
 
 //
 // ====================================================================
@@ -41,21 +52,6 @@
 //
 // ====================================================================
 //
-
-#include "../../types.hh"
-#include "../engine_base.hh"
-#include "../platform/darwin/cocoa/cocoa.hh"
-#include "../platform/darwin/objc/objc.hh"
-#include "../platform/darwin/webkit/webkit.hh"
-#include "../user_script.hh"
-
-#include <atomic>
-#include <functional>
-#include <list>
-#include <memory>
-#include <string>
-
-#include <objc/objc-runtime.h>
 
 namespace webview {
 namespace detail {

@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_TYPES_H
-#define WEBVIEW_TYPES_H
+#ifndef WEBVIEW_TYPES_TYPES_H
+#define WEBVIEW_TYPES_TYPES_H
 
 /// Holds the elements of a MAJOR.MINOR.PATCH version number.
 typedef struct {
@@ -78,4 +78,4 @@ typedef enum {
   WEBVIEW_HINT_FIXED
 } webview_hint_t;
 
-#endif // WEBVIEW_TYPES_H
+#endif // WEBVIEW_TYPES_TYPES_H

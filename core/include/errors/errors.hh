@@ -23,13 +23,11 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_ERRORS_HH
-#define WEBVIEW_ERRORS_HH
+#ifndef WEBVIEW_ERRORS_ERRORS_HH
+#define WEBVIEW_ERRORS_ERRORS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "errors.h"
-
+#include "errors/errors.h"
 #include <exception>
 #include <string>
 
@@ -82,4 +80,4 @@ private:
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_ERRORS_HH
+#endif // WEBVIEW_ERRORS_ERRORS_HH

@@ -23,32 +23,53 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
+#ifndef WEBVIEW_DETAIL_USER_USER_SCRIPT_HH
+#define WEBVIEW_DETAIL_USER_USER_SCRIPT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "lib/macros.h"
-
-#if defined(WEBVIEW_PLATFORM_DARWIN)
-#include "detail/platform/darwin/objc/invoke.hh"
-#include <objc/objc-runtime.h>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace webview {
 namespace detail {
-namespace objc {
 
-inline id autorelease(id object) {
-  return msg_send<id>(object, selector("autorelease"));
-}
+class user_script {
+public:
+  class impl;
+  using impl_deleter = std::function<void(impl *)>;
+  using impl_ptr = std::unique_ptr<impl, impl_deleter>;
 
-inline id retain(id object) { return msg_send<id>(object, selector("retain")); }
+  user_script(const std::string &code, impl_ptr &&impl_)
+      : m_code{code}, m_impl{std::move(impl_)} {}
 
-inline void release(id object) { msg_send<void>(object, selector("release")); }
+  user_script(const user_script &other) = delete;
+  user_script &operator=(const user_script &other) = delete;
+  user_script(user_script &&other) noexcept { *this = std::move(other); }
 
-} // namespace objc
+  user_script &operator=(user_script &&other) noexcept {
+    if (this == &other) {
+      return *this;
+    }
+    m_code = std::move(other.m_code);
+    m_impl = std::move(other.m_impl);
+    return *this;
+  }
+
+  const std::string &get_code() const { return m_code; }
+
+  impl &get_impl() { return *m_impl; }
+
+  const impl &get_impl() const { return *m_impl; }
+
+private:
+  std::string m_code;
+  impl_ptr m_impl;
+};
+
 } // namespace detail
 } // namespace webview
 
-#endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
+#endif // WEBVIEW_DETAIL_USER_USER_SCRIPT_HH

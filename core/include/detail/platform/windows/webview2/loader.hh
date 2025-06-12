@@ -27,27 +27,21 @@
 #define WEBVIEW_BACKENDS_WEBVIEW2_LOADER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
-
-#include "../../../native_library.hh"
-#include "../iid.hh"
-#include "../reg_key.hh"
-#include "../version.hh"
-
-#include <string>
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
 #include <windows.h>
 
-#include <objbase.h>
-
 #include "WebView2.h" // amalgamate(skip)
+#include "detail/platform/windows/iid.hh"
+#include "detail/platform/windows/native_library.hh"
+#include "detail/platform/windows/reg_key.hh"
+#include "detail/platform/windows/version.hh"
+#include <objbase.h>
+#include <string>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")

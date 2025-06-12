@@ -23,18 +23,19 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_HH
-#define WEBVIEW_BACKENDS_HH
+#ifndef WEBVIEW_ERRORS_EXCEPTIONS_HH
+#define WEBVIEW_ERRORS_EXCEPTIONS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "detail/backends/cocoa_webkit.hh"
-#include "detail/backends/gtk_webkitgtk.hh"
-#include "detail/backends/win32_edge.hh"
+#include <exception>
 
 namespace webview {
-using webview = browser_engine;
-}
+namespace detail {
+
+class bad_access : public std::exception {};
+
+} // namespace detail
+} // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_BACKENDS_HH
+#endif // WEBVIEW_ERRORS_EXCEPTIONS_HH

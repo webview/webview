@@ -23,54 +23,43 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_USER_SCRIPT_HH
-#define WEBVIEW_DETAIL_USER_SCRIPT_HH
+#ifndef WEBVIEW_DETAIL_PLATFORM_WINDOWS_STRING_HH
+#define WEBVIEW_DETAIL_PLATFORM_WINDOWS_STRING_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "lib/macros.h"
 
-#include <functional>
-#include <memory>
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+#include "types/types.hh"
+#include <codecvt>
+#include <locale>
 #include <string>
-#include <utility>
 
 namespace webview {
 namespace detail {
 
-class user_script {
-public:
-  class impl;
-  using impl_deleter = std::function<void(impl *)>;
-  using impl_ptr = std::unique_ptr<impl, impl_deleter>;
-
-  user_script(const std::string &code, impl_ptr &&impl_)
-      : m_code{code}, m_impl{std::move(impl_)} {}
-
-  user_script(const user_script &other) = delete;
-  user_script &operator=(const user_script &other) = delete;
-  user_script(user_script &&other) noexcept { *this = std::move(other); }
-
-  user_script &operator=(user_script &&other) noexcept {
-    if (this == &other) {
-      return *this;
-    }
-    m_code = std::move(other.m_code);
-    m_impl = std::move(other.m_impl);
-    return *this;
+struct string {
+  // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
+  static std::wstring widen_string(cnst_str_r input) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.from_bytes(input);
   }
 
-  const std::string &get_code() const { return m_code; }
-
-  impl &get_impl() { return *m_impl; }
-
-  const impl &get_impl() const { return *m_impl; }
-
-private:
-  std::string m_code;
-  impl_ptr m_impl;
+  // Converts a wide (UTF-16-encoded) string into a narrow (UTF-8-encoded) string.
+  static std::string narrow_string(const std::wstring &input) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.to_bytes(input);
+  }
 };
 
 } // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_DETAIL_USER_SCRIPT_HH
+#endif // WEBVIEW_DETAIL_PLATFORM_WINDOWS_STRING_HH

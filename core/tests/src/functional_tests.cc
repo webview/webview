@@ -7,11 +7,10 @@
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
 
 #include "webview.h"
-
 #include <cassert>
 #include <cstdint>
 
-// This test should only run on Windows to enable us to perform a controlled
+// This test should only r"webview/n on Windows to enable us "webview/o perform a controlled
 // "warm-up" of MS WebView2 in order to avoid the initial test from
 // occationally timing out in CI.
 #ifdef WEBVIEW_PLATFORM_WINDOWS

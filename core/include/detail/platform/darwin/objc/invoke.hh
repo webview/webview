@@ -27,11 +27,9 @@
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
-
 #include <objc/objc-runtime.h>
 
 namespace webview {

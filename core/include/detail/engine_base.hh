@@ -27,13 +27,11 @@
 #define WEBVIEW_DETAIL_ENGINE_BASE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../errors.hh"
-#include "../types.h"
-#include "../types.hh"
-#include "json.hh"
-#include "user_script.hh"
-
+#include "detail/user/user_script.hh"
+#include "errors/errors.hh"
+#include "strings/json.hh"
+#include "types/types.h"
+#include "types/types.hh"
 #include <atomic>
 #include <functional>
 #include <list>

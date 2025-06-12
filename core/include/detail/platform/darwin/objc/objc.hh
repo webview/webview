@@ -27,18 +27,15 @@
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_OBJC_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
-
 // IWYU pragma: begin_exports
-#include "Class.hh"
-#include "autoreleasepool.hh"
-#include "invoke.hh"
-#include "memory.hh"
+#include "detail/platform/darwin/objc/Class.hh"
+#include "detail/platform/darwin/objc/autoreleasepool.hh"
+#include "detail/platform/darwin/objc/invoke.hh"
+#include "detail/platform/darwin/objc/memory.hh"
 // IWYU pragma: end_exports
-
 #include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>
 

@@ -27,10 +27,22 @@
 #define WEBVIEW_PLATFORM_WINDOWS_DPI_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+#include "detail/platform/windows/native_library.hh"
+#include "shcore.hh"
+#include "user32.hh"
+#include "version.hh"
+
+#ifdef _MSC_VER
+#pragma comment(lib, "user32.lib")
+#endif
 
 //
 // ====================================================================
@@ -40,21 +52,6 @@
 //
 // ====================================================================
 //
-
-#include "../../native_library.hh"
-#include "shcore.hh"
-#include "user32.hh"
-#include "version.hh"
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <windows.h>
-
-#ifdef _MSC_VER
-#pragma comment(lib, "user32.lib")
-#endif
 
 namespace webview {
 namespace detail {

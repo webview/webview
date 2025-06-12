@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_ERRORS_H
-#define WEBVIEW_ERRORS_H
+#ifndef WEBVIEW_ERRORS_ERRORS_H
+#define WEBVIEW_ERRORS_ERRORS_H
 
 /// @name Errors
 /// @{
@@ -64,4 +64,4 @@ typedef enum {
 
 /// @}
 
-#endif // WEBVIEW_ERRORS_H
+#endif // WEBVIEW_ERRORS_ERRORS_H

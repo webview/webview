@@ -27,13 +27,11 @@
 #define WEBVIEW_PLATFORM_DARWIN_COCOA_NSSAVEPANEL_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-
-#include "../objc/objc.hh"
-#include "NSApplication.hh"
+#include "detail/platform/darwin/cocoa/NSApplication.hh"
+#include "detail/platform/darwin/objc/objc.hh"
 
 namespace webview {
 namespace detail {

@@ -27,10 +27,21 @@
 #define WEBVIEW_PLATFORM_WINDOWS_COM_INIT_WRAPPER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+#include "errors/errors.hh"
+#include <objbase.h>
+#include <utility>
+
+#ifdef _MSC_VER
+#pragma comment(lib, "ole32.lib")
+#endif
 
 //
 // ====================================================================
@@ -40,22 +51,6 @@
 //
 // ====================================================================
 //
-
-#include "../../../errors.hh"
-
-#include <utility>
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <windows.h>
-
-#include <objbase.h>
-
-#ifdef _MSC_VER
-#pragma comment(lib, "ole32.lib")
-#endif
 
 namespace webview {
 namespace detail {

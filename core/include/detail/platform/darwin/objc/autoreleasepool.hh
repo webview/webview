@@ -27,13 +27,11 @@
 #define WEBVIEW_PLATFORM_DARWIN_OBJC_AUTORELEASEPOOL_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
-
-#include "invoke.hh"
-
+#include "detail/platform/darwin/objc/Class.hh"
+#include "detail/platform/darwin/objc/invoke.hh"
 #include <objc/objc-runtime.h>
 
 namespace webview {

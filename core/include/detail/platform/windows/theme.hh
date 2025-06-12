@@ -27,12 +27,10 @@
 #define WEBVIEW_PLATFORM_WINDOWS_THEME_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-
-#include "../../native_library.hh"
+#include "detail/platform/windows/native_library.hh"
 #include "dwmapi.hh"
 #include "reg_key.hh"
 

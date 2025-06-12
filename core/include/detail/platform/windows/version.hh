@@ -27,22 +27,18 @@
 #define WEBVIEW_PLATFORM_WINDOWS_VERSION_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-
-#include "ntdll.hh"
-
-#include <array>
-#include <string>
-#include <vector>
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
 #include <windows.h>
+
+#include "ntdll.hh"
+#include <array>
+#include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "version.lib")

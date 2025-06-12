@@ -27,13 +27,10 @@
 #define WEBVIEW_PLATFORM_DARWIN_WEBKIT_WKWEBVIEW_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-
-#include "../objc/objc.hh"
-
+#include "detail/platform/darwin/objc/objc.hh"
 #include <CoreGraphics/CoreGraphics.h>
 
 namespace webview {

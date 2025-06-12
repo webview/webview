@@ -28,30 +28,30 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include "../../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 // IWYU pragma: begin_exports
-#include "NSApplication.hh"
-#include "NSBundle.hh"
-#include "NSEvent.hh"
-#include "NSInvocation.hh"
-#include "NSMethodSignature.hh"
-#include "NSNotification.hh"
-#include "NSNumber.hh"
-#include "NSObject.hh"
-#include "NSOpenPanel.hh"
-#include "NSPoint.hh"
-#include "NSRect.hh"
-#include "NSSavePanel.hh"
-#include "NSSize.hh"
-#include "NSString.hh"
-#include "NSURL.hh"
-#include "NSURLRequest.hh"
-#include "NSValue.hh"
-#include "NSView.hh"
-#include "NSWindow.hh"
+#include "detail/platform/darwin/cocoa/NSApplication.hh"
+#include "detail/platform/darwin/cocoa/NSBundle.hh"
+#include "detail/platform/darwin/cocoa/NSEvent.hh"
+#include "detail/platform/darwin/cocoa/NSInvocation.hh"
+#include "detail/platform/darwin/cocoa/NSMethodSignature.hh"
+#include "detail/platform/darwin/cocoa/NSNotification.hh"
+#include "detail/platform/darwin/cocoa/NSNumber.hh"
+#include "detail/platform/darwin/cocoa/NSObject.hh"
+#include "detail/platform/darwin/cocoa/NSOpenPanel.hh"
+#include "detail/platform/darwin/cocoa/NSPoint.hh"
+#include "detail/platform/darwin/cocoa/NSRect.hh"
+#include "detail/platform/darwin/cocoa/NSSavePanel.hh"
+#include "detail/platform/darwin/cocoa/NSSize.hh"
+#include "detail/platform/darwin/cocoa/NSString.hh"
+#include "detail/platform/darwin/cocoa/NSURL.hh"
+#include "detail/platform/darwin/cocoa/NSURLRequest.hh"
+#include "detail/platform/darwin/cocoa/NSValue.hh"
+#include "detail/platform/darwin/cocoa/NSView.hh"
+#include "detail/platform/darwin/cocoa/NSWindow.hh"
 // IWYU pragma: end_exports
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)

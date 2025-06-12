@@ -23,20 +23,38 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_EXCEPTIONS_HH
-#define WEBVIEW_DETAIL_EXCEPTIONS_HH
+#ifndef WEBVIEW_LIB_JSON_DEPRECATED_HH
+#define WEBVIEW_LIB_JSON_DEPRECATED_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include <exception>
+#include "lib/macros.h"
+#include "strings/json.hh"
 
 namespace webview {
-namespace detail {
 
-class bad_access : public std::exception {};
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
+                        const char **value, size_t *valuesz) {
+  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
+}
 
-} // namespace detail
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_escape(const std::string &s) {
+  return detail::json_escape(s);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline int json_unescape(const char *s, size_t n, char *out) {
+  return detail::json_unescape(s, n, out);
+}
+
+WEBVIEW_DEPRECATED_PRIVATE
+inline std::string json_parse(const std::string &s, const std::string &key,
+                              const int index) {
+  return detail::json_parse(s, key, index);
+}
+
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_DETAIL_EXCEPTIONS_HH
+#endif // WEBVIEW_LIB_JSON_DEPRECATED_HH

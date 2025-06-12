@@ -23,45 +23,17 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_VERSION_H
-#define WEBVIEW_VERSION_H
+#ifndef WEBVIEW_BACKENDS_HH
+#define WEBVIEW_BACKENDS_HH
 
-#include "macros.h"
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "detail/backends/cocoa_webkit.hh"
+#include "detail/backends/gtk_webkitgtk.hh"
+#include "detail/backends/win32_edge.hh"
 
-/// @name Version
-/// @{
+namespace webview {
+using webview = browser_engine;
+}
 
-#ifndef WEBVIEW_VERSION_MAJOR
-/// The current library major version.
-#define WEBVIEW_VERSION_MAJOR 0
-#endif
-
-#ifndef WEBVIEW_VERSION_MINOR
-/// The current library minor version.
-#define WEBVIEW_VERSION_MINOR 12
-#endif
-
-#ifndef WEBVIEW_VERSION_PATCH
-/// The current library patch version.
-#define WEBVIEW_VERSION_PATCH 0
-#endif
-
-#ifndef WEBVIEW_VERSION_PRE_RELEASE
-/// SemVer 2.0.0 pre-release labels prefixed with "-".
-#define WEBVIEW_VERSION_PRE_RELEASE ""
-#endif
-
-#ifndef WEBVIEW_VERSION_BUILD_METADATA
-/// SemVer 2.0.0 build metadata prefixed with "+".
-#define WEBVIEW_VERSION_BUILD_METADATA ""
-#endif
-
-/// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
-#define WEBVIEW_VERSION_NUMBER                                                 \
-  WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
-  "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
-      WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
-
-/// @}
-
-#endif // WEBVIEW_VERSION_H
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_BACKENDS_HH

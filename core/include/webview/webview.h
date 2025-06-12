@@ -23,32 +23,10 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
+#ifndef WEBVIEW_WEBVIEW_H
+#define WEBVIEW_WEBVIEW_H
 
-#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "lib/macros.h"
+#include "api/api.h"
+#include "api/c_api_impl.hh"
 
-#if defined(WEBVIEW_PLATFORM_DARWIN)
-#include "detail/platform/darwin/objc/invoke.hh"
-#include <objc/objc-runtime.h>
-
-namespace webview {
-namespace detail {
-namespace objc {
-
-inline id autorelease(id object) {
-  return msg_send<id>(object, selector("autorelease"));
-}
-
-inline id retain(id object) { return msg_send<id>(object, selector("retain")); }
-
-inline void release(id object) { msg_send<void>(object, selector("release")); }
-
-} // namespace objc
-} // namespace detail
-} // namespace webview
-
-#endif // defined(WEBVIEW_PLATFORM_DARWIN)
-#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_MEMORY_HH
+#endif // WEBVIEW_WEBVIEW_H

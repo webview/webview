@@ -23,23 +23,20 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
-#define WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
+#ifndef WEBVIEW_DETAIL_PLATFORM_WINDOWS_NATIVE_LIBRARY_HH
+#define WEBVIEW_DETAIL_PLATFORM_WINDOWS_NATIVE_LIBRARY_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "lib/macros.h"
 
-#include "utility/string.hh"
-
-#include <string>
-
-#if defined(_WIN32)
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
+
+#include "detail/platform/windows/string.hh"
+#include <string>
 
 namespace webview {
 namespace detail {
@@ -166,5 +163,6 @@ private:
 } // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_DETAIL_NATIVE_LIBRARY_HH
+#endif // WEBVIEW_DETAIL_PLATFORM_WINDOWS_NATIVE_LIBRARY_HH

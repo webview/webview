@@ -23,18 +23,17 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_C_API_IMPL_HH
-#define WEBVIEW_C_API_IMPL_HH
+#ifndef WEBVIEW_API_C_API_IMPL_HH_LIB_HH
+#define WEBVIEW_API_C_API_IMPL_HH_LIB_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "backends.hh"
-#include "errors.h"
-#include "errors.hh"
-#include "json_deprecated.hh"
-#include "macros.h"
-#include "types.h"
-#include "version.h"
+#include "errors/errors.h"
+#include "errors/errors.hh"
+#include "lib/macros.h"
+#include "lib/version.h"
+#include "strings/json_deprecated.hh"
+#include "types/types.h"
+#include "webview_cc.hh"
 
 namespace webview {
 namespace detail {
@@ -255,4 +254,4 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
 }
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_C_API_IMPL_HH
+#endif // WEBVIEW_API_C_API_IMPL_HH

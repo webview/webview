@@ -23,14 +23,12 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_BASIC_RESULT_HH
-#define WEBVIEW_DETAIL_BASIC_RESULT_HH
+#ifndef WEBVIEW_TYPES_BASIC_RESULT_HH
+#define WEBVIEW_TYPES_BASIC_RESULT_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "exceptions.hh"
-#include "optional.hh"
-
+#include "errors/exceptions.hh"
+#include "types/optional.hh"
 #include <utility>
 
 namespace webview {
@@ -116,4 +114,4 @@ private:
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_DETAIL_BASIC_RESULT_HH
+#endif // WEBVIEW_TYPES_BASIC_RESULT_HH

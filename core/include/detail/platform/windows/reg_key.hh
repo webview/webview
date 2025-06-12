@@ -27,19 +27,16 @@
 #define WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-
-#include <string>
-#include <vector>
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
 #include <windows.h>
+
+#include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "advapi32.lib")

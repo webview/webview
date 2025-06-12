@@ -27,18 +27,15 @@
 #define WEBVIEW_PLATFORM_WINDOWS_SHCORE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-
-#include "../../native_library.hh"
-
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
 #include <windows.h>
+
+#include "detail/platform/windows/native_library.hh"
 
 namespace webview {
 namespace detail {

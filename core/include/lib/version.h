@@ -23,39 +23,45 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_JSON_HH
-#define WEBVIEW_JSON_HH
+#ifndef WEBVIEW_LIB_VERSION_H
+#define WEBVIEW_LIB_VERSION_H
 
-#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "lib/macros.h"
 
-#include "detail/json.hh"
-#include "macros.h"
+/// @name Version
+/// @{
 
-namespace webview {
+#ifndef WEBVIEW_VERSION_MAJOR
+/// The current library major version.
+#define WEBVIEW_VERSION_MAJOR 0
+#endif
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
-                        const char **value, size_t *valuesz) {
-  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
-}
+#ifndef WEBVIEW_VERSION_MINOR
+/// The current library minor version.
+#define WEBVIEW_VERSION_MINOR 12
+#endif
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline std::string json_escape(const std::string &s) {
-  return detail::json_escape(s);
-}
+#ifndef WEBVIEW_VERSION_PATCH
+/// The current library patch version.
+#define WEBVIEW_VERSION_PATCH 1
+#endif
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline int json_unescape(const char *s, size_t n, char *out) {
-  return detail::json_unescape(s, n, out);
-}
+#ifndef WEBVIEW_VERSION_PRE_RELEASE
+/// SemVer 2.0.0 pre-release labels prefixed with "-".
+#define WEBVIEW_VERSION_PRE_RELEASE ""
+#endif
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline std::string json_parse(const std::string &s, const std::string &key,
-                              const int index) {
-  return detail::json_parse(s, key, index);
-}
+#ifndef WEBVIEW_VERSION_BUILD_METADATA
+/// SemVer 2.0.0 build metadata prefixed with "+".
+#define WEBVIEW_VERSION_BUILD_METADATA ""
+#endif
 
-} // namespace webview
+/// SemVer 2.0.0 version number in MAJOR.MINOR.PATCH format.
+#define WEBVIEW_VERSION_NUMBER                                                 \
+  WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_MAJOR)                          \
+  "." WEBVIEW_EXPAND_AND_STRINGIFY(                                            \
+      WEBVIEW_VERSION_MINOR) "." WEBVIEW_EXPAND_AND_STRINGIFY(WEBVIEW_VERSION_PATCH)
 
-#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_JSON_HH
+/// @}
+
+#endif // WEBVIEW_LIB_VERSION_H

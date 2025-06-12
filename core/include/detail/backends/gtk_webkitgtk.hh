@@ -27,10 +27,33 @@
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#include "detail/engine_base.hh"
+#include "detail/platform/linux/gtk/compat.hh"
+#include "detail/platform/linux/webkitgtk/compat.hh"
+#include "detail/platform/linux/webkitgtk/dmabuf.hh"
+#include "detail/user/user_script.hh"
+#include "errors/errors.hh"
+#include "types/types.hh"
+#include <fcntl.h>
+#include <functional>
+#include <gtk/gtk.h>
+#include <list>
+#include <memory>
+#include <string>
+#include <sys/stat.h>
+
+#if GTK_MAJOR_VERSION >= 4
+#include <jsc/jsc.h>
+#include <webkit/webkit.h>
+
+#elif GTK_MAJOR_VERSION >= 3
+#include <JavaScriptCore/JavaScript.h>
+#include <webkit2/webkit2.h>
+
+#endif
 
 //
 // ====================================================================
@@ -44,36 +67,6 @@
 //
 // ====================================================================
 //
-
-#include "../../errors.hh"
-#include "../../types.hh"
-#include "../engine_base.hh"
-#include "../platform/linux/gtk/compat.hh"
-#include "../platform/linux/webkitgtk/compat.hh"
-#include "../platform/linux/webkitgtk/dmabuf.hh"
-#include "../user_script.hh"
-
-#include <functional>
-#include <list>
-#include <memory>
-#include <string>
-
-#include <gtk/gtk.h>
-
-#if GTK_MAJOR_VERSION >= 4
-
-#include <jsc/jsc.h>
-#include <webkit/webkit.h>
-
-#elif GTK_MAJOR_VERSION >= 3
-
-#include <JavaScriptCore/JavaScript.h>
-#include <webkit2/webkit2.h>
-
-#endif
-
-#include <fcntl.h>
-#include <sys/stat.h>
 
 namespace webview {
 namespace detail {

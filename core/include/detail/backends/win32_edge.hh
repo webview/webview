@@ -27,10 +27,44 @@
 #define WEBVIEW_BACKENDS_WIN32_EDGE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-
-#include "../../macros.h"
+#include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+#include "detail/engine_base.hh"
+#include "detail/platform/windows/com_init_wrapper.hh"
+#include "detail/platform/windows/dpi.hh"
+#include "detail/platform/windows/iid.hh"
+#include "detail/platform/windows/native_library.hh"
+#include "detail/platform/windows/reg_key.hh"
+#include "detail/platform/windows/string.hh"
+#include "detail/platform/windows/theme.hh"
+#include "detail/platform/windows/version.hh"
+#include "detail/platform/windows/webview2/loader.hh"
+#include "detail/user/user_script.hh"
+#include "errors/errors.hh"
+#include "types/types.hh"
+#include <atomic>
+#include <cstdlib>
+#include <functional>
+#include <list>
+#include <memory>
+#include <objbase.h>
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <utility>
+
+#ifdef _MSC_VER
+#pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "version.lib")
+#endif
 
 //
 // ====================================================================
@@ -40,45 +74,6 @@
 //
 // ====================================================================
 //
-
-#include "../../errors.hh"
-#include "../../types.hh"
-#include "../engine_base.hh"
-#include "../native_library.hh"
-#include "../platform/windows/com_init_wrapper.hh"
-#include "../platform/windows/dpi.hh"
-#include "../platform/windows/iid.hh"
-#include "../platform/windows/reg_key.hh"
-#include "../platform/windows/theme.hh"
-#include "../platform/windows/version.hh"
-#include "../platform/windows/webview2/loader.hh"
-#include "../user_script.hh"
-#include "../utility/string.hh"
-
-#include <atomic>
-#include <cstdlib>
-#include <functional>
-#include <list>
-#include <memory>
-#include <utility>
-
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <windows.h>
-
-#include <objbase.h>
-#include <shlobj.h>
-#include <shlwapi.h>
-
-#ifdef _MSC_VER
-#pragma comment(lib, "ole32.lib")
-#pragma comment(lib, "shell32.lib")
-#pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "user32.lib")
-#pragma comment(lib, "version.lib")
-#endif
 
 namespace webview {
 namespace detail {
