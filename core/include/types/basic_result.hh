@@ -31,8 +31,9 @@
 #include "types/optional.hh"
 #include <utility>
 
+using namespace webview::errors;
 namespace webview {
-namespace detail {
+namespace types {
 
 template <typename Value, typename Error, typename Exception>
 class basic_result {
@@ -110,7 +111,7 @@ private:
   optional<error_type> m_error;
 };
 
-} // namespace detail
+} // namespace types
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

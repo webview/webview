@@ -1,5 +1,4 @@
 #include "webview.h"
-
 #include <iostream>
 
 #ifdef _WIN32
@@ -14,7 +13,7 @@ int main() {
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");
     w.run();
-  } catch (const webview::exception &e) {
+  } catch (const exception &e) {
     std::cerr << e.what() << '\n';
     return 1;
   }

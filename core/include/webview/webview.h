@@ -26,7 +26,6 @@
 #ifndef WEBVIEW_WEBVIEW_H
 #define WEBVIEW_WEBVIEW_H
 
-#include "api/api.h"
-#include "api/c_api_impl.hh"
+#include "../webview.h"
 
 #endif // WEBVIEW_WEBVIEW_H

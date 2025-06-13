@@ -27,12 +27,15 @@
 #define WEBVIEW_LIB_JSON_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "types/types.hh"
 #include <cassert>
 #include <cstring>
 #include <string>
 
+using namespace webview::types;
 namespace webview {
-namespace detail {
+namespace _lib {
+namespace _strings {
 
 inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
                         const char **value, size_t *valuesz) {
@@ -326,7 +329,8 @@ inline std::string json_parse(const std::string &s, const std::string &key,
   return "";
 }
 
-} // namespace detail
+} // namespace _strings
+} // namespace _lib
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

@@ -27,71 +27,23 @@
 #define WEBVIEW_API_C_API_IMPL_HH_LIB_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "api/api_lib.hh"
 #include "errors/errors.h"
 #include "errors/errors.hh"
 #include "lib/macros.h"
 #include "lib/version.h"
-#include "strings/json_deprecated.hh"
+#include "strings/json.hh"
 #include "types/types.h"
 #include "webview_cc.hh"
 
-namespace webview {
-namespace detail {
-
-// The library's version information.
-constexpr const webview_version_info_t library_version_info{
-    {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},
-    WEBVIEW_VERSION_NUMBER,
-    WEBVIEW_VERSION_PRE_RELEASE,
-    WEBVIEW_VERSION_BUILD_METADATA};
-
-template <typename WorkFn, typename ResultFn>
-webview_error_t api_filter(WorkFn &&do_work, ResultFn &&put_result) noexcept {
-  try {
-    auto result = do_work();
-    if (result.ok()) {
-      put_result(result.value());
-      return WEBVIEW_ERROR_OK;
-    }
-    return result.error().code();
-  } catch (const exception &e) {
-    return e.error().code();
-  } catch (...) {
-    return WEBVIEW_ERROR_UNSPECIFIED;
-  }
-}
-
-template <typename WorkFn>
-webview_error_t api_filter(WorkFn &&do_work) noexcept {
-  try {
-    auto result = do_work();
-    if (result.ok()) {
-      return WEBVIEW_ERROR_OK;
-    }
-    return result.error().code();
-  } catch (const exception &e) {
-    return e.error().code();
-  } catch (...) {
-    return WEBVIEW_ERROR_UNSPECIFIED;
-  }
-}
-
-inline webview *cast_to_webview(void *w) {
-  if (!w) {
-    throw exception{WEBVIEW_ERROR_INVALID_ARGUMENT,
-                    "Cannot cast null pointer to webview instance"};
-  }
-  return static_cast<webview *>(w);
-}
-
-} // namespace detail
-} // namespace webview
+using namespace webview::_lib::_api;
+using namespace webview::types;
 
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   using namespace webview::detail;
   webview::webview *w{};
   auto err = api_filter(
-      [=]() -> webview::result<webview::webview *> {
+      [=]() -> result<webview::webview *> {
         return new webview::webview{static_cast<bool>(debug), wnd};
       },
       [&](webview::webview *w_) { w = w_; });
@@ -103,7 +55,7 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
 
 WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
   using namespace webview::detail;
-  return api_filter([=]() -> webview::noresult {
+  return api_filter([=]() -> noresult {
     delete cast_to_webview(w);
     return {};
   });
@@ -146,7 +98,7 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
   using namespace webview::detail;
   void *handle{};
   auto err = api_filter(
-      [=]() -> webview::result<void *> {
+      [=]() -> result<void *> {
         auto *w_ = cast_to_webview(w);
         switch (kind) {
         case WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW:
@@ -156,7 +108,7 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
         case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
           return w_->browser_controller();
         default:
-          return webview::error_info{WEBVIEW_ERROR_INVALID_ARGUMENT};
+          return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT};
         }
       },
       [&](void *handle_) { handle = handle_; });
@@ -250,7 +202,7 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
-  return &webview::detail::library_version_info;
+  return &library_version_info;
 }
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

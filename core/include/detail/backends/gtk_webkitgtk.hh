@@ -34,6 +34,7 @@
 #include "detail/platform/linux/gtk/compat.hh"
 #include "detail/platform/linux/webkitgtk/compat.hh"
 #include "detail/platform/linux/webkitgtk/dmabuf.hh"
+#include "detail/user/gtk_webkit_user.hh"
 #include "detail/user/user_script.hh"
 #include "errors/errors.hh"
 #include "types/types.hh"
@@ -55,6 +56,11 @@
 
 #endif
 
+using namespace webview::detail::platform::linuz;
+namespace webview {
+namespace detail {
+namespace backend {
+
 //
 // ====================================================================
 //
@@ -68,29 +74,8 @@
 // ====================================================================
 //
 
-namespace webview {
-namespace detail {
-
-class user_script::impl {
-public:
-  impl(WebKitUserScript *script) : m_script{script} {
-    webkit_user_script_ref(script);
-  }
-
-  ~impl() { webkit_user_script_unref(m_script); }
-
-  impl(const impl &) = delete;
-  impl &operator=(const impl &) = delete;
-  impl(impl &&) = delete;
-  impl &operator=(impl &&) = delete;
-
-  WebKitUserScript *get_native() const { return m_script; }
-
-private:
-  WebKitUserScript *m_script{};
-};
-
 class gtk_webkit_engine : public engine_base {
+
 public:
   gtk_webkit_engine(bool debug, void *window) : engine_base{!window} {
     window_init(window);
@@ -111,8 +96,8 @@ public:
         gtk_window_close(GTK_WINDOW(m_window));
         on_window_destroyed(true);
       } else {
-        gtk_compat::window_remove_child(GTK_WINDOW(m_window),
-                                        GTK_WIDGET(m_webview));
+        gtk::compat::window_remove_child(GTK_WINDOW(m_window),
+                                         GTK_WIDGET(m_webview));
       }
     }
     if (m_webview) {
@@ -176,11 +161,11 @@ protected:
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
-      gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
+      gtk::compat::window_set_size(GTK_WINDOW(m_window), width, height);
     } else if (hints == WEBVIEW_HINT_FIXED || hints == WEBVIEW_HINT_MIN) {
       gtk_widget_set_size_request(m_window, width, height);
     } else if (hints == WEBVIEW_HINT_MAX) {
-      gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
+      gtk::compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
     } else {
       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
     }
@@ -267,10 +252,10 @@ private:
   void window_init(void *window) {
     m_window = static_cast<GtkWidget *>(window);
     if (owns_window()) {
-      if (!gtk_compat::init_check()) {
+      if (!gtk::compat::init_check()) {
         throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
       }
-      m_window = gtk_compat::window_new();
+      m_window = gtk::compat::window_new();
       on_window_created();
       auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
         auto *w = static_cast<gtk_webkit_engine *>(arg);
@@ -280,18 +265,18 @@ private:
       g_signal_connect(G_OBJECT(m_window), "destroy",
                        G_CALLBACK(on_window_destroy), this);
     }
-    webkit_dmabuf::apply_webkit_dmabuf_workaround();
+    webkitgtk::dmabuf::apply_workaround();
     // Initialize webview widget
     m_webview = webkit_web_view_new();
     g_object_ref_sink(m_webview);
     WebKitUserContentManager *manager = m_user_content_manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
-    webkitgtk_compat::connect_script_message_received(
+    webkitgtk::compat::connect_script_message_received(
         manager, "__webview__",
         [this](WebKitUserContentManager *, const std::string &r) {
           on_message(r);
         });
-    webkitgtk_compat::user_content_manager_register_script_message_handler(
+    webkitgtk::compat::user_content_manager_register_script_message_handler(
         manager, "__webview__");
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
@@ -313,12 +298,12 @@ private:
     if (m_is_window_shown) {
       return {};
     }
-    gtk_compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
-    gtk_compat::widget_set_visible(GTK_WIDGET(m_webview), true);
+    gtk::compat::window_set_child(GTK_WINDOW(m_window), GTK_WIDGET(m_webview));
+    gtk::compat::widget_set_visible(GTK_WIDGET(m_webview), true);
 
     if (owns_window()) {
       gtk_widget_grab_focus(GTK_WIDGET(m_webview));
-      gtk_compat::widget_set_visible(GTK_WIDGET(m_window), true);
+      gtk::compat::widget_set_visible(GTK_WIDGET(m_window), true);
     }
     m_is_window_shown = true;
     return {};
@@ -337,10 +322,10 @@ private:
   bool m_is_window_shown{};
 };
 
+using browser_engine = gtk_webkit_engine;
+
+} // namespace backend
 } // namespace detail
-
-using browser_engine = detail::gtk_webkit_engine;
-
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)

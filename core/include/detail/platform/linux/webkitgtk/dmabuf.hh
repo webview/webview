@@ -55,15 +55,47 @@
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace linuz {
+namespace webkitgtk {
 
-// Namespace containing workaround for WebKit 2.42 when using NVIDIA GPU
-// driver.
+// struct containing workaround for WebKit 2.42 when using NVIDIA GPU driver.
 // See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
-// Please remove all of the code in this namespace when it's no longer needed.
-namespace webkit_dmabuf {
+// Please remove all of the code in this struct when it's no longer needed.
+struct dmabuf {
 
-// Get environment variable. Not thread-safe.
-static inline std::string get_env(const std::string &name) {
+  // Get environment variable. Not thread-safe.
+  static std::string get_env(const std::string &name);
+  // Set environment variable. Not thread-safe.
+  static void set_env(const std::string &name, const std::string &value);
+
+  // Checks whether the NVIDIA GPU driver is used based on whether the kernel
+  // module is loaded.
+  static bool is_using_nvidia_driver();
+
+  // Checks whether the windowing system is Wayland.
+  static bool is_wayland_display();
+
+  // Checks whether the GDK X11 backend is used.
+  // See: https://docs.gtk.org/gdk3/class.DisplayManager.html
+  static bool is_gdk_x11_backend();
+
+  // Checks whether WebKit is affected by bug when using DMA-BUF renderer.
+  // Returns true if all of the following conditions are met:
+  //  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
+  //  - Environment variables are empty or not set:
+  //    - WEBKIT_DISABLE_DMABUF_RENDERER
+  //  - Windowing system is not Wayland.
+  //  - GDK backend is X11.
+  //  - NVIDIA GPU driver is used.
+  static bool is_webkit_dmabuf_bugged();
+
+  // Applies workaround for WebKit DMA-BUF bug if needed.
+  // See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
+  static void apply_workaround();
+};
+
+std::string dmabuf::get_env(const std::string &name) {
   auto *value = std::getenv(name.c_str());
   if (value) {
     return {value};
@@ -71,14 +103,11 @@ static inline std::string get_env(const std::string &name) {
   return {};
 }
 
-// Set environment variable. Not thread-safe.
-static inline void set_env(const std::string &name, const std::string &value) {
+void dmabuf::set_env(const std::string &name, const std::string &value) {
   ::setenv(name.c_str(), value.c_str(), 1);
 }
 
-// Checks whether the NVIDIA GPU driver is used based on whether the kernel
-// module is loaded.
-static inline bool is_using_nvidia_driver() {
+bool dmabuf::is_using_nvidia_driver() {
   struct ::stat buffer {};
   if (::stat("/sys/module/nvidia", &buffer) != 0) {
     return false;
@@ -87,7 +116,7 @@ static inline bool is_using_nvidia_driver() {
 }
 
 // Checks whether the windowing system is Wayland.
-static inline bool is_wayland_display() {
+bool dmabuf::is_wayland_display() {
   if (!get_env("WAYLAND_DISPLAY").empty()) {
     return true;
   }
@@ -100,9 +129,7 @@ static inline bool is_wayland_display() {
   return false;
 }
 
-// Checks whether the GDK X11 backend is used.
-// See: https://docs.gtk.org/gdk3/class.DisplayManager.html
-static inline bool is_gdk_x11_backend() {
+bool dmabuf::is_gdk_x11_backend() {
 #ifdef GDK_WINDOWING_X11
   auto *gdk_display = gdk_display_get_default();
   return GDK_IS_X11_DISPLAY(gdk_display); // NOLINT(misc-const-correctness)
@@ -111,15 +138,7 @@ static inline bool is_gdk_x11_backend() {
 #endif
 }
 
-// Checks whether WebKit is affected by bug when using DMA-BUF renderer.
-// Returns true if all of the following conditions are met:
-//  - WebKit version is >= 2.42 (please narrow this down when there's a fix).
-//  - Environment variables are empty or not set:
-//    - WEBKIT_DISABLE_DMABUF_RENDERER
-//  - Windowing system is not Wayland.
-//  - GDK backend is X11.
-//  - NVIDIA GPU driver is used.
-static inline bool is_webkit_dmabuf_bugged() {
+bool dmabuf::is_webkit_dmabuf_bugged() {
   auto wk_major = webkit_get_major_version();
   auto wk_minor = webkit_get_minor_version();
   // TODO: Narrow down affected WebKit version when there's a fixed version
@@ -142,16 +161,16 @@ static inline bool is_webkit_dmabuf_bugged() {
   return true;
 }
 
-// Applies workaround for WebKit DMA-BUF bug if needed.
-// See WebKit bug: https://bugs.webkit.org/show_bug.cgi?id=261874
-static inline void apply_webkit_dmabuf_workaround() {
+void dmabuf::apply_workaround() {
   if (!is_webkit_dmabuf_bugged()) {
     return;
   }
   set_env("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
 }
 
-} // namespace webkit_dmabuf
+} // namespace webkitgtk
+} // namespace linuz
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

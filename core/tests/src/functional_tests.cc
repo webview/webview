@@ -10,6 +10,8 @@
 #include <cassert>
 #include <cstdint>
 
+using namespace webview::detail::backend;
+
 // This test should only r"webview/n on Windows to enable us "webview/o perform a controlled
 // "warm-up" of MS WebView2 in order to avoid the initial test from
 // occationally timing out in CI.
@@ -259,9 +261,9 @@ TEST_CASE("webview_version()") {
   REQUIRE(webview_version() == vi);
 }
 
-struct test_webview : webview::browser_engine {
+struct test_webview : browser_engine {
   using cb_t = std::function<void(test_webview *, int, const std::string &)>;
-  test_webview(cb_t cb) : webview::browser_engine(true, nullptr), m_cb(cb) {}
+  test_webview(cb_t cb) : browser_engine(true, nullptr), m_cb(cb) {}
   void on_message(const std::string &msg) override { m_cb(this, i++, msg); }
   int i = 0;
   cb_t m_cb;

@@ -32,6 +32,7 @@
 #include <string>
 
 namespace webview {
+namespace errors {
 
 class error_info {
 public:
@@ -77,6 +78,7 @@ private:
   std::exception_ptr m_cause;
 };
 
+} // namespace errors
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

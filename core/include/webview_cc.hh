@@ -32,7 +32,7 @@
 #include "detail/backends/win32_edge.hh"
 
 namespace webview {
-using webview = browser_engine;
+using webview = detail::backend::browser_engine;
 }
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

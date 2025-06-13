@@ -45,11 +45,14 @@
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace linuz {
+namespace gtk {
 
 /**
  * GTK compatibility helper class.
  */
-class gtk_compat {
+class compat {
 public:
   static gboolean init_check() {
 #if GTK_MAJOR_VERSION >= 4
@@ -124,6 +127,9 @@ public:
   }
 };
 
+} // namespace gtk
+} // namespace linuz
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

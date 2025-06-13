@@ -34,7 +34,9 @@
 
 namespace webview {
 namespace detail {
+namespace user {
 
+/// Handlers for a bound JS function / native promise resolution lifecycle.
 class user_script {
 public:
   class impl;
@@ -68,6 +70,25 @@ private:
   impl_ptr m_impl;
 };
 
+using binding_t = std::function<void(std::string, std::string, void *)>;
+class binding_ctx_t {
+public:
+  binding_ctx_t(binding_t callback, void *arg)
+      : m_callback(callback), m_arg(arg) {}
+  void call(std::string id, std::string args) const {
+    if (m_callback) {
+      m_callback(id, args, m_arg);
+    }
+  }
+
+private:
+  // This function is called upon execution of the bound JS function
+  binding_t m_callback;
+  // This user-supplied argument is passed to the callback
+  void *m_arg;
+};
+
+} // namespace user
 } // namespace detail
 } // namespace webview
 

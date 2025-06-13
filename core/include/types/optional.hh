@@ -32,8 +32,9 @@
 #include <type_traits>
 #include <utility>
 
+using namespace webview::errors;
 namespace webview {
-namespace detail {
+namespace types {
 
 template <typename T> class optional {
 public:
@@ -109,7 +110,7 @@ private:
 
 template <> class optional<void> {};
 
-} // namespace detail
+} // namespace types
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

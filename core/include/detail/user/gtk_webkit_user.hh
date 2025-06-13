@@ -23,38 +23,55 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_LIB_JSON_DEPRECATED_HH
-#define WEBVIEW_LIB_JSON_DEPRECATED_HH
+#ifndef WEBVIEW_DETAIL_USER_GTK_WEBKITGTK_USER_HH
+#define WEBVIEW_DETAIL_USER_GTK_WEBKITGTK_USER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "lib/macros.h"
-#include "strings/json.hh"
+
+#if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#include "detail/platform/linux/gtk/compat.hh"
+#include "detail/platform/linux/webkitgtk/compat.hh"
+#include "detail/platform/linux/webkitgtk/dmabuf.hh"
+#include "detail/user/user_script.hh"
+
+#if GTK_MAJOR_VERSION >= 4
+#include <jsc/jsc.h>
+#include <webkit/webkit.h>
+
+#elif GTK_MAJOR_VERSION >= 3
+#include <JavaScriptCore/JavaScript.h>
+#include <webkit2/webkit2.h>
+
+#endif
 
 namespace webview {
+namespace detail {
+namespace user {
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline int json_parse_c(const char *s, size_t sz, const char *key, size_t keysz,
-                        const char **value, size_t *valuesz) {
-  return detail::json_parse_c(s, sz, key, keysz, value, valuesz);
-}
+class user_script::impl {
+public:
+  impl(WebKitUserScript *script) : m_script{script} {
+    webkit_user_script_ref(script);
+  }
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline std::string json_escape(const std::string &s) {
-  return detail::json_escape(s);
-}
+  ~impl() { webkit_user_script_unref(m_script); }
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline int json_unescape(const char *s, size_t n, char *out) {
-  return detail::json_unescape(s, n, out);
-}
+  impl(const impl &) = delete;
+  impl &operator=(const impl &) = delete;
+  impl(impl &&) = delete;
+  impl &operator=(impl &&) = delete;
 
-WEBVIEW_DEPRECATED_PRIVATE
-inline std::string json_parse(const std::string &s, const std::string &key,
-                              const int index) {
-  return detail::json_parse(s, key, index);
-}
+  WebKitUserScript *get_native() const { return m_script; }
 
+private:
+  WebKitUserScript *m_script{};
+};
+
+} // namespace user
+} // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_LIB_JSON_DEPRECATED_HH
+#endif // WEBVIEW_DETAIL_USER_GTK_WEBKITGTK_USER_HH

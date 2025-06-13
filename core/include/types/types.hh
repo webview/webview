@@ -31,15 +31,17 @@
 #include "types/basic_result.hh"
 #include <functional>
 
+using namespace webview::errors;
 namespace webview {
+namespace types {
 
 using dispatch_fn_t = std::function<void()>;
 
-template <typename T>
-using result = detail::basic_result<T, error_info, exception>;
+template <typename T> using result = basic_result<T, error_info, exception>;
 
-using noresult = detail::basic_result<void, error_info, exception>;
+using noresult = basic_result<void, error_info, exception>;
 
+} // namespace types
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
