@@ -89,49 +89,6 @@ private:
   HKEY m_handle = nullptr;
 };
 
-template <typename Container>
-void reg_key::query_bytes(const wchar_t *name, Container &result) const {
-  DWORD buf_length = 0;
-  // Get the size of the data in bytes.
-  auto status =
-      RegQueryValueExW(m_handle, name, nullptr, nullptr, nullptr, &buf_length);
-  if (status != ERROR_SUCCESS && status != ERROR_MORE_DATA) {
-    result.resize(0);
-    return;
-  }
-  // Read the data.
-  result.resize(buf_length / sizeof(typename Container::value_type));
-  auto *buf = reinterpret_cast<LPBYTE>(&result[0]);
-  status = RegQueryValueExW(m_handle, name, nullptr, nullptr, buf, &buf_length);
-  if (status != ERROR_SUCCESS) {
-    result.resize(0);
-    return;
-  }
-}
-
-std::wstring reg_key::query_string(const wchar_t *name) const {
-  std::wstring result;
-  query_bytes(name, result);
-  // Remove trailing null-characters.
-  for (std::size_t length = result.size(); length > 0; --length) {
-    if (result[length - 1] != 0) {
-      result.resize(length);
-      break;
-    }
-  }
-  return result;
-}
-
-unsigned int reg_key::query_uint(const wchar_t *name,
-                                 unsigned int default_value) const {
-  std::vector<char> data;
-  query_bytes(name, data);
-  if (data.size() < sizeof(DWORD)) {
-    return default_value;
-  }
-  return static_cast<unsigned int>(*reinterpret_cast<DWORD *>(data.data()));
-}
-
 } // namespace windows
 } // namespace platform
 } // namespace detail

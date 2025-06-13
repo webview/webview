@@ -34,7 +34,7 @@
 using namespace webview::errors;
 namespace webview {
 namespace types {
-
+using sync_binding_t = std::function<std::string(std::string)>;
 using dispatch_fn_t = std::function<void()>;
 
 template <typename T> using result = basic_result<T, error_info, exception>;

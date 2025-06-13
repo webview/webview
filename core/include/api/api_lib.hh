@@ -45,43 +45,12 @@ constexpr const webview_version_info_t library_version_info{
     WEBVIEW_VERSION_BUILD_METADATA};
 
 template <typename WorkFn, typename ResultFn>
-webview_error_t api_filter(WorkFn &&do_work, ResultFn &&put_result) noexcept {
-  try {
-    auto result = do_work();
-    if (result.ok()) {
-      put_result(result.value());
-      return WEBVIEW_ERROR_OK;
-    }
-    return result.error().code();
-  } catch (const exception &e) {
-    return e.error().code();
-  } catch (...) {
-    return WEBVIEW_ERROR_UNSPECIFIED;
-  }
-}
+webview_error_t api_filter(WorkFn &&do_work, ResultFn &&put_result) noexcept;
 
 template <typename WorkFn>
-webview_error_t api_filter(WorkFn &&do_work) noexcept {
-  try {
-    auto result = do_work();
-    if (result.ok()) {
-      return WEBVIEW_ERROR_OK;
-    }
-    return result.error().code();
-  } catch (const exception &e) {
-    return e.error().code();
-  } catch (...) {
-    return WEBVIEW_ERROR_UNSPECIFIED;
-  }
-}
+webview_error_t api_filter(WorkFn &&do_work) noexcept;
 
-inline webview *cast_to_webview(void *w) {
-  if (!w) {
-    throw exception{WEBVIEW_ERROR_INVALID_ARGUMENT,
-                    "Cannot cast null pointer to webview instance"};
-  }
-  return static_cast<webview *>(w);
-}
+inline webview *cast_to_webview(void *w);
 
 } // namespace _api
 } // namespace _lib
