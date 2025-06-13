@@ -39,46 +39,65 @@
 
 namespace webview {
 namespace detail {
-namespace user32_symbols {
+namespace platform {
+namespace windows {
 
-using DPI_AWARENESS_CONTEXT = HANDLE;
-using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
-using SetProcessDPIAware_t = BOOL(WINAPI *)();
-using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
-using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
-using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
-                                                  UINT);
-using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
-using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
-                                                      DPI_AWARENESS_CONTEXT);
+struct user32_symbl {
 
-// Use intptr_t as the underlying type because we need to
-// reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
-// Available since Windows 10, version 1607
-enum class dpi_awareness : intptr_t {
-  per_monitor_v2_aware = -4, // Available since Windows 10, version 1703
-  per_monitor_aware = -3
+  using DPI_AWARENESS_CONTEXT = HANDLE;
+  using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+  using SetProcessDPIAware_t = BOOL(WINAPI *)();
+  using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+  using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+  using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
+                                                    UINT);
+  using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
+  using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
+                                                        DPI_AWARENESS_CONTEXT);
+
+  // Use intptr_t as the underlying type because we need to
+  // reinterpret_cast<DPI_AWARENESS_CONTEXT> which is a pointer.
+  // Available since Windows 10, version 1607
+  enum class dpi_awareness : intptr_t {
+    per_monitor_v2_aware = -4, // Available since Windows 10, version 1703
+    per_monitor_aware = -3
+  };
+
+  constexpr library_symbol<
+      SetProcessDpiAwarenessContext_t> static SetProcessDpiAwarenessContext() {
+    return library_symbol<SetProcessDpiAwarenessContext_t>(
+        "SetProcessDpiAwarenessContext");
+  }
+  static constexpr library_symbol<SetProcessDPIAware_t> SetProcessDPIAware() {
+    return library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
+  }
+  static constexpr library_symbol<GetDpiForWindow_t> GetDpiForWindow() {
+    return library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
+  }
+  static constexpr library_symbol<EnableNonClientDpiScaling_t>
+  EnableNonClientDpiScaling() {
+    return library_symbol<EnableNonClientDpiScaling_t>(
+        "EnableNonClientDpiScaling");
+  }
+  static constexpr library_symbol<AdjustWindowRectExForDpi_t>
+  AdjustWindowRectExForDpi() {
+    return library_symbol<AdjustWindowRectExForDpi_t>(
+        "AdjustWindowRectExForDpi");
+  }
+  static constexpr library_symbol<GetWindowDpiAwarenessContext_t>
+  GetWindowDpiAwarenessContext() {
+    return library_symbol<GetWindowDpiAwarenessContext_t>(
+        "GetWindowDpiAwarenessContext");
+  }
+  static constexpr library_symbol<AreDpiAwarenessContextsEqual_t>
+  AreDpiAwarenessContextsEqual() {
+    return library_symbol<AreDpiAwarenessContextsEqual_t>(
+        "AreDpiAwarenessContextsEqual");
+  }
 };
 
-constexpr auto SetProcessDpiAwarenessContext =
-    library_symbol<SetProcessDpiAwarenessContext_t>(
-        "SetProcessDpiAwarenessContext");
-constexpr auto SetProcessDPIAware =
-    library_symbol<SetProcessDPIAware_t>("SetProcessDPIAware");
-constexpr auto GetDpiForWindow =
-    library_symbol<GetDpiForWindow_t>("GetDpiForWindow");
-constexpr auto EnableNonClientDpiScaling =
-    library_symbol<EnableNonClientDpiScaling_t>("EnableNonClientDpiScaling");
-constexpr auto AdjustWindowRectExForDpi =
-    library_symbol<AdjustWindowRectExForDpi_t>("AdjustWindowRectExForDpi");
-constexpr auto GetWindowDpiAwarenessContext =
-    library_symbol<GetWindowDpiAwarenessContext_t>(
-        "GetWindowDpiAwarenessContext");
-constexpr auto AreDpiAwarenessContextsEqual =
-    library_symbol<AreDpiAwarenessContextsEqual_t>(
-        "AreDpiAwarenessContextsEqual");
-
-} // namespace user32_symbols
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

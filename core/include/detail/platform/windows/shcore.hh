@@ -30,24 +30,26 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include "detail/platform/windows/native_library.hh"
 
 namespace webview {
 namespace detail {
-namespace shcore_symbols {
+namespace platform {
+namespace windows {
 
-typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
-using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+struct shcore {
 
-constexpr auto SetProcessDpiAwareness =
-    library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
+  typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+  using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
 
-} // namespace shcore_symbols
+  constexpr library_symbol<
+      SetProcessDpiAwareness_t> static SetProcessDpiAwareness() {
+    return library_symbol<SetProcessDpiAwareness_t>("SetProcessDpiAwareness");
+  }
+};
+
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

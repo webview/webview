@@ -30,28 +30,44 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
+#ifdef _MSC_VER
+#pragma comment(lib, "version.lib")
 #endif
-#include <windows.h>
-
 #include "ntdll.hh"
 #include <array>
 #include <string>
 #include <vector>
 
-#ifdef _MSC_VER
-#pragma comment(lib, "version.lib")
-#endif
-
 namespace webview {
 namespace detail {
+namespace platform {
+namespace windows {
 
-// Parses a version string with 1-4 integral components, e.g. "1.2.3.4".
-// Missing or invalid components default to 0, and excess components are ignored.
+struct version {
+  // Parses a version string with 1-4 integral components, e.g. "1.2.3.4".
+  // Missing or invalid components default to 0, and excess components are ignored.
+  template <typename T>
+  static std::array<unsigned int, 4>
+  parse_version(const std::basic_string<T> &version) noexcept;
+
+  template <typename T, std::size_t Length>
+  static std::array<unsigned int, 4>
+  parse_version(const T (&version)[Length]) noexcept;
+
+  static std::wstring
+  get_file_version_string(const std::wstring &file_path) noexcept;
+
+  // Compare the specified version against the OS version.
+  // Returns less than 0 if the OS version is less.
+  // Returns 0 if the versions are equal.
+  // Returns greater than 0 if the specified version is greater.
+  static int compare_os_version(unsigned int major, unsigned int minor,
+                                unsigned int build);
+};
+
 template <typename T>
 std::array<unsigned int, 4>
-parse_version(const std::basic_string<T> &version) noexcept {
+version::parse_version(const std::basic_string<T> &version) noexcept {
   using iterator = typename std::basic_string<T>::const_iterator;
   auto parse_component = [](iterator sb, iterator se) -> unsigned int {
     try {
@@ -81,48 +97,45 @@ parse_version(const std::basic_string<T> &version) noexcept {
 }
 
 template <typename T, std::size_t Length>
-std::array<unsigned int, 4> parse_version(const T (&version)[Length]) noexcept {
+std::array<unsigned int, 4>
+version::parse_version(const T (&version)[Length]) noexcept {
   return parse_version(std::basic_string<T>(version, Length));
 }
 
-inline std::wstring
-get_file_version_string(const std::wstring &file_path) noexcept {
+std::wstring
+version::get_file_version_string(const std::wstring &file_path) noexcept {
   DWORD dummy_handle; // Unused
   DWORD info_buffer_length =
       GetFileVersionInfoSizeW(file_path.c_str(), &dummy_handle);
   if (info_buffer_length == 0) {
-    return std::wstring();
+    return {};
   }
   std::vector<char> info_buffer;
   info_buffer.reserve(info_buffer_length);
   if (!GetFileVersionInfoW(file_path.c_str(), 0, info_buffer_length,
                            info_buffer.data())) {
-    return std::wstring();
+    return {};
   }
   auto sub_block = L"\\StringFileInfo\\040904B0\\ProductVersion";
   LPWSTR version = nullptr;
   unsigned int version_length = 0;
   if (!VerQueryValueW(info_buffer.data(), sub_block,
                       reinterpret_cast<LPVOID *>(&version), &version_length)) {
-    return std::wstring();
+    return {};
   }
   if (!version || version_length == 0) {
-    return std::wstring();
+    return {};
   }
-  return std::wstring(version, version_length);
+  return {version, version_length};
 }
 
-// Compare the specified version against the OS version.
-// Returns less than 0 if the OS version is less.
-// Returns 0 if the versions are equal.
-// Returns greater than 0 if the specified version is greater.
-inline int compare_os_version(unsigned int major, unsigned int minor,
-                              unsigned int build) {
+int version::compare_os_version(unsigned int major, unsigned int minor,
+                                unsigned int build) {
   // Use RtlGetVersion both to bypass potential issues related to
   // VerifyVersionInfo and manifests, and because both GetVersion and
   // GetVersionEx are deprecated.
   auto ntdll = native_library(L"ntdll.dll");
-  if (auto fn = ntdll.get(ntdll_symbols::RtlGetVersion)) {
+  if (auto fn = ntdll.get(ntdll::RtlGetVersion())) {
     RTL_OSVERSIONINFOW vi{};
     vi.dwOSVersionInfoSize = sizeof(vi);
     if (fn(&vi) != 0) {
@@ -139,6 +152,8 @@ inline int compare_os_version(unsigned int major, unsigned int minor,
   return false;
 }
 
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

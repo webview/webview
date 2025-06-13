@@ -30,18 +30,18 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
+#ifdef _MSC_VER
+#pragma comment(lib, "ole32.lib")
 #endif
-#include <windows.h>
-
 #include "errors/errors.hh"
 #include <objbase.h>
 #include <utility>
 
-#ifdef _MSC_VER
-#pragma comment(lib, "ole32.lib")
-#endif
+using namespace webview::errors;
+namespace webview {
+namespace detail {
+namespace platform {
+namespace windows {
 
 //
 // ====================================================================
@@ -51,9 +51,6 @@
 //
 // ====================================================================
 //
-
-namespace webview {
-namespace detail {
 
 /**
  * A wrapper around COM library initialization. Calls CoInitializeEx in the
@@ -113,6 +110,8 @@ private:
   bool m_initialized = false;
 };
 
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

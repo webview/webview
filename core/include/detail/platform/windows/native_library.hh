@@ -30,16 +30,13 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include "detail/platform/windows/string.hh"
 #include <string>
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace windows {
 
 // Holds a symbol name and associated type for code clarity.
 template <typename T> class library_symbol {
@@ -62,18 +59,12 @@ public:
   explicit native_library(const std::string &name)
       : m_handle{load_library(name)} {}
 
-#ifdef _WIN32
   explicit native_library(const std::wstring &name)
       : m_handle{load_library(name)} {}
-#endif
 
   ~native_library() {
     if (m_handle) {
-#ifdef _WIN32
       FreeLibrary(m_handle);
-#else
-      dlclose(m_handle);
-#endif
       m_handle = nullptr;
     }
   }
@@ -81,7 +72,6 @@ public:
   native_library(const native_library &other) = delete;
   native_library &operator=(const native_library &other) = delete;
   native_library(native_library &&other) noexcept { *this = std::move(other); }
-
   native_library &operator=(native_library &&other) noexcept {
     if (this == &other) {
       return *this;
@@ -99,7 +89,7 @@ public:
   typename Symbol::type get(const Symbol &symbol) const {
     if (is_loaded()) {
       // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
-#ifdef _WIN32
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-function-type"
@@ -109,57 +99,32 @@ public:
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
-#else
-      return reinterpret_cast<typename Symbol::type>(
-          dlsym(m_handle, symbol.get_name()));
-#endif
       // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
     }
     return nullptr;
   }
-
   // Returns true if the library is currently loaded; otherwise false.
   bool is_loaded() const { return !!m_handle; }
-
   void detach() { m_handle = nullptr; }
-
   // Returns true if the library by the given name is currently loaded; otherwise false.
-  static inline bool is_loaded(const std::string &name) {
-#ifdef _WIN32
-    auto handle = GetModuleHandleW(widen_string(name).c_str());
-#else
-    auto handle = dlopen(name.c_str(), RTLD_NOW | RTLD_NOLOAD);
-    if (handle) {
-      dlclose(handle);
-    }
-#endif
+  static bool is_loaded(const std::string &name) {
+    auto handle = GetModuleHandleW(string::widen_string(name).c_str());
     return !!handle;
   }
 
 private:
-#ifdef _WIN32
   using mod_handle_t = HMODULE;
-#else
-  using mod_handle_t = void *;
-#endif
-
-  static inline mod_handle_t load_library(const std::string &name) {
-#ifdef _WIN32
-    return load_library(widen_string(name));
-#else
-    return dlopen(name.c_str(), RTLD_NOW);
-#endif
+  static mod_handle_t load_library(const std::string &name) {
+    return load_library(string::widen_string(name));
   }
-
-#ifdef _WIN32
-  static inline mod_handle_t load_library(const std::wstring &name) {
+  static mod_handle_t load_library(const std::wstring &name) {
     return LoadLibraryW(name.c_str());
   }
-#endif
-
   mod_handle_t m_handle{};
 };
 
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

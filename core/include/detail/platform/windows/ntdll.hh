@@ -30,23 +30,25 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include "detail/platform/windows/native_library.hh"
 
 namespace webview {
 namespace detail {
-namespace ntdll_symbols {
+namespace platform {
+namespace windows {
 
-using RtlGetVersion_t =
-    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
+struct ntdll {
 
-constexpr auto RtlGetVersion = library_symbol<RtlGetVersion_t>("RtlGetVersion");
+  using RtlGetVersion_t =
+      unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
 
-} // namespace ntdll_symbols
+  static constexpr library_symbol<RtlGetVersion_t> RtlGetVersion() {
+    return library_symbol<RtlGetVersion_t>("RtlGetVersion");
+  }
+};
+
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

@@ -30,32 +30,35 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include "detail/platform/windows/native_library.hh"
 
 namespace webview {
 namespace detail {
-namespace dwmapi_symbols {
+namespace platform {
+namespace windows {
 
-typedef enum {
-  // This undocumented value is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE
-  // on Windows 10 older than build 19041 (2004/20H1).
-  DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041 = 19,
-  // Documented as being supported since Windows 11 build 22000 (21H2) but it
-  // works since Windows 10 build 19041 (2004/20H1).
-  DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-} DWMWINDOWATTRIBUTE;
+struct dwmapi {
 
-using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
+  typedef enum {
+    // This undocumented value is used instead of DWMWA_USE_IMMERSIVE_DARK_MODE
+    // on Windows 10 older than build 19041 (2004/20H1).
+    DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_V10_0_19041 = 19,
+    // Documented as being supported since Windows 11 build 22000 (21H2) but it
+    // works since Windows 10 build 19041 (2004/20H1).
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+  } DWMWINDOWATTRIBUTE;
 
-constexpr auto DwmSetWindowAttribute =
-    library_symbol<DwmSetWindowAttribute_t>("DwmSetWindowAttribute");
+  using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID,
+                                                    DWORD);
 
-} // namespace dwmapi_symbols
+  static constexpr library_symbol<DwmSetWindowAttribute_t>
+  DwmSetWindowAttribute() {
+    return library_symbol<DwmSetWindowAttribute_t>("DwmSetWindowAttribute");
+  }
+};
+
+} // namespace windows
+} // namespace platform
 } // namespace detail
 } // namespace webview
 
