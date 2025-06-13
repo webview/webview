@@ -34,33 +34,36 @@
 
 namespace webview {
 namespace detail {
-namespace webkit {
+namespace platform {
+namespace darwin {
 
-enum WKUserScriptInjectionTime : NSInteger {
-  WKUserScriptInjectionTimeAtDocumentStart = 0
+/// A script that the web view injects into a webpage.
+/// @see https://developer.apple.com/documentation/webkit/wkuserscript?language=objc
+struct WKUserScript {
+
+  enum InjectionTime : NSInteger { AtDocumentStart = 0 };
+
+  static id alloc() {
+    return objc::msg_send<id>(objc::get_class("WKUserScript"),
+                              objc::selector("alloc"));
+  }
+
+  static id initWithSource(id self, id source, InjectionTime injection_time,
+                           bool for_main_frame_only) {
+    return objc::msg_send<id>(
+        self, objc::selector("initWithSource:injectionTime:forMainFrameOnly:"),
+        source, injection_time, static_cast<BOOL>(for_main_frame_only));
+  }
+
+  static id withSource(id source, InjectionTime injection_time,
+                       bool for_main_frame_only) {
+    return objc::autorelease(
+        initWithSource(alloc(), source, injection_time, for_main_frame_only));
+  }
 };
 
-inline id WKUserScript_alloc() {
-  return objc::msg_send<id>(objc::get_class("WKUserScript"),
-                            objc::selector("alloc"));
-}
-
-inline id WKUserScript_initWithSource(id self, id source,
-                                      WKUserScriptInjectionTime injection_time,
-                                      bool for_main_frame_only) {
-  return objc::msg_send<id>(
-      self, objc::selector("initWithSource:injectionTime:forMainFrameOnly:"),
-      source, injection_time, static_cast<BOOL>(for_main_frame_only));
-}
-
-inline id WKUserScript_withSource(id source,
-                                  WKUserScriptInjectionTime injection_time,
-                                  bool for_main_frame_only) {
-  return objc::autorelease(WKUserScript_initWithSource(
-      WKUserScript_alloc(), source, injection_time, for_main_frame_only));
-}
-
-} // namespace webkit
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

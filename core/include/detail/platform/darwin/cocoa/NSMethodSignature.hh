@@ -34,14 +34,21 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSMethodSignature_signatureWithObjCTypes(const char *types) {
-  return objc::msg_send<id>(objc::get_class("NSMethodSignature"),
-                            objc::selector("signatureWithObjCTypes:"), types);
-}
+/// A record of the type information for the return value and parameters of a method.
+/// @see https://developer.apple.com/documentation/foundation/nsmethodsignature
+struct NSMethodSignature {
 
-} // namespace cocoa
+  static id signatureWithObjCTypes(const char *types) {
+    return objc::msg_send<id>(objc::get_class("NSMethodSignature"),
+                              objc::selector("signatureWithObjCTypes:"), types);
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

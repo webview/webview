@@ -30,19 +30,22 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#include "detail/platform/darwin/types.hh"
 #include <CoreGraphics/CoreGraphics.h>
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-using NSPoint = CGPoint;
-
-constexpr inline NSPoint NSPointMake(CGFloat x, CGFloat y) {
+/// Creates a new NSPoint from the specified values.
+/// @see https://developer.apple.com/documentation/foundation/nsmakepoint(_:_:)?language=objc
+constexpr inline NSPoint_t NSPointMake(CGFloat x, CGFloat y) {
   return CGPointMake(x, y);
 }
 
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

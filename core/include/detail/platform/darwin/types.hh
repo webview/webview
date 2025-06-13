@@ -23,55 +23,32 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "lib/macros.h"
 
-#if defined(WEBVIEW_PLATFORM_DARWIN)
-#include <objc/objc-runtime.h>
+#if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+
+#include <CoreGraphics/CoreGraphics.h>
+#include <objc/NSObjCRuntime.h>
 
 namespace webview {
 namespace detail {
 namespace platform {
 namespace darwin {
-namespace objc {
 
-// A convenient template function for unconditionally casting the specified
-// C-like function into a function that can be called with the given return
-// type and arguments. Caller takes full responsibility for ensuring that
-// the function call is valid. It is assumed that the function will not
-// throw exceptions.
-template <typename Result, typename Callable, typename... Args>
-Result invoke(Callable callable, Args... args) noexcept {
-  return reinterpret_cast<Result (*)(Args...)>(callable)(args...);
-}
+using NSPoint_t = CGPoint;
+using NSTimeInterval_t = double;
+using NSRect_t = CGRect;
+using NSSize_t = CGSize;
 
-// Calls objc_msgSend.
-template <typename Result, typename... Args>
-Result msg_send(Args... args) noexcept {
-  return invoke<Result>(objc_msgSend, args...);
-}
-
-// Calls objc_msgSend_stret or objc_msgSend depending on architecture.
-template <typename Result, typename... Args>
-Result msg_send_stret(Args... args) noexcept {
-#if defined(__arm64__)
-  return invoke<Result>(objc_msgSend, args...);
-#else
-  return invoke<Result>(objc_msgSend_stret, args...);
-#endif
-}
-
-inline SEL selector(const char *name) { return sel_registerName(name); }
-
-} // namespace objc
 } // namespace darwin
 } // namespace platform
 } // namespace detail
 } // namespace webview
 
-#endif // defined(WEBVIEW_PLATFORM_DARWIN)
+#endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH

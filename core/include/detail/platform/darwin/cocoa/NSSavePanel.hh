@@ -35,13 +35,20 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline NSModalResponse NSSavePanel_runModal(id self) {
-  return objc::msg_send<NSModalResponse>(self, objc::selector("runModal"));
-}
+/// A panel that prompts the user for information about where to save a file.
+/// @see https://developer.apple.com/documentation/appkit/nssavepanel?language=objc
+struct NSSavePanel {
 
-} // namespace cocoa
+  static NSModalResponse runModal(id self) {
+    return objc::msg_send<NSModalResponse>(self, objc::selector("runModal"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

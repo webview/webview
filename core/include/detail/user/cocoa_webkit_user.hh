@@ -23,25 +23,43 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH
+#ifndef WEBVIEW_DETAIL_USER_COCOA_WEBKIT_USER_HH
+#define WEBVIEW_DETAIL_USER_COCOA_WEBKIT_USER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-#include <objc/NSObjCRuntime.h>
+#include "detail/platform/darwin/objc/objc.hh"
+#include "detail/platform/darwin/types.hh"
+#include "detail/user/user_script.hh"
 
+using namespace webview::detail::platform::darwin;
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace user {
 
-using NSTimeInterval = double;
+class user_script::impl {
+public:
+  impl(id script) : m_script{objc::retain(script)} {}
 
-} // namespace cocoa
+  ~impl() { objc::release(m_script); }
+
+  impl(const impl &) = delete;
+  impl &operator=(const impl &) = delete;
+  impl(impl &&) = delete;
+  impl &operator=(impl &&) = delete;
+
+  id get_native() const { return m_script; }
+
+private:
+  id m_script{};
+};
+
+} // namespace user
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_TYPES_HH
+#endif // WEBVIEW_DETAIL_USER_COCOA_WEBKIT_USER_HH

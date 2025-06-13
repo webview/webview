@@ -36,6 +36,8 @@
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace darwin {
 namespace objc {
 
 // Wrapper around NSAutoreleasePool that drains the pool on destruction.
@@ -60,6 +62,8 @@ private:
 };
 
 } // namespace objc
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

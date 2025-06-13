@@ -35,6 +35,8 @@
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace darwin {
 namespace objc {
 
 inline id autorelease(id object) {
@@ -46,6 +48,8 @@ inline id retain(id object) { return msg_send<id>(object, selector("retain")); }
 inline void release(id object) { msg_send<void>(object, selector("release")); }
 
 } // namespace objc
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

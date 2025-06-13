@@ -31,51 +31,60 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #include "detail/platform/darwin/objc/objc.hh"
+#include "types/types.hh"
 #include <string>
 
+using namespace webview::types;
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-enum NSStringEncoding : NSUInteger {
-  NSASCIIStringEncoding = 1,
-  NSUTF8StringEncoding = 4
+/// A static, plain-text Unicode string object.
+/// @see https://developer.apple.com/documentation/foundation/nsstring?language=objc
+struct NSString {
+
+  enum Encoding : NSUInteger {
+    NSASCIIStringEncoding = 1,
+    NSUTF8StringEncoding = 4
+  };
+
+  static id stringWithUTF8String(const std::string &utf8_string) {
+    return objc::autorelease(initWithBytes(
+        alloc(), utf8_string.data(),
+        static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
+  }
+  static id stringWithUTF8String(const char *utf8_string) {
+    return objc::msg_send<id>(objc::get_class("NSString"),
+                              objc::selector("stringWithUTF8String:"),
+                              utf8_string);
+  }
+
+  static const char *get_UTF8String(id self) {
+    return objc::msg_send<const char *>(self, objc::selector("UTF8String"));
+  }
+
+  static bool hasSuffix(id self, id suffix) {
+    return static_cast<bool>(
+        objc::msg_send<BOOL>(self, objc::selector("hasSuffix:"), suffix));
+  }
+
+private:
+  static id alloc() {
+    return objc::msg_send<id>(objc::get_class("NSString"),
+                              objc::selector("alloc"));
+  }
+
+  static id initWithBytes(id self, const void *bytes, NSUInteger length,
+                          Encoding encoding) {
+    return objc::msg_send<id>(self,
+                              objc::selector("initWithBytes:length:encoding:"),
+                              bytes, length, encoding);
+  }
 };
 
-inline bool NSString_hasSuffix(id self, id suffix) {
-  return static_cast<bool>(
-      objc::msg_send<BOOL>(self, objc::selector("hasSuffix:"), suffix));
-}
-
-inline id NSString_alloc() {
-  return objc::msg_send<id>(objc::get_class("NSString"),
-                            objc::selector("alloc"));
-}
-
-inline id NSString_initWithBytes(id self, const void *bytes, NSUInteger length,
-                                 NSStringEncoding encoding) {
-  return objc::msg_send<id>(self,
-                            objc::selector("initWithBytes:length:encoding:"),
-                            bytes, length, encoding);
-}
-
-inline id NSString_stringWithUTF8String(const char *utf8_string) {
-  return objc::msg_send<id>(objc::get_class("NSString"),
-                            objc::selector("stringWithUTF8String:"),
-                            utf8_string);
-}
-
-inline id NSString_stringWithUTF8String(const std::string &utf8_string) {
-  return objc::autorelease(NSString_initWithBytes(
-      NSString_alloc(), utf8_string.data(),
-      static_cast<NSUInteger>(utf8_string.size()), NSUTF8StringEncoding));
-}
-
-inline const char *NSString_get_UTF8String(id self) {
-  return objc::msg_send<const char *>(self, objc::selector("UTF8String"));
-}
-
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

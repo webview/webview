@@ -31,12 +31,12 @@
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 // IWYU pragma: begin_exports
-#include "detail/platform/darwin/webkit/WKOpenPanelParameters.hh"
-#include "detail/platform/darwin/webkit/WKScriptMessage.hh"
-#include "detail/platform/darwin/webkit/WKUserContentController.hh"
-#include "detail/platform/darwin/webkit/WKUserScript.hh"
-#include "detail/platform/darwin/webkit/WKWebView.hh"
-#include "detail/platform/darwin/webkit/WKWebViewConfiguration.hh"
+#include "WKOpenPanelParameters.hh"
+#include "WKScriptMessage.hh"
+#include "WKUserContentController.hh"
+#include "WKUserScript.hh"
+#include "WKWebView.hh"
+#include "WKWebViewConfiguration.hh"
 // IWYU pragma: end_exports
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)

@@ -30,102 +30,110 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-#include "detail/platform/darwin/cocoa/NSRect.hh"
-#include "detail/platform/darwin/cocoa/NSSize.hh"
 #include "detail/platform/darwin/objc/objc.hh"
+#include "detail/platform/darwin/types.hh"
+#include "types/types.hh"
 #include <string>
 
+using namespace webview::types;
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
+/// Constants that specify how the window device buffers the drawing done in a window.
+/// @see https://developer.apple.com/documentation/appkit/nswindow/backingstoretype?language=objc
 enum NSBackingStoreType : NSUInteger { NSBackingStoreBuffered = 2 };
 
-enum NSWindowStyleMask : NSUInteger {
-  NSWindowStyleMaskTitled = 1,
-  NSWindowStyleMaskClosable = 2,
-  NSWindowStyleMaskMiniaturizable = 4,
-  NSWindowStyleMaskResizable = 8
+/// A window that an app displays on the screen.
+/// @see https://developer.apple.com/documentation/appkit/nswindow?language=objc
+struct NSWindow {
+
+  enum StyleMask : NSUInteger {
+    StyleMaskTitled = 1,
+    StyleMaskClosable = 2,
+    StyleMaskMiniaturizable = 4,
+    StyleMaskResizable = 8
+  };
+
+  static id alloc() {
+    return objc::msg_send<id>(objc::get_class("NSWindow"),
+                              objc::selector("alloc"));
+  }
+
+  static id initWithContentRect(id self, NSRect_t content_rect, StyleMask style,
+                                NSBackingStoreType backing_store_type,
+                                bool defer) {
+    return objc::msg_send<id>(
+        self, objc::selector("initWithContentRect:styleMask:backing:defer:"),
+        content_rect, style, backing_store_type, static_cast<BOOL>(defer));
+  }
+
+  static id withContentRect(NSRect_t content_rect, StyleMask style,
+                            NSBackingStoreType backing_store_type, bool defer) {
+    return objc::autorelease(initWithContentRect(alloc(), content_rect, style,
+                                                 backing_store_type, defer));
+  }
+
+  static void close(id self) {
+    objc::msg_send<void>(self, objc::selector("close"));
+  }
+
+  static NSRect_t get_frame(id self) {
+    return objc::msg_send_stret<NSRect_t>(self, objc::selector("frame"));
+  }
+
+  static void setFrame(id self, NSRect_t frame_rect, bool display,
+                       bool animate) {
+    objc::msg_send<void>(self, objc::selector("setFrame:display:animate:"),
+                         frame_rect, static_cast<BOOL>(display),
+                         static_cast<BOOL>(animate));
+  }
+
+  static void set_styleMask(id self, StyleMask style) {
+    objc::msg_send<void>(self, objc::selector("setStyleMask:"), style);
+  }
+
+  static void set_title(id self, const std::string &title) {
+    objc::autoreleasepool arp;
+    objc::msg_send<void>(
+        self, objc::selector("setTitle:"),
+        objc::msg_send<id>(objc::get_class("NSString"),
+                           objc::selector("stringWithUTF8String:"),
+                           title.c_str()));
+  }
+
+  static void makeKeyAndOrderFront(id self, id sender = nullptr) {
+    objc::msg_send<void>(self, objc::selector("makeKeyAndOrderFront:"), sender);
+  }
+
+  static void set_contentView(id self, id view) {
+    objc::msg_send<void>(self, objc::selector("setContentView:"), view);
+  }
+
+  static id get_contentView(id self) {
+    return objc::msg_send<id>(self, objc::selector("contentView"));
+  }
+
+  static void set_delegate(id self, id delegate) {
+    objc::msg_send<void>(self, objc::selector("setDelegate:"), delegate);
+  }
+
+  static void center(id self) {
+    objc::msg_send<void>(self, objc::selector("center"));
+  }
+
+  static void set_contentMinSize(id self, NSSize_t size) {
+    objc::msg_send<void>(self, objc::selector("setContentMinSize:"), size);
+  }
+
+  static void set_contentMaxSize(id self, NSSize_t size) {
+    objc::msg_send<void>(self, objc::selector("setContentMaxSize:"), size);
+  }
 };
 
-inline id NSWindow_alloc() {
-  return objc::msg_send<id>(objc::get_class("NSWindow"),
-                            objc::selector("alloc"));
-}
-
-inline id NSWindow_initWithContentRect(id self, NSRect content_rect,
-                                       NSWindowStyleMask style,
-                                       NSBackingStoreType backing_store_type,
-                                       bool defer) {
-  return objc::msg_send<id>(
-      self, objc::selector("initWithContentRect:styleMask:backing:defer:"),
-      content_rect, style, backing_store_type, static_cast<BOOL>(defer));
-}
-
-inline id NSWindow_withContentRect(NSRect content_rect, NSWindowStyleMask style,
-                                   NSBackingStoreType backing_store_type,
-                                   bool defer) {
-  return objc::autorelease(NSWindow_initWithContentRect(
-      NSWindow_alloc(), content_rect, style, backing_store_type, defer));
-}
-
-inline void NSWindow_close(id self) {
-  objc::msg_send<void>(self, objc::selector("close"));
-}
-
-inline NSRect NSWindow_get_frame(id self) {
-  return objc::msg_send_stret<NSRect>(self, objc::selector("frame"));
-}
-
-inline void NSWindow_setFrame(id self, NSRect frame_rect, bool display,
-                              bool animate) {
-  objc::msg_send<void>(self, objc::selector("setFrame:display:animate:"),
-                       frame_rect, static_cast<BOOL>(display),
-                       static_cast<BOOL>(animate));
-}
-
-inline void NSWindow_set_styleMask(id self, NSWindowStyleMask style) {
-  objc::msg_send<void>(self, objc::selector("setStyleMask:"), style);
-}
-
-inline void NSWindow_set_title(id self, const std::string &title) {
-  objc::autoreleasepool arp;
-  objc::msg_send<void>(
-      self, objc::selector("setTitle:"),
-      objc::msg_send<id>(objc::get_class("NSString"),
-                         objc::selector("stringWithUTF8String:"),
-                         title.c_str()));
-}
-
-inline void NSWindow_makeKeyAndOrderFront(id self, id sender = nullptr) {
-  objc::msg_send<void>(self, objc::selector("makeKeyAndOrderFront:"), sender);
-}
-
-inline void NSWindow_set_contentView(id self, id view) {
-  objc::msg_send<void>(self, objc::selector("setContentView:"), view);
-}
-
-inline id NSWindow_get_contentView(id self) {
-  return objc::msg_send<id>(self, objc::selector("contentView"));
-}
-
-inline void NSWindow_set_delegate(id self, id delegate) {
-  objc::msg_send<void>(self, objc::selector("setDelegate:"), delegate);
-}
-
-inline void NSWindow_center(id self) {
-  objc::msg_send<void>(self, objc::selector("center"));
-}
-
-inline void NSWindow_set_contentMinSize(id self, NSSize size) {
-  objc::msg_send<void>(self, objc::selector("setContentMinSize:"), size);
-}
-
-inline void NSWindow_set_contentMaxSize(id self, NSSize size) {
-  objc::msg_send<void>(self, objc::selector("setContentMaxSize:"), size);
-}
-
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

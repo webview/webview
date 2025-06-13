@@ -30,12 +30,14 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN)
+
 // IWYU pragma: begin_exports
-#include "detail/platform/darwin/objc/Class.hh"
-#include "detail/platform/darwin/objc/autoreleasepool.hh"
-#include "detail/platform/darwin/objc/invoke.hh"
-#include "detail/platform/darwin/objc/memory.hh"
+#include "Class.hh"
+#include "autoreleasepool.hh"
+#include "invoke.hh"
+#include "memory.hh"
 // IWYU pragma: end_exports
+
 #include <objc/NSObjCRuntime.h>
 #include <objc/objc-runtime.h>
 

@@ -30,19 +30,22 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#include "detail/platform/darwin/types.hh"
 #include <CoreGraphics/CoreGraphics.h>
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-using NSSize = CGSize;
-
-constexpr inline NSSize NSSizeMake(CGFloat w, CGFloat h) {
+/// Returns a new NSSize from the specified values.
+/// @see https://developer.apple.com/documentation/foundation/nsmakesize(_:_:)?language=objc
+constexpr inline NSSize_t NSSizeMake(CGFloat w, CGFloat h) {
   return CGSizeMake(w, h);
 }
 
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

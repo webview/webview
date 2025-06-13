@@ -34,18 +34,24 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSBundle_get_mainBundle() {
-  return objc::msg_send<id>(objc::get_class("NSBundle"),
-                            objc::selector("mainBundle"));
-}
+/// A representation of the code and resources stored in a bundle directory on disk.
+/// @see https://developer.apple.com/documentation/foundation/bundle
+struct NSBundle {
+  static id get_mainBundle() {
+    return objc::msg_send<id>(objc::get_class("NSBundle"),
+                              objc::selector("mainBundle"));
+  }
 
-inline id NSBundle_get_bundlePath(id self) {
-  return objc::msg_send<id>(self, objc::selector("bundlePath"));
-}
+  static id get_bundlePath(id self) {
+    return objc::msg_send<id>(self, objc::selector("bundlePath"));
+  }
+};
 
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

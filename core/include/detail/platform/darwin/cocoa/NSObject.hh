@@ -34,13 +34,20 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline void NSObject_setValue_forKey(id self, id value, id key) {
-  objc::msg_send<void>(self, objc::selector("setValue:forKey:"), value, key);
-}
+/// The root class of most Objective-C class hierarchies, from which subclasses inherit a basic interface to the runtime system and the ability to behave as Objective-C objects.
+/// @see https://developer.apple.com/documentation/objectivec/nsobject-swift.class?language=objc
+struct NSObject {
 
-} // namespace cocoa
+  static void setValue_forKey(id self, id value, id key) {
+    objc::msg_send<void>(self, objc::selector("setValue:forKey:"), value, key);
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

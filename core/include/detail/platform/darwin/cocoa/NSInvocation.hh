@@ -34,31 +34,38 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSInvocation_invocationWithMethodSignature(id sig) {
-  return objc::msg_send<id>(objc::get_class("NSInvocation"),
-                            objc::selector("invocationWithMethodSignature:"),
-                            sig);
-}
+/// An Objective-C message rendered as an object.
+/// @see https://developer.apple.com/documentation/foundation/nsinvocation
+struct NSInvocation {
 
-inline void NSInvocation_set_target(id self, id target) {
-  objc::msg_send<void>(self, objc::selector("setTarget:"), target);
-}
+  static id invocationWithMethodSignature(id sig) {
+    return objc::msg_send<id>(objc::get_class("NSInvocation"),
+                              objc::selector("invocationWithMethodSignature:"),
+                              sig);
+  }
 
-inline void NSInvocation_setArgument(id self, void *location, NSInteger index) {
-  objc::msg_send<void>(self, objc::selector("setArgument:atIndex:"), location,
-                       index);
-}
+  static void set_target(id self, id target) {
+    objc::msg_send<void>(self, objc::selector("setTarget:"), target);
+  }
 
-inline void NSInvocation_invoke(id self) {
-  objc::msg_send<void>(self, objc::selector("invoke"));
-}
+  static void setArgument(id self, void *location, NSInteger index) {
+    objc::msg_send<void>(self, objc::selector("setArgument:atIndex:"), location,
+                         index);
+  }
 
-} // namespace cocoa
+  static void invoke(id self) {
+    objc::msg_send<void>(self, objc::selector("invoke"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSInvocation_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH

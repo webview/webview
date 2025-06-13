@@ -34,7 +34,7 @@
 #include "detail/platform/darwin/cocoa/cocoa.hh"
 #include "detail/platform/darwin/objc/objc.hh"
 #include "detail/platform/darwin/webkit/webkit.hh"
-#include "detail/user/user_script.hh"
+#include "detail/user/cocoa_webkit_user.hh"
 #include "types/types.hh"
 #include <atomic>
 #include <functional>
@@ -42,6 +42,12 @@
 #include <memory>
 #include <objc/objc-runtime.h>
 #include <string>
+
+using namespace webview::detail::user;
+using namespace webview::detail::platform::darwin;
+namespace webview {
+namespace detail {
+namespace backend {
 
 //
 // ====================================================================
@@ -53,39 +59,10 @@
 // ====================================================================
 //
 
-namespace webview {
-namespace detail {
-
-class user_script::impl {
-public:
-  impl(id script) : m_script{objc::retain(script)} {}
-
-  ~impl() { objc::release(m_script); }
-
-  impl(const impl &) = delete;
-  impl &operator=(const impl &) = delete;
-  impl(impl &&) = delete;
-  impl &operator=(impl &&) = delete;
-
-  id get_native() const { return m_script; }
-
-private:
-  id m_script{};
-};
-
-// Encapsulate backend in its own namespace to avoid polluting the parent
-// namespace when pulling in commonly-used symbols from other namespaces.
-// Since those commmon symbols are used a lot, this reduces the overall
-// noise in the code.
-namespace cocoa_webkit {
-
-using namespace cocoa;
-using namespace webkit;
-
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : engine_base{!window}, m_app{NSApplication_get_sharedApplication()} {
+      : engine_base{!window}, m_app{NSApplication::get_sharedApplication()} {
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -100,16 +77,16 @@ public:
     objc::autoreleasepool arp;
     if (m_window) {
       if (m_webview) {
-        if (auto ui_delegate{WKWebView_get_UIDelegate(m_webview)}) {
-          WKWebView_set_UIDelegate(m_webview, nullptr);
+        if (auto ui_delegate{WKWebView::get_UIDelegate(m_webview)}) {
+          WKWebView::set_UIDelegate(m_webview, nullptr);
           objc::release(ui_delegate);
         }
         objc::release(m_webview);
         m_webview = nullptr;
       }
       if (m_widget) {
-        if (m_widget == NSWindow_get_contentView(m_window)) {
-          NSWindow_set_contentView(m_window, nullptr);
+        if (m_widget == NSWindow::get_contentView(m_window)) {
+          NSWindow::set_contentView(m_window, nullptr);
         }
         objc::release(m_widget);
         m_widget = nullptr;
@@ -117,8 +94,8 @@ public:
       if (owns_window()) {
         // Replace delegate to avoid callbacks and other bad things during
         // destruction.
-        NSWindow_set_delegate(m_window, nullptr);
-        NSWindow_close(m_window);
+        NSWindow::set_delegate(m_window, nullptr);
+        NSWindow::close(m_window);
         on_window_destroyed(true);
       }
       m_window = nullptr;
@@ -128,7 +105,7 @@ public:
       m_window_delegate = nullptr;
     }
     if (m_app_delegate) {
-      NSApplication_set_delegate(m_app, nullptr);
+      NSApplication::set_delegate(m_app, nullptr);
       // Make sure to release the delegate we created.
       objc::release(m_app_delegate);
       m_app_delegate = nullptr;
@@ -169,7 +146,7 @@ protected:
   }
 
   noresult run_impl() override {
-    NSApplication_run(m_app);
+    NSApplication::run(m_app);
     return {};
   }
 
@@ -184,68 +161,68 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    NSWindow_set_title(m_window, title);
+    NSWindow::set_title(m_window, title);
     return {};
   }
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     objc::autoreleasepool arp;
 
-    auto style = static_cast<NSWindowStyleMask>(
-        NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-        NSWindowStyleMaskMiniaturizable);
+    auto style = static_cast<NSWindow::StyleMask>(
+        NSWindow::StyleMaskTitled | NSWindow::StyleMaskClosable |
+        NSWindow::StyleMaskMiniaturizable);
     if (hints != WEBVIEW_HINT_FIXED) {
-      style =
-          static_cast<NSWindowStyleMask>(style | NSWindowStyleMaskResizable);
+      style = static_cast<NSWindow::StyleMask>(style |
+                                               NSWindow::StyleMaskResizable);
     }
-    NSWindow_set_styleMask(m_window, style);
+    NSWindow::set_styleMask(m_window, style);
 
     if (hints == WEBVIEW_HINT_MIN) {
-      NSWindow_set_contentMinSize(m_window, NSSizeMake(width, height));
+      NSWindow::set_contentMinSize(m_window, NSSizeMake(width, height));
     } else if (hints == WEBVIEW_HINT_MAX) {
-      NSWindow_set_contentMaxSize(m_window, NSSizeMake(width, height));
+      NSWindow::set_contentMaxSize(m_window, NSSizeMake(width, height));
     } else {
-      auto rect{NSWindow_get_frame(m_window)};
-      NSWindow_setFrame(m_window,
-                        NSRectMake(rect.origin.x, rect.origin.y, width, height),
-                        true, false);
+      auto rect{NSWindow::get_frame(m_window)};
+      NSWindow::setFrame(
+          m_window, NSRectMake(rect.origin.x, rect.origin.y, width, height),
+          true, false);
     }
-    NSWindow_center(m_window);
+    NSWindow::center(m_window);
 
     return window_show();
   }
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;
 
-    WKWebView_loadRequest(
-        m_webview, NSURLRequest_requestWithURL(NSURL_URLWithString(url)));
+    WKWebView::loadRequest(
+        m_webview, NSURLRequest::requestWithURL(NSURL::URLWithString(url)));
 
     return {};
   }
   noresult set_html_impl(const std::string &html) override {
     objc::autoreleasepool arp;
-    WKWebView_loadHTMLString(m_webview, NSString_stringWithUTF8String(html),
-                             nullptr);
+    WKWebView::loadHTMLString(m_webview, NSString::stringWithUTF8String(html),
+                              nullptr);
     return {};
   }
   noresult eval_impl(const std::string &js) override {
     objc::autoreleasepool arp;
     // URI is null before content has begun loading.
-    auto nsurl{WKWebView_get_URL(m_webview)};
+    auto nsurl{WKWebView::get_URL(m_webview)};
     if (!nsurl) {
       return {};
     }
-    WKWebView_evaluateJavaScript(m_webview, NSString_stringWithUTF8String(js),
-                                 nullptr);
+    WKWebView::evaluateJavaScript(m_webview, NSString::stringWithUTF8String(js),
+                                  nullptr);
     return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
     objc::autoreleasepool arp;
-    auto wk_script{WKUserScript_withSource(
-        NSString_stringWithUTF8String(js),
-        WKUserScriptInjectionTimeAtDocumentStart, true)};
+    auto wk_script{WKUserScript::withSource(
+        NSString::stringWithUTF8String(js),
+        WKUserScript::InjectionTime::AtDocumentStart, true)};
     // Script is retained when added.
-    WKUserContentController_addUserScript(m_manager, wk_script);
+    WKUserContentController::addUserScript(m_manager, wk_script);
     user_script script{
         js, user_script::impl_ptr{new user_script::impl{wk_script},
                                   [](user_script::impl *p) { delete p; }}};
@@ -256,7 +233,7 @@ protected:
       const std::list<user_script> & /*scripts*/) override {
     objc::autoreleasepool arp;
     // Removing scripts decreases the retain count of each script.
-    WKUserContentController_removeAllUserScripts(m_manager);
+    WKUserContentController::removeAllUserScripts(m_manager);
   }
 
   bool are_user_scripts_equal_impl(const user_script &first,
@@ -285,7 +262,7 @@ private:
           (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
       class_addMethod(cls, objc::selector("applicationDidFinishLaunching:"),
                       (IMP)(+[](id self, SEL, id notification) {
-                        auto app{NSNotification_get_object(notification)};
+                        auto app{NSNotification::get_object(notification)};
                         auto w = get_associated_webview(self);
                         w->on_application_did_finish_launching(self, app);
                       }),
@@ -308,7 +285,7 @@ private:
           (IMP)(+[](id self, SEL, id, id msg) {
             auto w = get_associated_webview(self);
             w->on_message(
-                NSString_get_UTF8String(WKScriptMessage_get_body(msg)));
+                NSString::get_UTF8String(WKScriptMessage::get_body(msg)));
           }),
           "v@:@@");
       objc_registerClassPair(cls);
@@ -331,31 +308,31 @@ private:
                          "completionHandler:"),
           (IMP)(+[](id, SEL, id, id parameters, id, id completion_handler) {
             auto allows_multiple_selection{
-                WKOpenPanelParameters_get_allowsMultipleSelection(parameters)};
+                WKOpenPanelParameters::get_allowsMultipleSelection(parameters)};
             auto allows_directories{
-                WKOpenPanelParameters_get_allowsDirectories(parameters)};
+                WKOpenPanelParameters::get_allowsDirectories(parameters)};
 
             // Show a panel for selecting files.
-            auto panel{NSOpenPanel_openPanel()};
-            NSOpenPanel_set_canChooseFiles(panel, true);
-            NSOpenPanel_set_canChooseDirectories(panel, allows_directories);
-            NSOpenPanel_set_allowsMultipleSelection(panel,
-                                                    allows_multiple_selection);
-            auto modal_response{NSSavePanel_runModal(panel)};
+            auto panel{NSOpenPanel::openPanel()};
+            NSOpenPanel::set_canChooseFiles(panel, true);
+            NSOpenPanel::set_canChooseDirectories(panel, allows_directories);
+            NSOpenPanel::set_allowsMultipleSelection(panel,
+                                                     allows_multiple_selection);
+            auto modal_response{NSSavePanel::runModal(panel)};
 
             // Get the URLs for the selected files. If the modal was canceled
             // then we pass null to the completion handler to signify
             // cancellation.
             id urls{modal_response == NSModalResponseOK
-                        ? NSOpenPanel_get_URLs(panel)
+                        ? NSOpenPanel::get_URLs(panel)
                         : nullptr};
 
             // Invoke the completion handler block.
-            auto sig{NSMethodSignature_signatureWithObjCTypes("v@?@")};
-            auto invocation{NSInvocation_invocationWithMethodSignature(sig)};
-            NSInvocation_set_target(invocation, completion_handler);
-            NSInvocation_setArgument(invocation, &urls, 1);
-            NSInvocation_invoke(invocation);
+            auto sig{NSMethodSignature::signatureWithObjCTypes("v@?@")};
+            auto invocation{NSInvocation::invocationWithMethodSignature(sig)};
+            NSInvocation::set_target(invocation, completion_handler);
+            NSInvocation::setArgument(invocation, &urls, 1);
+            NSInvocation::invoke(invocation);
           }),
           "v@:@@@@");
       objc_registerClassPair(cls);
@@ -372,7 +349,7 @@ private:
       class_addProtocol(cls, objc_getProtocol("NSWindowDelegate"));
       class_addMethod(cls, objc::selector("windowWillClose:"),
                       (IMP)(+[](id self, SEL, id notification) {
-                        auto window{NSNotification_get_object(notification)};
+                        auto window{NSNotification::get_object(notification)};
                         auto w = get_associated_webview(self);
                         w->on_window_will_close(self, window);
                       }),
@@ -385,24 +362,24 @@ private:
     objc::autoreleasepool arp;
     if (id assoc_obj{objc_getAssociatedObject(object, "webview")}) {
       cocoa_wkwebview_engine *w{};
-      NSValue_getValue(assoc_obj, &w, sizeof(w));
+      NSValue::getValue(assoc_obj, &w, sizeof(w));
       return w;
     }
     return nullptr;
   }
   static void set_associated_webview(id object, cocoa_wkwebview_engine *w) {
     objc::autoreleasepool arp;
-    objc_setAssociatedObject(object, "webview", NSValue_valueWithPointer(w),
+    objc_setAssociatedObject(object, "webview", NSValue::valueWithPointer(w),
                              OBJC_ASSOCIATION_RETAIN);
   }
   static bool is_app_bundled() noexcept {
-    auto bundle = NSBundle_get_mainBundle();
+    auto bundle = NSBundle::get_mainBundle();
     if (!bundle) {
       return false;
     }
-    auto bundle_path = NSBundle_get_bundlePath(bundle);
-    auto bundled =
-        NSString_hasSuffix(bundle_path, NSString_stringWithUTF8String(".app"));
+    auto bundle_path = NSBundle::get_bundlePath(bundle);
+    auto bundled = NSString::hasSuffix(bundle_path,
+                                       NSString::stringWithUTF8String(".app"));
     return !!bundled;
   }
   void on_application_did_finish_launching(id /*delegate*/, id app) {
@@ -424,11 +401,11 @@ private:
     if (!is_app_bundled()) {
       // "setActivationPolicy:" must be invoked before
       // "activateIgnoringOtherApps:" for activation to work.
-      NSApplication_setActivationPolicy(app,
-                                        NSApplicationActivationPolicyRegular);
+      NSApplication::setActivationPolicy(
+          app, NSApplication::ActivationPolicyRegular);
       // Activate the app regardless of other active apps.
       // This can be obtrusive so we only do it when necessary.
-      NSApplication_activateIgnoringOtherApps(app, true);
+      NSApplication::activateIgnoringOtherApps(app, true);
     }
 
     window_init_proceed();
@@ -443,32 +420,32 @@ private:
   void window_settings(bool debug) {
     objc::autoreleasepool arp;
 
-    auto config{objc::autorelease(WKWebViewConfiguration_new())};
+    auto config{objc::autorelease(WKWebViewConfiguration::make_new())};
 
-    m_manager = WKWebViewConfiguration_get_userContentController(config);
+    m_manager = WKWebViewConfiguration::get_userContentController(config);
 
-    auto preferences = WKWebViewConfiguration_get_preferences(config);
-    auto yes_value = NSNumber_numberWithBool(true);
+    auto preferences = WKWebViewConfiguration::get_preferences(config);
+    auto yes_value = NSNumber::numberWithBool(true);
 
     if (debug) {
-      NSObject_setValue_forKey(
+      NSObject::setValue_forKey(
           preferences, yes_value,
-          NSString_stringWithUTF8String("developerExtrasEnabled"));
+          NSString::stringWithUTF8String("developerExtrasEnabled"));
     }
 
-    NSObject_setValue_forKey(
+    NSObject::setValue_forKey(
         preferences, yes_value,
-        NSString_stringWithUTF8String("fullScreenEnabled"));
+        NSString::stringWithUTF8String("fullScreenEnabled"));
 
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
     if (__builtin_available(macOS 10.13, *)) {
-      NSObject_setValue_forKey(
+      NSObject::setValue_forKey(
           preferences, yes_value,
-          NSString_stringWithUTF8String("javaScriptCanAccessClipboard"));
-      NSObject_setValue_forKey(
+          NSString::stringWithUTF8String("javaScriptCanAccessClipboard"));
+      NSObject::setValue_forKey(
           preferences, yes_value,
-          NSString_stringWithUTF8String("DOMPasteAllowed"));
+          NSString::stringWithUTF8String("DOMPasteAllowed"));
     }
 #else
 #error __builtin_available not supported by compiler
@@ -479,15 +456,17 @@ private:
 
     auto ui_delegate = create_webkit_ui_delegate();
     m_webview =
-        objc::retain(WKWebView_withFrame(CGRectMake(0, 0, 0, 0), config));
+        objc::retain(WKWebView::withFrame(CGRectMake(0, 0, 0, 0), config));
     // Autoresizing mask is needed to prevent the Web Inspector pane from
     // pushing the main web view out of bounds
-    auto autoresizing_mask{static_cast<NSAutoresizingMaskOptions>(
-        NSViewWidthSizable | NSViewMaxXMargin | NSViewHeightSizable |
-        NSViewMaxYMargin)};
-    NSView_set_autoresizingMask(m_webview, autoresizing_mask);
+    auto autoresizing_mask{static_cast<NSAutoresizing::MaskOptions>(
+        NSAutoresizing::MaskOptions::WidthSizable |
+        NSAutoresizing::MaskOptions::MaxXMargin |
+        NSAutoresizing::MaskOptions::HeightSizable |
+        NSAutoresizing::MaskOptions::MaxYMargin)};
+    NSView::set_autoresizingMask(m_webview, autoresizing_mask);
     set_associated_webview(ui_delegate, this);
-    WKWebView_set_UIDelegate(m_webview, ui_delegate);
+    WKWebView::set_UIDelegate(m_webview, ui_delegate);
 
     if (debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
@@ -496,42 +475,42 @@ private:
       // for content to always be inspectable in "debug builds".
       // Testing shows that this is true for macOS 12.6 but somehow not 10.15.
       // https://webkit.org/blog/13936/enabling-the-inspection-of-web-content-in-apps/
-      WKWebView_set_inspectable(m_webview, true);
+      WKWebView::set_inspectable(m_webview, true);
     }
 
     auto script_message_handler =
         objc::autorelease(create_script_message_handler());
-    WKUserContentController_addScriptMessageHandler(
+    WKUserContentController::addScriptMessageHandler(
         m_manager, script_message_handler,
-        NSString_stringWithUTF8String("__webview__"));
+        NSString::stringWithUTF8String("__webview__"));
 
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
     set_up_widget();
-    NSWindow_set_contentView(m_window, m_widget);
+    NSWindow::set_contentView(m_window, m_widget);
     if (owns_window()) {
-      NSWindow_makeKeyAndOrderFront(m_window);
+      NSWindow::makeKeyAndOrderFront(m_window);
     }
   }
   void set_up_widget() {
     objc::autoreleasepool arp;
     // Create a new view that can contain both the web view and the Web Inspector pane
-    m_widget = objc::retain(NSView_withFrame(NSRectMake(0, 0, 0, 0)));
+    m_widget = objc::retain(NSView::withFrame(NSRectMake(0, 0, 0, 0)));
     // Autoresizing is needed because the Web Inspector pane is a sibling of the web view
-    NSView_set_autoresizesSubviews(m_widget, true);
-    NSView_addSubview(m_widget, m_webview);
-    NSView_set_frame(m_webview, NSView_get_bounds(m_widget));
+    NSView::set_autoresizesSubviews(m_widget, true);
+    NSView::addSubview(m_widget, m_webview);
+    NSView::set_frame(m_webview, NSView::get_bounds(m_widget));
   }
   void stop_run_loop() {
     objc::autoreleasepool arp;
     // Request the run loop to stop. This doesn't immediately stop the loop.
-    NSApplication_stop(m_app);
+    NSApplication::stop(m_app);
     // The run loop will stop after processing an NSEvent.
-    auto event{NSEvent_otherEventWithType(
-        NSEventTypeApplicationDefined, NSPointMake(0, 0),
+    auto event{NSEvent::otherEventWithType(
+        NSEventType::ApplicationDefined, NSPointMake(0, 0),
         NSEventModifierFlags{}, 0, 0, nullptr, 0, 0, 0)};
-    NSApplication_postEvent(m_app, event, true);
+    NSApplication::postEvent(m_app, event, true);
   }
   static bool get_and_set_is_first_instance() noexcept {
     static std::atomic_bool first{true};
@@ -558,24 +537,24 @@ private:
 
     m_app_delegate = create_app_delegate();
     set_associated_webview(m_app_delegate, this);
-    NSApplication_set_delegate(m_app, m_app_delegate);
+    NSApplication::set_delegate(m_app, m_app_delegate);
 
     // Start the main run loop so that the app delegate gets the
     // NSApplicationDidFinishLaunchingNotification notification after the run
     // loop has started in order to perform further initialization.
     // We need to return from this constructor so this run loop is only
     // temporary.
-    NSApplication_run(m_app);
+    NSApplication::run(m_app);
   }
   void window_init_proceed() {
     objc::autoreleasepool arp;
 
-    m_window = objc::retain(NSWindow_withContentRect(
-        NSRectMake(0, 0, 0, 0), NSWindowStyleMaskTitled, NSBackingStoreBuffered,
-        false));
+    m_window = objc::retain(NSWindow::withContentRect(
+        NSRectMake(0, 0, 0, 0), NSWindow::StyleMaskTitled,
+        NSBackingStoreBuffered, false));
     m_window_delegate = create_window_delegate();
     set_associated_webview(m_window_delegate, this);
-    NSWindow_set_delegate(m_window, m_window_delegate);
+    NSWindow::set_delegate(m_window, m_window_delegate);
     on_window_created();
   }
 
@@ -592,10 +571,10 @@ private:
     objc::autoreleasepool arp;
     while (fn()) {
       objc::autoreleasepool arp2;
-      if (auto event{NSApplication_nextEventMatchingMask(
+      if (auto event{NSApplication::nextEventMatchingMask(
               m_app, NSEventMaskAny, nullptr,
               NSRunLoopMode::NSDefaultRunLoopMode(), true)}) {
-        NSApplication_sendEvent(m_app, event);
+        NSApplication::sendEvent(m_app, event);
       }
     }
   }
@@ -610,11 +589,10 @@ private:
   bool m_is_window_shown{};
 };
 
-} // namespace cocoa_webkit
+using browser_engine = cocoa_wkwebview_engine;
+
+} // namespace backend
 } // namespace detail
-
-using browser_engine = detail::cocoa_webkit::cocoa_wkwebview_engine;
-
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)

@@ -34,22 +34,29 @@
 
 namespace webview {
 namespace detail {
-namespace webkit {
+namespace platform {
+namespace darwin {
 
-inline id WKWebViewConfiguration_new() {
-  return objc::msg_send<id>(objc::get_class("WKWebViewConfiguration"),
-                            objc::selector("new"));
-}
+/// A collection of properties that you use to initialize a web view.
+/// @see https://developer.apple.com/documentation/webkit/wkwebviewconfiguration?language=objc
+struct WKWebViewConfiguration {
 
-inline id WKWebViewConfiguration_get_userContentController(id self) {
-  return objc::msg_send<id>(self, objc::selector("userContentController"));
-}
+  static id make_new() {
+    return objc::msg_send<id>(objc::get_class("WKWebViewConfiguration"),
+                              objc::selector("new"));
+  }
 
-inline id WKWebViewConfiguration_get_preferences(id self) {
-  return objc::msg_send<id>(self, objc::selector("preferences"));
-}
+  static id get_userContentController(id self) {
+    return objc::msg_send<id>(self, objc::selector("userContentController"));
+  }
 
-} // namespace webkit
+  static id get_preferences(id self) {
+    return objc::msg_send<id>(self, objc::selector("preferences"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

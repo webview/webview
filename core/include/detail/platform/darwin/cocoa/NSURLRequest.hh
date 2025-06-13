@@ -34,14 +34,21 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSURLRequest_requestWithURL(id url) {
-  return objc::msg_send<id>(objc::get_class("NSURLRequest"),
-                            objc::selector("requestWithURL:"), url);
-}
+/// A URL load request that is independent of protocol or URL scheme.
+/// @see https://developer.apple.com/documentation/foundation/nsurlrequest?language=objc
+struct NSURLRequest {
 
-} // namespace cocoa
+  static id requestWithURL(id url) {
+    return objc::msg_send<id>(objc::get_class("NSURLRequest"),
+                              objc::selector("requestWithURL:"), url);
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

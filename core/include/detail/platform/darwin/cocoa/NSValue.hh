@@ -34,18 +34,24 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSValue_valueWithPointer(const void *pointer) {
-  return objc::msg_send<id>(objc::get_class("NSValue"),
-                            objc::selector("valueWithPointer:"), pointer);
-}
+/// A simple container for a single C or Objective-C data item.
+/// @see https://developer.apple.com/documentation/foundation/nsvalue?language=objc
+struct NSValue {
+  static id valueWithPointer(const void *pointer) {
+    return objc::msg_send<id>(objc::get_class("NSValue"),
+                              objc::selector("valueWithPointer:"), pointer);
+  }
 
-inline void NSValue_getValue(id self, void *value, NSUInteger size) {
-  objc::msg_send<void>(self, objc::selector("getValue:size:"), value, size);
-}
+  static void getValue(id self, void *value, NSUInteger size) {
+    objc::msg_send<void>(self, objc::selector("getValue:size:"), value, size);
+  }
+};
 
-} // namespace cocoa
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

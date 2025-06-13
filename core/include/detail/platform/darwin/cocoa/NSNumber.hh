@@ -34,15 +34,22 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSNumber_numberWithBool(bool value) {
-  return objc::msg_send<id>(objc::get_class("NSNumber"),
-                            objc::selector("numberWithBool:"),
-                            static_cast<BOOL>(value));
-}
+/// An object wrapper for primitive scalar numeric values.
+/// @see https://developer.apple.com/documentation/foundation/nsnumber?language=objc
+struct NSNumber {
 
-} // namespace cocoa
+  static id numberWithBool(bool value) {
+    return objc::msg_send<id>(objc::get_class("NSNumber"),
+                              objc::selector("numberWithBool:"),
+                              static_cast<BOOL>(value));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

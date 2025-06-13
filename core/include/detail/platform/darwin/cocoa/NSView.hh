@@ -30,57 +30,70 @@
 #include "lib/macros.h"
 
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-#include "NSRect.hh"
 #include "detail/platform/darwin/objc/objc.hh"
+#include "detail/platform/darwin/types.hh"
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-enum NSAutoresizingMaskOptions : NSUInteger {
-  NSViewMinXMargin = 1,
-  NSViewWidthSizable = 2,
-  NSViewMaxXMargin = 4,
-  NSViewMinYMargin = 8,
-  NSViewHeightSizable = 16,
-  NSViewMaxYMargin = 32
+/// Constants that specify the autoresizing behaviors for views.
+/// @see https://developer.apple.com/documentation/appkit/nsview/autoresizingmask-swift.struct?language=objc
+struct NSAutoresizing {
+
+  enum MaskOptions : NSUInteger {
+    MinXMargin = 1,
+    WidthSizable = 2,
+    MaxXMargin = 4,
+    MinYMargin = 8,
+    HeightSizable = 16,
+    MaxYMargin = 32
+  };
 };
 
-inline id NSView_alloc() {
-  return objc::msg_send<id>(objc::get_class("NSView"), objc::selector("alloc"));
-}
+/// The infrastructure for drawing, printing, and handling events in an app.
+/// @see https://developer.apple.com/documentation/appkit/nsview?language=objc
+struct NSView {
 
-inline id NSView_initWithFrame(id self, NSRect frame_rect) {
-  return objc::msg_send<id>(self, objc::selector("initWithFrame:"), frame_rect);
-}
+  static id alloc() {
+    return objc::msg_send<id>(objc::get_class("NSView"),
+                              objc::selector("alloc"));
+  }
 
-inline id NSView_withFrame(NSRect frame_rect) {
-  return objc::autorelease(NSView_initWithFrame(NSView_alloc(), frame_rect));
-}
+  static id initWithFrame(id self, NSRect_t frame_rect) {
+    return objc::msg_send<id>(self, objc::selector("initWithFrame:"),
+                              frame_rect);
+  }
 
-inline void NSView_set_autoresizesSubviews(id self, bool resizes) {
-  objc::msg_send<void>(self, objc::selector("setAutoresizesSubviews:"),
-                       static_cast<BOOL>(resizes));
-}
+  static id withFrame(NSRect_t frame_rect) {
+    return objc::autorelease(initWithFrame(alloc(), frame_rect));
+  }
 
-inline void NSView_addSubview(id self, id subview) {
-  objc::msg_send<void>(self, objc::selector("addSubview:"), subview);
-}
+  static void set_autoresizesSubviews(id self, bool resizes) {
+    objc::msg_send<void>(self, objc::selector("setAutoresizesSubviews:"),
+                         static_cast<BOOL>(resizes));
+  }
 
-inline NSRect NSView_get_bounds(id self) {
-  return objc::msg_send_stret<NSRect>(self, objc::selector("bounds"));
-}
+  static void addSubview(id self, id subview) {
+    objc::msg_send<void>(self, objc::selector("addSubview:"), subview);
+  }
 
-inline void NSView_set_frame(id self, NSRect frame) {
-  objc::msg_send<void>(self, objc::selector("setFrame:"), frame);
-}
+  static NSRect_t get_bounds(id self) {
+    return objc::msg_send_stret<NSRect_t>(self, objc::selector("bounds"));
+  }
 
-inline void NSView_set_autoresizingMask(id self,
-                                        NSAutoresizingMaskOptions mask) {
-  objc::msg_send<void>(self, objc::selector("setAutoresizingMask:"), mask);
-}
+  static void set_frame(id self, NSRect_t frame) {
+    objc::msg_send<void>(self, objc::selector("setFrame:"), frame);
+  }
 
-} // namespace cocoa
+  static void set_autoresizingMask(id self, NSAutoresizing::MaskOptions mask) {
+    objc::msg_send<void>(self, objc::selector("setAutoresizingMask:"), mask);
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

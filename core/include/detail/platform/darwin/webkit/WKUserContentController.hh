@@ -34,23 +34,29 @@
 
 namespace webview {
 namespace detail {
-namespace webkit {
+namespace platform {
+namespace darwin {
 
-inline void WKUserContentController_addScriptMessageHandler(id self, id handler,
-                                                            id name) {
-  objc::msg_send<void>(self, objc::selector("addScriptMessageHandler:name:"),
-                       handler, name);
-}
+/// An object for managing interactions between JavaScript code and your web view, and for filtering content in your web view.
+/// @see https://developer.apple.com/documentation/webkit/wkusercontentcontroller?language=objc
+struct WKUserContentController {
 
-inline void WKUserContentController_addUserScript(id self, id user_script) {
-  objc::msg_send<void>(self, objc::selector("addUserScript:"), user_script);
-}
+  static void addScriptMessageHandler(id self, id handler, id name) {
+    objc::msg_send<void>(self, objc::selector("addScriptMessageHandler:name:"),
+                         handler, name);
+  }
 
-inline void WKUserContentController_removeAllUserScripts(id self) {
-  objc::msg_send<id>(self, objc::selector("removeAllUserScripts"));
-}
+  static void addUserScript(id self, id user_script) {
+    objc::msg_send<void>(self, objc::selector("addUserScript:"), user_script);
+  }
 
-} // namespace webkit
+  static void removeAllUserScripts(id self) {
+    objc::msg_send<id>(self, objc::selector("removeAllUserScripts"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

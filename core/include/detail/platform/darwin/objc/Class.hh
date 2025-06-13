@@ -35,6 +35,8 @@
 
 namespace webview {
 namespace detail {
+namespace platform {
+namespace darwin {
 namespace objc {
 
 inline id Class_new(Class class_) {
@@ -44,6 +46,8 @@ inline id Class_new(Class class_) {
 inline Class get_class(const char *name) { return objc_getClass(name); }
 
 } // namespace objc
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

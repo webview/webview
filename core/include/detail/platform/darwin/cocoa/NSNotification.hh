@@ -34,13 +34,20 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSNotification_get_object(id self) {
-  return objc::msg_send<id>(self, objc::selector("object"));
-}
+/// A container for information broadcast through a notification center to all registered observers.
+/// @see https://developer.apple.com/documentation/foundation/nsnotification?language=objc
+struct NSNotification {
 
-} // namespace cocoa
+  static id get_object(id self) {
+    return objc::msg_send<id>(self, objc::selector("object"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

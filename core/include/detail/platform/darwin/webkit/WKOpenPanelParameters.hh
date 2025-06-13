@@ -34,19 +34,26 @@
 
 namespace webview {
 namespace detail {
-namespace webkit {
+namespace platform {
+namespace darwin {
 
-inline bool WKOpenPanelParameters_get_allowsMultipleSelection(id self) {
-  return static_cast<bool>(
-      objc::msg_send<BOOL>(self, objc::selector("allowsMultipleSelection")));
-}
+/// The configuration details of a file upload control in your web content.
+/// @see https://developer.apple.com/documentation/webkit/wkopenpanelparameters?language=objc
+struct WKOpenPanelParameters {
 
-inline bool WKOpenPanelParameters_get_allowsDirectories(id self) {
-  return static_cast<bool>(
-      objc::msg_send<BOOL>(self, objc::selector("allowsDirectories")));
-}
+  static bool get_allowsMultipleSelection(id self) {
+    return static_cast<bool>(
+        objc::msg_send<BOOL>(self, objc::selector("allowsMultipleSelection")));
+  }
 
-} // namespace webkit
+  static bool get_allowsDirectories(id self) {
+    return static_cast<bool>(
+        objc::msg_send<BOOL>(self, objc::selector("allowsDirectories")));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

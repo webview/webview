@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
-#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "lib/macros.h"
@@ -36,25 +36,32 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSURL_URLWithString(id string) {
-  return objc::msg_send<id>(objc::get_class("NSURL"),
-                            objc::selector("URLWithString:"), string);
-}
+/// An object that represents the location of a resource, such as an item on a remote server or the path to a local file.
+/// @see https://developer.apple.com/documentation/foundation/nsurl?language=objc
+struct NSURL {
 
-inline id NSURL_URLWithString(const char *string) {
-  return NSURL_URLWithString(NSString_stringWithUTF8String(string));
-}
+  static id URLWithString(id string) {
+    return objc::msg_send<id>(objc::get_class("NSURL"),
+                              objc::selector("URLWithString:"), string);
+  }
 
-inline id NSURL_URLWithString(const std::string &string) {
-  return NSURL_URLWithString(NSString_stringWithUTF8String(string));
-}
+  static id URLWithString(const char *string) {
+    return URLWithString(NSString::stringWithUTF8String(string));
+  }
 
-} // namespace cocoa
+  static id URLWithString(const std::string &string) {
+    return URLWithString(NSString::stringWithUTF8String(string));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSURL_HH
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_HH

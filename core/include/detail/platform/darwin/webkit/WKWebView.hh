@@ -35,68 +35,74 @@
 
 namespace webview {
 namespace detail {
-namespace webkit {
+namespace platform {
+namespace darwin {
 
-inline id WKWebView_alloc() {
-  return objc::msg_send<id>(objc::get_class("WKWebView"),
-                            objc::selector("alloc"));
-}
+/// An object that displays interactive web content, such as for an in-app browser.
+/// @see https://developer.apple.com/documentation/webkit/wkwebview?language=objc
+struct WKWebView {
 
-inline id WKWebView_initWithFrame(id self, CGRect frame, id configuration) {
-  return objc::msg_send<id>(self,
-                            objc::selector("initWithFrame:configuration:"),
-                            frame, configuration);
-}
+  static id alloc() {
+    return objc::msg_send<id>(objc::get_class("WKWebView"),
+                              objc::selector("alloc"));
+  }
 
-inline id WKWebView_withFrame(CGRect frame, id configuration) {
-  return objc::autorelease(
-      WKWebView_initWithFrame(WKWebView_alloc(), frame, configuration));
-}
+  static id initWithFrame(id self, CGRect frame, id configuration) {
+    return objc::msg_send<id>(self,
+                              objc::selector("initWithFrame:configuration:"),
+                              frame, configuration);
+  }
 
-inline id WKWebView_get_UIDelegate(id self) {
-  return objc::msg_send<id>(self, objc::selector("UIDelegate"));
-}
+  static id withFrame(CGRect frame, id configuration) {
+    return objc::autorelease(initWithFrame(alloc(), frame, configuration));
+  }
 
-inline void WKWebView_set_UIDelegate(id self, id ui_delegate) {
-  objc::msg_send<void>(self, objc::selector("setUIDelegate:"), ui_delegate);
-}
+  static id get_UIDelegate(id self) {
+    return objc::msg_send<id>(self, objc::selector("UIDelegate"));
+  }
 
-inline id WKWebView_loadHTMLString(id self, id string, id base_url) {
-  return objc::msg_send<id>(self, objc::selector("loadHTMLString:baseURL:"),
-                            string, base_url);
-}
+  static void set_UIDelegate(id self, id ui_delegate) {
+    objc::msg_send<void>(self, objc::selector("setUIDelegate:"), ui_delegate);
+  }
 
-inline id WKWebView_get_URL(id self) {
-  return objc::msg_send<id>(self, objc::selector("URL"));
-}
+  static id loadHTMLString(id self, id string, id base_url) {
+    return objc::msg_send<id>(self, objc::selector("loadHTMLString:baseURL:"),
+                              string, base_url);
+  }
 
-inline id WKWebView_loadRequest(id self, id request) {
-  return objc::msg_send<id>(self, objc::selector("loadRequest:"), request);
-}
+  static id get_URL(id self) {
+    return objc::msg_send<id>(self, objc::selector("URL"));
+  }
 
-inline void WKWebView_evaluateJavaScript(id self, id js_string,
-                                         const void *completion_handler) {
-  return objc::msg_send<void>(
-      self, objc::selector("evaluateJavaScript:completionHandler:"), js_string,
-      completion_handler);
-}
+  static id loadRequest(id self, id request) {
+    return objc::msg_send<id>(self, objc::selector("loadRequest:"), request);
+  }
 
-inline void WKWebView_set_inspectable(id self, bool inspectable) {
+  static void evaluateJavaScript(id self, id js_string,
+                                 const void *completion_handler) {
+    return objc::msg_send<void>(
+        self, objc::selector("evaluateJavaScript:completionHandler:"),
+        js_string, completion_handler);
+  }
+
+  static void set_inspectable(id self, bool inspectable) {
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_available)
-  if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
-    objc::msg_send<void>(self, objc::selector("setInspectable:"),
-                         static_cast<BOOL>(inspectable));
-  }
+    if (__builtin_available(macOS 13.3, iOS 16.4, tvOS 16.4, *)) {
+      objc::msg_send<void>(self, objc::selector("setInspectable:"),
+                           static_cast<BOOL>(inspectable));
+    }
 #else
 #error __builtin_available not supported by compiler
 #endif
 #else
 #error __has_builtin not supported by compiler
 #endif
-}
+  }
+};
 
-} // namespace webkit
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 

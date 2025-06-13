@@ -34,33 +34,40 @@
 
 namespace webview {
 namespace detail {
-namespace cocoa {
+namespace platform {
+namespace darwin {
 
-inline id NSOpenPanel_openPanel() {
-  return objc::msg_send<id>(objc::get_class("NSOpenPanel"),
-                            objc::selector("openPanel"));
-}
+/// A panel that prompts the user to select a file to open.
+/// @see https://developer.apple.com/documentation/appkit/nsopenpanel?language=objc
+struct NSOpenPanel {
 
-inline void NSOpenPanel_set_canChooseFiles(id self, bool value) {
-  objc::msg_send<void>(self, objc::selector("setCanChooseFiles:"),
-                       static_cast<BOOL>(value));
-}
+  static id openPanel() {
+    return objc::msg_send<id>(objc::get_class("NSOpenPanel"),
+                              objc::selector("openPanel"));
+  }
 
-inline void NSOpenPanel_set_canChooseDirectories(id self, bool value) {
-  objc::msg_send<void>(self, objc::selector("setCanChooseDirectories:"),
-                       static_cast<BOOL>(value));
-}
+  static void set_canChooseFiles(id self, bool value) {
+    objc::msg_send<void>(self, objc::selector("setCanChooseFiles:"),
+                         static_cast<BOOL>(value));
+  }
 
-inline void NSOpenPanel_set_allowsMultipleSelection(id self, bool value) {
-  objc::msg_send<void>(self, objc::selector("setAllowsMultipleSelection:"),
-                       static_cast<BOOL>(value));
-}
+  static void set_canChooseDirectories(id self, bool value) {
+    objc::msg_send<void>(self, objc::selector("setCanChooseDirectories:"),
+                         static_cast<BOOL>(value));
+  }
 
-inline id NSOpenPanel_get_URLs(id self) {
-  return objc::msg_send<id>(self, objc::selector("URLs"));
-}
+  static void set_allowsMultipleSelection(id self, bool value) {
+    objc::msg_send<void>(self, objc::selector("setAllowsMultipleSelection:"),
+                         static_cast<BOOL>(value));
+  }
 
-} // namespace cocoa
+  static id get_URLs(id self) {
+    return objc::msg_send<id>(self, objc::selector("URLs"));
+  }
+};
+
+} // namespace darwin
+} // namespace platform
 } // namespace detail
 } // namespace webview
 
