@@ -27,10 +27,12 @@
 #define WEBVIEW_API_LIB_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "detail/backends/cocoa_webkit.hh"
+#include "detail/backends/gtk_webkitgtk.hh"
+#include "detail/backends/win32_edge.hh"
 #include "errors/errors.h"
 #include "lib/version.h"
 #include "types/types.h"
-#include "webview_cc.hh"
 
 using namespace webview::errors;
 namespace webview {
@@ -50,7 +52,7 @@ webview_error_t api_filter(WorkFn &&do_work, ResultFn &&put_result) noexcept;
 template <typename WorkFn>
 webview_error_t api_filter(WorkFn &&do_work) noexcept;
 
-inline webview *cast_to_webview(void *w);
+inline webview_cc *cast_to_webview(void *w);
 
 } // namespace _api
 } // namespace _lib

@@ -47,7 +47,7 @@ using namespace webview::detail::user;
 using namespace webview::detail::platform::darwin;
 namespace webview {
 namespace detail {
-namespace backend {
+namespace backends {
 
 //
 // ====================================================================
@@ -589,11 +589,11 @@ private:
   bool m_is_window_shown{};
 };
 
-using browser_engine = cocoa_wkwebview_engine;
-
-} // namespace backend
+} // namespace backends
 } // namespace detail
 } // namespace webview
+
+using webview_cc = webview::detail::backends::cocoa_wkwebview_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

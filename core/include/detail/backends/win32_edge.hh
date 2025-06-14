@@ -63,7 +63,7 @@
 using namespace webview::detail::platform::windows;
 namespace webview {
 namespace detail {
-namespace backend {
+namespace backends {
 
 //
 // ====================================================================
@@ -663,11 +663,11 @@ private:
   bool m_is_window_shown{};
 };
 
-using browser_engine = win32_edge_engine;
-
-} // namespace backend
+} // namespace backends
 } // namespace detail
 } // namespace webview
+
+using webview_cc = webview::detail::backends::win32_edge_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_WINDOWS) && defined(WEBVIEW_EDGE)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

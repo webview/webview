@@ -23,7 +23,6 @@
  */
 
 #include "test_driver.hh"
-
 #include <deque>
 #include <iomanip>
 #include <iostream>

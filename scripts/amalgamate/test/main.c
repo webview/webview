@@ -1,4 +1,4 @@
-#include "webview_amalgamation.h"
+#include "../generated/webview_amalgamation.h"
 #include <stddef.h>
 
 int main(void) {

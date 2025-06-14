@@ -28,8 +28,6 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/user/user_script.hh"
-#include "errors/errors.hh"
-#include "strings/json.hh"
 #include "types/types.h"
 #include "types/types.hh"
 #include <atomic>
@@ -38,8 +36,8 @@
 #include <map>
 #include <string>
 
+using namespace webview::types;
 using namespace webview::detail::user;
-using namespace webview::_lib::_strings;
 namespace webview {
 namespace detail {
 

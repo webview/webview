@@ -1,8 +1,8 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Serge Zaitsev
  * Copyright (c) 2022 Steffen André Langnes
+ * Copyright (c) 2025 Michael Jonker
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,17 +23,28 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_BACKENDS_HH
-#define WEBVIEW_BACKENDS_HH
+#ifndef WEBVIEW_STRINGS_STRING_API_HH
+#define WEBVIEW_STRINGS_STRING_API_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "detail/backends/cocoa_webkit.hh"
-#include "detail/backends/gtk_webkitgtk.hh"
-#include "detail/backends/win32_edge.hh"
+#include "strings/json.hh"
 
+using namespace webview::_lib::_strings;
 namespace webview {
-using webview = detail::backend::browser_engine;
-}
+namespace strings {
+
+struct json {
+  static std::string parse(const std::string &string, const std::string &key,
+                           const int index) {
+    return json_lib::json_parse(string, key, index);
+  }
+  static std::string escape(const std::string &string, bool add_quotes = true) {
+    return json_lib::json_escape(string, add_quotes);
+  }
+};
+
+} // namespace strings
+} // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_BACKENDS_HH
+#endif // WEBVIEW_STRINGS_STRING_API_HH

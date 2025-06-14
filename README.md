@@ -128,7 +128,6 @@ target_link_libraries(example PRIVATE webview::core)
 `main.cc`:
 ```cpp
 #include "webview.h"
-
 #include <iostream>
 
 #ifdef _WIN32
@@ -138,7 +137,7 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   try {
-    webview::webview w(false, nullptr);
+    webview_cc w(false, nullptr);
     w.set_title("Basic Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");

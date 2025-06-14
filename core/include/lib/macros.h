@@ -110,19 +110,35 @@
 #endif
 #endif
 
+#if defined(__cplusplus) && __cplusplus >= 201402L
 #ifndef WEBVIEW_DEPRECATED
-#if __cplusplus >= 201402L
 #define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
-#elif defined(_MSC_VER)
-#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
-#else
+#endif
+#elif defined(__GNUC__) || defined(__clang__)
+#ifndef WEBVIEW_DEPRECATED
 #define WEBVIEW_DEPRECATED(reason) __attribute__((deprecated(reason)))
+#endif
+#elif defined(_MSC_VER)
+#ifndef WEBVIEW_DEPRECATED
+#define WEBVIEW_DEPRECATED(reason) __declspec(deprecated(reason))
+#endif
+#else
+#ifndef WEBVIEW_DEPRECATED
+#pragma message("WARNING: You need to implement DEPRECATED for this compiler")
+#define WEBVIEW_DEPRECATED(reason)
 #endif
 #endif
 
 #ifndef WEBVIEW_DEPRECATED_PRIVATE
 #define WEBVIEW_DEPRECATED_PRIVATE                                             \
   WEBVIEW_DEPRECATED("Private API should not be used")
+#endif
+
+#ifndef DEPRECATE_WEBVIEW_WEBVIEW
+#define DEPRECATE_WEBVIEW_WEBVIEW                                              \
+  "since 0.12.1\n\n\
+`webview::webview` is ambiguous for compilers and humans, so it will be removed in a future release.\n\
+Please use `webview_cc` from the Global namespace instead."
 #endif
 
 #endif // WEBVIEW_HEADER

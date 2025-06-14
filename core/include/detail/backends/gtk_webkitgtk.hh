@@ -59,7 +59,7 @@
 using namespace webview::detail::platform::linuz;
 namespace webview {
 namespace detail {
-namespace backend {
+namespace backends {
 
 //
 // ====================================================================
@@ -322,11 +322,11 @@ private:
   bool m_is_window_shown{};
 };
 
-using browser_engine = gtk_webkit_engine;
-
-} // namespace backend
+} // namespace backends
 } // namespace detail
 } // namespace webview
+
+using webview_cc = webview::detail::backends::gtk_webkit_engine;
 
 #endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)

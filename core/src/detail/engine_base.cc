@@ -28,9 +28,10 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/engine_base.hh"
-#include "strings/json.hh"
+#include "strings/string_api.hh"
 
 using namespace webview::detail;
+using namespace webview::strings;
 
 /* PUBLIC 
  * ∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇ */
@@ -69,7 +70,7 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   // set things up.
   eval("if (window.__webview__) {\n\
 window.__webview__.onBind(" +
-       json_escape(name) + ")\n\
+       json::escape(name) + ")\n\
 }");
   return {};
 }
@@ -85,7 +86,7 @@ noresult engine_base::unbind(const std::string &name) {
   // set things up.
   eval("if (window.__webview__) {\n\
 window.__webview__.onUnbind(" +
-       json_escape(name) + ")\n\
+       json::escape(name) + ")\n\
 }");
   return {};
 }
@@ -95,12 +96,12 @@ noresult engine_base::resolve(const std::string &id, int status,
   // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
   return dispatch(std::bind(
       [id, status, this](std::string escaped_result) {
-        std::string js = "window.__webview__.onReply(" + json_escape(id) +
+        std::string js = "window.__webview__.onReply(" + json::escape(id) +
                          ", " + std::to_string(status) + ", " + escaped_result +
                          ")";
         eval(js);
       },
-      result.empty() ? "undefined" : json_escape(result)));
+      result.empty() ? "undefined" : json::escape(result)));
 }
 
 noresult engine_base::run() { return run_impl(); }
@@ -247,7 +248,7 @@ std::string engine_base::create_bind_script() {
     } else {
       js_names += ",";
     }
-    js_names += json_escape(binding.first);
+    js_names += json::escape(binding.first);
   }
   js_names += "]";
 
@@ -263,9 +264,9 @@ std::string engine_base::create_bind_script() {
 }
 
 void engine_base::on_message(const std::string &msg) {
-  auto id = json_parse(msg, "id", 0);
-  auto name = json_parse(msg, "method", 0);
-  auto args = json_parse(msg, "params", 0);
+  auto id = json::parse(msg, "id", 0);
+  auto name = json::parse(msg, "method", 0);
+  auto args = json::parse(msg, "params", 0);
   auto found = bindings.find(name);
   if (found == bindings.end()) {
     return;

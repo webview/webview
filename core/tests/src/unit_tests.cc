@@ -1,10 +1,10 @@
 #include "test_driver.hh"
 #include "webview.h"
 
-using namespace webview::_lib::_strings;
+using namespace webview::strings;
 
 TEST_CASE("Ensure that JSON parsing works") {
-  auto J = json_parse;
+  auto J = json::parse;
   // Valid input with expected output
   REQUIRE(J(R"({"foo":"bar"})", "foo", -1) == "bar");
   REQUIRE(J(R"({"foo":""})", "foo", -1).empty());
@@ -40,30 +40,30 @@ TEST_CASE("Ensure that JSON parsing works") {
 
 TEST_CASE("Ensure that JSON escaping works") {
   // Simple case without need for escaping. Quotes added by default.
-  REQUIRE(json_escape("hello") == "\"hello\"");
+  REQUIRE(json::escape("hello") == "\"hello\"");
   // Simple case without need for escaping. Quotes explicitly not added.
-  REQUIRE(json_escape("hello", false) == "hello");
+  REQUIRE(json::escape("hello", false) == "hello");
   // Empty input should return empty output.
-  REQUIRE(json_escape("", false).empty());
+  REQUIRE(json::escape("", false).empty());
   // '"' and '\' should be escaped.
-  REQUIRE(json_escape("\"", false) == "\\\"");
-  REQUIRE(json_escape("\\", false) == "\\\\");
+  REQUIRE(json::escape("\"", false) == "\\\"");
+  REQUIRE(json::escape("\\", false) == "\\\\");
   // Commonly-used characters that should be escaped.
-  REQUIRE(json_escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
+  REQUIRE(json::escape("\b\f\n\r\t", false) == "\\b\\f\\n\\r\\t");
   // ASCII control characters should be escaped.
-  REQUIRE(json_escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
+  REQUIRE(json::escape(std::string{"\0\x1f", 2}, false) == "\\u0000\\u001f");
   // ASCII printable characters (even DEL) shouldn't be escaped.
-  REQUIRE(json_escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
+  REQUIRE(json::escape("\x20\x7e\x7f", false) == "\x20\x7e\x7f");
   // Valid UTF-8.
-  REQUIRE(json_escape("\u2328", false) == "\u2328");
-  REQUIRE(json_escape("フーバー", false) == "フーバー");
+  REQUIRE(json::escape("\u2328", false) == "\u2328");
+  REQUIRE(json::escape("フーバー", false) == "フーバー");
   // Replacement character for invalid characters.
-  REQUIRE(json_escape("�", false) == "�");
+  REQUIRE(json::escape("�", false) == "�");
   // Invalid characters should be replaced with '�' but we just leave them as-is.
-  REQUIRE(json_escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
+  REQUIRE(json::escape("\x80\x9f\xa0\xff", false) == "\x80\x9f\xa0\xff");
   // JS code should not be executed (eval).
   auto expected_gotcha = R"js(alert(\"gotcha\"))js";
-  REQUIRE(json_escape(R"(alert("gotcha"))", false) == expected_gotcha);
+  REQUIRE(json::escape(R"(alert("gotcha"))", false) == expected_gotcha);
 }
 
 TEST_CASE("optional class") {

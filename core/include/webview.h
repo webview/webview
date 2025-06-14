@@ -28,5 +28,6 @@
 
 #include "../src/webview_cc.hh"
 #include "api/api.h"
+#include "webview.hh"
 
 #endif // WEBVIEW_H

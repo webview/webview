@@ -23,26 +23,19 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_TYPES_TYPES_HH
-#define WEBVIEW_TYPES_TYPES_HH
+#ifndef WEBVIEW_BACKENDS_HH
+#define WEBVIEW_BACKENDS_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "errors/errors.hh"
-#include "types/basic_result.hh"
-#include <functional>
+#include "api/api_lib.hh"
+#include "lib/macros.h"
 
-using namespace webview::errors;
 namespace webview {
-namespace types {
 
-using sync_binding_t = std::function<std::string(std::string)>;
-using dispatch_fn_t = std::function<void()>;
-using noresult = basic_result<void, error_info, exception>;
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_WEBVIEW)
+typedef webview_cc webview;
 
-template <typename T> using result = basic_result<T, error_info, exception>;
-
-} // namespace types
 } // namespace webview
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_TYPES_TYPES_HH
+#endif // WEBVIEW_BACKENDS_HH
