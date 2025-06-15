@@ -35,11 +35,17 @@ using namespace webview::errors;
 namespace webview {
 namespace types {
 
+struct tokenise_data_t {
+  std::string token;
+  std::string tkn_replcmnt;
+};
+
+template <typename T> using result = basic_result<T, error_info, exception>;
+
 using sync_binding_t = std::function<std::string(std::string)>;
 using dispatch_fn_t = std::function<void()>;
 using noresult = basic_result<void, error_info, exception>;
-
-template <typename T> using result = basic_result<T, error_info, exception>;
+using strg_replacements_t = std::initializer_list<tokenise_data_t>;
 
 } // namespace types
 } // namespace webview

@@ -30,6 +30,7 @@
 #include <cassert>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace webview {
 namespace _lib {
@@ -328,6 +329,22 @@ struct json_lib {
       }
     }
     return "";
+  }
+
+  static std::string json_to_list(std::vector<std::string> &binding_names) {
+    std::string json = "[";
+    bool first = true;
+    for (const auto &name : binding_names) {
+      if (first) {
+        first = false;
+      } else {
+        json += ",";
+      }
+      json += json_escape(name);
+    }
+    json += "]";
+
+    return json;
   }
 };
 

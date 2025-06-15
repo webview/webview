@@ -124,13 +124,9 @@ protected:
   /// Updates the JS `bind` script in the frontend window.
   void replace_bind_script();
   /// Adds the JS Webview script to the frontend window
-  void add_init_script(const std::string &post_fn);
-  /// Creates the JS Webview script for the frontend window
-  std::string create_init_script(const std::string &post_fn);
-  // Creates a `bind` JS script string for the frontend window.
-  std::string create_bind_script();
+  void add_init_script();
   /// Handler for messages from the frontend window to the native Webview process.
-  virtual void on_message(const std::string &msg);
+  void on_message(const std::string &msg);
   /// Handler to increment the browser window count
   virtual void on_window_created();
   /// Handler to decrement the browser window count

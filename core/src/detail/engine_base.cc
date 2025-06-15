@@ -29,9 +29,11 @@
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/engine_base.hh"
 #include "strings/string_api.hh"
+#include "tests/test_helper.hh"
 
 using namespace webview::detail;
 using namespace webview::strings;
+using namespace webview::tests;
 
 /* PUBLIC 
  * ∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇ */
@@ -68,10 +70,7 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   replace_bind_script();
   // Notify that a binding was created if the init script has already
   // set things up.
-  eval("if (window.__webview__) {\n\
-window.__webview__.onBind(" +
-       json::escape(name) + ")\n\
-}");
+  eval(string::js.onbind(name));
   return {};
 }
 
@@ -84,10 +83,7 @@ noresult engine_base::unbind(const std::string &name) {
   replace_bind_script();
   // Notify that a binding was created if the init script has already
   // set things up.
-  eval("if (window.__webview__) {\n\
-window.__webview__.onUnbind(" +
-       json::escape(name) + ")\n\
-}");
+  eval(string::js.onunbind(name));
   return {};
 }
 
@@ -96,9 +92,7 @@ noresult engine_base::resolve(const std::string &id, int status,
   // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
   return dispatch(std::bind(
       [id, status, this](std::string escaped_result) {
-        std::string js = "window.__webview__.onReply(" + json::escape(id) +
-                         ", " + std::to_string(status) + ", " + escaped_result +
-                         ")";
+        std::string js = string::js.onreply(id, status, escaped_result);
         eval(js);
       },
       result.empty() ? "undefined" : json::escape(result)));
@@ -158,114 +152,28 @@ engine_base::replace_user_script(const user_script &old_script,
 
 void engine_base::replace_bind_script() {
   if (m_bind_script) {
-    m_bind_script = replace_user_script(*m_bind_script, create_bind_script());
+    m_bind_script =
+        replace_user_script(*m_bind_script, string::js.bind(bindings));
   } else {
-    m_bind_script = add_user_script(create_bind_script());
+    m_bind_script = add_user_script(string::js.bind(bindings));
   }
 }
 
-void engine_base::add_init_script(const std::string &post_fn) {
-  add_user_script(create_init_script(post_fn));
+void engine_base::add_init_script() {
+  add_user_script(string::js.init(string::js.post_fnc()));
   m_is_init_script_added = true;
-}
-
-std::string engine_base::create_init_script(const std::string &post_fn) {
-  auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  function generateId() {\n\
-    var crypto = window.crypto || window.msCrypto;\n\
-    var bytes = new Uint8Array(16);\n\
-    crypto.getRandomValues(bytes);\n\
-    return Array.prototype.slice.call(bytes).map(function(n) {\n\
-      var s = n.toString(16);\n\
-      return ((s.length % 2) == 1 ? '0' : '') + s;\n\
-    }).join('');\n\
-  }\n\
-  var Webview = (function() {\n\
-    var _promises = {};\n\
-    function Webview_() {}\n\
-    Webview_.prototype.post = function(message) {\n\
-      return (" +
-            post_fn + ")(message);\n\
-    };\n\
-    Webview_.prototype.call = function(method) {\n\
-      var _id = generateId();\n\
-      var _params = Array.prototype.slice.call(arguments, 1);\n\
-      var promise = new Promise(function(resolve, reject) {\n\
-        _promises[_id] = { resolve, reject };\n\
-      });\n\
-      this.post(JSON.stringify({\n\
-        id: _id,\n\
-        method: method,\n\
-        params: _params\n\
-      }));\n\
-      return promise;\n\
-    };\n\
-    Webview_.prototype.onReply = function(id, status, result) {\n\
-      var promise = _promises[id];\n\
-      if (result !== undefined) {\n\
-        try {\n\
-          result = JSON.parse(result);\n\
-        } catch (e) {\n\
-          promise.reject(new Error(\"Failed to parse binding result as JSON\"));\n\
-          return;\n\
-        }\n\
-      }\n\
-      if (status === 0) {\n\
-        promise.resolve(result);\n\
-      } else {\n\
-        promise.reject(result);\n\
-      }\n\
-    };\n\
-    Webview_.prototype.onBind = function(name) {\n\
-      if (window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" already exists');\n\
-      }\n\
-      window[name] = (function() {\n\
-        var params = [name].concat(Array.prototype.slice.call(arguments));\n\
-        return Webview_.prototype.call.apply(this, params);\n\
-      }).bind(this);\n\
-    };\n\
-    Webview_.prototype.onUnbind = function(name) {\n\
-      if (!window.hasOwnProperty(name)) {\n\
-        throw new Error('Property \"' + name + '\" does not exist');\n\
-      }\n\
-      delete window[name];\n\
-    };\n\
-    return Webview_;\n\
-  })();\n\
-  window.__webview__ = new Webview();\n\
-})()";
-  return js;
-}
-
-std::string engine_base::create_bind_script() {
-  std::string js_names = "[";
-  bool first = true;
-  for (const auto &binding : bindings) {
-    if (first) {
-      first = false;
-    } else {
-      js_names += ",";
-    }
-    js_names += json::escape(binding.first);
-  }
-  js_names += "]";
-
-  auto js = std::string{} + "(function() {\n\
-  'use strict';\n\
-  var methods = " +
-            js_names + ";\n\
-  methods.forEach(function(name) {\n\
-    window.__webview__.onBind(name);\n\
-  });\n\
-})()";
-  return js;
 }
 
 void engine_base::on_message(const std::string &msg) {
   auto id = json::parse(msg, "id", 0);
   auto name = json::parse(msg, "method", 0);
+
+  // Guard for functional tests JS value checking
+  if (id == string::flags.testop) {
+    tester::set_value(name);
+    return;
+  }
+
   auto args = json::parse(msg, "params", 0);
   auto found = bindings.find(name);
   if (found == bindings.end()) {

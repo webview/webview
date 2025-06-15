@@ -278,9 +278,7 @@ private:
         });
     webkitgtk::compat::user_content_manager_register_script_message_handler(
         manager, "__webview__");
-    add_init_script("function(message) {\n\
-  return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
-}");
+    add_init_script();
   }
 
   void window_settings(bool debug) {

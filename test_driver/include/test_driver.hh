@@ -111,6 +111,8 @@ struct auto_test_reg {
 
 #define SECTION(name)
 
+#define ASSERT_WEBVIEW_FAILED(expr) REQUIRE(WEBVIEW_FAILED(expr))
+
 // NOLINTEND(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
 } // namespace webview

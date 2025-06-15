@@ -141,6 +141,21 @@
 Please use `webview_cc` from the Global namespace instead."
 #endif
 
+#ifdef _MSC_VER
+#define RESTORE_IGNORED_WARNINGS __pragma(warning(pop))
+#else
+#define RESTORE_IGNORED_WARNINGS _Pragma("GCC diagnostic pop")
+#endif
+
+#ifdef _MSC_VER
+#define IGNORE_UNUSED_FUNCTIONS                                                \
+  __pragma(warning(push)) __pragma(warning(disable : 4505))
+#else
+#define IGNORE_UNUSED_FUNCTIONS                                                \
+  _Pragma("GCC diagnostic push")                                               \
+      _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+#endif
+
 #endif // WEBVIEW_HEADER
 #endif // __cplusplus
 
