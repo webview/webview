@@ -173,7 +173,7 @@ protected:
   }
 
   noresult set_title_impl(const std::string &title) override {
-    SetWindowTextW(m_window, string::widen_string(title).c_str());
+    SetWindowTextW(m_window, win_string::widen_string(title).c_str());
     return {};
   }
 
@@ -207,7 +207,7 @@ protected:
   }
 
   noresult navigate_impl(const std::string &url) override {
-    auto wurl = string::widen_string(url);
+    auto wurl = win_string::widen_string(url);
     m_webview->Navigate(wurl.c_str());
     return {};
   }
@@ -215,18 +215,18 @@ protected:
   noresult eval_impl(const std::string &js) override {
     // TODO: Skip if no content has begun loading yet. Can't check with
     //       ICoreWebView2::get_Source because it returns "about:blank".
-    auto wjs = string::widen_string(js);
+    auto wjs = win_string::widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
     return {};
   }
 
   noresult set_html_impl(const std::string &html) override {
-    m_webview->NavigateToString(string::widen_string(html).c_str());
+    m_webview->NavigateToString(win_string::widen_string(html).c_str());
     return {};
   }
 
   user_script add_user_script_impl(const std::string &js) override {
-    auto wjs = string::widen_string(js);
+    auto wjs = win_string::widen_string(js);
     std::wstring script_id;
     bool done{};
     webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {

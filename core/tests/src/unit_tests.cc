@@ -146,27 +146,27 @@ TEST_CASE("Ensure that version number parsing works on Windows") {
 }
 
 TEST_CASE("Ensure that narrow/wide string conversion works on Windows") {
-  REQUIRE(string::widen_string("").empty());
-  REQUIRE(string::narrow_string(L"").empty());
-  REQUIRE(string::widen_string("foo") == L"foo");
-  REQUIRE(string::narrow_string(L"foo") == "foo");
-  REQUIRE(string::widen_string("フー") == L"フー");
-  REQUIRE(string::narrow_string(L"フー") == "フー");
-  REQUIRE(string::widen_string("æøå") == L"æøå");
-  REQUIRE(string::narrow_string(L"æøå") == "æøå");
+  REQUIRE(win_string::widen_string("").empty());
+  REQUIRE(win_string::narrow_string(L"").empty());
+  REQUIRE(win_string::widen_string("foo") == L"foo");
+  REQUIRE(win_string::narrow_string(L"foo") == "foo");
+  REQUIRE(win_string::widen_string("フー") == L"フー");
+  REQUIRE(win_string::narrow_string(L"フー") == "フー");
+  REQUIRE(win_string::widen_string("æøå") == L"æøå");
+  REQUIRE(win_string::narrow_string(L"æøå") == "æøå");
   // Unicode number for the smiley face below: U+1F600
-  REQUIRE(string::widen_string("😀") == L"😀");
-  REQUIRE(string::narrow_string(L"😀") == "😀");
+  REQUIRE(win_string::widen_string("😀") == L"😀");
+  REQUIRE(win_string::narrow_string(L"😀") == "😀");
   // Ensure that elements of wide string are correct
   {
-    auto s = string::widen_string("😀");
+    auto s = win_string::widen_string("😀");
     REQUIRE(s.size() == 2);
     REQUIRE(static_cast<std::uint16_t>(s[0]) == 0xD83D);
     REQUIRE(static_cast<std::uint16_t>(s[1]) == 0xDE00);
   }
   // Ensure that elements of narrow string are correct
   {
-    auto s = string::narrow_string(L"😀");
+    auto s = win_string::narrow_string(L"😀");
     REQUIRE(s.size() == 4);
     REQUIRE(static_cast<std::uint8_t>(s[0]) == 0xf0);
     REQUIRE(static_cast<std::uint8_t>(s[1]) == 0x9f);
@@ -174,8 +174,9 @@ TEST_CASE("Ensure that narrow/wide string conversion works on Windows") {
     REQUIRE(static_cast<std::uint8_t>(s[3]) == 0x80);
   }
   // Null-characters must also be converted
-  REQUIRE(string::widen_string(std::string(2, '\0')) == std::wstring(2, L'\0'));
-  REQUIRE(string::narrow_string(std::wstring(2, L'\0')) ==
+  REQUIRE(win_string::widen_string(std::string(2, '\0')) ==
+          std::wstring(2, L'\0'));
+  REQUIRE(win_string::narrow_string(std::wstring(2, L'\0')) ==
           std::string(2, '\0'));
 }
 #endif

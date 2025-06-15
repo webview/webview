@@ -136,7 +136,7 @@ public:
     LPWSTR message{};
     auto res = args->TryGetWebMessageAsString(&message);
     if (SUCCEEDED(res)) {
-      m_msgCb(string::narrow_string(message));
+      m_msgCb(win_string::narrow_string(message));
     }
 
     CoTaskMemFree(message);

@@ -29,6 +29,7 @@
 #include "tests/test_helper.hh"
 #include "detail/engine_base.hh"
 #include "tests/test_templates.hh"
+#include <iostream>
 
 using namespace webview::strings;
 using namespace webview::tests;
@@ -55,9 +56,9 @@ std::string tester::get_value() {
   return string_value();
 }
 
-void tester::ping_value(const std::string &value, engine_base *wv) {
+void tester::ping_value(const std::string &value, webview_cc &wv) {
   std::lock_guard<std::mutex> lock(mtx());
-  wv->eval(test_js.post_value(value));
+  wv.dispatch([&, value] { wv.eval(test_js.post_value(value)); });
 }
 
 std::chrono::seconds tester::seconds(int seconds) {

@@ -42,7 +42,7 @@ namespace detail {
 namespace platform {
 namespace windows {
 
-struct string {
+struct win_string {
   // Converts a narrow (UTF-8-encoded) string into a wide (UTF-16-encoded) string.
   static std::wstring widen_string(const std::string &input) {
     if (input.empty()) {

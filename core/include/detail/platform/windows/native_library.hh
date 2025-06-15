@@ -108,14 +108,14 @@ public:
   void detach() { m_handle = nullptr; }
   // Returns true if the library by the given name is currently loaded; otherwise false.
   static bool is_loaded(const std::string &name) {
-    auto handle = GetModuleHandleW(string::widen_string(name).c_str());
+    auto handle = GetModuleHandleW(win_string::widen_string(name).c_str());
     return !!handle;
   }
 
 private:
   using mod_handle_t = HMODULE;
   static mod_handle_t load_library(const std::string &name) {
-    return load_library(string::widen_string(name));
+    return load_library(win_string::widen_string(name));
   }
   static mod_handle_t load_library(const std::wstring &name) {
     return LoadLibraryW(name.c_str());

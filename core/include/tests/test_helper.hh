@@ -26,16 +26,11 @@
 #define WEBVIEW_TEST_HELPER_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "types/types.hh"
+#include "api/api_lib.hh"
 #include <atomic>
 #include <condition_variable>
 
-using namespace webview::types;
 namespace webview {
-namespace detail {
-// forward declaration
-class engine_base;
-} // namespace detail
 using namespace detail;
 namespace tests {
 
@@ -60,8 +55,7 @@ public:
   static bool values_match();
 
   /// Pings the frontend with a test value.
-  /// @param parameter-escaped Is the provided value string already escaped?
-  static void ping_value(const std::string &value, engine_base *wv);
+  static void ping_value(const std::string &value, webview_cc &wv);
 
   /// Returns the given timespan in std::chrono::seconds
   static std::chrono::seconds seconds(int seconds);
