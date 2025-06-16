@@ -9,22 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Link to Github compare]
 
 ## [0.12.3] - 2025-06-16
-This release guarantees thread safety, thus simplifying the API and providing the user a cleaner approach to building Webview based applications.
-### Deprecated
-- `webview_dispatch` is no longer needed due to guaranteed thread safety. The user can make API calls freely from any context.
-- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour.<br>
-From a user perspective, it is ambiguous and easily confused with `webview_terminate`.
-
+This release guarantees thread safety, thus simplifying the public API and providing the user a cleaner approach to building Webview based applications.
 ### Changed
-- Webview automatically detects if the thread context is `main`, and re-directs API calls to `dispatch_impl` appropriately.
+- Webview automatically detects if the thread context is `main`, and internally re-directs API calls to `dispatch_impl` appropriately.
 - Webview class initialisation MUST happen on the `main` thread, and Webview will now throw an exception if not.
 - `run` and `init` SHOULD be called on the `main` thread, and Webview will now return an error if not.
-
+### Deprecated
+- `webview_dispatch` is no longer needed due to guaranteed thread safety. The user can make API calls freely from any context.
+- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour. From a user perspective, it is ambiguous and easily confused with `webview_terminate`.
 
 ## [0.12.2] - 2025-06-16
 This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
 It has a large diff footprint, but does not change existing functionality ensuring 100% backwards compatibility.
-
 ### Changed
 - The 'core/include/webview' folder structure is flattened to 'core/include'.
 - The file folder structure and namespaces have been coordinated to reflect code purpose and encapsulation.
@@ -32,10 +28,8 @@ It has a large diff footprint, but does not change existing functionality ensuri
 - Much of the code definitions and implementations have been separated with improved inline documentation in header files.
 - Some existing code has been refactored for improved encapsulation and readability.
 - All JS/HTML string generation has been moved to a tokenised template system with a string retrieval API.
-
 ### Fixed
 - Unlike Linux and Windows, the Darwin backend does not accept `navigate` URL strings with leading or trailing whitespace, causing silent execution anomalies. URL strings are now automatically trimmed for Darwin.
-
 ### Deprecated
 - The `webview::webview` C++ API class naming is ambiguous for compilers and humans, so `webview_cc` is now declared in the Global namespace and should be used instead.
 - `#include "webview/webview.h"` is deprecated in favour of `#include "webview.h"`. 
