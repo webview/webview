@@ -149,6 +149,10 @@ protected:
   /// Gets a flag for whether the Webview window is embedded, or is owned by the user process.
   bool owns_window() const { return m_owns_window; }
 
+  /// Workaround guard flag for the deprecated `webview_destroy` API call.
+  void destructor_called(bool val) { destructor_called_.store(val); };
+  bool destructor_called() { return destructor_called_.load(); };
+
 private:
   /// Keeps track of the number of platform window instances.
   static std::atomic_uint &window_ref_count();
@@ -172,6 +176,8 @@ private:
   static const int m_initial_width = 640;
   /// The default browser window height
   static const int m_initial_height = 480;
+
+  std::atomic_bool destructor_called_{};
 };
 
 } // namespace detail

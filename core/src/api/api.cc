@@ -50,11 +50,14 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   return nullptr;
 }
 
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DESTROY)
 WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
-  return api_filter([=]() -> noresult {
-    delete cast_to_webview(w);
+  if (terminate_destroy_controller.terminated) {
     return {};
-  });
+  };
+  auto res = webview_terminate(w);
+  terminate_destroy_controller.destroyed = true;
+  return res;
 }
 
 WEBVIEW_API webview_error_t webview_run(webview_t w) {
@@ -62,6 +65,10 @@ WEBVIEW_API webview_error_t webview_run(webview_t w) {
 }
 
 WEBVIEW_API webview_error_t webview_terminate(webview_t w) {
+  if (terminate_destroy_controller.destroyed) {
+    return {};
+  };
+  terminate_destroy_controller.terminated = true;
   return api_filter([=] { return cast_to_webview(w)->terminate(); });
 }
 

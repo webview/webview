@@ -142,6 +142,13 @@ Webview now guarantees thread-safety, so dispatch is redundant and will be remov
 Please call all API methods directly."
 #endif
 
+#ifndef DEPRECATE_WEBVIEW_DESTROY
+#define DEPRECATE_WEBVIEW_DESTROY                                              \
+  "since 0.12.2\n\
+This legacy API call was violating RAII. It now redirects to `webview_terminate` and will be removed in a future release.\n\
+Please use `webview_terminate` instead and omit the use of `webview_destroy` after `webview_run`."
+#endif
+
 #ifndef DEPRECATE_WEBVIEW_WEBVIEW
 #define DEPRECATE_WEBVIEW_WEBVIEW                                              \
   "since 0.12.1\n\n\

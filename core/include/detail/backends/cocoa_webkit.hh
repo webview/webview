@@ -77,6 +77,7 @@ public:
 
   virtual ~cocoa_wkwebview_engine() {
     objc::autoreleasepool arp;
+    destructor_called(true);
     if (m_window) {
       if (m_webview) {
         if (auto ui_delegate{WKWebView::get_UIDelegate(m_webview)}) {

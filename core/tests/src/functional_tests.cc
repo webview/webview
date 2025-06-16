@@ -299,5 +299,4 @@ TEST_CASE("Bad C API usage without crash") {
   RESTORE_IGNORED_WARNINGS
   ASSERT_WEBVIEW_FAILED(webview_terminate(w));
   ASSERT_WEBVIEW_FAILED(webview_run(w));
-  ASSERT_WEBVIEW_FAILED(webview_destroy(w));
 }

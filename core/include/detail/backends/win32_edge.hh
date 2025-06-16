@@ -83,6 +83,7 @@ public:
   }
 
   virtual ~win32_edge_engine() {
+    destructor_called(true);
     if (m_com_handler) {
       m_com_handler->Release();
       m_com_handler = nullptr;

@@ -142,6 +142,12 @@ noresult engine_base::run() {
 }
 
 noresult engine_base::terminate() {
+  // The legacy `webview_destroy` is deprecated, and now re-directs here to `terminate`.
+  // If the browser window was manually closed however, we do not want legacy user
+  // `webview_destroy` calls to cause undefined behaviour, so we guard against it.
+  if (destructor_called()) {
+    return {};
+  };
   return dispatch_impl([this] { terminate_impl(); });
 }
 

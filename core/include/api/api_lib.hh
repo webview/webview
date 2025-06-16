@@ -39,6 +39,11 @@ namespace webview {
 namespace _lib {
 namespace _api {
 
+struct terminate_destroy_controller_t {
+  mutable bool terminated;
+  mutable bool destroyed;
+} const terminate_destroy_controller{};
+
 // The library's version information.
 constexpr const webview_version_info_t library_version_info{
     {WEBVIEW_VERSION_MAJOR, WEBVIEW_VERSION_MINOR, WEBVIEW_VERSION_PATCH},

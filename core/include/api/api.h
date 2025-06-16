@@ -59,11 +59,7 @@ extern "C" {
  */
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
-/**
- * Destroys a webview instance and closes the native window.
- *
- * @param w The webview instance.
- */
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DESTROY)
 WEBVIEW_API webview_error_t webview_destroy(webview_t w);
 
 /**
