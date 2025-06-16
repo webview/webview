@@ -202,6 +202,19 @@ int main(void) {
   return 0;
 }
 ```
+## Thread Safety
+The Webview API guarantees thread safety with the following exceptions:
+
+Webview initialisation
+- `webview_t w = webview_create(...)` (C API instance ref),
+- `webview_cc wv{...}` (C++ API instance)
+
+MUST happen on the `main` thread else an exception will be thrown.
+
+- calling `webview_run(w)` or `wv.run()`, 
+- calling `webview_init(w, js)` or `wv.init(js)`
+
+SHOULD happen on the `main` thread, else an error will be returned.
 
 ### Building the Example
 
@@ -377,14 +390,6 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 * Microsoft Edge Insider (preview) channels are not supported.
 
 [Customization options](#Customization) can be used to change how the library integrates the WebView2 loader.
-
-## Thread Safety
-
-Since library functions generally do not have thread safety guarantees, `webview_dispatch()` (C) / `webview::dispatch()` (C++) can be used to schedule code to execute on the main/GUI thread and thereby make that execution safe in multi-threaded applications.
-
-`webview_return()` (C) / `webview::resolve()` (C++) uses `*dispatch()` internally and is therefore safe to call from another thread.
-
-The main/GUI thread should be the thread that calls `webview_run()` (C) / `webview::run()` (C++).
 
 ## Development
 
