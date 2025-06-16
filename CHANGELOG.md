@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Link to Github compare]
 
 
-## [0.12.1] - 2025-06-16
+## [0.12.2] - 2025-06-16
 This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
 It has a large diff footprint, but does not change existing functionality ensuring 100% backwards compatibility.
 
@@ -29,6 +29,11 @@ It has a large diff footprint, but does not change existing functionality ensuri
 - `#include "webview/webview.h"` is deprecated in favour of `#include "webview.h"`. 
 
 ## Released
+
+
+## [0.12.1] - 2025-06-16
+For a while all development has occured directly on v0.12.0 HEAD.<br>
+This is a benchmark release reflecting all bugfixes and optimisations since 2024-09-11
 
 ## [0.12.0] - 2024-09-11
 
@@ -88,7 +93,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[Link to Github compare]: https://github.com/webview/webview/compare/0.12.0...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.2...HEAD
+[0.12.2]:     https://github.com/webview/webview/compare/0.12.1...0.12.2
 [0.12.1]:     https://github.com/webview/webview/compare/0.12.0...0.12.1
 [0.12.0]:     https://github.com/webview/webview/compare/0.11.0...0.12.0
 [0.11.0]:     https://github.com/webview/webview/compare/0.10.0...0.11.0
