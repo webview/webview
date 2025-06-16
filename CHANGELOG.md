@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
+[Link to Github compare]
+
+## Released
+
+## [0.12.1] - 2025-06-16
+For a while all development has occured directly on v0.12.0 HEAD.<br>
+This is a benchmark release reflecting all bugfixes and optimisations since 2024-09-11
 
 ## [0.12.0] - 2024-09-11
 
@@ -65,7 +72,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[unreleased]: https://github.com/webview/webview/compare/0.12.0...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.1...HEAD
+[0.12.1]:     https://github.com/webview/webview/compare/0.12.0...0.12.1
 [0.12.0]:     https://github.com/webview/webview/compare/0.11.0...0.12.0
 [0.11.0]:     https://github.com/webview/webview/compare/0.10.0...0.11.0
 [0.10.0]:     https://github.com/webview/webview/compare/0.1.1...0.10.0
