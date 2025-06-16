@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 [Link to Github compare]
 
+## [0.12.3] - 2025-06-16
+This release guarantees thread safety, thus simplifying the API and providing the user a cleaner approach to building Webview based applications.
+### Deprecated
+- `webview_dispatch` is no longer needed due to guaranteed thread safety. The user can make API calls freely from any context.
+- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour.<br>
+From a user perspective, it is ambiguous and easily confused with `webview_terminate`.
+
+### Changed
+- Webview automatically detects if the thread context is `main`, and re-directs API calls to `dispatch_impl` appropriately.
+- Webview class initialisation MUST happen on the `main` thread, and Webview will now throw an exception if not.
+- `run` and `init` SHOULD be called on the `main` thread, and Webview will now return an error if not.
+
 
 ## [0.12.2] - 2025-06-16
 This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
@@ -94,6 +106,7 @@ Windows:
 ## [0.1.0] - 2018-05-09
 
 [Link to Github compare]: https://github.com/webview/webview/compare/0.12.2...HEAD
+[0.12.3]:     https://github.com/webview/webview/compare/0.12.2...0.12.3
 [0.12.2]:     https://github.com/webview/webview/compare/0.12.1...0.12.2
 [0.12.1]:     https://github.com/webview/webview/compare/0.12.0...0.12.1
 [0.12.0]:     https://github.com/webview/webview/compare/0.11.0...0.12.0
