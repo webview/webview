@@ -35,6 +35,7 @@
 #include "detail/platform/darwin/objc/objc.hh"
 #include "detail/platform/darwin/webkit/webkit.hh"
 #include "detail/user/cocoa_webkit_user.hh"
+#include "strings/string_api.hh"
 #include "types/types.hh"
 #include <atomic>
 #include <functional>
@@ -44,6 +45,7 @@
 #include <string>
 
 using namespace webview::detail::user;
+using namespace webview::strings;
 using namespace webview::detail::platform::darwin;
 namespace webview {
 namespace detail {
@@ -194,7 +196,8 @@ protected:
     objc::autoreleasepool arp;
 
     WKWebView::loadRequest(
-        m_webview, NSURLRequest::requestWithURL(NSURL::URLWithString(url)));
+        m_webview,
+        NSURLRequest::requestWithURL(NSURL::URLWithString(string::trim(url))));
 
     return {};
   }
