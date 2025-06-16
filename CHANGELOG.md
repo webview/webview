@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
+[Link to Github compare]
+
+
+## [0.12.1] - 2025-06-16
+This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
+It has a large diff footprint, but does not change existing functionality ensuring 100% backwards compatibility.
+
+### Changed
+- The 'core/include/webview' folder structure is flattened to 'core/include'.
+- The file folder structure and namespaces have been coordinated to reflect code purpose and encapsulation.
+- Namespace tails are followed by API structs and classes with improved inline documentation about the purpose of each internal API.
+- Much of the code definitions and implementations have been separated with improved inline documentation in header files.
+- Some existing code has been refactored for improved encapsulation and readability.
+- All JS/HTML string generation has been moved to a tokenised template system with a string retrieval API.
+
+### Fixed
+- Unlike Linux and Windows, the Darwin backend does not accept `navigate` URL strings with leading or trailing whitespace, causing silent execution anomalies. URL strings are now automatically trimmed for Darwin.
+
+### Deprecated
+- The `webview::webview` C++ API class naming is ambiguous for compilers and humans, so `webview_cc` is now declared in the Global namespace and should be used instead.
+- `#include "webview/webview.h"` is deprecated in favour of `#include "webview.h"`. 
+
+## Released
 
 ## [0.12.0] - 2024-09-11
 
@@ -65,7 +88,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[unreleased]: https://github.com/webview/webview/compare/0.12.0...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.0...HEAD
+[0.12.1]:     https://github.com/webview/webview/compare/0.12.0...0.12.1
 [0.12.0]:     https://github.com/webview/webview/compare/0.11.0...0.12.0
 [0.11.0]:     https://github.com/webview/webview/compare/0.10.0...0.11.0
 [0.10.0]:     https://github.com/webview/webview/compare/0.1.1...0.10.0
