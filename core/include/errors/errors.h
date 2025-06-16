@@ -43,6 +43,8 @@
  * Refer to specific functions regarding handling of other codes.
  */
 typedef enum {
+  /// User made a bad API call.
+  WEBVIEW_ERROR_BAD_API_CALL = -6,
   /// Missing dependency.
   WEBVIEW_ERROR_MISSING_DEPENDENCY = -5,
   /// Operation canceled.

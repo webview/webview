@@ -28,12 +28,14 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/engine_base.hh"
+#include "detail/threading/thread_detector.hh"
 #include "strings/string_api.hh"
 #include "tests/test_helper.hh"
 
-using namespace webview::detail;
 using namespace webview::strings;
 using namespace webview::tests;
+using namespace webview::detail;
+using namespace webview::detail::threading;
 
 /* PUBLIC 
  * ∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇ */
@@ -41,16 +43,30 @@ using namespace webview::tests;
 /* Constructor
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
-engine_base::engine_base(bool owns_window) : m_owns_window{owns_window} {}
+engine_base::engine_base(bool owns_window) : m_owns_window{owns_window} {
+  if (!thread::is_main_thread()) {
+    throw exception{WEBVIEW_ERROR_BAD_API_CALL,
+                    "Webview must be created from the main thread."};
+  };
+}
 
 /* API Methods
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
 noresult engine_base::navigate(const std::string &url) {
-  if (url.empty()) {
-    return navigate_impl("about:blank");
+  auto do_work = [this, url] {
+    if (url.empty()) {
+      navigate_impl("about:blank");
+    } else {
+      navigate_impl(url);
+    }
+  };
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
   }
-  return navigate_impl(url);
 }
 
 // Synchronous bind
@@ -66,12 +82,21 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   if (bindings.count(name) > 0) {
     return error_info{WEBVIEW_ERROR_DUPLICATE};
   }
-  bindings.emplace(name, binding_ctx_t(fn, arg));
-  replace_bind_script();
-  // Notify that a binding was created if the init script has already
-  // set things up.
-  eval(string::js.onbind(name));
-  return {};
+
+  auto do_work = [this, name, fn, arg] {
+    bindings.emplace(name, binding_ctx_t(fn, arg));
+    replace_bind_script();
+    // Notify that a binding was created if the init script has already
+    // set things up.
+    eval(string::js.onbind(name));
+  };
+
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  }
 }
 
 noresult engine_base::unbind(const std::string &name) {
@@ -79,18 +104,27 @@ noresult engine_base::unbind(const std::string &name) {
   if (found == bindings.end()) {
     return error_info{WEBVIEW_ERROR_NOT_FOUND};
   }
-  bindings.erase(found);
-  replace_bind_script();
-  // Notify that a binding was created if the init script has already
-  // set things up.
-  eval(string::js.onunbind(name));
-  return {};
+
+  auto do_work = [this, name, &found]() {
+    bindings.erase(found);
+    replace_bind_script();
+    // Notify that a binding was created if the init script has already
+    // set things up.
+    eval(string::js.onunbind(name));
+  };
+
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  }
 }
 
 noresult engine_base::resolve(const std::string &id, int status,
                               const std::string &result) {
   // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-  return dispatch(std::bind(
+  return dispatch_impl(std::bind(
       [id, status, this](std::string escaped_result) {
         std::string js = string::js.onreply(id, status, escaped_result);
         eval(js);
@@ -98,31 +132,81 @@ noresult engine_base::resolve(const std::string &id, int status,
       result.empty() ? "undefined" : json::escape(result)));
 }
 
-noresult engine_base::run() { return run_impl(); }
-noresult engine_base::terminate() { return terminate_impl(); }
-noresult engine_base::dispatch(std::function<void()> f) {
-  return dispatch_impl(f);
+noresult engine_base::run() {
+  if (!thread::is_main_thread()) {
+    auto err = exception{WEBVIEW_ERROR_BAD_API_CALL,
+                         "Webview must be run from the main thread."};
+    return noresult{err.error().code()};
+  };
+  return run_impl();
 }
+
+noresult engine_base::terminate() {
+  return dispatch_impl([this] { terminate_impl(); });
+}
+
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
+noresult engine_base::dispatch(std::function<void()> f) {
+  if (!thread::is_main_thread()) {
+    return dispatch_impl(f);
+  } else {
+    f();
+    return {};
+  };
+}
+
 noresult engine_base::set_title(const std::string &title) {
-  return set_title_impl(title);
+  auto do_work = [this, title] { set_title_impl(title); };
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  };
 }
 
 noresult engine_base::set_size(int width, int height, webview_hint_t hints) {
-  auto res = set_size_impl(width, height, hints);
-  m_is_size_set = true;
-  return res;
+  auto do_work = [this, width, height, hints] {
+    set_size_impl(width, height, hints);
+    m_is_size_set = true;
+  };
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  };
 }
 
 noresult engine_base::set_html(const std::string &html) {
-  return set_html_impl(html);
+  auto do_work = [this, html] { set_html_impl(html); };
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  };
 }
 
 noresult engine_base::init(const std::string &js) {
+  if (!thread::is_main_thread()) {
+    auto err = exception{WEBVIEW_ERROR_BAD_API_CALL,
+                         "Webview init must be called from the main thread."};
+    return noresult{err.error().code()};
+  };
   add_user_script(js);
   return {};
 }
 
-noresult engine_base::eval(const std::string &js) { return eval_impl(js); }
+noresult engine_base::eval(const std::string &js) {
+  auto do_work = [this, js] { eval_impl(js); };
+  if (thread::is_main_thread()) {
+    do_work();
+    return {};
+  } else {
+    return dispatch_impl(do_work);
+  };
+}
 /* ∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆
  * PUBLIC
  * ----------------------------------------------------------------------------------------------------------- 
@@ -180,7 +264,7 @@ void engine_base::on_message(const std::string &msg) {
     return;
   }
   const auto &context = found->second;
-  dispatch([=] { context.call(id, args); });
+  dispatch_impl([=] { context.call(id, args); });
 }
 
 void engine_base::on_window_created() { inc_window_count(); }
@@ -195,7 +279,7 @@ void engine_base::on_window_destroyed(bool skip_termination) {
 
 void engine_base::deplete_run_loop_event_queue() {
   bool done{};
-  dispatch([&] { done = true; });
+  dispatch_impl([&] { done = true; });
   run_event_loop_while([&] { return !done; });
 }
 
@@ -203,7 +287,7 @@ void engine_base::dispatch_size_default() {
   if (!owns_window() || !m_is_init_script_added) {
     return;
   };
-  dispatch([this]() {
+  dispatch_impl([this]() {
     if (!m_is_size_set) {
       set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
     }

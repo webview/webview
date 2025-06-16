@@ -23,36 +23,36 @@ TEST_CASE("# Warm-up") {
   // Signal to the test runner that this may be a slow test.
   std::cerr << "[[slow]]" << std::endl; // NOLINT(performance-avoid-endl)
   webview_cc w(false, nullptr);
-  w.dispatch([&]() { w.terminate(); });
+  w.terminate();
   w.run();
 }
 #endif
 
+TEST_CASE("Detect main or child thread") {
+  REQUIRE(thread::is_main_thread() == true);
+  std::thread worker([] { REQUIRE(thread::is_main_thread() == false); });
+  worker.join();
+}
+
 TEST_CASE("Start app loop and terminate it") {
   webview_cc w(false, nullptr);
-  w.dispatch([&]() { w.terminate(); });
+  w.terminate();
   w.run();
 }
 
 TEST_CASE("Use C API to create a window, run app and terminate it") {
-  auto static cb_assert_arg = +[](webview_t w, void *arg) {
+  auto w = webview_create(false, nullptr);
+  std::thread worker([&] {
     REQUIRE(w != nullptr);
-    REQUIRE(memcmp(arg, "arg", 3) == 0);
-  };
-  auto static cb_terminate = +[](webview_t w, void *arg) {
-    REQUIRE(arg == nullptr);
+    webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
+    webview_set_title(w, "Test");
+    webview_set_html(w, "set_html ok");
+    webview_navigate(w, "data:text/plain,navigate%20ok");
     webview_terminate(w);
-  };
+  });
 
-  webview_t w = webview_create(false, nullptr);
-  webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
-  webview_set_title(w, "Test");
-  webview_set_html(w, "set_html ok");
-  webview_navigate(w, "data:text/plain,navigate%20ok");
-  webview_dispatch(w, cb_assert_arg, (void *)"arg");
-  webview_dispatch(w, cb_terminate, nullptr);
   webview_run(w);
-  webview_destroy(w);
+  worker.join();
 }
 
 TEST_CASE("Use C API to test binding and unbinding") {
@@ -267,7 +267,7 @@ TEST_CASE("Ensure that JS code can call native code and vice versa") {
 
     ctx.res2 = tester::get_value() == "exiting 42";
 
-    wv.dispatch([&] { wv.terminate(); });
+    wv.terminate();
   });
 
   wv.init(test_js.init("loaded"));
@@ -294,7 +294,9 @@ TEST_CASE("Bad C API usage without crash") {
   ASSERT_WEBVIEW_FAILED(webview_bind(w, nullptr, nullptr, nullptr));
   ASSERT_WEBVIEW_FAILED(webview_unbind(w, nullptr));
   ASSERT_WEBVIEW_FAILED(webview_return(w, nullptr, 0, nullptr));
+  IGNORE_DEPRECATED_DECLARATIONS
   ASSERT_WEBVIEW_FAILED(webview_dispatch(w, nullptr, nullptr));
+  RESTORE_IGNORED_WARNINGS
   ASSERT_WEBVIEW_FAILED(webview_terminate(w));
   ASSERT_WEBVIEW_FAILED(webview_run(w));
   ASSERT_WEBVIEW_FAILED(webview_destroy(w));

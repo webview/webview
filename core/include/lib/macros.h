@@ -109,7 +109,8 @@
 #error "please, specify webview backend"
 #endif
 #endif
-
+#endif // WEBVIEW_HEADER
+#endif // __cplusplus
 #if defined(__cplusplus) && __cplusplus >= 201402L
 #ifndef WEBVIEW_DEPRECATED
 #define WEBVIEW_DEPRECATED(reason) [[deprecated(reason)]]
@@ -134,6 +135,13 @@
   WEBVIEW_DEPRECATED("Private API should not be used")
 #endif
 
+#ifndef DEPRECATE_WEBVIEW_DISPATCH
+#define DEPRECATE_WEBVIEW_DISPATCH                                             \
+  "since 0.12.2\n\
+Webview now guarantees thread-safety, so dispatch is redundant and will be removed in a future release.\n\
+Please call all API methods directly."
+#endif
+
 #ifndef DEPRECATE_WEBVIEW_WEBVIEW
 #define DEPRECATE_WEBVIEW_WEBVIEW                                              \
   "since 0.12.1\n\n\
@@ -156,7 +164,13 @@ Please use `webview_cc` from the Global namespace instead."
       _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
 #endif
 
-#endif // WEBVIEW_HEADER
-#endif // __cplusplus
+#ifdef _MSC_VER
+#define IGNORE_DEPRECATED_DECLARATIONS                                         \
+  __pragma(warning(push)) __pragma(warning(disable : 4996))
+#else
+#define IGNORE_DEPRECATED_DECLARATIONS                                         \
+  _Pragma("GCC diagnostic push")                                               \
+      _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#endif
 
 #endif // WEBVIEW_LIB_MACROS_H

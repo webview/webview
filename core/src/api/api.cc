@@ -65,14 +65,17 @@ WEBVIEW_API webview_error_t webview_terminate(webview_t w) {
   return api_filter([=] { return cast_to_webview(w)->terminate(); });
 }
 
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
 WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
                                              void (*fn)(webview_t, void *),
                                              void *arg) {
   if (!fn) {
     return WEBVIEW_ERROR_INVALID_ARGUMENT;
   }
+  IGNORE_DEPRECATED_DECLARATIONS
   return api_filter(
       [=] { return cast_to_webview(w)->dispatch([=]() { fn(w, arg); }); });
+  RESTORE_IGNORED_WARNINGS
 }
 
 WEBVIEW_API void *webview_get_window(webview_t w) {

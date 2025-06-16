@@ -28,6 +28,7 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/user/user_script.hh"
+#include "lib/macros.h"
 #include "types/types.h"
 #include "types/types.hh"
 #include <atomic>
@@ -71,8 +72,10 @@ public:
   noresult run();
   /// Internal API implementation of public \ref webview_terminate
   noresult terminate();
-  /// Internal API implementation of public \ref webview_dispatch
+
+  WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
   noresult dispatch(std::function<void()> f);
+
   /// Internal API implementation of public \ref webview_set_title
   noresult set_title(const std::string &title);
   /// Internal API implementation of public \ref webview_set_size

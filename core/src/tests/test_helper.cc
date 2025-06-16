@@ -58,7 +58,7 @@ std::string tester::get_value() {
 
 void tester::ping_value(const std::string &value, webview_cc &wv) {
   std::lock_guard<std::mutex> lock(mtx());
-  wv.dispatch([&, value] { wv.eval(test_js.post_value(value)); });
+  wv.eval(test_js.post_value(value));
 }
 
 std::chrono::seconds tester::seconds(int seconds) {

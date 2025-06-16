@@ -418,7 +418,7 @@ private:
     m_widget = nullptr;
     m_webview = nullptr;
     m_window = nullptr;
-    dispatch([this] { on_window_destroyed(); });
+    dispatch_impl([this] { on_window_destroyed(); });
   }
   void window_settings(bool debug) {
     objc::autoreleasepool arp;
