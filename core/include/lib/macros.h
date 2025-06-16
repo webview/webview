@@ -180,4 +180,13 @@ Please use `webview_cc` from the Global namespace instead."
       _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
 #endif
 
+#ifdef _MSC_VER
+#define IGNORE_UNUSED_PARAMETERS                                               \
+  __pragma(warning(push)) __pragma(warning(disable : 4100))
+#else
+#define IGNORE_UNUSED_PARAMETERS                                               \
+  _Pragma("GCC diagnostic push")                                               \
+      _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")
+#endif
+
 #endif // WEBVIEW_LIB_MACROS_H

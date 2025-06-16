@@ -51,6 +51,7 @@
 #include "detail/user/user_script.hh"
 #include "detail/user/win32_edge_user.hh"
 #include "errors/errors.hh"
+#include "log/win_console.hh"
 #include "types/types.hh"
 #include <atomic>
 #include <cstdlib>
@@ -60,6 +61,7 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+using namespace webview::log;
 using namespace webview::detail::platform::windows;
 namespace webview {
 namespace detail {
@@ -77,6 +79,7 @@ namespace backends {
 class win32_edge_engine : public engine_base {
 public:
   win32_edge_engine(bool debug, void *window) : engine_base{!window} {
+    win_console::init();
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
