@@ -29,10 +29,12 @@
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "detail/engine_base.hh"
 #include "detail/threading/thread_detector.hh"
+#include "log/console_log.hh"
 #include "strings/string_api.hh"
 #include "tests/test_helper.hh"
 
 using namespace webview::strings;
+using namespace webview::log;
 using namespace webview::tests;
 using namespace webview::detail;
 using namespace webview::detail::threading;
@@ -44,6 +46,8 @@ using namespace webview::detail::threading;
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
 engine_base::engine_base(bool owns_window) : m_owns_window{owns_window} {
+  console.warn("this is a warning");
+  console.info("this is info");
   if (!thread::is_main_thread()) {
     throw exception{WEBVIEW_ERROR_BAD_API_CALL,
                     "Webview must be created from the main thread."};
@@ -80,6 +84,8 @@ noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
   if (bindings.count(name) > 0) {
+    console.error("\"" + name + "\" was already bound.",
+                  WEBVIEW_ERROR_DUPLICATE);
     return error_info{WEBVIEW_ERROR_DUPLICATE};
   }
 
@@ -102,6 +108,8 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
 noresult engine_base::unbind(const std::string &name) {
   auto found = bindings.find(name);
   if (found == bindings.end()) {
+    console.error("\"" + name + "\" not found to unbind.",
+                  WEBVIEW_ERROR_NOT_FOUND);
     return error_info{WEBVIEW_ERROR_NOT_FOUND};
   }
 
@@ -134,9 +142,9 @@ noresult engine_base::resolve(const std::string &id, int status,
 
 noresult engine_base::run() {
   if (!thread::is_main_thread()) {
-    auto err = exception{WEBVIEW_ERROR_BAD_API_CALL,
-                         "Webview must be run from the main thread."};
-    return noresult{err.error().code()};
+    console.error("Webview must be run from the main thread.",
+                  WEBVIEW_ERROR_BAD_API_CALL);
+    return noresult{WEBVIEW_ERROR_BAD_API_CALL};
   };
   return run_impl();
 }
@@ -153,6 +161,7 @@ noresult engine_base::terminate() {
 
 WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
 noresult engine_base::dispatch(std::function<void()> f) {
+  console.warn("Use of deprecated API call `webview_dispatch`.");
   if (!thread::is_main_thread()) {
     return dispatch_impl(f);
   } else {
@@ -196,9 +205,9 @@ noresult engine_base::set_html(const std::string &html) {
 
 noresult engine_base::init(const std::string &js) {
   if (!thread::is_main_thread()) {
-    auto err = exception{WEBVIEW_ERROR_BAD_API_CALL,
-                         "Webview init must be called from the main thread."};
-    return noresult{err.error().code()};
+    console.error("Webview init must be called from the main thread.",
+                  WEBVIEW_ERROR_BAD_API_CALL);
+    return noresult{WEBVIEW_ERROR_BAD_API_CALL};
   };
   add_user_script(js);
   return {};

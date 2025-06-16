@@ -28,9 +28,11 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "errors/errors.h"
+#include "log/console_log.hh"
 #include <exception>
 #include <string>
 
+using namespace webview::log;
 namespace webview {
 namespace errors {
 
@@ -52,15 +54,21 @@ class exception : public std::exception {
 public:
   exception(webview_error_t code, const std::string &message,
             std::exception_ptr cause) noexcept
-      : exception{error_info{code, message}, cause} {}
+      : exception{error_info{code, message}, cause} {
+    console.error(message, code);
+  }
 
   exception(webview_error_t code, const std::string &message) noexcept
-      : exception{error_info{code, message}} {}
+      : exception{error_info{code, message}} {
+    console.error(message, code);
+  }
 
   exception(const error_info &error, std::exception_ptr cause) noexcept
       : m_error{error},
         // NOLINTNEXTLINE(bugprone-throw-keyword-missing)
-        m_cause{cause} {}
+        m_cause{cause} {
+    console.error(error.message(), error.code());
+  }
 
   exception(const error_info &error) noexcept : m_error{error} {}
 

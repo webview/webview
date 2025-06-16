@@ -26,15 +26,17 @@
 #define WEBVIEW_LOG_CONSOLE_LOG_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "errors/errors.h"
+#include "lib/macros.h"
 #include "log/ansi_log.hh"
 #include "types/types.h"
-#include "types/types.hh"
+#include <string>
 
-using namespace webview::types;
 namespace webview {
 namespace _lib {
 namespace _log {
 
+class ansi_t;
 struct util_t {
   std::string get_handle_kind(webview_native_handle_kind_t kind) const {
     switch (kind) {
@@ -54,33 +56,16 @@ class console_t : ansi_t {
 public:
   console_t() noexcept = default;
 
-  IGNORE_UNUSED_PARAMETERS
-
   /// Prints an info message in dim to the console stdout.
-  void info(const std::string &message) const {
-#if WEBVIEW_LOG
-    print_ansi(ansi.dim, "WEBVIEW: INFO | " + message);
-#endif
-  };
+  void info(const std::string &message) const;
 
   /// Prints a warning message in yellow to the console stdout.
-  void warn(const std::string &message) const {
-#if WEBVIEW_LOG
-    print_ansi(ansi.yellow, "WEBVIEW: WARNING | " + message);
-#endif
-  };
+  void warn(const std::string &message) const;
 
   /// Prints an error message in red to the console stderr.
   /// @par[in] err Optionally provide a Webview error code.
   void error(const std::string &message,
-             webview_error_t err = WEBVIEW_ERROR_UNSPECIFIED) const {
-#if WEBVIEW_LOG
-    print_ansi(ansi.red,
-               "WEBVIEW: ERROR (" + std::to_string(err) + ") | " + message);
-#endif
-  };
-
-  RESTORE_IGNORED_WARNINGS
+             int err = WEBVIEW_ERROR_UNSPECIFIED) const;
 
   util_t util{};
 };

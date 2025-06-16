@@ -27,12 +27,10 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "lib/macros.h"
-#include "types/types.hh"
 #include <iostream>
 #include <mutex>
 #include <string>
 
-using namespace webview::types;
 namespace webview {
 namespace _lib {
 namespace _log {
