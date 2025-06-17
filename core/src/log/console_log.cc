@@ -37,20 +37,20 @@ void console_t::info(const std::string &message) const {
 #if WEBVIEW_LOG
   print_ansi(ansi.dim, "WEBVIEW: INFO | " + message);
 #endif
-};
+}
 
 void console_t::warn(const std::string &message) const {
 #if WEBVIEW_LOG
   print_ansi(ansi.yellow, "WEBVIEW: WARNING | " + message);
 #endif
-};
+}
 
 void console_t::error(const std::string &message, int err) const {
 #if WEBVIEW_LOG
   print_ansi(ansi.red,
              "WEBVIEW: ERROR (" + std::to_string(err) + ") | " + message);
 #endif
-};
+}
 
 RESTORE_IGNORED_WARNINGS
 

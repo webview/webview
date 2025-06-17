@@ -85,7 +85,7 @@ std::string js_string_t::user_init_wrapper(const std::string &user_js) const {
                           string::tokens.user_js, user_js);
 }
 
-std::string js_string_t::post_fnc() const { return TEMPLATE_POST_FUNCTION(); };
+std::string js_string_t::post_fnc() const { return TEMPLATE_POST_FUNCTION(); }
 
 /* Message strings
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
