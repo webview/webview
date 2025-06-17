@@ -8,8 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 [Link to Github compare]
 
+## [0.12.5] - 2025-06-17
+This release introduces optional Webview trace log output
+### Added
+- The `webview::log::trace` API with contextual call methods.
+- Key API code flow locations are traced.
+- The `WEBVIEW_LOG_TRACE` bool compiler option (defaults to OFF).
+### Changed
+- CI tests have `WEBVIEW_LOG_TRACE` set to ON, so failed tests will now verbosely output a trace log.
+
 ## [0.12.4] - 2025-06-17
-This release introduces Webview error and warning log output. This should enhance the user and developer experience. 
+This release introduces optional Webview error and warning log output. This should enhance the user and developer experience. 
 ### Added
 - The `webview::log::console` API with `error`, `warn` and `info` methods.
 - The `error` and `warn` methods have been implemeted in key API locations and integrated with the existing Webview error system.
@@ -114,7 +123,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[Link to Github compare]: https://github.com/webview/webview/compare/0.12.4...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.5...HEAD
+[0.12.5]:     https://github.com/webview/webview/compare/0.12.4...0.12.5
 [0.12.4]:     https://github.com/webview/webview/compare/0.12.3...0.12.4
 [0.12.3]:     https://github.com/webview/webview/compare/0.12.2...0.12.3
 [0.12.2]:     https://github.com/webview/webview/compare/0.12.1...0.12.2
