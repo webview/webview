@@ -26,11 +26,20 @@ if(WEBVIEW_LOG_ANSI)
 else()
     set(WEBVIEW_LOG_ANSI 0)
 endif()
+if(WEBVIEW_LOG_TRACE)
+    set(WEBVIEW_LOG_TRACE 1)
+else()
+    set(WEBVIEW_LOG_TRACE 0)
+endif()
+
 target_compile_definitions(webview_core_headers INTERFACE
     WEBVIEW_LOG=$<IF:${WEBVIEW_LOG},1,0>
 )
 target_compile_definitions(webview_core_headers INTERFACE
     WEBVIEW_LOG_ANSI=$<IF:${WEBVIEW_LOG_ANSI},1,0>
+)
+target_compile_definitions(webview_core_headers INTERFACE
+    WEBVIEW_LOG_TRACE=$<IF:${WEBVIEW_LOG_TRACE},1,0>
 )
 
 

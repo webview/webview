@@ -313,6 +313,7 @@ Option                            | Description                                 
 `WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)                 | 
 `WEBVIEW_LOG`                     | Print execution logs to stdout and stderr         | OFF
 `WEBVIEW_LOG_ANSI`                | Print logs in ANSI colours                        | ON
+`WEBVIEW_LOG_TRACE`               | Print a detailed execution trace log to stdout    | OFF
 
 > [!NOTE]
 > Checks are *enabled* by default, but aren't *enforced* by default for local development (controlled by the `WEBVIEW_IS_CI` option).

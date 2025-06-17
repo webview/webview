@@ -348,6 +348,7 @@ macro(webview_internal_options)
     option(WEBVIEW_STRICT_CLANG_TIDY "Make clang-tidy check strict" ${WEBVIEW_STRICT_CHECKS})
     option(WEBVIEW_LOG "Print execution logs to and errors to stout / stderr" OFF)
     option(WEBVIEW_LOG_ANSI "Print logs in ANSI colours" ON)
+    option(WEBVIEW_LOG_TRACE "Print a detailed execution trace to stdout" OFF)
 endmacro()
 
 macro(webview_set_install_rpath)
