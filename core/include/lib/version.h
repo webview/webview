@@ -43,7 +43,7 @@
 
 #ifndef WEBVIEW_VERSION_PATCH
 /// The current library patch version.
-#define WEBVIEW_VERSION_PATCH 3
+#define WEBVIEW_VERSION_PATCH 4
 #endif
 
 #ifndef WEBVIEW_VERSION_PRE_RELEASE

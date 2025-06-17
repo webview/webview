@@ -8,15 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 [Link to Github compare]
 
+## [0.12.4] - 2025-06-17
+This release introduces Webview error and warning log output. This should enhance the user and developer experience. 
+### Added
+- The `webview::log::console` API with `error`, `warn` and `info` methods.
+- The `error` and `warn` methods have been implemeted in key API locations and integrated with the existing Webview error system.
+- The `WEBVIEW_LOG` bool compiler option (defaults to OFF).
+- The `WEBVIEW_LOG_ANSI` bool compiler option to toggle ANSI colourised strings (defaults to ON).
+- Windows does not automatically capture `stdout` and `stderr` for GUI apps, so Webview will automatically check if the user has already captured these and capture them if not.
+### Changed
+- CI tests have `WEBVIEW_LOG` set to ON, so test failures will now verbosely output warnings and errors.
+- Windows CI tests are now run as a GUI app.
+
 ## [0.12.3] - 2025-06-16
 This release guarantees thread safety, thus simplifying the public API and providing the user a cleaner approach to building Webview based applications.
 ### Changed
 - Webview automatically detects if the thread context is `main`, and internally re-directs API calls to `dispatch_impl` appropriately.
 - Webview class initialisation MUST happen on the `main` thread, and Webview will now throw an exception if not.
 - `run` and `init` SHOULD be called on the `main` thread, and Webview will now return an error if not.
+- The Webview headers are now built with `Threads::Threads` as a dependency.
+- Windows CI tests have `pthread` statically linked, else MSVC builds will fail to resolve threading library paths.
+- Windows CI warmup test uses std::thread to check linkages.
 ### Deprecated
 - `webview_dispatch` is no longer needed due to guaranteed thread safety. The user can make API calls freely from any context.
-- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour. From a user perspective, it is ambiguous and easily confused with `webview_terminate`.
+- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour. From a user perspective, it is ambiguous and easily confused with `webview_terminate`. It now safely re-directs itself to `webview_terminate` and is no-op if called after `webview_terminate`.
 
 ## [0.12.2] - 2025-06-16
 This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
@@ -99,7 +114,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[Link to Github compare]: https://github.com/webview/webview/compare/0.12.2...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.4...HEAD
+[0.12.4]:     https://github.com/webview/webview/compare/0.12.3...0.12.4
 [0.12.3]:     https://github.com/webview/webview/compare/0.12.2...0.12.3
 [0.12.2]:     https://github.com/webview/webview/compare/0.12.1...0.12.2
 [0.12.1]:     https://github.com/webview/webview/compare/0.12.0...0.12.1
