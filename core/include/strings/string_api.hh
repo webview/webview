@@ -81,10 +81,17 @@ const sys_flags_t string::flags{"_sysop", "_testop"};
 
 /// API for JSON operations
 struct json {
+
+  /// Get a value from a JSON string by object key or array index
+  /// @param string The JSON string to be parsed.
+  /// @param key For JSON arrays, pass "", else the name of the object key for which the value is to be returned.
+  /// @param index For JSON arrays, pass the index for which the value is to be returned, else 0.
   static std::string parse(const std::string &string, const std::string &key,
                            const int index) {
     return json_lib::json_parse(string, key, index);
   }
+  /// JSON escape a string.
+  /// @param add_quotes flag that will wrap the escaped string in `"` quotes.
   static std::string escape(const std::string &string, bool add_quotes = true) {
     return json_lib::json_escape(string, add_quotes);
   }

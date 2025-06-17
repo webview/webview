@@ -59,6 +59,9 @@ webview_error_t api_filter(WorkFn &&do_work) noexcept;
 
 inline webview_cc *cast_to_webview(void *w);
 
+webview_error_t alloc_string_buffer(char **buffer, const std::string &str,
+                                    const std::string &err_mess);
+
 } // namespace _api
 } // namespace _lib
 } // namespace webview

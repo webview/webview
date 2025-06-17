@@ -274,6 +274,19 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &library_version_info;
 }
 
+WEBVIEW_API webview_error_t json_parse(char **buffer, const char *json_str,
+                                       const char *key, int index) {
+  std::string parsed_res;
+  auto err_mess = "Failed to JSON parse the string";
+  try {
+    parsed_res = json::parse(json_str, key, index);
+  } catch (...) {
+    console.error(err_mess, WEBVIEW_ERROR_UNSPECIFIED);
+    return WEBVIEW_ERROR_UNSPECIFIED;
+  }
+  return alloc_string_buffer(buffer, parsed_res, err_mess);
+}
+
 /* ∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆
  * PUBLIC C API implementations
  * ----------------------------------------------------------------------------------------------------------- 
@@ -335,6 +348,28 @@ inline webview_cc *webview::_lib::_api::cast_to_webview(void *w) {
   }
   return static_cast<webview_cc *>(w);
 }
+
+IGNORE_UNUSED_PARAMETERS
+// NOLINTBEGIN(misc-unused-parameters)
+webview_error_t
+webview::_lib::_api::alloc_string_buffer(char **buffer, const std::string &str,
+                                         const std::string &err_mess) {
+  auto size = str.size() + 1;
+  // NOLINTNEXTLINE(hicpp-no-malloc, cppcoreguidelines-no-malloc)
+  *buffer = static_cast<char *>(malloc(size));
+#ifdef _MSC_VER
+  auto res = strcpy_s(*buffer, size, str.c_str());
+  if (res != 0) {
+    console.error(std::string("MSVC: ") + err_mess, WEBVIEW_ERROR_UNSPECIFIED);
+    return WEBVIEW_ERROR_UNSPECIFIED;
+  }
+#else
+  strcpy(*buffer, str.c_str());
+#endif
+  return WEBVIEW_ERROR_OK;
+}
+// NOLINTEND(misc-unused-parameters)
+RESTORE_IGNORED_WARNINGS
 
 /* ∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆
  * API lib implementations */

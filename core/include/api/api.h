@@ -231,6 +231,21 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
  */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
+/**
+ * Get a value from a JSON string by object key or array index
+ *
+ * @param buffer A `char*` buffer that the returned value will be placed into.
+ * It is the user's responsiblity to free this memory when done.
+ * @param json_str The JSON string to be parsed.
+ * @param key For JSON arrays, pass "", else the name of the object key for
+ * which the value is to be returned.
+ * @param index For JSON arrays, pass the index for which the value is to be returned, else 0.
+ *
+ * @since 0.12.6
+ **/
+WEBVIEW_API webview_error_t json_parse(char **buffer, const char *json_str,
+                                       const char *key, int index);
+
 #ifdef __cplusplus
 }
 #endif
