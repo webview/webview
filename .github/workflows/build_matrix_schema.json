@@ -27,5 +27,6 @@
   "toolchain": "string",
   "toolchain-executable-suffix": "string",
   "webkitgtk-api": "string",
-  "log": "boolean"
+  "log": "boolean",
+  "log-trace": "boolean"
 }
