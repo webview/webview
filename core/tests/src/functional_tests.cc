@@ -301,3 +301,40 @@ TEST_CASE("Bad C API usage without crash") {
   ASSERT_WEBVIEW_FAILED(webview_terminate(w));
   ASSERT_WEBVIEW_FAILED(webview_run(w));
 }
+TEST_CASE("Bind and init before run must evalute") {
+  webview_cc wv{true, nullptr};
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string & /*id*/, const std::string &req, void * /*arg*/) {
+        passed = req == "[1]";
+        wv.set_html("Bind and init before run must evalute");
+        wv.terminate();
+      },
+      nullptr);
+  wv.init("loadData(1)");
+  wv.run();
+
+  REQUIRE(passed);
+}
+
+TEST_CASE("Bind and set_html before run must evaluate") {
+  webview_cc wv{true, nullptr};
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string & /*id*/, const std::string &req, void * /**/) {
+        passed = req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(R"(
+Bind and set_html before run must evaluate
+<script>loadData(1)</script>
+)");
+  wv.run();
+
+  REQUIRE(passed);
+}

@@ -280,6 +280,10 @@ private:
     webkitgtk::compat::user_content_manager_register_script_message_handler(
         manager, "__webview__");
     add_init_script();
+    // We must initialise the DOM else init scripts may not run
+    if (owns_window()) {
+      set_html("");
+    }
   }
 
   void window_settings(bool debug) {

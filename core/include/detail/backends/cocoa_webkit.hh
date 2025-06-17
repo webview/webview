@@ -489,6 +489,10 @@ private:
         NSString::stringWithUTF8String("__webview__"));
 
     add_init_script();
+    // We must initialise the DOM else init scripts may not run
+    if (owns_window()) {
+      set_html("");
+    }
     set_up_widget();
     NSWindow::set_contentView(m_window, m_widget);
     if (owns_window()) {

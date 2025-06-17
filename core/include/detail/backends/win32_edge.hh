@@ -173,6 +173,7 @@ protected:
   }
   noresult dispatch_impl(dispatch_fn_t f) override {
     PostMessageW(m_message_window, WM_APP, 0, (LPARAM) new dispatch_fn_t(f));
+    // warning: Potential memory leak [clang-analyzer-cplusplus.NewDeleteLeaks]
     return {};
   }
 
@@ -236,6 +237,14 @@ protected:
     webview2_user_script_added_handler handler{[&](HRESULT res, LPCWSTR id) {
       if (SUCCEEDED(res)) {
         script_id = id;
+        // We need a reload, else the user script will never execute unless the user explicitly calls
+        // `navigate` after `init`
+        if (owns_window()) {
+          reload_browser_window();
+        }
+      } else {
+        console.error("Windows failed to add user script.",
+                      static_cast<webview_error_t>(res));
       }
       done = true;
     }};
@@ -595,6 +604,13 @@ private:
     if (m_controller) {
       m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
     }
+  }
+
+  void reload_browser_window() {
+    LPWSTR current_uri;
+    m_webview->get_Source(&current_uri);
+    current_uri == nullptr ? m_webview->NavigateToString(L"about:blank")
+                           : m_webview->Navigate(current_uri);
   }
 
   bool is_webview2_available() const noexcept {
