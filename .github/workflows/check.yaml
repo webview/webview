@@ -113,7 +113,7 @@ jobs:
           mswebview2_include_dir="${mswebview2_dir}/build/native/include"
           curl -sSLo "${mswebview2_zip}" "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${mswebview2_version}"
           unzip -q "${mswebview2_zip}" -d "${mswebview2_dir}"
-          libs=(-ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
+          libs=(-Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion)
           mkdir -p build
           if [[ "${{ matrix.build-type }}" == "header" ]]; then
             g++ main.cc --std=c++14  "${libs[@]}" "-I${mswebview2_include_dir}" -I../generated -o build/main

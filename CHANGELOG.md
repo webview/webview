@@ -14,9 +14,12 @@ This release guarantees thread safety, thus simplifying the public API and provi
 - Webview automatically detects if the thread context is `main`, and internally re-directs API calls to `dispatch_impl` appropriately.
 - Webview class initialisation MUST happen on the `main` thread, and Webview will now throw an exception if not.
 - `run` and `init` SHOULD be called on the `main` thread, and Webview will now return an error if not.
+- The Webview headers are now built with `Threads::Threads` as a dependency.
+- Windows CI tests have `pthread` statically linked, else MSVC builds will fail to resolve threading library paths.
+- Windows CI warmup test uses std::thread to check linkages.
 ### Deprecated
 - `webview_dispatch` is no longer needed due to guaranteed thread safety. The user can make API calls freely from any context.
-- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour. From a user perspective, it is ambiguous and easily confused with `webview_terminate`.
+- `webview_destroy`. The legacy implementation of this API function was in violation of RAII, and likely to cause undefined behaviour. From a user perspective, it is ambiguous and easily confused with `webview_terminate`. It now safely re-directs itself to `webview_terminate` and is no-op if called after `webview_terminate`.
 
 ## [0.12.2] - 2025-06-16
 This is primarily a housekeeping release aimed at code readability, maintainability and enabling work for upcoming enhancements.<br>
