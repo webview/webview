@@ -90,6 +90,26 @@ std::string js_string_t::post_fnc() const { return TEMPLATE_POST_FUNCTION(); };
 /* Message strings
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
+std::string
+error_message_t::api_invalid_arg(const std::string &arg,
+                                 const std::string &api_name) const {
+  strg_replacements_t replacements = {{string::tokens.var, arg},
+                                      {string::tokens.str, api_name}};
+  return string::tokenise(TEMPLATE_INVALID_ARG_M(), replacements);
+}
+
+std::string
+error_message_t::api_missing_arg(const std::string &arg,
+                                 const std::string &api_name) const {
+  strg_replacements_t replacements = {{string::tokens.var, arg},
+                                      {string::tokens.str, api_name}};
+  return string::tokenise(TEMPLATE_MISSING_ARG_M(), replacements);
+}
+
+std::string error_message_t::api_null_w(const std::string &api_name) const {
+  return string::tokenise(TEMPLATE_NULL_W_M(), string::tokens.str, api_name);
+}
+
 std::string error_message_t::reject_unbound(const std::string &id,
                                             const std::string &name) const {
   strg_replacements_t replacements = {{string::tokens.id, id},

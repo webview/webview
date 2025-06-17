@@ -46,8 +46,6 @@ using namespace webview::detail::threading;
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
 engine_base::engine_base(bool owns_window) : m_owns_window{owns_window} {
-  console.warn("this is a warning");
-  console.info("this is info");
   if (!thread::is_main_thread()) {
     throw exception{WEBVIEW_ERROR_BAD_API_CALL,
                     "Webview must be created from the main thread."};
@@ -84,9 +82,9 @@ noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
   if (bindings.count(name) > 0) {
-    console.error("\"" + name + "\" was already bound.",
-                  WEBVIEW_ERROR_DUPLICATE);
-    return error_info{WEBVIEW_ERROR_DUPLICATE};
+    return error_info{WEBVIEW_ERROR_DUPLICATE, "Bind (duplicate): binding \"" +
+                                                   name +
+                                                   "\" was already bound."};
   }
 
   auto do_work = [this, name, fn, arg] {
@@ -108,9 +106,8 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
 noresult engine_base::unbind(const std::string &name) {
   auto found = bindings.find(name);
   if (found == bindings.end()) {
-    console.error("\"" + name + "\" not found to unbind.",
-                  WEBVIEW_ERROR_NOT_FOUND);
-    return error_info{WEBVIEW_ERROR_NOT_FOUND};
+    return error_info{WEBVIEW_ERROR_NOT_FOUND,
+                      "Unbind: binding \"" + name + "\" was not found."};
   }
 
   auto do_work = [this, name, &found]() {
@@ -131,6 +128,9 @@ noresult engine_base::unbind(const std::string &name) {
 
 noresult engine_base::resolve(const std::string &id, int status,
                               const std::string &result) {
+  if (status == 1) {
+    console.warn("Promise id \"" + id + "\" was rejected.");
+  }
   // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
   return dispatch_impl(std::bind(
       [id, status, this](std::string escaped_result) {

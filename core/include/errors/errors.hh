@@ -38,8 +38,13 @@ namespace errors {
 
 class error_info {
 public:
-  error_info(webview_error_t code, const std::string &message = {}) noexcept
-      : m_code{code}, m_message{message} {}
+  error_info(webview_error_t code, const std::string &message = {},
+             bool log_error = false) noexcept
+      : m_code{code}, m_message{message} {
+    if (log_error) {
+      console.error(message, code);
+    }
+  }
   error_info() = default;
 
   webview_error_t code() const { return m_code; }

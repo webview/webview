@@ -235,6 +235,22 @@ _user_js_
 /* Message strings
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
+const std::string &TEMPLATE_INVALID_ARG_M() {
+  static std::string tmplt = "Invlaid `_var_` argument passed to `_str_`";
+  return tmplt;
+}
+
+const std::string &TEMPLATE_MISSING_ARG_M() {
+  static std::string tmplt = "Missing `_var_` argument passed to `_str_`";
+  return tmplt;
+}
+
+const std::string &TEMPLATE_NULL_W_M() {
+  static std::string tmplt = "Cannot cast null pointer in argument `w` to a "
+                             "webview instance for `_str_`.";
+  return tmplt;
+}
+
 const std::string &TEMPLATE_REJECT_UNBOUND_M() {
   static std::string tmplt =
       "Promise id '_id_' was rejected because function '_str_' was unbound.";

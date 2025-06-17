@@ -31,8 +31,10 @@
 #include "api/api_lib.hh"
 #include "errors/errors.h"
 #include "log/console_log.hh"
+#include "strings/string_api.hh"
 #include "types/types.hh"
 
+using namespace webview::strings;
 using namespace webview::log;
 using namespace webview::_lib::_api;
 
@@ -58,12 +60,23 @@ WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
   if (terminate_destroy_controller.terminated) {
     return {};
   };
+  if (!w) {
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT,
+                      string::err.api_null_w("webview_destroy"), true}
+        .code();
+  }
   auto res = webview_terminate(w);
   terminate_destroy_controller.destroyed = true;
   return res;
 }
 
 WEBVIEW_API webview_error_t webview_run(webview_t w) {
+  if (!w) {
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT,
+                      string::err.api_null_w("webview_run"), true}
+        .code();
+  }
+
   return api_filter([=] { return cast_to_webview(w)->run(); });
 }
 
@@ -72,6 +85,12 @@ WEBVIEW_API webview_error_t webview_terminate(webview_t w) {
     return {};
   };
   terminate_destroy_controller.terminated = true;
+  if (!w) {
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT,
+                      string::err.api_null_w("webview_terminate"), true}
+        .code();
+  }
+
   return api_filter([=] { return cast_to_webview(w)->terminate(); });
 }
 
@@ -79,9 +98,12 @@ WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
 WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
                                              void (*fn)(webview_t, void *),
                                              void *arg) {
-  if (!fn) {
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !fn) {
+    auto message = !w ? string::err.api_null_w("webview_dispatch")
+                      : string::err.api_missing_arg("fn", "webview_dispatch");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   IGNORE_DEPRECATED_DECLARATIONS
   return api_filter(
       [=] { return cast_to_webview(w)->dispatch([=]() { fn(w, arg); }); });
@@ -89,6 +111,11 @@ WEBVIEW_API webview_error_t webview_dispatch(webview_t w,
 }
 
 WEBVIEW_API void *webview_get_window(webview_t w) {
+  if (!w) {
+    console.error(string::err.api_null_w("webview_get_window"),
+                  WEBVIEW_ERROR_INVALID_ARGUMENT);
+    return nullptr;
+  }
   void *window = nullptr;
   auto err = api_filter([=] { return cast_to_webview(w)->window(); },
                         [&](void *value) { window = value; });
@@ -100,6 +127,11 @@ WEBVIEW_API void *webview_get_window(webview_t w) {
 
 WEBVIEW_API void *webview_get_native_handle(webview_t w,
                                             webview_native_handle_kind_t kind) {
+  if (!w) {
+    console.error(string::err.api_null_w("webview_get_native_handle"),
+                  WEBVIEW_ERROR_INVALID_ARGUMENT);
+    return nullptr;
+  }
   void *handle{};
   auto err = api_filter(
       [=]() -> result<void *> {
@@ -112,7 +144,9 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
         case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
           return w_->browser_controller();
         default:
-          return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT};
+          return error_info{
+              WEBVIEW_ERROR_INVALID_ARGUMENT,
+              string::err.api_invalid_arg("kind", "webview_get_native_handle")};
         }
       },
       [&](void *handle_) { handle = handle_; });
@@ -123,21 +157,35 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
 }
 
 WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title) {
-  if (!title) {
-    console.error("Missing `title` argument to `webview_set_title`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !title) {
+    auto message =
+        !w ? string::err.api_null_w("webview_set_title")
+           : string::err.api_missing_arg("title", "webview_set_title");
+
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] { return cast_to_webview(w)->set_title(title); });
 }
 
 WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
                                              webview_hint_t hints) {
+  if (!w) {
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT,
+                      string::err.api_null_w("webview_set_size"), true}
+        .code();
+  }
   return api_filter(
       [=] { return cast_to_webview(w)->set_size(width, height, hints); });
 }
 
 WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {
+  if (!w || !url) {
+    auto message = !w ? string::err.api_null_w("webview_navigate")
+                      : string::err.api_missing_arg("url", "webview_navigate");
+
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
+  }
   if (!url) {
     console.error("Missing `url` argument to `webview_navigate`",
                   WEBVIEW_ERROR_INVALID_ARGUMENT);
@@ -147,29 +195,33 @@ WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {
 }
 
 WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html) {
-  if (!html) {
-    console.error("Missing `html` argument to `webview_set_html`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !html) {
+    auto message = !w ? string::err.api_null_w("webview_set_html")
+                      : string::err.api_missing_arg("html", "webview_set_html");
+
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] { return cast_to_webview(w)->set_html(html); });
 }
 
 WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js) {
-  if (!js) {
-    console.error("Missing `js` argument to `webview_init`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !js) {
+    auto message = !w ? string::err.api_null_w("webview_init")
+                      : string::err.api_missing_arg("js", "webview_init");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] { return cast_to_webview(w)->init(js); });
 }
 
 WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js) {
-  if (!js) {
-    console.error("Missing `js` argument to `webview_eval`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !js) {
+    auto message = !w ? string::err.api_null_w("webview_eval")
+                      : string::err.api_missing_arg("js", "webview_eval");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] { return cast_to_webview(w)->eval(js); });
 }
 
@@ -177,12 +229,13 @@ WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
                                          void (*fn)(const char *id,
                                                     const char *req, void *arg),
                                          void *arg) {
-  if (!name || !fn) {
-    std::string arg_name = !name ? "`name`" : "`fn`";
-    console.error("Missing " + arg_name + " argument to `webview_bind`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !name || !fn) {
+    auto message = !w      ? string::err.api_null_w("webview_bind")
+                   : !name ? string::err.api_missing_arg("name", "webview_bind")
+                           : string::err.api_missing_arg("fn", "webview_bind");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] {
     return cast_to_webview(w)->bind(
         name,
@@ -194,22 +247,25 @@ WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
 }
 
 WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name) {
-  if (!name) {
-    console.error("Missing `name` argument to `webview_unbind`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !name) {
+    auto message = !w ? string::err.api_null_w("webview_unbind")
+                      : string::err.api_missing_arg("name", "webview_unbind");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter([=] { return cast_to_webview(w)->unbind(name); });
 }
 
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
                                            int status, const char *result) {
-  if (!id || !result) {
-    std::string arg_name = !id ? "`id`" : "`result`";
-    console.error("Missing " + arg_name + " argument to `webview_return`",
-                  WEBVIEW_ERROR_INVALID_ARGUMENT);
-    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  if (!w || !id || !result) {
+    auto message =
+        !w    ? string::err.api_null_w("webview_return")
+        : !id ? string::err.api_missing_arg("id", "webview_return")
+              : string::err.api_missing_arg("result", "webview_return");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
   }
+
   return api_filter(
       [=] { return cast_to_webview(w)->resolve(id, status, result); });
 }

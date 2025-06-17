@@ -101,6 +101,17 @@ struct js_string_t {
 struct error_message_t {
   error_message_t() noexcept = default;
 
+  /// Returns a tokenised error string for invlaid arg being passed to a C API call.
+  std::string api_invalid_arg(const std::string &arg,
+                              const std::string &api_name) const;
+
+  /// Returns a tokenised error string for missing arg being passed to a C API call.
+  std::string api_missing_arg(const std::string &arg,
+                              const std::string &api_name) const;
+
+  /// Returns a tokenised error string for nullptr being passed to a C API call.
+  std::string api_null_w(const std::string &api_name) const;
+
   /// Returns a tokenised error string for rejecting a promise if a callback binding was unbound.
   std::string reject_unbound(const std::string &id,
                              const std::string &name) const;
