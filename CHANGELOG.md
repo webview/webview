@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 [Link to Github compare]
 
+## [0.12.6] - 2025-06-17
+This is a bugfix release that fixes inconsistent behaviour between OS platforms in a `bind(); init(); run();` or `bind(); set_html(); run();` call sequence.
+Depending on platform, the bound script, init script or `<script>` tags are never processed, leading to silent failure.
+### Fixed
+- bound functions for init scripts and HTML scripts will execute consistentently across platforms.
+### Changed
+- If the user owns the window, Linux and Mac will call "set_html` after the main Webview script injection. This ensures that the DOM is ready to recieve scripts.
+- If the user owns the window, Windows will reload the browser location after pre-dom script injection, ensuring that the scripts are triggered. 
+
 ## [0.12.5] - 2025-06-17
 This release introduces optional Webview trace log output
 ### Added
@@ -123,7 +132,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[Link to Github compare]: https://github.com/webview/webview/compare/0.12.5...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.12.6...HEAD
+[0.12.6]:     https://github.com/webview/webview/compare/0.12.5...0.12.6
 [0.12.5]:     https://github.com/webview/webview/compare/0.12.4...0.12.5
 [0.12.4]:     https://github.com/webview/webview/compare/0.12.3...0.12.4
 [0.12.3]:     https://github.com/webview/webview/compare/0.12.2...0.12.3
