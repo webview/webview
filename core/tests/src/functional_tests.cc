@@ -4,6 +4,7 @@
 #define WEBVIEW_VERSION_PRE_RELEASE "-test"
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
 
+#include "strings/string_api.hh"
 #include "test_driver.hh"
 #include "tests/test_helper.hh"
 #include "webview.h"
@@ -11,6 +12,7 @@
 #include <cstdint>
 #include <thread>
 
+using namespace webview::strings;
 using namespace webview::tests;
 
 // This test should only r"webview/n on Windows to enable us "webview/o perform a controlled
@@ -188,46 +190,179 @@ TEST_CASE("Test synchronous binding and unbinding") {
   REQUIRE(passed);
 }
 
-TEST_CASE("The string returned from a binding call must be JSON") {
+TEST_CASE("The string returned from a binding call can be JSON") {
   webview_cc wv(true, nullptr);
   bool passed;
 
-  wv.bind("loadData", [](const std::string & /*req*/) -> std::string {
-    return "\"hello\"";
-  });
-
-  wv.bind("endTest", [&](const std::string &req) -> std::string {
-    passed = req != "[2]" && req != "[1]" && req == "[0]";
-    wv.terminate();
-    return "";
-  });
-
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /*req*/, void * /*arg*/) {
+        wv.resolve(id, 0, R"({"val": "hello"})");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /*id*/, const std::string &req, void * /**/) {
+        auto returned = json::parse(req, "", 0);
+        auto res = json::parse(returned, "val", 0);
+        passed = req != "[2]" && req != "[1]" && res == "hello";
+        wv.terminate();
+      },
+      nullptr);
   wv.set_html(test_html.string_returned(
-      "The string returned from a binding call must be JSON"));
+      "The string returned from a binding call can be JSON"));
   wv.run();
+  REQUIRE(passed);
+}
 
+TEST_CASE("The string returned from a binding call can be a number") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /**/, void * /**/) {
+        wv.resolve(id, 0, "1.234");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /**/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req != "[1]" && req == "[1.234]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned from a binding call can be a number"));
+  wv.run();
+  REQUIRE(passed);
+}
+
+TEST_CASE("The string returned from a binding call can be a bool") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /**/, void * /**/) {
+        wv.resolve(id, 0, "false");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /**/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req != "[1]" && req == "[false]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned from a binding call can be a bool"));
+  wv.run();
+  REQUIRE(passed);
+}
+
+TEST_CASE("The string returned from a binding call can be a string") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /**/, void * /**/) {
+        wv.resolve(id, 0, "this is a string");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /**/, const std::string &req, void * /**/) {
+        passed =
+            req != "[2]" && req != "[1]" && req == R"(["this is a string"])";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned from a binding call can be a string"));
+  wv.run();
   REQUIRE(passed);
 }
 
 TEST_CASE("The string returned of a binding call must not be JS") {
-  webview_cc w(true, nullptr);
+  webview_cc wv(true, nullptr);
   bool passed;
 
-  w.bind("loadData", [](const std::string & /*req*/) -> std::string {
-    // Try to load malicious JS code
-    return "(()=>{document.body.innerHTML='gotcha';return 'hello';})()";
-  });
-
-  w.bind("endTest", [&](const std::string &req) -> std::string {
-    passed = req != "[0]" && req != "[2]" && req == "[1]";
-    w.terminate();
-    return "";
-  });
-
-  w.set_html(test_html.string_returned(
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /*req*/, void * /**/) {
+        // Try to load malicious JS code
+        wv.resolve(
+            id, 0,
+            "(()=>{document.body.innerHTML='gotcha';return 'hello';})()");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /*req*/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
       "The string returned of a binding call must not be JS"));
-  w.run();
+  wv.run();
+  REQUIRE(passed);
+}
 
+TEST_CASE("The string returned of a binding call must not be a HTML script") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /*req*/, void * /**/) {
+        // Try to load malicious JS code
+        wv.resolve(id, 0,
+                   R"(
+<script>(()=>{document.body.innerHTML='gotcha';return 'hello';})()</script>
+)");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /*req*/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned of a binding call must not be a HTML script"));
+  wv.run();
+  REQUIRE(passed);
+}
+
+TEST_CASE("The string returned of a binding call must not be an encoded HTML "
+          "script") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /*req*/, void * /**/) {
+        // Try to load malicious JS code
+        wv.resolve(id, 0,
+                   R"(
+%3Cscript%3E(()%3D%3E%7Bdocument.body.innerHTML%3D'gotcha'%3Breturn%20'hello'%3B%7D)()%3C%2Fscript%3E
+)");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /*req*/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned of a binding call must not be a HTML script"));
+  wv.run();
   REQUIRE(passed);
 }
 

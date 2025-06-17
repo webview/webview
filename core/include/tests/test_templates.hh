@@ -42,7 +42,7 @@
   <script>\n\
   try {\n\
     window.loadData()\n\
-      .then((val) => window.endTest(0))\n\
+      .then((val) => window.endTest(val))\n\
       .catch((err) => {\n\
         console.error(err);\n\
         window.endTest(1);\n\
