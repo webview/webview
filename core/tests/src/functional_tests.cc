@@ -22,9 +22,10 @@ using namespace webview::tests;
 TEST_CASE("# Warm-up") {
   // Signal to the test runner that this may be a slow test.
   std::cerr << "[[slow]]" << std::endl; // NOLINT(performance-avoid-endl)
-  webview_cc w(false, nullptr);
-  w.terminate();
-  w.run();
+  webview_cc_t wv(false, nullptr);
+  std::thread worker([&] { wv.terminate(); });
+  wv.run();
+  worker.join();
 }
 #endif
 

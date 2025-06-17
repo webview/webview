@@ -311,8 +311,7 @@ Option                            | Description                                 
 `WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict                      | 
 `WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW                |  
 `WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)                 | 
-`WEBVIEW_LOG`                     | Print execution logs to stdout and stderr         | 
-`WEBVIEW_LOG_TRACE`               | Print a detailed execution trace log to stdout    | OFF
+`WEBVIEW_LOG`                     | Print execution logs to stdout and stderr         | OFF
 `WEBVIEW_LOG_ANSI`                | Print logs in ANSI colours                        | ON
 
 > [!NOTE]

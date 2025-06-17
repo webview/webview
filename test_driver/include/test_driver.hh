@@ -31,6 +31,18 @@
 #include <string>
 
 namespace webview {
+namespace test {
+namespace driver {
+
+struct failure_exit_codes {
+  enum type {
+    success = 0,
+    failure = 1,
+    exception_thrown = 2,
+    no_tests_found = 3,
+    test_not_found = 4
+  };
+};
 
 struct failure_info {
   const char *condition;
@@ -78,7 +90,7 @@ struct auto_test_reg {
 #define TEST_CASE_INTERNAL(name, counter)                                      \
   static void MAKE_TEST_CASE_NAME(webview_test_driver_case_, counter)();       \
   namespace {                                                                  \
-  const ::webview::auto_test_reg                                               \
+  const ::webview::test::driver::auto_test_reg                                 \
       MAKE_TEST_CASE_NAME(webview_test_driver_case_reg_, counter){             \
           {name, MAKE_TEST_CASE_NAME(webview_test_driver_case_, counter)}};    \
   }                                                                            \
@@ -88,14 +100,16 @@ struct auto_test_reg {
 
 #define REQUIRE(condition)                                                     \
   if (!static_cast<bool>(condition)) {                                         \
-    throw ::webview::test_failure{                                             \
-        ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
+    throw ::webview::test::driver::test_failure{                               \
+        ::webview::test::driver::failure_info{#condition, __FILE__,            \
+                                              __LINE__}};                      \
   }
 
 #define REQUIRE_FALSE(condition)                                               \
   if (static_cast<bool>(condition)) {                                          \
-    throw ::webview::test_failure{                                             \
-        ::webview::failure_info{#condition, __FILE__, __LINE__}};              \
+    throw ::webview::test::driver::test_failure{                               \
+        ::webview::test::driver::failure_info{#condition, __FILE__,            \
+                                              __LINE__}};                      \
   }
 
 #define REQUIRE_THROW(exception, fn)                                           \
@@ -115,6 +129,13 @@ struct auto_test_reg {
 
 // NOLINTEND(cppcoreguidelines-macro-usage, misc-use-anonymous-namespace)
 
+int cmd_help();
+int cmd_list();
+int cmd_run_test(const std::string &test_name);
+int cmd_run_all_tests();
+
+} // namespace driver
+} // namespace test
 } // namespace webview
 
 #endif // WEBVIEW_TEST_DRIVER_HH
