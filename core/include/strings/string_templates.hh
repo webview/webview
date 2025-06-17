@@ -71,6 +71,26 @@ const std::string &TEMPLATE_WEVBIEW_INIT_JS() {
       .join("");
   }
 
+    const sandboxHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    window.addEventListener('message', function (e) {
+      let result;
+      try {
+        result = eval(e.data);
+        e.source.postMessage('executable', '*');
+      } catch (err) {
+        e.source.postMessage('not executable', '*');
+      }
+    });
+  </script>
+</head>
+<body></body>
+</html>
+  `;
+
   var Webview = (function () {
     var _promises = {};
     function Webview_() {}
@@ -105,21 +125,88 @@ const std::string &TEMPLATE_WEVBIEW_INIT_JS() {
       return promise;
     };
 
-    Webview_.prototype.onReply = function (id, status, result) {
+    Webview_.prototype.unsafeError = function (type, result) {
+      return `Unsafe ${type} passed to a binding return:
+"${result}"
+Consider "\"double quoting\"" your input string if this was intentional`;
+    };
+
+    Webview_.prototype.parseJSON = function (result) {
+      try {
+        return JSON.parse(result);
+      } catch (err) {
+        return false;
+      }
+    };
+
+    Webview_.prototype.parseNumber = function (result) {
+      const num = Number(result);
+      return Number.isNaN(num) ? false : num;
+    };
+
+    Webview_.prototype.scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+    Webview_.prototype.containsHTMLScript = function (result) {
+      const decoded_result = decodeURIComponent(result);
+      return !!decoded_result.match(this.scriptRegex);
+    };
+
+    Webview_.prototype.jsCodeSandbox = function () {
+      const iframe = document.createElement("iframe");
+      iframe.hidden = true;
+      iframe.sandbox = "allow-scripts";
+      iframe.src = `data:text/html;charset=utf-8,${encodeURIComponent(sandboxHtml)}`;
+      document.body.appendChild(iframe);
+      return iframe;
+    };
+
+    Webview_.prototype.resolver = function (status, id, result) {
       var promise = _promises[id];
-      if (result !== undefined) {
-        try {
-          result = JSON.parse(result);
-        } catch (e) {
-          promise.reject(new Error("Failed to parse binding result as JSON"));
-          return;
-        }
-      }
       if (status === 0) {
-        promise.resolve(result);
+        result === undefined ? promise.resolve() : promise.resolve(result);
       } else {
-        promise.reject(result);
+        result === undefined ? promise.reject() : promise.reject(result);
       }
+    };
+
+    Webview_.prototype.onReply = function (id, status, result) {
+      let val;
+
+      // parse for bool or undefined
+      if (result === undefined) return this.resolver(status, id, result);
+      if (result === "true") return this.resolver(status, id, true);
+      if (result === "false") return this.resolver(status, id, false);
+
+      // parse for Number
+      val = this.parseNumber(result);
+      if (val !== false) return this.resolver(status, id, val);
+
+      // parse for JSON
+      val = this.parseJSON(result);
+      if (!!val) return this.resolver(status, id, val);
+      console.log("Parsing for script tags:", result)
+      // parse for script tags
+      if (this.containsHTMLScript(result)) return this.resolver(1, id, this.unsafeError("HTML with <script>", result));
+
+      // check for JS code in sandbox
+      const iframe = this.jsCodeSandbox();
+      const messageHandler = ("message", (e) => {
+        if (e.source !== iframe.contentWindow) return;
+        switch (e.data) {
+          case "executable":
+            this.resolver(1, id, this.unsafeError("evaluable JS", result));
+            break;
+          case "not executable":
+            this.resolver(status, id, result);
+            break;
+        }
+        document.body.removeChild(iframe);
+        window.removeEventListener("message", messageHandler);
+      });
+      window.addEventListener("message", messageHandler);
+      iframe.addEventListener("load", () => {
+        iframe.contentWindow.postMessage(result, "*");
+      });
+
     };
 
     Webview_.prototype.onBind = function (name) {
