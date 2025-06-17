@@ -30,6 +30,7 @@
 #include "detail/engine_base.hh"
 #include "detail/threading/thread_detector.hh"
 #include "log/console_log.hh"
+#include "log/trace_log.hh"
 #include "strings/string_api.hh"
 #include "tests/test_helper.hh"
 
@@ -80,6 +81,7 @@ noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
 
 // Asynchronous bind
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
+  trace::base.bind.start(name);
   // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
   if (bindings.count(name) > 0) {
     return error_info{WEBVIEW_ERROR_DUPLICATE, "Bind (duplicate): binding \"" +
@@ -88,6 +90,7 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   }
 
   auto do_work = [this, name, fn, arg] {
+    trace::base.bind.work(name);
     bindings.emplace(name, binding_ctx_t(fn, arg));
     replace_bind_script();
     // Notify that a binding was created if the init script has already
@@ -104,6 +107,7 @@ noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
 }
 
 noresult engine_base::unbind(const std::string &name) {
+  trace::base.unbind.start(name);
   auto found = bindings.find(name);
   if (found == bindings.end()) {
     return error_info{WEBVIEW_ERROR_NOT_FOUND,
@@ -111,6 +115,7 @@ noresult engine_base::unbind(const std::string &name) {
   }
 
   auto do_work = [this, name, &found]() {
+    log::trace::base.unbind.work(name);
     bindings.erase(found);
     replace_bind_script();
     // Notify that a binding was created if the init script has already
@@ -214,7 +219,13 @@ noresult engine_base::init(const std::string &js) {
 }
 
 noresult engine_base::eval(const std::string &js) {
-  auto do_work = [this, js] { eval_impl(js); };
+  auto skip_queue = thread::is_main_thread();
+  log::trace::base.eval.start(js, skip_queue);
+  auto do_work = [this, js] {
+    auto skip_queue = thread::is_main_thread();
+    log::trace::base.eval.work(js, skip_queue);
+    eval_impl(js);
+  };
   if (thread::is_main_thread()) {
     do_work();
     return {};
