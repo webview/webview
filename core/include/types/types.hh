@@ -46,6 +46,7 @@ using sync_binding_t = std::function<std::string(std::string)>;
 using dispatch_fn_t = std::function<void()>;
 using noresult = basic_result<void, error_info, exception>;
 using strg_replacements_t = std::initializer_list<tokenise_data_t>;
+using time_point_t = std::chrono::time_point<std::chrono::steady_clock>;
 
 } // namespace types
 } // namespace webview
