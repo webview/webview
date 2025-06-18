@@ -127,8 +127,7 @@ target_link_libraries(example PRIVATE webview::core)
 
 `main.cc`:
 ```cpp
-#include "webview/webview.h"
-
+#include "webview.h"
 #include <iostream>
 
 #ifdef _WIN32
@@ -138,7 +137,7 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   try {
-    webview::webview w(false, nullptr);
+    webview_cc w(false, nullptr);
     w.set_title("Basic Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");
@@ -178,7 +177,7 @@ target_link_libraries(example PRIVATE webview::core_static)
 
 `main.c`:
 ```cpp
-#include "webview/webview.h"
+#include "webview.h"
 #include <stddef.h>
 
 #ifdef _WIN32
@@ -200,10 +199,23 @@ int main(void) {
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_html(w, "Thanks for using webview!");
   webview_run(w);
-  webview_destroy(w);
   return 0;
 }
 ```
+## Thread Safety
+The Webview API guarantees thread safety with the following exceptions:
+
+Webview initialisation
+- `webview_t w = webview_create(...)` (C API instance ref),
+- `webview_cc wv{...}` (C++ API instance)
+
+MUST happen on the `main` thread else an exception will be thrown.
+
+- calling `webview_run(w)` or `wv.run()`, 
+- calling `webview_init(w, js)` or `wv.init(js)`
+
+SHOULD happen on the `main` thread, else an error will be returned.
+
 
 ### Building the Example
 
@@ -274,41 +286,45 @@ Name                   | Description
 
 The following boolean options can be used when building the webview project standalone or when building it as part of your project (e.g. with FetchContent).
 
-Option                            | Description
-------                            | -----------
-`WEBVIEW_BUILD`                   | Enable building
-`WEBVIEW_BUILD_AMALGAMATION`      | Build amalgamated library
-`WEBVIEW_BUILD_DOCS`              | Build documentation
-`WEBVIEW_BUILD_EXAMPLES`          | Build examples
-`WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries
-`WEBVIEW_BUILD_STATIC_LIBRARY`    | Build static libraries
-`WEBVIEW_BUILD_TESTS`             | Build tests
-`WEBVIEW_ENABLE_CHECKS`           | Enable checks
-`WEBVIEW_ENABLE_CLANG_FORMAT`     | Enable clang-format
-`WEBVIEW_ENABLE_CLANG_TIDY`       | Enable clang-tidy
-`WEBVIEW_ENABLE_PACKAGING`        | Enable packaging
-`WEBVIEW_INSTALL_DOCS`            | Install documentation
-`WEBVIEW_INSTALL_TARGETS`         | Install targets
-`WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable
-`WEBVIEW_PACKAGE_AMALGAMATION`    | Package amalgamated library
-`WEBVIEW_PACKAGE_DOCS`            | Package documentation
-`WEBVIEW_PACKAGE_HEADERS`         | Package headers
-`WEBVIEW_PACKAGE_LIB`             | Package compiled libraries
-`WEBVIEW_STRICT_CHECKS`           | Make checks strict
-`WEBVIEW_STRICT_CLANG_FORMAT`     | Make clang-format check strict
-`WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict
-`WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
-`WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
+Option                            | Description                                       | Default
+------                            | -----------                                       | -------
+`WEBVIEW_BUILD`                   | Enable building                                   | 
+`WEBVIEW_BUILD_AMALGAMATION`      | Build amalgamated library                         | 
+`WEBVIEW_BUILD_DOCS`              | Build documentation                               | 
+`WEBVIEW_BUILD_EXAMPLES`          | Build examples                                    | 
+`WEBVIEW_BUILD_SHARED_LIBRARY`    | Build shared libraries                            | 
+`WEBVIEW_BUILD_STATIC_LIBRARY`    | Build static libraries                            | 
+`WEBVIEW_BUILD_TESTS`             | Build tests                                       | 
+`WEBVIEW_ENABLE_CHECKS`           | Enable checks                                     |
+`WEBVIEW_ENABLE_CLANG_FORMAT`     | Enable clang-format                               |
+`WEBVIEW_ENABLE_CLANG_TIDY`       | Enable clang-tidy                                 |
+`WEBVIEW_ENABLE_PACKAGING`        | Enable packaging                                  | 
+`WEBVIEW_INSTALL_DOCS`            | Install documentation                             | 
+`WEBVIEW_INSTALL_TARGETS`         | Install targets                                   | 
+`WEBVIEW_IS_CI`                   | Initialized by the `CI` environment variable      |
+`WEBVIEW_PACKAGE_AMALGAMATION`    | Package amalgamated library                       | 
+`WEBVIEW_PACKAGE_DOCS`            | Package documentation                             | 
+`WEBVIEW_PACKAGE_HEADERS`         | Package headers                                   | 
+`WEBVIEW_PACKAGE_LIB`             | Package compiled libraries                        | 
+`WEBVIEW_STRICT_CHECKS`           | Make checks strict                                | 
+`WEBVIEW_STRICT_CLANG_FORMAT`     | Make clang-format check strict                    | 
+`WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict                      | 
+`WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW                |  
+`WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)                 | 
+`WEBVIEW_LOG`                     | Print execution logs to stdout and stderr         | OFF
+`WEBVIEW_LOG_ANSI`                | Print logs in ANSI colours                        | ON
+`WEBVIEW_LOG_TRACE`               | Print a detailed execution trace log to stdout    | OFF
 
 > [!NOTE]
 > Checks are *enabled* by default, but aren't *enforced* by default for local development (controlled by the `WEBVIEW_IS_CI` option).
 
 Non-boolean options:
 
-Option                            | Description
-------                            | -----------
-`WEBVIEW_CLANG_FORMAT_EXE`        | Path of the `clang-format` executable.
-`WEBVIEW_CLANG_TIDY_EXE`          | Path of the `clang-tidy` executable.
+Option                            | Description                                                             | Default
+------                            | -----------                                                             | -------
+`WEBVIEW_CLANG_FORMAT_EXE`        | Path of the `clang-format` executable.                                  |
+`WEBVIEW_CLANG_TIDY_EXE`          | Path of the `clang-tidy` executable.                                    |
+`WEBVIEW_UNBIND_TIMEOUT`          | Time in ms that `unbind` waits before rejecting unresolved promises.    | 40
 
 ### Package Consumer Options
 
@@ -380,13 +396,6 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 
 [Customization options](#Customization) can be used to change how the library integrates the WebView2 loader.
 
-## Thread Safety
-
-Since library functions generally do not have thread safety guarantees, `webview_dispatch()` (C) / `webview::dispatch()` (C++) can be used to schedule code to execute on the main/GUI thread and thereby make that execution safe in multi-threaded applications.
-
-`webview_return()` (C) / `webview::resolve()` (C++) uses `*dispatch()` internally and is therefore safe to call from another thread.
-
-The main/GUI thread should be the thread that calls `webview_run()` (C) / `webview::run()` (C++).
 
 ## Development
 

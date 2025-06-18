@@ -16,6 +16,38 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
     target_link_libraries(webview_core_headers INTERFACE webview::compat_mingw)
 endif()
 
+if(WEBVIEW_LOG)
+    set(WEBVIEW_LOG 1)
+else()
+    set(WEBVIEW_LOG 0)
+endif()
+if(WEBVIEW_LOG_ANSI)
+    set(WEBVIEW_LOG_ANSI 1)
+else()
+    set(WEBVIEW_LOG_ANSI 0)
+endif()
+if(WEBVIEW_LOG_TRACE)
+    set(WEBVIEW_LOG_TRACE 1)
+else()
+    set(WEBVIEW_LOG_TRACE 0)
+endif()
+
+target_compile_definitions(webview_core_headers INTERFACE
+    WEBVIEW_LOG=$<IF:${WEBVIEW_LOG},1,0>
+)
+target_compile_definitions(webview_core_headers INTERFACE
+    WEBVIEW_LOG_ANSI=$<IF:${WEBVIEW_LOG_ANSI},1,0>
+)
+target_compile_definitions(webview_core_headers INTERFACE
+    WEBVIEW_LOG_TRACE=$<IF:${WEBVIEW_LOG_TRACE},1,0>
+)
+if(WEBVIEW_UNBIND_TIMEOUT)
+    target_compile_definitions(webview_core_headers INTERFACE WEBVIEW_UNBIND_TIMEOUT=${WEBVIEW_UNBIND_TIMEOUT})
+else()
+    target_compile_definitions(webview_core_headers INTERFACE WEBVIEW_UNBIND_TIMEOUT=${WEBVIEW_UNBIND_TIMEOUT_DEFAULT})
+endif()
+
+
 # Core shared library
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview_core_shared SHARED)

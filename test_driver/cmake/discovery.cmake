@@ -55,6 +55,7 @@ function(webview_discover_tests_impl TEST_DRIVER)
             "${TEST_LIST_ITEM}"
             "${TEST_DRIVER}" "${TEST_LIST_ITEM}"
         )
+        set_tests_properties(TEST "${TEST_LIST_ITEM}" PROPERTIES ENVIRONMENT "TEST=ON")
         if(DEFINED TEST_TIMEOUT AND NOT TEST_TIMEOUT STREQUAL "")
             set_tests_properties(TEST "${TEST_LIST_ITEM}" PROPERTIES TIMEOUT "${TEST_TIMEOUT}")
         endif()
