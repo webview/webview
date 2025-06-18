@@ -1,5 +1,4 @@
-#include "webview/webview.h"
-
+#include "webview.h"
 #include <iostream>
 
 #ifdef _WIN32
@@ -9,12 +8,12 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   try {
-    webview::webview w(false, nullptr);
+    webview_cc w(false, nullptr);
     w.set_title("Basic Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");
     w.run();
-  } catch (const webview::exception &e) {
+  } catch (const exception &e) {
     std::cerr << e.what() << '\n';
     return 1;
   }

@@ -127,8 +127,7 @@ target_link_libraries(example PRIVATE webview::core)
 
 `main.cc`:
 ```cpp
-#include "webview/webview.h"
-
+#include "webview.h"
 #include <iostream>
 
 #ifdef _WIN32
@@ -138,7 +137,7 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 int main() {
 #endif
   try {
-    webview::webview w(false, nullptr);
+    webview_cc w(false, nullptr);
     w.set_title("Basic Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
     w.set_html("Thanks for using webview!");
@@ -178,7 +177,7 @@ target_link_libraries(example PRIVATE webview::core_static)
 
 `main.c`:
 ```cpp
-#include "webview/webview.h"
+#include "webview.h"
 #include <stddef.h>
 
 #ifdef _WIN32
@@ -200,10 +199,22 @@ int main(void) {
   webview_set_size(w, 480, 320, WEBVIEW_HINT_NONE);
   webview_set_html(w, "Thanks for using webview!");
   webview_run(w);
-  webview_destroy(w);
   return 0;
 }
 ```
+## Thread Safety
+The Webview API guarantees thread safety with the following exceptions:
+
+Webview initialisation
+- `webview_t w = webview_create(...)` (C API instance ref),
+- `webview_cc wv{...}` (C++ API instance)
+
+MUST happen on the `main` thread else an exception will be thrown.
+
+- calling `webview_run(w)` or `wv.run()`, 
+- calling `webview_init(w, js)` or `wv.init(js)`
+
+SHOULD happen on the `main` thread, else an error will be returned.
 
 ### Building the Example
 
@@ -379,14 +390,6 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 * Microsoft Edge Insider (preview) channels are not supported.
 
 [Customization options](#Customization) can be used to change how the library integrates the WebView2 loader.
-
-## Thread Safety
-
-Since library functions generally do not have thread safety guarantees, `webview_dispatch()` (C) / `webview::dispatch()` (C++) can be used to schedule code to execute on the main/GUI thread and thereby make that execution safe in multi-threaded applications.
-
-`webview_return()` (C) / `webview::resolve()` (C++) uses `*dispatch()` internally and is therefore safe to call from another thread.
-
-The main/GUI thread should be the thread that calls `webview_run()` (C) / `webview::run()` (C++).
 
 ## Development
 

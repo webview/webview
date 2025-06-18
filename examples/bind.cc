@@ -1,4 +1,4 @@
-#include "webview/webview.h"
+#include "webview.h"
 
 #include <chrono>
 #include <iostream>
@@ -47,7 +47,7 @@ int main() {
   try {
     long count = 0;
 
-    webview::webview w(true, nullptr);
+    webview_cc w(true, nullptr);
     w.set_title("Bind Example");
     w.set_size(480, 320, WEBVIEW_HINT_NONE);
 
@@ -75,7 +75,7 @@ int main() {
 
     w.set_html(html);
     w.run();
-  } catch (const webview::exception &e) {
+  } catch (const exception &e) {
     std::cerr << e.what() << '\n';
     return 1;
   }
