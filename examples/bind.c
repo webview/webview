@@ -23,11 +23,8 @@ static void count(const char *id, const char *req, void *arg) {
   // We use the inbuilt Webview JSON utility from the C api.
   json_parse(&increment_str, req, "", 0);
   int increment = to_int(increment_str);
-  int result = ctx->count += increment;
-  char *result_string = to_string(result);
 
-  webview_return(ctx->w, id, 0, result_string);
-  free(result_string);
+  webview_return_int(ctx->w, id, 0, ctx->count += increment);
   free(increment_str);
 }
 
