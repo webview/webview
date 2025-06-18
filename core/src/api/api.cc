@@ -269,6 +269,39 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
   return api_filter(
       [=] { return cast_to_webview(w)->resolve(id, status, result); });
 }
+WEBVIEW_API webview_error_t webview_return_int(webview_t w, const char *id,
+                                               int status, int result) {
+  if (!w || !id) {
+    auto message = !w ? string::err.api_null_w("webview_return")
+                      : string::err.api_missing_arg("id", "webview_return");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
+  }
+
+  return api_filter(
+      [=] { return cast_to_webview(w)->resolve(id, status, result); });
+}
+WEBVIEW_API webview_error_t webview_return_float(webview_t w, const char *id,
+                                                 int status, float result) {
+  if (!w || !id) {
+    auto message = !w ? string::err.api_null_w("webview_return")
+                      : string::err.api_missing_arg("id", "webview_return");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
+  }
+
+  return api_filter(
+      [=] { return cast_to_webview(w)->resolve(id, status, result); });
+}
+WEBVIEW_API webview_error_t webview_return_bool(webview_t w, const char *id,
+                                                int status, bool result) {
+  if (!w || !id) {
+    auto message = !w ? string::err.api_null_w("webview_return")
+                      : string::err.api_missing_arg("id", "webview_return");
+    return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, message, true}.code();
+  }
+
+  return api_filter(
+      [=] { return cast_to_webview(w)->resolve(id, status, result); });
+}
 
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &library_version_info;

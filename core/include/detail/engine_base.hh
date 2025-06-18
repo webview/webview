@@ -62,6 +62,15 @@ public:
   /// Internal API implementation of public \ref webview_return
   noresult resolve(const std::string &id, int status,
                    const std::string &result);
+  template <typename T>
+  typename std::enable_if<std::is_same<T, bool>::value, noresult>::type
+  resolve(const std::string &id, int status, T result);
+  template <typename T>
+  typename std::enable_if<std::is_arithmetic<T>::value &&
+                              !std::is_same<T, bool>::value,
+                          noresult>::type
+  resolve(const std::string &id, int status, T result);
+
   /// Internal API implementation of public \ref webview_get_window
   result<void *> window() { return window_impl(); }
   /// Internal API implementation part of public \ref webview_get_native_handle

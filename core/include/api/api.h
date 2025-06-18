@@ -29,6 +29,7 @@
 #include "errors/errors.h"
 #include "lib/macros.h"
 #include "types/types.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -214,15 +215,40 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
  *
  * @param w The webview instance.
  * @param id The identifier of the binding call. Pass along the value received
- *           in the binding handler (see webview_bind()).
+ * in the binding handler (see webview_bind()).
  * @param status A status of zero tells the JS side that the binding call was
- *               successful; any other value indicates an error.
+ * successful; any other value indicates an error.
  * @param result The result of the binding call to be returned to the JS side.
- *               This must either be a valid JSON value or an empty string for
- *               the primitive JS value @c undefined.
+ * This can be a valid JSON string, a string or an empty string for
+ * the primitive JS value @c undefined. Passing JS code, HTML scripts or
+ * encoded scripts is NOT allowed.
  */
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
                                            int status, const char *result);
+/**
+ * Same as \ref webview_return, but for integer results
+ * @param result The result of the binding call to be returned to the JS side.
+ *               This can be a `int` (eg, `0`, `1` or `-1`)
+ * @since 0.12.7
+ */
+WEBVIEW_API webview_error_t webview_return_int(webview_t w, const char *id,
+                                               int status, int result);
+/**
+ * Same as \ref webview_return, but for float results
+ * @param result The result of the binding call to be returned to the JS side.
+ *               This can be a `float` (eg. `0.0`, `1.1` or `-1.1`)
+ * @since 0.12.7
+ */
+WEBVIEW_API webview_error_t webview_return_float(webview_t w, const char *id,
+                                                 int status, float result);
+/**
+ * Same as \ref webview_return, but for boolean results
+ * @param result The result of the binding call to be returned to the JS side.
+ *               This can be a `bool` (`true` or `false`)
+ * @since 0.12.7
+ */
+WEBVIEW_API webview_error_t webview_return_bool(webview_t w, const char *id,
+                                                int status, bool result);
 
 /**
  * Get the library's version information.
@@ -240,7 +266,10 @@ WEBVIEW_API const webview_version_info_t *webview_version(void);
  * @param key For JSON arrays, pass "", else the name of the object key for
  * which the value is to be returned.
  * @param index For JSON arrays, pass the index for which the value is to be returned, else 0.
+ * @returns \ref webview_error_t where 0 is OK. The buffer will be populated with a string.
+ * The user must convert the string to their expected return value type.
  *
+ * @todo improve JSON parsing to return expected type
  * @since 0.12.6
  **/
 WEBVIEW_API webview_error_t json_parse(char **buffer, const char *json_str,

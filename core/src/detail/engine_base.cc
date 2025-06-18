@@ -131,6 +131,19 @@ noresult engine_base::unbind(const std::string &name) {
   }
 }
 
+template <typename T>
+typename std::enable_if<std::is_arithmetic<T>::value &&
+                            !std::is_same<T, bool>::value,
+                        noresult>::type
+engine_base::resolve(const std::string &id, int status, T result) {
+  return resolve(id, status, std::to_string(result));
+};
+template <typename T>
+typename std::enable_if<std::is_same<T, bool>::value, noresult>::type
+engine_base::resolve(const std::string &id, int status, T result) {
+  std::string bool_string = result ? "true" : "false";
+  return resolve(id, status, bool_string);
+};
 noresult engine_base::resolve(const std::string &id, int status,
                               const std::string &result) {
   if (status == 1) {
