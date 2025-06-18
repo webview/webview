@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 [Link to Github compare]
 
+## [0.13.0] - 2025-06-18
+This is an alpha release that concurrently resolves native promises and guarantees ordered execution of `bind` -> `eval` -> `unbind` operations.
+### Added
+- Concurrent daemonised execution of bound functions. Users no longer have to manage threads in bound callbacks to prevent UI / app freezes
+- The WEBVIEW_UNBIND_TIMEOUT compiler option, which sets a timeout for `unbind` to allow bound `eval` functions to complete (40ms default).
+### Fixed
+- `bind` -> `eval` -> `unbind` will allow WEBVIEW_UNBIND_TIMEOUT for promise resolution instead of silently failing.
+- `eval` will wait for `bind` to complete so that included bound function calls do not silently fail.
+- User API instructions will queue until the DOM is ready instead of silently failing.
+- JS promises are no longer left indefinitely in a waiting state if errors occur natively or bindings are unbound.
+### Deprecated / Removed
+- The synchronous `bind` signature is deprecated and stubbed. Legacy user code will compile and run, but synchronous bind is a now a no-op.
+
 ## [0.12.7] - 2025-06-17
 This release simplifies the use of JSON strings and returning values to the JS frontend for the user.
 ### Added
@@ -142,7 +155,8 @@ Windows:
 
 ## [0.1.0] - 2018-05-09
 
-[Link to Github compare]: https://github.com/webview/webview/compare/0.12.7...HEAD
+[Link to Github compare]: https://github.com/webview/webview/compare/0.13.0...HEAD
+[0.13.0]:     https://github.com/webview/webview/compare/0.12.7...0.13.0
 [0.12.7]:     https://github.com/webview/webview/compare/0.12.6...0.12.7
 [0.12.6]:     https://github.com/webview/webview/compare/0.12.5...0.12.6
 [0.12.5]:     https://github.com/webview/webview/compare/0.12.4...0.12.5

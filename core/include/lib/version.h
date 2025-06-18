@@ -38,17 +38,17 @@
 
 #ifndef WEBVIEW_VERSION_MINOR
 /// The current library minor version.
-#define WEBVIEW_VERSION_MINOR 12
+#define WEBVIEW_VERSION_MINOR 13
 #endif
 
 #ifndef WEBVIEW_VERSION_PATCH
 /// The current library patch version.
-#define WEBVIEW_VERSION_PATCH 7
+#define WEBVIEW_VERSION_PATCH 0
 #endif
 
 #ifndef WEBVIEW_VERSION_PRE_RELEASE
 /// SemVer 2.0.0 pre-release labels prefixed with "-".
-#define WEBVIEW_VERSION_PRE_RELEASE ""
+#define WEBVIEW_VERSION_PRE_RELEASE "-alpha"
 #endif
 
 #ifndef WEBVIEW_VERSION_BUILD_METADATA
