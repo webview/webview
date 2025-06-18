@@ -77,11 +77,24 @@ const std::string &TEMPLATE_WEVBIEW_INIT_JS() {
 <head>
   <script>
     window.addEventListener('message', function (e) {
-      let result;
+      let isExecutable;
       try {
         result = eval(e.data);
-        e.source.postMessage('executable', '*');
+        isExecutable = true;
       } catch (err) {
+        isExecutable = false;
+      }
+      if(isExecutable) return e.source.postMessage('executable', '*');
+      try {
+        const decodedString = decodeURIComponent(e.data);
+        result = eval(decodedString);
+        isExecutable = true;
+      } catch (err) {
+        isExecutable = false;
+      }
+      if(isExecutable) {
+        e.source.postMessage('executable', '*');
+      } else {
         e.source.postMessage('not executable', '*');
       }
     });

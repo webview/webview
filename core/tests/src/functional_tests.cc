@@ -311,6 +311,32 @@ TEST_CASE("The string returned of a binding call must not be JS") {
   REQUIRE(passed);
 }
 
+TEST_CASE("The string returned of a binding call must not be encoded JS") {
+  webview_cc wv(true, nullptr);
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string &id, const std::string & /*req*/, void * /**/) {
+        // Try to load malicious JS code
+        wv.resolve(id, 0,
+                   "(()%3D%3E%7Bdocument.body.innerHTML%3D'gotcha'%3Breturn%20'"
+                   "hello'%3B%7D)()");
+      },
+      nullptr);
+  wv.bind(
+      "endTest",
+      [&](const std::string & /*req*/, const std::string &req, void * /**/) {
+        passed = req != "[2]" && req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.set_html(test_html.string_returned(
+      "The string returned of a binding call must not be JS"));
+  wv.run();
+  REQUIRE(passed);
+}
+
 TEST_CASE("The string returned of a binding call must not be a HTML script") {
   webview_cc wv(true, nullptr);
   bool passed;
