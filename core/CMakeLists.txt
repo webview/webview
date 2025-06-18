@@ -41,6 +41,11 @@ target_compile_definitions(webview_core_headers INTERFACE
 target_compile_definitions(webview_core_headers INTERFACE
     WEBVIEW_LOG_TRACE=$<IF:${WEBVIEW_LOG_TRACE},1,0>
 )
+if(WEBVIEW_UNBIND_TIMEOUT)
+    target_compile_definitions(webview_core_headers INTERFACE WEBVIEW_UNBIND_TIMEOUT=${WEBVIEW_UNBIND_TIMEOUT})
+else()
+    target_compile_definitions(webview_core_headers INTERFACE WEBVIEW_UNBIND_TIMEOUT=${WEBVIEW_UNBIND_TIMEOUT_DEFAULT})
+endif()
 
 
 # Core shared library

@@ -313,6 +313,8 @@ macro(webview_install_targets)
 endmacro()
 
 macro(webview_internal_options)
+    set(WEBVIEW_UNBIND_TIMEOUT_DEFAULT 40)
+
     if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
         set(WEBVIEW_IS_TOP_LEVEL_BUILD TRUE)
     endif()

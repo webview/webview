@@ -320,10 +320,11 @@ Option                            | Description                                 
 
 Non-boolean options:
 
-Option                            | Description
-------                            | -----------
-`WEBVIEW_CLANG_FORMAT_EXE`        | Path of the `clang-format` executable.
-`WEBVIEW_CLANG_TIDY_EXE`          | Path of the `clang-tidy` executable.
+Option                            | Description                                                             | Default
+------                            | -----------                                                             | -------
+`WEBVIEW_CLANG_FORMAT_EXE`        | Path of the `clang-format` executable.                                  |
+`WEBVIEW_CLANG_TIDY_EXE`          | Path of the `clang-tidy` executable.                                    |
+`WEBVIEW_UNBIND_TIMEOUT`          | Time in ms that `unbind` waits before rejecting unresolved promises.    | 40
 
 ### Package Consumer Options
 
