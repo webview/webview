@@ -4,6 +4,7 @@
 #define WEBVIEW_VERSION_PRE_RELEASE "-test"
 #define WEBVIEW_VERSION_BUILD_METADATA "+gaabbccd"
 
+#include "log/trace_log.hh"
 #include "strings/string_api.hh"
 #include "test_driver.hh"
 #include "tests/test_helper.hh"
@@ -14,6 +15,7 @@
 
 using namespace webview::strings;
 using namespace webview::tests;
+using namespace webview::log;
 
 // This test should only r"webview/n on Windows to enable us "webview/o perform a controlled
 // "warm-up" of MS WebView2 in order to avoid the initial test from
@@ -58,7 +60,7 @@ TEST_CASE("Use C API to create a window, run app and terminate it") {
   worker.join();
 }
 
-TEST_CASE("Use C API to test binding and unbinding") {
+TEST_CASE("Test nested C binding and unbinding") {
   struct c_context_t {
     webview_t w;
     unsigned int number;
@@ -71,12 +73,13 @@ TEST_CASE("Use C API to test binding and unbinding") {
 
   auto static increment =
       +[](const char *seq, const char * /*req*/, void *arg) {
-        auto *context = static_cast<c_context_t *>(arg);
-        ++context->number;
-        webview_return(context->w, seq, 0, "");
+        auto *ctx = static_cast<c_context_t *>(arg);
+        ++ctx->number;
+        std::string message = "Incremented " + std::to_string(ctx->number);
+        webview_return(ctx->w, seq, 0, message.c_str());
       };
 
-  auto static test = +[](const char *seq, const char *req, void *arg) {
+  auto static tests = +[](const char *seq, const char *req, void *arg) {
     auto ctx = static_cast<c_context_t *>(arg);
     std::string req_(req);
     // Bind and increment number.
@@ -106,30 +109,39 @@ TEST_CASE("Use C API to test binding and unbinding") {
     // Finish test.
     if (req_ == "[3]") {
       ctx->res4 = (ctx->number == 2);
+      webview_return(ctx->w, seq, 0, "Returned [3]");
       webview_terminate(ctx->w);
       return;
     }
     ctx->end = true;
   };
-  auto html = "<script>\n"
-              "  window.test(0);\n"
-              "</script>";
+
   auto w = webview_create(1, nullptr);
   ctx.w = w;
+  webview_set_html(w, "Test nested C binding and unbinding");
   // Attempting to remove non-existing binding is OK
   webview_unbind(w, "test");
-  webview_bind(w, "test", test, &ctx);
+  webview_bind(w, "test", tests, &ctx);
   // Attempting to bind multiple times only binds once
-  webview_bind(w, "test", test, &ctx);
-  webview_set_html(w, html);
+  webview_bind(w, "test", tests, &ctx);
+  webview_eval(w, test_js.bind_unbind_init().c_str());
   webview_run(w);
 
   auto passed = ctx.res1 && ctx.res2 && ctx.res3 && ctx.res4 && !ctx.end;
+  if (!passed) {
+    trace::test.print_here(tester::res_string("res1", ctx.res1));
+    trace::test.print_here(tester::res_string("res2", ctx.res2));
+    trace::test.print_here(tester::res_string("res3", ctx.res3));
+    trace::test.print_here(tester::res_string("res4", ctx.res4));
+    trace::test.print_here(tester::res_string("end", ctx.end));
+  }
+
   REQUIRE(passed);
 }
 
-TEST_CASE("Test synchronous binding and unbinding") {
-  webview_cc w(false, nullptr);
+TEST_CASE("Test nested CC binding and unbinding") {
+  webview_cc wv{true, nullptr};
+
   struct cc_context_t {
     unsigned int number;
     bool res1;
@@ -139,54 +151,69 @@ TEST_CASE("Test synchronous binding and unbinding") {
     bool end;
   } ctx{};
 
-  auto increment = [&](const std::string & /*req*/) -> std::string {
-    ctx.number++;
-    return "";
+  auto increment = [&](const std::string &id, const std::string & /**/,
+                       void *arg) {
+    auto *ctx = static_cast<cc_context_t *>(arg);
+    ctx->number++;
+    auto message = "Incremented " + std::to_string(ctx->number);
+    wv.resolve(id, 0, message);
   };
-  auto test = [&](const std::string &req) -> std::string {
+
+  auto tests = [&](const std::string & /**/, const std::string &req,
+                   void *arg) {
+    auto *ctx = static_cast<cc_context_t *>(arg);
+
     // Bind and increment number.
     if (req == "[0]") {
-      ctx.res1 = ctx.number == 0;
-      w.bind("increment", increment);
-      w.eval(test_js.bind_unbind(1));
-      return "";
+      ctx->res1 = ctx->number == 0;
+      wv.bind("increment", increment, ctx);
+      wv.eval(test_js.bind_unbind(1));
+      return;
     }
+
     // Unbind and make sure that we cannot increment even if we try.
     if (req == "[1]") {
-      ctx.res2 = ctx.number == 1;
-      w.unbind("increment");
-      w.eval(test_js.bind_unbind(2));
-      return "";
+      ctx->res2 = ctx->number == 1;
+      wv.unbind("increment");
+      wv.eval(test_js.bind_unbind(2));
+      return;
     }
     // We should have gotten an error on the JS side.
     // Number should not have changed but we can bind again and change the number.
     if (req == "[2,1]") {
-      ctx.res3 = ctx.number == 1;
-      w.bind("increment", increment);
-      w.eval(test_js.bind_unbind(3));
-      return "";
+      ctx->res3 = ctx->number == 1;
+      wv.bind("increment", increment, ctx);
+      wv.eval(test_js.bind_unbind(3));
+      return;
     }
     // Finish test.
     if (req == "[3]") {
-      ctx.res4 = ctx.number == 2;
-      w.terminate();
-      return "";
+      ctx->res4 = ctx->number == 2;
+      wv.unbind("test");
+      wv.unbind("increment");
+      wv.terminate();
+      return;
     }
-    ctx.end = true;
-    return "";
+    ctx->end = true;
   };
-  auto html = "<script>\n"
-              "  window.test(0);\n"
-              "</script>";
+
+  wv.set_html("Test nested CC binding and unbinding");
   // Attempting to remove non-existing binding is OK
-  w.unbind("test");
-  w.bind("test", test);
+  wv.unbind("test");
+  wv.bind("test", tests, &ctx);
   // Attempting to bind multiple times only binds once
-  w.bind("test", test);
-  w.set_html(html);
-  w.run();
+  wv.bind("test", tests, &ctx);
+  wv.init(test_js.bind_unbind_init());
+  wv.run();
 
   auto passed = ctx.res1 && ctx.res2 && ctx.res3 && ctx.res4 && !ctx.end;
+  if (!passed) {
+    trace::test.print_here(tester::res_string("res1", ctx.res1));
+    trace::test.print_here(tester::res_string("res2", ctx.res2));
+    trace::test.print_here(tester::res_string("res3", ctx.res3));
+    trace::test.print_here(tester::res_string("res4", ctx.res4));
+    trace::test.print_here(tester::res_string("end", ctx.end));
+  }
   REQUIRE(passed);
 }
 
@@ -439,6 +466,10 @@ TEST_CASE("Ensure that JS code can call native code and vice versa") {
   worker.join();
 
   auto passed = ctx.res1 && ctx.res2;
+  if (!passed) {
+    trace::test.print_here(tester::res_string("res1", ctx.res1));
+    trace::test.print_here(tester::res_string("res2", ctx.res2));
+  }
   REQUIRE(passed);
 }
 
@@ -497,5 +528,59 @@ Bind and set_html before run must evaluate
 )");
   wv.run();
 
+  REQUIRE(passed);
+}
+
+TEST_CASE("Bind eval unbind before run must evaluate") {
+  webview_cc wv{true, nullptr};
+  bool passed;
+
+  wv.bind(
+      "loadData",
+      [&](const std::string & /*id*/, const std::string &req, void * /**/) {
+        passed = req == "[1]";
+        wv.terminate();
+      },
+      nullptr);
+  wv.eval("loadData(1)");
+  wv.unbind("loadData");
+  wv.run();
+
+  REQUIRE(passed);
+}
+
+TEST_CASE("Bind eval unbind and re-bind must evaluate from a child thread") {
+  webview_cc wv{true, nullptr};
+  struct test_ctx_t {
+    bool res1;
+    bool res2;
+  } ctx{};
+  std::thread worker{[&]() {
+    wv.bind(
+        "loadData",
+        [&](const std::string & /*id*/, const std::string &req, void * /**/) {
+          ctx.res1 = req == "[1]";
+        },
+        nullptr);
+    wv.eval("loadData(1)");
+    wv.unbind("loadData");
+    wv.bind(
+        "loadData",
+        [&](const std::string & /*id*/, const std::string &req, void * /**/) {
+          ctx.res2 = req == "[2]";
+          wv.terminate();
+        },
+        nullptr);
+    wv.eval("loadData(2)");
+  }};
+
+  wv.run();
+  worker.join();
+
+  auto passed = ctx.res1 && ctx.res2;
+  if (!passed) {
+    trace::test.print_here(tester::res_string("res1", ctx.res1));
+    trace::test.print_here(tester::res_string("res2", ctx.res2));
+  }
   REQUIRE(passed);
 }

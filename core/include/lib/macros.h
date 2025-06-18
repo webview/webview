@@ -159,8 +159,8 @@ Please use `webview_cc` from the Global namespace instead."
 #ifndef DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND
 #define DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND                                     \
   "since 0.13.0\n\
-Webview now runs concurrently and `bind` will decide an appropriate context.\n\
-Please use the standard function signature instead"
+Webview now runs concurrently and synchronous `bind` WILL cause undefined behaviour.\n\
+Please use the standard `bind` function signature instead"
 #endif
 
 #ifdef _MSC_VER

@@ -74,10 +74,12 @@ noresult engine_base::navigate(const std::string &url) {
 }
 
 WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND)
-noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
-  auto wrapper = [this, fn](const std::string &id, const std::string &req,
-                            void * /*arg*/) { resolve(id, 0, fn(req)); };
-  return bind(name, wrapper, nullptr);
+noresult engine_base::bind(const std::string & /*name*/,
+                           sync_binding_t /*fn*/) {
+  console.error("Synchronous bind is deprecated, and WILL cause undefined "
+                "behaviour. This function is now a no-op.\nPlease use the "
+                "standard bind function signature.");
+  return noresult{WEBVIEW_ERROR_BAD_API_CALL};
 }
 
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
