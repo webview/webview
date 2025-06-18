@@ -1,4 +1,4 @@
-#include "webview/webview.h"
+#include "webview.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -186,6 +186,10 @@ int main(void) {
 
   webview_set_html(w, html);
   webview_run(w);
+  // We temporarily leave this deprecated API call here
+  // to confirm that a clean shut-down has not been affected.
+  IGNORE_DEPRECATED_DECLARATIONS
   webview_destroy(w);
+  RESTORE_IGNORED_WARNINGS
   return 0;
 }

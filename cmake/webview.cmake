@@ -6,6 +6,9 @@ macro(webview_options)
 endmacro()
 
 macro(webview_find_dependencies)
+    find_package(Threads REQUIRED)
+    list(APPEND WEBVIEW_DEPENDENCIES "Threads::Threads")
+
     if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         list(APPEND WEBVIEW_DEPENDENCIES "-framework WebKit" dl)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
