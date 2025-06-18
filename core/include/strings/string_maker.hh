@@ -53,6 +53,13 @@ struct sys_flags_t {
   const std::string sysop;
   const std::string testop;
 };
+struct sys_ops_t {
+  std::string dom_ready;
+  std::string webview_ready;
+  std::string bind_done;
+  std::string unbind_done;
+  std::string js_eval_start;
+};
 
 namespace _frontend {
 

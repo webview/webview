@@ -49,6 +49,8 @@ struct string {
   static const tokens_t tokens;
   /// Flags for different kinds of frontend messaging
   static const sys_flags_t flags;
+  /// Flags for different kinds of frontend operational events
+  static const sys_ops_t ops;
   /// Performs string replacement for tokens.
   /// @todo REGEX is probably going to be optimal for performance
   static std::string tokenise(const std::string &tmplate,
@@ -71,7 +73,12 @@ const error_message_t string::err{};
 const tokens_t string::tokens{
     "_str_",    "_int_",     "_var_",      "_id_",      "_status_",
     "_result_", "_post_fn_", "_js_names_", "_user_js_", "_what_"};
+
 const sys_flags_t string::flags{"_sysop", "_testop"};
+
+const sys_ops_t string::ops{"_dom_ready", "_webview_ready", "_bind_done",
+                            "_unbind_done", "_frontend_eval_ready"};
+
 // NOLINTEND(cert-err58-cpp)
 
 /*

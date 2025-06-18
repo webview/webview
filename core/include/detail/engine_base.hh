@@ -27,6 +27,7 @@
 #define WEBVIEW_DETAIL_ENGINE_BASE_HH
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "detail/engine_queue.hh"
 #include "detail/user/user_script.hh"
 #include "lib/macros.h"
 #include "types/types.h"
@@ -70,7 +71,8 @@ public:
                               !std::is_same<T, bool>::value,
                           noresult>::type
   resolve(const std::string &id, int status, T result);
-
+  /// Helper to reject a promise through \ref resolve
+  noresult reject(const std::string &id, const std::string &err);
   /// Internal API implementation of public \ref webview_get_window
   result<void *> window() { return window_impl(); }
   /// Internal API implementation part of public \ref webview_get_native_handle
@@ -161,6 +163,8 @@ protected:
   /// Workaround guard flag for the deprecated `webview_destroy` API call.
   void destructor_called(bool val) { destructor_called_.store(val); };
   bool destructor_called() { return destructor_called_.load(); };
+
+  friend struct _lib::_detail::_threading::user_scripts_t;
 
 private:
   /// Keeps track of the number of platform window instances.

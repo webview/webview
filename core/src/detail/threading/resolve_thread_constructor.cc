@@ -1,8 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 Serge Zaitsev
- * Copyright (c) 2022 Steffen André Langnes
+ * Copyright (c) 2025 Michael Jonker 
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,38 +22,35 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_TYPES_TYPES_HH
-#define WEBVIEW_TYPES_TYPES_HH
+#ifndef WEBVIEW_DETAIL_THREADING_RESOLVE_THREAD_CONSTRUCTOR_CC
+#define WEBVIEW_DETAIL_THREADING_RESOLVE_THREAD_CONSTRUCTOR_CC
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#include "errors/errors.hh"
-#include "types/basic_result.hh"
-#include <functional>
+#include "detail/engine_base.hh"
+#include "detail/engine_queue.hh"
+#include "strings/string_api.hh"
 
-using namespace webview::errors;
-namespace webview {
-namespace types {
+using namespace webview::detail;
+using namespace webview::strings;
 
-enum context_t { bind_t = 'b', unbind_t = 'u', eval_t = 'e' };
-struct tokenise_data_t {
-  std::string token;
-  std::string tkn_replcmnt;
-};
-
-template <typename T> struct nested_api_t {
-  T *self;
-  nested_api_t(T *self) : self(self) {}
-};
-template <typename T> using result = basic_result<T, error_info, exception>;
-
-using sync_binding_t = std::function<std::string(std::string)>;
-using dispatch_fn_t = std::function<void()>;
-using noresult = basic_result<void, error_info, exception>;
-using strg_replacements_t = std::initializer_list<tokenise_data_t>;
-using time_point_t = std::chrono::time_point<std::chrono::steady_clock>;
-
-} // namespace types
-} // namespace webview
+void engine_queue::resolve_thread_constructor(std::string name,
+                                              const std::string &id,
+                                              const std::string &args) {
+  if (atomic.terminating()) {
+    return;
+  }
+  try {
+    list.bindings.at(name).call(id, args);
+  } catch (const std::exception &err_) {
+    if (atomic.terminating()) {
+      return;
+    }
+    auto err = string::err.uncaught_exception(name, err_.what());
+    wv->reject(id, err);
+  } catch (...) {
+    perror(string::err.webview_terminated(name).c_str());
+  };
+}
 
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
-#endif // WEBVIEW_TYPES_TYPES_HH
+#endif // WEBVIEW_DETAIL_THREADING_RESOLVE_THREAD_CONSTRUCTOR_CC

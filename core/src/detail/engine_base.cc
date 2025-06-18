@@ -158,6 +158,10 @@ noresult engine_base::resolve(const std::string &id, int status,
       result.empty() ? "undefined" : json::escape(result)));
 }
 
+noresult engine_base::reject(const std::string &id, const std::string &err) {
+  return resolve(id, 1, err);
+}
+
 noresult engine_base::run() {
   if (!thread::is_main_thread()) {
     console.error("Webview must be run from the main thread.",
