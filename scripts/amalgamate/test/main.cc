@@ -1,6 +1,8 @@
-#include "webview_amalgamation.h"
+#include "../generated/webview_amalgamation.h"
 
 int main() {
-  webview::webview w(false, nullptr);
+  webview_cc wv(false, nullptr);
+  wv.terminate();
+  wv.run();
   return 0;
 }
