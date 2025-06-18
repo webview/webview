@@ -9,13 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Link to Github compare]
 
 ## [0.12.7] - 2025-06-17
-This release simplifies the use of JSON strings for the user.
+This release simplifies the use of JSON strings and returning values to the JS frontend for the user.
 ### Added
 - `json_parse` has been added to the public C API.
+- `webview_return` public C API has been expanded to include `webview_return_int`, `webview_return_float` and `webview_return_bool`.
 ### Changed
-- Users can now pass string, bool strings, number strings and JSON strings directly into `webview_return` without the need to double escape them.
+- Users can now pass string, bool, number and JSON strings directly into `webview_return` methods without the need to quote or double quote them.
 ### Security
-- Sanitising checks for input strings is managed in the frontend JS using regex and a sandboxed iframe. Executable code, HTML scripts and URLEncoded HTML scripts are rejected. 
+- Sanitising checks for input strings is managed in the frontend JS (using regex and a sandboxed iframe). Executable code, HTML scripts and URLEncoded scripts are rejected.
 
 ## [0.12.6] - 2025-06-17
 This is a bugfix release that fixes inconsistent behaviour between OS platforms in a `bind(); init(); run();` or `bind(); set_html(); run();` call sequence.

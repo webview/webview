@@ -86,6 +86,8 @@ struct json {
   /// @param string The JSON string to be parsed.
   /// @param key For JSON arrays, pass "", else the name of the object key for which the value is to be returned.
   /// @param index For JSON arrays, pass the index for which the value is to be returned, else 0.
+  /// @returns A string which the user must convert to their expected return value type.
+  /// @todo Improve JSON parsing to return expected value type.
   static std::string parse(const std::string &string, const std::string &key,
                            const int index) {
     return json_lib::json_parse(string, key, index);
