@@ -1,0 +1,88 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2017 Serge Zaitsev
+ * Copyright (c) 2022 Steffen André Langnes
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#ifndef WEBVIEW_DETAIL_PLATFORM_WINDOWS_TYPES_HH
+#define WEBVIEW_DETAIL_PLATFORM_WINDOWS_TYPES_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#include "lib/macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+#include "WebView2.h" // amalgamate(skip)
+#include <functional>
+#include <string>
+
+namespace webview {
+namespace detail {
+namespace platform {
+namespace windows {
+
+typedef enum { PROCESS_PER_MONITOR_DPI_AWARE = 2 } PROCESS_DPI_AWARENESS;
+enum class runtime_type { installed = 0, embedded = 1 };
+
+using msg_cb_t = std::function<void(const std::string)>;
+using DwmSetWindowAttribute_t = HRESULT(WINAPI *)(HWND, DWORD, LPCVOID, DWORD);
+using RtlGetVersion_t =
+    unsigned int /*NTSTATUS*/ (WINAPI *)(RTL_OSVERSIONINFOW *);
+using SetProcessDpiAwareness_t = HRESULT(WINAPI *)(PROCESS_DPI_AWARENESS);
+using DPI_AWARENESS_CONTEXT = HANDLE;
+using SetProcessDpiAwarenessContext_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT);
+using SetProcessDPIAware_t = BOOL(WINAPI *)();
+using GetDpiForWindow_t = UINT(WINAPI *)(HWND);
+using EnableNonClientDpiScaling_t = BOOL(WINAPI *)(HWND);
+using AdjustWindowRectExForDpi_t = BOOL(WINAPI *)(LPRECT, DWORD, BOOL, DWORD,
+                                                  UINT);
+using GetWindowDpiAwarenessContext_t = DPI_AWARENESS_CONTEXT(WINAPI *)(HWND);
+using AreDpiAwarenessContextsEqual_t = BOOL(WINAPI *)(DPI_AWARENESS_CONTEXT,
+                                                      DPI_AWARENESS_CONTEXT);
+using CreateWebViewEnvironmentWithOptionsInternal_t =
+    HRESULT(STDMETHODCALLTYPE *)(
+        bool, runtime_type, PCWSTR, IUnknown *,
+        ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+using DllCanUnloadNow_t = HRESULT(STDMETHODCALLTYPE *)();
+using CreateCoreWebView2EnvironmentWithOptions_t = HRESULT(STDMETHODCALLTYPE *)(
+    PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
+    ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
+using GetAvailableCoreWebView2BrowserVersionString_t =
+    HRESULT(STDMETHODCALLTYPE *)(PCWSTR, LPWSTR *);
+
+template <typename T> struct cast_info_t {
+  using type = T;
+  IID iid;
+};
+
+} // namespace windows
+} // namespace platform
+} // namespace detail
+} // namespace webview
+
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_DETAIL_PLATFORM_WINDOWS_TYPES_HH

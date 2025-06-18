@@ -101,6 +101,9 @@ jobs:
               option("WEBVIEW_PACKAGE_DOCS", matrix["package-docs"]),
               option("WEBVIEW_PACKAGE_HEADERS", matrix["package-headers"]),
               option("WEBVIEW_PACKAGE_LIB", matrix["package-lib"]),
+              // Logging
+              option("WEBVIEW_LOG", matrix["log"]),
+              option("WEBVIEW_LOG_TRACE", matrix["log-trace"]),
             ].filter(v => v !== undefined).filter(v => {
               console.log(v);
               return true;
