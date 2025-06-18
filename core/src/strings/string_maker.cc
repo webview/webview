@@ -63,15 +63,7 @@ std::string js_string_t::init(const std::string &post_fn) const {
   return string::tokenise(TEMPLATE_WEVBIEW_INIT_JS(), string::tokens.post_fn,
                           post_fn);
 }
-std::string
-js_string_t::bind(std::map<std::string, binding_ctx_t> &bindings) const {
-  std::vector<std::string> bound_names;
-  bound_names.reserve(bindings.size());
-  std::transform(bindings.begin(), bindings.end(),
-                 std::back_inserter(bound_names),
-                 [](const std::pair<std::string, binding_ctx_t> &pair) {
-                   return pair.first;
-                 });
+std::string js_string_t::bind(std::vector<std::string> &bound_names) const {
   auto js_names = json::to_list(bound_names);
   return string::tokenise(TEMPLATE_BIND_JS(), string::tokens.js_names,
                           js_names);

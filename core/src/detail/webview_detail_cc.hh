@@ -3,7 +3,7 @@
 
 #if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #include "engine_base.cc"
-//#include "engine_queue.cc"
+#include "engine_queue.cc"
 #include "platform/webview_detail_platform_cc.hh"
 #include "threading/webview_detail_threading_cc.hh"
 

@@ -89,7 +89,7 @@ struct js_string_t {
   std::string init(const std::string &post_fn) const;
 
   /// Returns a tokenised JS string for the Webview frontend `bind` functions.
-  std::string bind(std::map<std::string, binding_ctx_t> &bindings) const;
+  std::string bind(std::vector<std::string> &bound_names) const;
 
   /// Wraps user JS to notify the native code when eval is ready.
   std::string eval_wrapper(const std::string &user_js) const;

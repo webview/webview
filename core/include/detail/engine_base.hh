@@ -43,12 +43,13 @@ using namespace webview::detail::user;
 namespace webview {
 namespace detail {
 
-class engine_base {
+/// Common internal API methods for all three Webview platform classes:
+/// - cocoa_webkit
+/// - gtk_webkitgtk
+/// - win32_edge
+class engine_base : public engine_queue {
+
 public:
-  /// Common internal API methods for all three Webview platform classes:
-  /// - cocoa_webkit
-  /// - gtk_webkitgtk
-  /// - win32_edge
   engine_base(bool owns_window);
   virtual ~engine_base() = default;
   /// Internal API implementation of public \ref webview_navigate
@@ -96,7 +97,7 @@ public:
   /// Internal API implementation of public \ref webview_init
   noresult init(const std::string &js);
   /// Internal API implementation of public \ref webview_eval
-  noresult eval(const std::string &js);
+  noresult eval(const std::string &js, bool skip_queue = false);
 
 protected:
   /// Platform specific implementation for \ref navigate
@@ -122,8 +123,6 @@ protected:
   virtual noresult set_html_impl(const std::string &html) = 0;
   /// Platform specific implementation for \ref eval
   virtual noresult eval_impl(const std::string &js) = 0;
-  /// Adds a bound user function to Webview native code.
-  virtual user_script *add_user_script(const std::string &js);
   /// Platform specific implementation to add a bound user JS function.
   virtual user_script add_user_script_impl(const std::string &js) = 0;
   /// Platform specific implementation to remove all bound JS user functions from the Webview script.
@@ -132,13 +131,12 @@ protected:
   /// Platform specific method to compare equality of two bound user functions.
   virtual bool are_user_scripts_equal_impl(const user_script &first,
                                            const user_script &second) = 0;
-  /// Replaces a bound user script in Webview native code.
-  virtual user_script *replace_user_script(const user_script &old_script,
-                                           const std::string &new_script_code);
   /// Updates the JS `bind` script in the frontend window.
   void replace_bind_script();
   /// Adds the JS Webview script to the frontend window
   void add_init_script();
+  // Creates a `bind` JS script string for the frontend window.
+  std::string create_bind_script();
   /// Handler for messages from the frontend window to the native Webview process.
   void on_message(const std::string &msg);
   /// Handler to increment the browser window count
@@ -173,8 +171,8 @@ private:
   static unsigned int inc_window_count();
   /// Decrements the reference number of platform window instances.
   static unsigned int dec_window_count();
-  /// A map of native promise callback functions.
-  std::map<std::string, binding_ctx_t> bindings;
+  /// Flags if the JS Webview code has been sent to the platform window yet.
+  bool m_is_init_script_sent{};
   /// A reference to the currently active JS bound script in the platform window.
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;

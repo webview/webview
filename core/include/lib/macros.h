@@ -151,9 +151,16 @@ Please use `webview_terminate` instead and omit the use of `webview_destroy` aft
 
 #ifndef DEPRECATE_WEBVIEW_WEBVIEW
 #define DEPRECATE_WEBVIEW_WEBVIEW                                              \
-  "since 0.12.1\n\n\
+  "since 0.12.1\n\
 `webview::webview` is ambiguous for compilers and humans, so it will be removed in a future release.\n\
 Please use `webview_cc` from the Global namespace instead."
+#endif
+
+#ifndef DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND
+#define DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND                                     \
+  "since 0.13.0\n\
+Webview now runs concurrently and `bind` will decide an appropriate context.\n\
+Please use the standard function signature instead"
 #endif
 
 #ifdef _MSC_VER

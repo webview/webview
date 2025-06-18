@@ -242,6 +242,15 @@ Consider "\"double quoting\"" your input string if this was intentional`;
   })();
 
   window.__webview__ = new Webview();
+  window.__webview__.sysop("_webview_ready");
+
+  const domReadyInterval = setInterval(() => {
+    const ready = document.readyState;
+    if (ready === "interactive" || ready === "complete") {
+      clearInterval(domReadyInterval);
+      window.__webview__.sysop("_dom_ready");
+    }
+  });
   
 })();
 )";

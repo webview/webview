@@ -46,7 +46,8 @@ using namespace webview::detail::threading;
 /* Constructor
  * ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ */
 
-engine_base::engine_base(bool owns_window) : m_owns_window{owns_window} {
+engine_base::engine_base(bool owns_window)
+    : engine_queue{this}, m_owns_window{owns_window} {
   if (!thread::is_main_thread()) {
     throw exception{WEBVIEW_ERROR_BAD_API_CALL,
                     "Webview must be created from the main thread."};
@@ -72,63 +73,54 @@ noresult engine_base::navigate(const std::string &url) {
   }
 }
 
-// Synchronous bind
+WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_SYNCHRONOUS_BIND)
 noresult engine_base::bind(const std::string &name, sync_binding_t fn) {
   auto wrapper = [this, fn](const std::string &id, const std::string &req,
                             void * /*arg*/) { resolve(id, 0, fn(req)); };
   return bind(name, wrapper, nullptr);
 }
 
-// Asynchronous bind
 noresult engine_base::bind(const std::string &name, binding_t fn, void *arg) {
   trace::base.bind.start(name);
-  // NOLINTNEXTLINE(readability-container-contains): contains() requires C++20
-  if (bindings.count(name) > 0) {
-    return error_info{WEBVIEW_ERROR_DUPLICATE, "Bind (duplicate): binding \"" +
-                                                   name +
-                                                   "\" was already bound."};
+  if (queue.bind.is_duplicate(name)) {
+    auto msg = "\"" + name + "\" was not bound because it was already bound.";
+    if (thread::is_main_thread()) {
+      console.warn(msg + "\nRe-binding is not supported from the main thread.");
+    } else {
+      console.warn(msg);
+    }
+    return error_info{WEBVIEW_ERROR_DUPLICATE};
   }
 
   auto do_work = [this, name, fn, arg] {
-    trace::base.bind.work(name);
-    bindings.emplace(name, binding_ctx_t(fn, arg));
+    log::trace::base.bind.work(name);
+    list.bindings.emplace(name, fn, arg);
     replace_bind_script();
-    // Notify that a binding was created if the init script has already
-    // set things up.
-    eval(string::js.onbind(name));
+    eval(string::js.onbind(name), true);
   };
-
-  if (thread::is_main_thread()) {
+  // The user may want to bind before running so that they can use
+  // bindings in `webview_init` or `webview_set_html`.
+  // In this scenario, we execute `bind` directly.
+  if (thread::is_main_thread() && !atomic.dom.ready()) {
     do_work();
     return {};
-  } else {
-    return dispatch_impl(do_work);
   }
+  return queue.bind.enqueue(do_work, name);
 }
 
 noresult engine_base::unbind(const std::string &name) {
   trace::base.unbind.start(name);
-  auto found = bindings.find(name);
-  if (found == bindings.end()) {
-    return error_info{WEBVIEW_ERROR_NOT_FOUND,
-                      "Unbind: binding \"" + name + "\" was not found."};
+  if (queue.unbind.not_found(name)) {
+    return error_info{WEBVIEW_ERROR_NOT_FOUND};
   }
 
-  auto do_work = [this, name, &found]() {
+  auto do_work = [this, name]() {
     log::trace::base.unbind.work(name);
-    bindings.erase(found);
+    eval(string::js.onunbind(name), true);
+    list.bindings.erase(name);
     replace_bind_script();
-    // Notify that a binding was created if the init script has already
-    // set things up.
-    eval(string::js.onunbind(name));
   };
-
-  if (thread::is_main_thread()) {
-    do_work();
-    return {};
-  } else {
-    return dispatch_impl(do_work);
-  }
+  return queue.unbind.enqueue(do_work, name);
 }
 
 template <typename T>
@@ -146,16 +138,21 @@ engine_base::resolve(const std::string &id, int status, T result) {
 };
 noresult engine_base::resolve(const std::string &id, int status,
                               const std::string &result) {
-  if (status == 1) {
-    console.warn("Promise id \"" + id + "\" was rejected.");
-  }
-  // NOLINTNEXTLINE(modernize-avoid-bind): Lambda with move requires C++14
-  return dispatch_impl(std::bind(
-      [id, status, this](std::string escaped_result) {
-        std::string js = string::js.onreply(id, status, escaped_result);
-        eval(js);
-      },
-      result.empty() ? "undefined" : json::escape(result)));
+  // Get the promise binding name and
+  // notify the queue that the promise is resolving.
+  std::string name = list.id_name_map.get(id);
+  queue.promises.resolving(name, id);
+  list.id_name_map.erase(id);
+
+  auto res_m = result.empty() ? "undefined" : result;
+  auto action = status == 0 ? "resolving" : "rejecting";
+  auto message = "Bound function \"" + name + "\" is " + action + " promise " +
+                 id + " with result: " + res_m;
+  status == 0 ? log::console.info(message) : log::console.warn(message);
+
+  auto res_escaped = result.empty() ? "undefined" : json::escape(result);
+  auto js = string::js.onreply(id, status, res_escaped);
+  return eval(js, true);
 }
 
 noresult engine_base::reject(const std::string &id, const std::string &err) {
@@ -178,7 +175,10 @@ noresult engine_base::terminate() {
   if (destructor_called()) {
     return {};
   };
-  return dispatch_impl([this] { terminate_impl(); });
+  return dispatch_impl([this] {
+    queue.terminate();
+    terminate_impl();
+  });
 }
 
 WEBVIEW_DEPRECATED(DEPRECATE_WEBVIEW_DISPATCH)
@@ -231,24 +231,35 @@ noresult engine_base::init(const std::string &js) {
                   WEBVIEW_ERROR_BAD_API_CALL);
     return noresult{WEBVIEW_ERROR_BAD_API_CALL};
   };
-  add_user_script(js);
+  add_user_script_impl(js);
   return {};
 }
 
-noresult engine_base::eval(const std::string &js) {
-  auto skip_queue = thread::is_main_thread();
+noresult engine_base::eval(const std::string &js, bool skip_queue) {
   log::trace::base.eval.start(js, skip_queue);
-  auto do_work = [this, js] {
-    auto skip_queue = thread::is_main_thread();
-    log::trace::base.eval.work(js, skip_queue);
-    eval_impl(js);
+  auto do_work = [this, js, skip_queue] {
+    if (!skip_queue) {
+      auto wrapped_js = string::js.eval_wrapper(js);
+      trace::base.eval.work(wrapped_js, skip_queue);
+      if (thread::is_main_thread()) {
+        eval_impl(wrapped_js);
+      } else {
+        dispatch_impl([this, wrapped_js] { eval_impl(wrapped_js); });
+      }
+    } else {
+      log::trace::base.eval.work(js, skip_queue);
+      if (thread::is_main_thread()) {
+        eval_impl(js);
+      } else {
+        dispatch_impl([this, js] { eval_impl(js); });
+      }
+    }
   };
-  if (thread::is_main_thread()) {
-    do_work();
-    return {};
-  } else {
-    return dispatch_impl(do_work);
-  };
+  if (!skip_queue) {
+    return queue.eval.enqueue(do_work, js);
+  }
+  do_work();
+  return {};
 }
 /* ∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆∆
  * PUBLIC
@@ -256,39 +267,26 @@ noresult engine_base::eval(const std::string &js) {
  * PROTECTED 
  * ∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇∇ */
 
-user_script *engine_base::add_user_script(const std::string &js) {
-  return std::addressof(
-      *m_user_scripts.emplace(m_user_scripts.end(), add_user_script_impl(js)));
-}
-
-user_script *
-engine_base::replace_user_script(const user_script &old_script,
-                                 const std::string &new_script_code) {
-  remove_all_user_scripts_impl(m_user_scripts);
-  user_script *old_script_ptr{};
-  for (auto &script : m_user_scripts) {
-    auto is_old_script = are_user_scripts_equal_impl(script, old_script);
-    script = add_user_script_impl(is_old_script ? new_script_code
-                                                : script.get_code());
-    if (is_old_script) {
-      old_script_ptr = std::addressof(script);
-    }
-  }
-  return old_script_ptr;
-}
-
 void engine_base::replace_bind_script() {
+  auto replacement_js = create_bind_script();
   if (m_bind_script) {
     m_bind_script =
-        replace_user_script(*m_bind_script, string::js.bind(bindings));
+        list.m_user_scripts.replace(*m_bind_script, replacement_js, this);
   } else {
-    m_bind_script = add_user_script(string::js.bind(bindings));
+    m_bind_script = list.m_user_scripts.add(replacement_js, this);
   }
 }
 
 void engine_base::add_init_script() {
-  add_user_script(string::js.init(string::js.post_fnc()));
-  m_is_init_script_added = true;
+  auto init_js = string::js.init(string::js.post_fnc());
+  list.m_user_scripts.add(init_js, this);
+  m_is_init_script_sent = true;
+}
+
+std::string engine_base::create_bind_script() {
+  std::vector<std::string> bound_names;
+  list.bindings.get_names(bound_names);
+  return string::js.bind(bound_names);
 }
 
 void engine_base::on_message(const std::string &msg) {
@@ -301,13 +299,16 @@ void engine_base::on_message(const std::string &msg) {
     return;
   }
 
-  auto args = json::parse(msg, "params", 0);
-  auto found = bindings.find(name);
-  if (found == bindings.end()) {
+  if (queue.promises.exec_system_message(id, name)) {
     return;
   }
-  const auto &context = found->second;
-  dispatch_impl([=] { context.call(id, args); });
+  if (!list.bindings.has_name(name)) {
+    auto message = string::err.reject_unbound(id, name);
+    reject(id, message);
+    return;
+  }
+  auto args = json::parse(msg, "params", 0);
+  queue.promises.resolve(name, id, args);
 }
 
 void engine_base::on_window_created() { inc_window_count(); }
