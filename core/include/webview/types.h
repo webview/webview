@@ -78,4 +78,20 @@ typedef enum {
   WEBVIEW_HINT_FIXED
 } webview_hint_t;
 
+/// Navigation events
+typedef enum {
+  /// Navigation to a new URI started, no contents yet.
+  WEBVIEW_LOAD_STARTED,
+  /// Navigation redirected to another URI
+  WEBVIEW_LOAD_REDIRECTED,
+  /// Navigation started loading contents for URI
+  WEBVIEW_LOAD_COMMITTED,
+  /// Navigation finished, URI contents loaded
+  WEBVIEW_LOAD_FINISHED
+} webview_navigation_event_t;
+
+/// Navigation callback function type
+typedef void (*navigation_fn_t)(webview_t webview, const char *uri,
+                                webview_navigation_event_t type, void *arg);
+
 #endif // WEBVIEW_TYPES_H
