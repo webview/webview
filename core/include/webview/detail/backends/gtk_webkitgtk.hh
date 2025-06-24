@@ -184,10 +184,16 @@ protected:
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE) {
       gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
-    } else if (hints == WEBVIEW_HINT_FIXED || hints == WEBVIEW_HINT_MIN) {
+      return {};
+    } else if (hints == WEBVIEW_HINT_FIXED) {
+      gtk_compat::window_set_size(GTK_WINDOW(m_window), width, height);
+      return {};
+    } else if (hints == WEBVIEW_HINT_MIN) {
       gtk_widget_set_size_request(m_window, width, height);
+      return {};
     } else if (hints == WEBVIEW_HINT_MAX) {
       gtk_compat::window_set_max_size(GTK_WINDOW(m_window), width, height);
+      return {};
     } else {
       return error_info{WEBVIEW_ERROR_INVALID_ARGUMENT, "Invalid hint"};
     }
