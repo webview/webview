@@ -129,13 +129,12 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  * Updates the size of the native window.
  *
  * Remarks:
+ * - Subsequent calls to this function may behave inconsistently across
+ *   different versions of GTK and windowing systems (X11/Wayland).
  * - Using WEBVIEW_HINT_MAX for setting the maximum window size is not
  *   supported with GTK 4 because X11-specific functions such as
  *   gtk_window_set_geometry_hints were removed. This option has no effect
  *   when using GTK 4.
- * - GTK 4 can set a default/initial window size if done early enough;
- *   otherwise, this function has no effect. GTK 4 (unlike 3) can't resize
- *   a window after it has been set up.
  *
  * @param w The webview instance.
  * @param width New width.
