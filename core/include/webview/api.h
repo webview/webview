@@ -221,6 +221,18 @@ WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
 WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 
 /**
+ * Pumps the OS Message loop once
+ * 
+ * This function is NOT thread-safe and should only be called from the main thread
+ * 
+ * @param w The webview instance.
+ * @param block Indicates if this call should block until at least one message
+ *              is present to be processed.
+ * @retval 0 if should exit else 1
+ */
+WEBVIEW_API int webview_pump_msgloop(webview_t w, int block);
+
+/**
  * Responds to a binding call from the JS side.
  *
  * This function is safe to call from another thread.

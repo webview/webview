@@ -254,5 +254,18 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
+WEBVIEW_API int webview_pump_msgloop(webview_t w, int block) {
+  using namespace webview::detail;
+  int continueRun = 0;
+
+  auto err = api_filter([=] { return cast_to_webview(w)->pump_msgloop(block); },
+                        [&](int value) { continueRun = value; });
+
+  if (err == WEBVIEW_ERROR_OK) {
+    return continueRun;
+  }
+  return 0;
+}
+
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_C_API_IMPL_HH
