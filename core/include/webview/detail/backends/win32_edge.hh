@@ -84,18 +84,27 @@ namespace webview {
 namespace detail {
 
 using msg_cb_t = std::function<void(const std::string)>;
+using msg_nav_cb_t =
+    std::function<void(const std::string &, webview_navigation_event_t)>;
 
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
       public ICoreWebView2WebMessageReceivedEventHandler,
-      public ICoreWebView2PermissionRequestedEventHandler {
+      public ICoreWebView2PermissionRequestedEventHandler,
+      public ICoreWebView2NavigationStartingEventHandler,
+      public ICoreWebView2SourceChangedEventHandler,
+      public ICoreWebView2ContentLoadingEventHandler,
+      public ICoreWebView2NavigationCompletedEventHandler {
   using webview2_com_handler_cb_t =
       std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
 
 public:
-  webview2_com_handler(HWND hwnd, msg_cb_t msgCb, webview2_com_handler_cb_t cb)
-      : m_window(hwnd), m_msgCb(msgCb), m_cb(cb) {}
+  webview2_com_handler(HWND hwnd, msg_cb_t msgCb, webview2_com_handler_cb_t cb,
+                       msg_nav_cb_t navcb)
+      : m_window(hwnd), m_msgCb(msgCb), m_cb(cb), m_navcb(navcb) {
+    printf(" foobar\n");
+  }
 
   virtual ~webview2_com_handler() = default;
   webview2_com_handler(const webview2_com_handler &other) = delete;
@@ -167,6 +176,10 @@ public:
     controller->get_CoreWebView2(&webview);
     webview->add_WebMessageReceived(this, &token);
     webview->add_PermissionRequested(this, &token);
+    webview->add_NavigationStarting(this, &token);
+    webview->add_SourceChanged(this, &token);
+    webview->add_ContentLoading(this, &token);
+    webview->add_NavigationCompleted(this, &token);
 
     m_cb(controller, webview);
     return S_OK;
@@ -192,6 +205,28 @@ public:
       args->put_State(COREWEBVIEW2_PERMISSION_STATE_ALLOW);
     }
     return S_OK;
+  }
+
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2NavigationStartingEventArgs *args) {
+    return notify_nav_listeners_with(args, WEBVIEW_LOAD_STARTED);
+  }
+
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2SourceChangedEventArgs * /*args*/) {
+    return notify_nav_listeners_with(sender, WEBVIEW_LOAD_REDIRECTED);
+  }
+
+  HRESULT STDMETHODCALLTYPE Invoke(
+      ICoreWebView2 *sender, ICoreWebView2ContentLoadingEventArgs * /*args*/) {
+    return notify_nav_listeners_with(sender, WEBVIEW_LOAD_COMMITTED);
+  }
+
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 *sender,
+         ICoreWebView2NavigationCompletedEventArgs * /*args*/) {
+    return notify_nav_listeners_with(sender, WEBVIEW_LOAD_FINISHED);
   }
 
   // Set the function that will perform the initiating logic for creating
@@ -232,11 +267,39 @@ private:
   HWND m_window;
   msg_cb_t m_msgCb;
   webview2_com_handler_cb_t m_cb;
+  msg_nav_cb_t m_navcb;
   std::atomic<ULONG> m_ref_count{1};
   std::function<HRESULT()> m_attempt_handler;
   unsigned int m_max_attempts = 60;
   unsigned int m_sleep_ms = 200;
   unsigned int m_attempts = 0;
+
+  HRESULT
+  notify_nav_listeners_with(ICoreWebView2NavigationStartingEventArgs *sender,
+                            webview_navigation_event_t type) {
+    PWSTR wide_uri = nullptr;
+    auto hr = sender->get_Uri(&wide_uri);
+    if (SUCCEEDED(hr)) {
+      auto narrow_uri = narrow_string(wide_uri);
+      if (m_navcb)
+        m_navcb(narrow_uri, type);
+    }
+    CoTaskMemFree(wide_uri);
+    return hr;
+  }
+
+  HRESULT notify_nav_listeners_with(ICoreWebView2 *sender,
+                                    webview_navigation_event_t type) {
+    PWSTR wide_uri = nullptr;
+    auto hr = sender->get_Source(&wide_uri);
+    if (SUCCEEDED(hr)) {
+      auto narrow_uri = narrow_string(wide_uri);
+      if (m_navcb)
+        m_navcb(narrow_uri, type);
+    }
+    CoTaskMemFree(wide_uri);
+    return hr;
+  }
 };
 
 class webview2_user_script_added_handler
@@ -752,6 +815,9 @@ private:
           m_controller = controller;
           m_webview = webview;
           flag.clear();
+        },
+        [&](const std::string &uri, webview_navigation_event_t type) {
+          this->notify_navigation_listeners(uri, type);
         });
 
     m_com_handler->set_attempt_handler([&] {
