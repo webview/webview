@@ -157,10 +157,15 @@
  
    noresult dispatch_impl(std::function<void()> f) override {
      auto* func = new std::function<void()>(f);
-     QTimer::singleShot(0, [func]() {
+     QTimer* timer = new QTimer();
+     timer->moveToThread(m_app->thread());
+     timer->setSingleShot(true);
+     QObject::connect(timer, &QTimer::timeout, [=]() {
         (*func)();
         delete func;
+        timer->deleteLater();
      });
+     QMetaObject::invokeMethod(timer, "start", Qt::QueuedConnection, Q_ARG(int, 0));
      return {};
    }
  
