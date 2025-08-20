@@ -16,20 +16,38 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
     target_link_libraries(webview_core_headers INTERFACE webview::compat_mingw)
 endif()
 
+if (NOT "${WEBVIEW_QT}" STREQUAL "")
+    add_compile_options(-fPIC)
+    find_package(Qt5 COMPONENTS Core)
+    set(CMAKE_AUTOMOC ON)
+    cmake_policy(SET CMP0100 NEW)
+endif()
+
 # Core shared library
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview_core_shared SHARED)
     add_library(webview::core_shared ALIAS webview_core_shared)
-    target_sources(webview_core_shared PRIVATE src/webview.cc)
+    if (NOT "${WEBVIEW_QT}" STREQUAL "")
+        target_sources(webview_core_shared PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
+    else()
+        target_sources(webview_core_shared PRIVATE src/webview.cc)
+    endif()
     target_link_libraries(webview_core_shared PUBLIC webview_core_headers)
     set_target_properties(webview_core_shared PROPERTIES
         OUTPUT_NAME webview
         VERSION "${WEBVIEW_VERSION_NUMBER}"
         SOVERSION "${WEBVIEW_VERSION_COMPATIBILITY}"
+        POSITION_INDEPENDENT_CODE ON
         EXPORT_NAME core_shared)
-    target_compile_definitions(webview_core_shared
-        INTERFACE WEBVIEW_SHARED
-        PRIVATE WEBVIEW_BUILD_SHARED)
+    if (NOT "${WEBVIEW_QT}" STREQUAL "")
+        target_compile_definitions(webview_core_shared
+            INTERFACE WEBVIEW_SHARED
+            PRIVATE WEBVIEW_BUILD_SHARED)
+    else()
+        target_compile_definitions(webview_core_shared
+            INTERFACE WEBVIEW_SHARED
+            PRIVATE WEBVIEW_BUILD_SHARED)
+    endif()
 endif()
 
 # Core static library
@@ -43,7 +61,11 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
 
     add_library(webview_core_static STATIC)
     add_library(webview::core_static ALIAS webview_core_static)
-    target_sources(webview_core_static PRIVATE src/webview.cc)
+    if (NOT "${WEBVIEW_QT}" STREQUAL "")
+        target_sources(webview_core_static PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
+    else()
+        target_sources(webview_core_static PRIVATE src/webview.cc)
+    endif()
     target_link_libraries(webview_core_static PUBLIC webview_core_headers)
     set_target_properties(webview_core_static PROPERTIES
         OUTPUT_NAME "${STATIC_LIBRARY_OUTPUT_NAME}"

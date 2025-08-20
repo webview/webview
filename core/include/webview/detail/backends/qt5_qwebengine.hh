@@ -44,8 +44,6 @@
  #include "../../types.hh"
  #include "../engine_base.hh"
  #include "../platform/linux/qt/compat.hh"
- //#include "../platform/linux/qwebengine/compat.hh"
- //#include "../platform/linux/qwebengine/dmabuf.hh"
  #include "../user_script.hh"
  
  #include <functional>
@@ -64,6 +62,10 @@
  #include <QApplication>
  #include <QObject>
  #include <QWebEngineSettings>
+ #include <QWebChannel>
+ #include <QFile>
+ #include <QIODevice>
+ #include <QList>
  
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -86,7 +88,12 @@
    QWebEngineScript *m_script{};
  };
  
- class qt_web_engine : public engine_base {
+ class qt_web_engine : public QObject, public engine_base {
+   Q_OBJECT
+ public slots:
+    void post(const QString &event, const QString &data) {
+        m_callback(data.toStdString());
+    }
  public:
    qt_web_engine(bool debug, void *window) : engine_base{!window} {
      window_init(window);
@@ -176,26 +183,42 @@
    }
  
    noresult navigate_impl(const std::string &url) override {
-     m_webview->load(QUrl::fromUserInput(QString::fromStdString(url)));
+     m_webview->page()->load(QUrl::fromUserInput(QString::fromStdString(url)));
      return {};
    }
  
    noresult set_html_impl(const std::string &html) override {
-     m_webview->setHtml(QString::fromStdString(html));
+     m_webview->page()->setHtml(QString::fromStdString(html));
      return {};
    }
  
    noresult eval_impl(const std::string &js) override {
+     qDebug() << js.c_str();
      if (!m_webview->page()) {
        return {};
      }
-     m_webview->page()->runJavaScript(QString::fromStdString(js));
+     m_webview->page()->runJavaScript(QString::fromStdString(js), [this](const QVariant &v) {
+        on_message(v.toString().toStdString());
+     });
      return {};
    }
  
    user_script add_user_script_impl(const std::string &js) override {
+     QString script_name = QString::fromStdString("user_script_");
+     QList<QWebEngineScript> scripts = m_webview->page()->scripts().findScripts(script_name);
+     QString scriptSource;
+     if (!scripts.isEmpty()) {
+       scriptSource = scripts.first().sourceCode() + QString::fromStdString(js) + QString::fromStdString(";");
+       m_webview->page()->scripts().remove(scripts.first());
+     } else {
+       scriptSource = QString::fromStdString(js) + QString::fromStdString(";");
+     }
      QWebEngineScript *wk_script = new QWebEngineScript();
-     wk_script->setSourceCode(QString::fromStdString(js));
+     wk_script->setName(script_name);
+     wk_script->setSourceCode(scriptSource);
+     wk_script->setWorldId(QWebEngineScript::MainWorld);
+     wk_script->setInjectionPoint(QWebEngineScript::DocumentCreation);
+     wk_script->setRunsOnSubFrames(true);
      m_webview->page()->scripts().insert(QWebEngineScript(*wk_script));
      user_script script{
          js, user_script::impl_ptr{new user_script::impl{wk_script},
@@ -216,6 +239,15 @@
    }
  
  private:
+   QString qwebchannel_js() {
+     QFile apiFile(":/qtwebchannel/qwebchannel.js");
+     if (!apiFile.open(QIODevice::ReadOnly))
+         qDebug() << "Couldn't load Qt's QWebChannel API!";
+     QString apiScript = QString::fromLatin1(apiFile.readAll());
+     apiFile.close();
+     return apiScript;
+   }
+
    void window_init(void *window) {
      m_window = static_cast<QMainWindow *>(window);
      if (owns_window()) {
@@ -232,9 +264,23 @@
      }
      // Initialize webview widget
      m_webview = new QWebEngineView();
-     add_init_script("function(message) {\n\
-   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
- }");
+     m_callback = std::bind(&qt_web_engine::on_message, this, std::placeholders::_1);
+     m_webchannel = new QWebChannel(m_webview->page());
+     m_webchannel->registerObject("qtwebview", this);
+     m_webview->page()->setWebChannel(m_webchannel);
+     add_user_script(qwebchannel_js().toStdString() + R"DELIM(
+(function() {
+window.webChannel = new QWebChannel(qt.webChannelTransport, function(channel)
+{
+    window.qtwebview = channel.objects.qtwebview;
+});
+})()
+     )DELIM");
+     add_init_script(R"DELIM(
+function(message) {
+    return window.qtwebview.post("JavaScript", message);
+}
+     )DELIM");
    }
  
    void window_settings(bool debug) {
@@ -251,7 +297,7 @@
      if (owns_window()) {
        m_window->show();
        m_webview->setFocus();
-       //qt_compat::widget_set_visible(m_webview, true);
+       qt_compat::widget_set_visible(m_webview, true);
      }
      m_is_window_shown = true;
      return {};
@@ -264,13 +310,15 @@
    }
  
    int m_argc;
+   std::function<void(const std::string)> m_callback;
+   QWebChannel *m_webchannel{};
    QApplication *m_app{};
    QMainWindow *m_window{};
    QWebEngineView *m_webview{};
    bool m_stop_run_loop{};
    bool m_is_window_shown{};
  };
- 
+
  } // namespace detail
  
  using browser_engine = detail::qt_web_engine;

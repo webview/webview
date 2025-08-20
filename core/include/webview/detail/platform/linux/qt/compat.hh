@@ -71,21 +71,6 @@
       window->setMaximumSize(width, height);
    }
  };
-
- class WebViewPage : public QWebEnginePage {
-    Q_OBJECT
- public:
-    using QWebEnginePage::QWebEnginePage;
-
- protected:
-    void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level,
-                                 const QString &message,
-                                 int lineNumber,
-                                 const QString &sourceID) override {
-      Q_UNUSED(level);
-      qDebug() << "[WebView console]:" << message << "(line" << lineNumber << ")";
-   }
- };
  
  } // namespace detail
  } // namespace webview
