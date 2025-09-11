@@ -84,8 +84,7 @@ function(webview_fetch_mswebview2 VERSION)
     endif()
     set(FC_NAME microsoft_web_webview2)
     FetchContent_Declare(${FC_NAME}
-        URL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${VERSION}"
-        CONFIGURE_COMMAND "")
+        URL "https://www.nuget.org/api/v2/package/Microsoft.Web.WebView2/${VERSION}")
     FetchContent_MakeAvailable(${FC_NAME})
     set(MSWebView2_ROOT "${${FC_NAME}_SOURCE_DIR}")
     set(MSWebView2_ROOT "${MSWebView2_ROOT}" PARENT_SCOPE)
