@@ -29,25 +29,24 @@ if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview::core_shared ALIAS webview_core_shared)
     if (NOT "${WEBVIEW_QT}" STREQUAL "")
         target_sources(webview_core_shared PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
+        set_target_properties(webview_core_shared PROPERTIES
+            OUTPUT_NAME webview
+            VERSION "${WEBVIEW_VERSION_NUMBER}"
+            SOVERSION "${WEBVIEW_VERSION_COMPATIBILITY}"
+            POSITION_INDEPENDENT_CODE ON
+            EXPORT_NAME core_shared)
     else()
         target_sources(webview_core_shared PRIVATE src/webview.cc)
+        set_target_properties(webview_core_shared PROPERTIES
+            OUTPUT_NAME webview
+            VERSION "${WEBVIEW_VERSION_NUMBER}"
+            SOVERSION "${WEBVIEW_VERSION_COMPATIBILITY}"
+            EXPORT_NAME core_shared)
     endif()
     target_link_libraries(webview_core_shared PUBLIC webview_core_headers)
-    set_target_properties(webview_core_shared PROPERTIES
-        OUTPUT_NAME webview
-        VERSION "${WEBVIEW_VERSION_NUMBER}"
-        SOVERSION "${WEBVIEW_VERSION_COMPATIBILITY}"
-        POSITION_INDEPENDENT_CODE ON
-        EXPORT_NAME core_shared)
-    if (NOT "${WEBVIEW_QT}" STREQUAL "")
-        target_compile_definitions(webview_core_shared
-            INTERFACE WEBVIEW_SHARED
-            PRIVATE WEBVIEW_BUILD_SHARED)
-    else()
-        target_compile_definitions(webview_core_shared
-            INTERFACE WEBVIEW_SHARED
-            PRIVATE WEBVIEW_BUILD_SHARED)
-    endif()
+    target_compile_definitions(webview_core_shared
+        INTERFACE WEBVIEW_SHARED
+        PRIVATE WEBVIEW_BUILD_SHARED)
 endif()
 
 # Core static library
@@ -63,14 +62,17 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
     add_library(webview::core_static ALIAS webview_core_static)
     if (NOT "${WEBVIEW_QT}" STREQUAL "")
         target_sources(webview_core_static PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
+        set_target_properties(webview_core_static PROPERTIES
+            OUTPUT_NAME "${STATIC_LIBRARY_OUTPUT_NAME}"
+            POSITION_INDEPENDENT_CODE ON
+            EXPORT_NAME core_static)
     else()
         target_sources(webview_core_static PRIVATE src/webview.cc)
+        set_target_properties(webview_core_static PROPERTIES
+            OUTPUT_NAME "${STATIC_LIBRARY_OUTPUT_NAME}"
+            EXPORT_NAME core_static)
     endif()
     target_link_libraries(webview_core_static PUBLIC webview_core_headers)
-    set_target_properties(webview_core_static PROPERTIES
-        OUTPUT_NAME "${STATIC_LIBRARY_OUTPUT_NAME}"
-        POSITION_INDEPENDENT_CODE ON
-        EXPORT_NAME core_static)
     target_compile_definitions(webview_core_static PUBLIC WEBVIEW_STATIC)
 endif()
 

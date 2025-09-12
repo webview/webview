@@ -16,7 +16,7 @@ It supports two-way JavaScript bindings (to call JavaScript from C/C++ and to ca
 
 Platform | Technologies
 -------- | ------------
-Linux    | [GTK][gtk], [WebKitGTK][webkitgtk]
+Linux    | [GTK][gtk], [WebKitGTK][webkitgtk] (or [Qt5][qtframework], [QWebEngine][qwebengine])
 macOS    | Cocoa, [WebKit][webkit]
 Windows  | [Windows API][win32-api], [WebView2][ms-webview2]
 
@@ -46,6 +46,9 @@ The [GTK][gtk] and [WebKitGTK][webkitgtk] libraries are required for development
   * WebKitGTK 4.0, GTK 3, libsoup 2:
     * Development: `apt install libgtk-3-dev libwebkit2gtk-4.0-dev`
     * Production: `apt install libgtk-3-0 libwebkit2gtk-4.0-37`
+  * Qt5, QWebEngine:
+    * Development: `apt install qtbase5-dev qtbase5-dev-tools qtwebengine5-dev libqt5webchannel5-dev`
+    * Production: `apt install libqt5webview5 libqt5webenginewidgets5 libqt5webchannel5`
 * Fedora:
   * WebKitGTK 6.0, GTK 4:
     * Development: `dnf install gtk4-devel webkitgtk6.0-devel`
@@ -299,6 +302,7 @@ Option                            | Description
 `WEBVIEW_STRICT_CLANG_TIDY`       | Make clang-tidy check strict
 `WEBVIEW_USE_COMPAT_MINGW`        | Use compatibility helper for MinGW
 `WEBVIEW_USE_STATIC_MSVC_RUNTIME` | Use static runtime library (MSVC)
+`WEBVIEW_QT`                      | Use Qt5 backend for Linux instead of Gtk
 
 > [!NOTE]
 > Checks are *enabled* by default, but aren't *enforced* by default for local development (controlled by the `WEBVIEW_IS_CI` option).
@@ -519,3 +523,5 @@ Code is distributed under MIT license, feel free to use it in your proprietary p
 [ms-webview2-sdk]:   https://www.nuget.org/packages/Microsoft.Web.WebView2
 [ms-webview2-rt]:    https://developer.microsoft.com/en-us/microsoft-edge/webview2/
 [win32-api]:         https://docs.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
+[qtframework]:       https://www.qt.io/product/framework
+[qwebengine]:        https://doc.qt.io/archives/qt-5.15/qtwebengine-overview.html
