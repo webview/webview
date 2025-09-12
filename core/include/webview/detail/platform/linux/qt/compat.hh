@@ -41,7 +41,7 @@
  namespace detail {
  
  /**
-  * GTK compatibility helper class.
+  * Qt compatibility helper class.
   */
  class qt_compat {
  public:
