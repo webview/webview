@@ -16,7 +16,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND WEBVIEW_USE_COMPAT_MINGW)
     target_link_libraries(webview_core_headers INTERFACE webview::compat_mingw)
 endif()
 
-if (NOT "${WEBVIEW_QT}" STREQUAL "")
+if (WEBVIEW_QT)
     add_compile_options(-fPIC)
     find_package(Qt5 COMPONENTS Core)
     set(CMAKE_AUTOMOC ON)
@@ -27,7 +27,7 @@ endif()
 if(WEBVIEW_BUILD_SHARED_LIBRARY)
     add_library(webview_core_shared SHARED)
     add_library(webview::core_shared ALIAS webview_core_shared)
-    if (NOT "${WEBVIEW_QT}" STREQUAL "")
+    if (WEBVIEW_QT)
         target_sources(webview_core_shared PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
         set_target_properties(webview_core_shared PROPERTIES
             OUTPUT_NAME webview
@@ -60,7 +60,7 @@ if(WEBVIEW_BUILD_STATIC_LIBRARY)
 
     add_library(webview_core_static STATIC)
     add_library(webview::core_static ALIAS webview_core_static)
-    if (NOT "${WEBVIEW_QT}" STREQUAL "")
+    if (WEBVIEW_QT)
         target_sources(webview_core_static PRIVATE src/webview.cc include/webview/detail/backends/qt5_qwebengine.hh)
         set_target_properties(webview_core_static PROPERTIES
             OUTPUT_NAME "${STATIC_LIBRARY_OUTPUT_NAME}"

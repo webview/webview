@@ -23,7 +23,7 @@ macro(webview_find_dependencies)
     else()
         find_package(PkgConfig REQUIRED)
 
-        if(NOT "${WEBVIEW_QT}" STREQUAL "")
+        if(WEBVIEW_QT)
             pkg_check_modules(WEBVIEW_QT REQUIRED IMPORTED_TARGET Qt5Core Qt5Gui Qt5Xml Qt5Network Qt5Qml Qt5DBus Qt5Widgets)
             pkg_check_modules(WEBVIEW_QWEBENGINE REQUIRED IMPORTED_TARGET Qt5WebEngine Qt5WebEngineCore Qt5WebEngineWidgets)
             add_compile_definitions(WEBVIEW_QT)

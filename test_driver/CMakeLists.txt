@@ -1,4 +1,4 @@
-if (NOT "${WEBVIEW_QT}" STREQUAL "")
+if (WEBVIEW_QT)
     add_compile_options(-fPIC)
 endif()
 add_library(webview_test_driver STATIC)
