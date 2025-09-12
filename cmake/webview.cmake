@@ -20,7 +20,7 @@ macro(webview_find_dependencies)
             endif()
         endif()
         list(APPEND WEBVIEW_DEPENDENCIES advapi32 ole32 shell32 shlwapi user32 version)
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    else()
         find_package(PkgConfig REQUIRED)
 
         if(NOT "${WEBVIEW_QT}" STREQUAL "")
