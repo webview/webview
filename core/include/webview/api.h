@@ -34,6 +34,8 @@
 extern "C" {
 #endif
 
+WEBVIEW_API void webview_set_user_agent(webview_t w, const char *user_agent);
+
 /**
  * Creates a new webview instance.
  *
