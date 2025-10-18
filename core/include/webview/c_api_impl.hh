@@ -214,6 +214,15 @@ WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js) {
   return api_filter([=] { return cast_to_webview(w)->eval(js); });
 }
 
+WEBVIEW_API webview_error_t webview_set_user_agent(webview_t w,
+                                                    const char *ua) {
+  using namespace webview::detail;
+  if (!ua) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->set_user_agent(ua); });
+}
+
 WEBVIEW_API webview_error_t webview_bind(webview_t w, const char *name,
                                          void (*fn)(const char *id,
                                                     const char *req, void *arg),

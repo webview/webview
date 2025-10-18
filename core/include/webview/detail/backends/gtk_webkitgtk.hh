@@ -246,6 +246,13 @@ protected:
     return wk_first == wk_second;
   }
 
+  noresult set_user_agent_impl(const std::string &ua) override {
+    WebKitSettings *settings =
+        webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
+    webkit_settings_set_user_agent(settings, ua.c_str());
+    return {};
+  }
+
 private:
 #if GTK_MAJOR_VERSION >= 4
   static char *get_string_from_js_result(JSCValue *r) {

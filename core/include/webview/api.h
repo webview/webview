@@ -192,6 +192,15 @@ WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js);
 WEBVIEW_API webview_error_t webview_eval(webview_t w, const char *js);
 
 /**
+ * Sets a custom user agent string for the webview.
+ *
+ * @param w The webview instance.
+ * @param ua The user agent string.
+ */
+WEBVIEW_API webview_error_t webview_set_user_agent(webview_t w,
+                                                    const char *ua);
+
+/**
  * Binds a function pointer to a new global JavaScript function.
  *
  * Internally, JS glue code is injected to create the JS function by the

@@ -152,6 +152,10 @@ window.__webview__.onUnbind(" +
 
   noresult eval(const std::string &js) { return eval_impl(js); }
 
+  noresult set_user_agent(const std::string &ua) {
+    return set_user_agent_impl(ua);
+  }
+
 protected:
   virtual noresult navigate_impl(const std::string &url) = 0;
   virtual result<void *> window_impl() = 0;
@@ -178,6 +182,8 @@ protected:
 
   virtual bool are_user_scripts_equal_impl(const user_script &first,
                                            const user_script &second) = 0;
+
+  virtual noresult set_user_agent_impl(const std::string &ua) = 0;
 
   virtual user_script *replace_user_script(const user_script &old_script,
                                            const std::string &new_script_code) {
