@@ -337,6 +337,72 @@ private:
     }
   }
 
+  noresult alert_impl(const std::string &message) override {
+    GtkWidget *dialog = gtk_message_dialog_new(
+        GTK_WINDOW(m_window),
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        GTK_MESSAGE_INFO,
+        GTK_BUTTONS_OK,
+        "%s", message.c_str()
+    );
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    return {};
+  }
+
+  result<bool> confirm_impl(const std::string &message) override {
+    GtkWidget *dialog = gtk_message_dialog_new(
+        GTK_WINDOW(m_window),
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        GTK_MESSAGE_QUESTION,
+        GTK_BUTTONS_YES_NO,
+        "%s", message.c_str()
+    );
+    int result = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    return result == GTK_RESPONSE_YES;
+  }
+
+  result<std::string> prompt_impl(const std::string &message, const std::string &default_value) override {
+    GtkWidget *dialog = gtk_dialog_new_with_buttons(
+        "Prompt",
+        GTK_WINDOW(m_window),
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        "OK", GTK_RESPONSE_OK,
+        "Cancel", GTK_RESPONSE_CANCEL,
+        nullptr
+    );
+    
+    // Create the content area
+    GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *label = gtk_label_new(message.c_str());
+    GtkWidget *entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry), default_value.c_str());
+    
+    // Add widgets to the content area
+    gtk_box_pack_start(GTK_BOX(content_area), label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 10);
+    
+    // Show all widgets
+    gtk_widget_show_all(content_area);
+    
+    // Run the dialog
+    int result = gtk_dialog_run(GTK_DIALOG(dialog));
+    std::string input;
+    
+    if (result == GTK_RESPONSE_OK) {
+      input = gtk_entry_get_text(GTK_ENTRY(entry));
+    }
+    
+    gtk_widget_destroy(dialog);
+    
+    if (result == GTK_RESPONSE_OK) {
+      return input;
+    } else {
+      return error_info{WEBVIEW_ERROR_CANCELED};
+    }
+  }
+
   GtkWidget *m_window{};
   GtkWidget *m_webview{};
   WebKitUserContentManager *m_user_content_manager{};

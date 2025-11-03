@@ -250,6 +250,56 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
       [=] { return cast_to_webview(w)->resolve(id, status, result); });
 }
 
+WEBVIEW_API webview_error_t webview_alert(webview_t w, const char *message) {
+  using namespace webview::detail;
+  if (!message) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->alert(message); });
+}
+
+WEBVIEW_API webview_error_t webview_confirm(webview_t w, const char *message, int *result) {
+  using namespace webview::detail;
+  if (!message || !result) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->confirm(message); },
+      [&](bool value) { *result = value ? 1 : 0; });
+}
+
+WEBVIEW_API webview_error_t webview_prompt(webview_t w, const char *message, const char *default_value, char *result, size_t result_size) {
+  using namespace webview::detail;
+  if (!message || !result || result_size == 0) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->prompt(message, default_value ? default_value : ""); },
+      [&](const std::string &value) { 
+        strncpy(result, value.c_str(), result_size - 1);
+        result[result_size - 1] = '\0';
+      });
+}
+
+WEBVIEW_API int webview_show_open_file_picker(webview_t w, const char *title, const char *directory, const char *filter, bool allow_multiple, char **paths, size_t path_size) {
+  using namespace webview::detail;
+  if (!paths || path_size == 0) {
+    return -1;
+  }
+  int result = -1;
+  api_filter(
+      [=] { return cast_to_webview(w)->show_open_file_picker(title ? title : "", directory ? directory : "", filter ? filter : "", allow_multiple); },
+      [&](const std::vector<std::string> &selected_paths) { 
+        size_t count = selected_paths.size();
+        for (size_t i = 0; i < count && i < path_size; ++i) {
+          strncpy(paths[i], selected_paths[i].c_str(), path_size - 1);
+          paths[i][path_size - 1] = '\0';
+        }
+        result = static_cast<int>(count);
+      });
+  return result;
+}
+
 WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
