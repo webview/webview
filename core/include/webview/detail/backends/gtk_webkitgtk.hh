@@ -200,9 +200,8 @@ protected:
   }
 
   noresult set_html_impl(const std::string &html) override {
-    // Use https://localhost/ as base URI to enable secure context features like getUserMedia
     webkit_web_view_load_html(WEBKIT_WEB_VIEW(m_webview), html.c_str(),
-                              "https://localhost/");
+                              nullptr);
     return {};
   }
 
@@ -296,19 +295,10 @@ private:
     // Handle permission requests (e.g., getUserMedia for camera/microphone)
     auto on_permission_request = +[](WebKitWebView *, WebKitPermissionRequest *request, gpointer) -> gboolean {
       if (WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
-        // Get the request details
-        WebKitUserMediaPermissionRequest *media_request = WEBKIT_USER_MEDIA_PERMISSION_REQUEST(request);
-        gboolean is_audio = webkit_user_media_permission_is_for_audio_device(media_request);
-        gboolean is_video = webkit_user_media_permission_is_for_video_device(media_request);
-
-        g_print("getUserMedia permission request: audio=%d video=%d\n", is_audio, is_video);
-
         webkit_permission_request_allow(request);
-        g_print("Permission granted\n");
-        return TRUE;
+        return true;
       }
-      g_print("Non-media permission request received\n");
-      return FALSE;
+      return false;
     };
     g_signal_connect(G_OBJECT(m_webview), "permission-request",
                      G_CALLBACK(on_permission_request), nullptr);
@@ -331,11 +321,8 @@ private:
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
     webkit_settings_set_javascript_can_access_clipboard(settings, true);
-
-    // Enable media capture (getUserMedia support)
-    webkit_settings_set_enable_media_stream(settings, TRUE);
-    webkit_settings_set_enable_media(settings, TRUE);
-
+    webkit_settings_set_enable_media_stream(settings, true);
+    webkit_settings_set_enable_media(settings, true);
     if (debug) {
       webkit_settings_set_enable_write_console_messages_to_stdout(settings,
                                                                   true);
