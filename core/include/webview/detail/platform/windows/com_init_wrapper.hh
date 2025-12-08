@@ -82,12 +82,23 @@ public:
       m_initialized = true;
       break;
     case RPC_E_CHANGED_MODE:
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception{
           WEBVIEW_ERROR_INVALID_STATE,
           "CoInitializeEx already called with a different concurrency model"};
+#else
+      WEBVIEW_THROW_REPLACEMENT(
+          WEBVIEW_ERROR_INVALID_STATE,
+          "CoInitializeEx already called with a different concurrency model")
+#endif
     default:
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception{WEBVIEW_ERROR_UNSPECIFIED,
                       "Unexpected result from CoInitializeEx"};
+#else
+      WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_UNSPECIFIED,
+                                "Unexpected result from CoInitializeEx")
+#endif
     }
   }
 

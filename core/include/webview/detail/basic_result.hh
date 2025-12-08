@@ -57,20 +57,33 @@ public:
 
   void ensure_ok() {
     if (!ok()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception_type{error()};
+#else
+      const Error e = has_error() ? m_error.get() : 0xbadf00d;
+      WEBVIEW_THROW_REPLACEMENT(e, "unknown");
+#endif
     }
   }
 
   const value_type &value() const {
     if (!has_value()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw bad_access{};
+#else
+      WEBVIEW_THROW_REPLACEMENT(0xbadf00d, "bad access")
+#endif
     }
     return m_value.get();
   }
 
   const error_type &error() const {
     if (!has_error()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw bad_access{};
+#else
+      WEBVIEW_THROW_REPLACEMENT(0xbadf00d, "bad access")
+#endif
     }
     return m_error.get();
   }
@@ -97,13 +110,22 @@ public:
 
   void ensure_ok() {
     if (!ok()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception_type{error()};
+#else
+      const Error e = has_error() ? m_error.get() : 0xbadf00d;
+      WEBVIEW_THROW_REPLACEMENT(e, "unknown");
+#endif
     }
   }
 
   const error_type &error() const {
     if (!has_error()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw bad_access{};
+#else
+      WEBVIEW_THROW_REPLACEMENT(0xbadf00d, "bad access")
+#endif
     }
     return m_error.get();
   }
