@@ -92,6 +92,7 @@
    Q_OBJECT
  public slots:
     void post(const QString &event, const QString &data) {
+        Q_UNUSED(event);
         m_callback(data.toStdString());
     }
  public:
@@ -175,10 +176,16 @@
    }
  
    noresult set_size_impl(int width, int height, webview_hint_t hints) override {
-     if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
+     if (hints == WEBVIEW_HINT_FIXED) {
+       qt_compat::window_set_min_size(m_window, width, height);
+       qt_compat::window_set_max_size(m_window, width, height);
+       qt_compat::window_set_size(m_window, width, height);
+     } else if (hints == WEBVIEW_HINT_NONE) {
+       qt_compat::window_set_min_size(m_window, 0, 0);
+       qt_compat::window_set_max_size(m_window, QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
        qt_compat::window_set_size(m_window, width, height);
      } else if (hints == WEBVIEW_HINT_MIN) {
-       m_window->setMinimumSize(width, height);
+       qt_compat::window_set_min_size(m_window, width, height);
      } else if (hints == WEBVIEW_HINT_MAX) {
        qt_compat::window_set_max_size(m_window, width, height);
      } else {
@@ -289,7 +296,9 @@ function(message) {
    }
  
    void window_settings(bool debug) {
+     Q_UNUSED(debug);
      m_webview->settings()->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard, true);
+     m_webview->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
    }
  
    noresult window_show() {

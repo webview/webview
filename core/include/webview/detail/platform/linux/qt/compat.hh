@@ -70,6 +70,10 @@
    static void window_set_max_size(QMainWindow *window, int width, int height) {
       window->setMaximumSize(width, height);
    }
+
+   static void window_set_min_size(QMainWindow *window, int width, int height) {
+      window->setMinimumSize(width, height);
+   }
  };
  
  } // namespace detail
