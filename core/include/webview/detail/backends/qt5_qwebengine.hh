@@ -72,6 +72,18 @@
  
  namespace webview {
  namespace detail {
+
+ class qt_web_engine_debug_page: public QWebEnginePage {
+     Q_OBJECT
+ protected:
+     void javaScriptConsoleMessage(JavaScriptConsoleMessageLevel level,
+                                   const QString &message,
+                                   int lineNumber,
+                                   const QString &sourceID) override {
+         Q_UNUSED(level);
+         qDebug() << "JS Console:" << message << "line:" << lineNumber << "source:" << sourceID;
+     }
+ };
  
  class user_script::impl {
  public:
@@ -97,8 +109,8 @@
     }
  public:
    qt_web_engine(bool debug, void *window) : engine_base{!window} {
-     window_init(window);
-     window_settings(debug);
+     window_init(window, debug);
+     window_settings();
      dispatch_size_default();
    }
  
@@ -260,7 +272,7 @@
      return apiScript;
    }
 
-   void window_init(void *window) {
+   void window_init(void *window, bool debug) {
      m_window = static_cast<QMainWindow *>(window);
      if (owns_window()) {
        m_argc = 0;
@@ -276,6 +288,9 @@
      }
      // Initialize webview widget
      m_webview = new QWebEngineView();
+     if (debug) {
+       m_webview->setPage(new qt_web_engine_debug_page());
+     }
      m_callback = std::bind(&qt_web_engine::on_message, this, std::placeholders::_1);
      m_webchannel = new QWebChannel(m_webview->page());
      m_webchannel->registerObject("qtwebview", this);
@@ -295,8 +310,7 @@ function(message) {
      )DELIM");
    }
  
-   void window_settings(bool debug) {
-     Q_UNUSED(debug);
+   void window_settings() {
      m_webview->settings()->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard, true);
      m_webview->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
    }
