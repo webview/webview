@@ -66,6 +66,8 @@
  #include <QFile>
  #include <QIODevice>
  #include <QList>
+ #include <QWebEngineHistory>
+ #include <QWebEngineProfile>
  
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -275,8 +277,9 @@
    void window_init(void *window, bool debug) {
      m_window = static_cast<QMainWindow *>(window);
      if (owns_window()) {
-       m_argc = 0;
-       m_app = new QApplication(m_argc, NULL);
+       m_argc = 1;
+       m_argv = new char[8]{'W','e','b','v','i','e','w','\0'};
+       m_app = new QApplication(m_argc, &m_argv);
        m_window = qt_compat::window_new();
        on_window_created();
        auto on_window_destroy = +[](void* arg) {
@@ -338,6 +341,7 @@ function(message) {
    }
  
    int m_argc;
+   char *m_argv;
    std::function<void(const std::string)> m_callback;
    QWebChannel *m_webchannel{};
    QApplication *m_app{};
