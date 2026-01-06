@@ -183,7 +183,10 @@ constexpr bool is_json_special_char(char c) {
          c == '\r' || c == '\t';
 }
 
-constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
+constexpr bool is_ascii_control_char(char c) {
+  // `char` may be unsigned on some targets (e.g. ARM64).
+  return static_cast<unsigned char>(c) <= 0x1f;
+}
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   // Calculate the size of the resulting string.
