@@ -34,7 +34,6 @@
  #include <QObject>
  #include <QWidget>
  #include <QMainWindow>
- #include <QWebEnginePage>
  #include <QApplication>
  
  namespace webview {

@@ -55,6 +55,9 @@
  #include <QWebEngineScriptCollection>
  #include <QWebEngineView>
  #include <QWebEngineScript>
+ #include <QWebEngineHistory>
+ #include <QWebEngineProfile>
+ #include <QWebEnginePage>
  #include <QTimer>
  #include <QString>
  #include <QUrl>
@@ -66,8 +69,6 @@
  #include <QFile>
  #include <QIODevice>
  #include <QList>
- #include <QWebEngineHistory>
- #include <QWebEngineProfile>
  
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -231,7 +232,11 @@
  
    user_script add_user_script_impl(const std::string &js) override {
      QString script_name = QString::fromStdString("user_script_");
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
      QList<QWebEngineScript> scripts = m_webview->page()->scripts().findScripts(script_name);
+#else
+     QList<QWebEngineScript> scripts = m_webview->page()->scripts().find(script_name);
+#endif
      QString scriptSource;
      if (!scripts.isEmpty()) {
        scriptSource = scripts.first().sourceCode() + QString::fromStdString(js) + QString::fromStdString(";");
@@ -290,7 +295,12 @@
        QObject::connect(m_window, &QObject::destroyed, on_window_destroy);
      }
      // Initialize webview widget
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
      m_webview = new QWebEngineView();
+#else
+     m_profile = new QWebEngineProfile(QString("Default"), nullptr);
+     m_webview = new QWebEngineView(m_profile, nullptr);
+#endif
      if (debug) {
        m_webview->setPage(new qt_web_engine_debug_page());
      }
@@ -347,6 +357,7 @@ function(message) {
    QApplication *m_app{};
    QMainWindow *m_window{};
    QWebEngineView *m_webview{};
+   QWebEngineProfile *m_profile{};
    bool m_stop_run_loop{};
    bool m_is_window_shown{};
  };
