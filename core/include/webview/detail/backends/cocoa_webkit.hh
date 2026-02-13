@@ -231,6 +231,13 @@ protected:
                              nullptr);
     return {};
   }
+
+  noresult set_user_agent_impl(const std::string &ua) override {
+    objc::autoreleasepool arp;
+    WKWebView_set_customUserAgent(m_webview, NSString_stringWithUTF8String(ua));
+    return {};
+  }
+
   noresult eval_impl(const std::string &js) override {
     objc::autoreleasepool arp;
     // URI is null before content has begun loading.

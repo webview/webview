@@ -49,6 +49,10 @@ public:
 
   virtual ~engine_base() = default;
 
+  noresult set_user_agent(const std::string &ua) {
+    return set_user_agent_impl(ua);
+  }
+
   noresult navigate(const std::string &url) {
     if (url.empty()) {
       return navigate_impl("about:blank");
@@ -165,6 +169,8 @@ protected:
                                  webview_hint_t hints) = 0;
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
+
+  virtual noresult set_user_agent_impl(const std::string &ua) { return {}; }
 
   virtual user_script *add_user_script(const std::string &js) {
     return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
