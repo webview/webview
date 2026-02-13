@@ -90,7 +90,7 @@
 #error "Unable to detect current platform"
 #endif
 
-#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE)
+#if !defined(WEBVIEW_GTK) && !defined(WEBVIEW_COCOA) && !defined(WEBVIEW_EDGE) && !defined(WEBVIEW_QT)
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 #define WEBVIEW_COCOA
 #elif defined(WEBVIEW_PLATFORM_LINUX)
