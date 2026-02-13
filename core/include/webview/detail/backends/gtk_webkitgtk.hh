@@ -291,6 +291,18 @@ private:
     // Initialize webview widget
     m_webview = webkit_web_view_new();
     g_object_ref_sink(m_webview);
+
+    // Handle permission requests (e.g., getUserMedia for camera/microphone)
+    auto on_permission_request = +[](WebKitWebView *, WebKitPermissionRequest *request, gpointer) -> gboolean {
+      if (WEBKIT_IS_USER_MEDIA_PERMISSION_REQUEST(request)) {
+        webkit_permission_request_allow(request);
+        return true;
+      }
+      return false;
+    };
+    g_signal_connect(G_OBJECT(m_webview), "permission-request",
+                     G_CALLBACK(on_permission_request), nullptr);
+
     WebKitUserContentManager *manager = m_user_content_manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkitgtk_compat::connect_script_message_received(
@@ -309,6 +321,8 @@ private:
     WebKitSettings *settings =
         webkit_web_view_get_settings(WEBKIT_WEB_VIEW(m_webview));
     webkit_settings_set_javascript_can_access_clipboard(settings, true);
+    webkit_settings_set_enable_media_stream(settings, true);
+    webkit_settings_set_enable_media(settings, true);
     if (debug) {
       webkit_settings_set_enable_write_console_messages_to_stdout(settings,
                                                                   true);
