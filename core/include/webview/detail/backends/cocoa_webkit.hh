@@ -50,6 +50,7 @@
 #include "../user_script.hh"
 
 #include <atomic>
+#include <dlfcn.h>
 #include <functional>
 #include <list>
 #include <memory>
@@ -59,6 +60,19 @@
 
 namespace webview {
 namespace detail {
+
+namespace {
+inline void ensure_cocoa_frameworks_loaded() {
+  static const bool loaded = [] {
+    dlopen("/System/Library/Frameworks/Cocoa.framework/Cocoa",
+           RTLD_LAZY | RTLD_LOCAL);
+    dlopen("/System/Library/Frameworks/WebKit.framework/WebKit",
+           RTLD_LAZY | RTLD_LOCAL);
+    return true;
+  }();
+  (void)loaded;
+}
+} // namespace
 
 class user_script::impl {
 public:
@@ -89,7 +103,9 @@ using namespace webkit;
 class cocoa_wkwebview_engine : public engine_base {
 public:
   cocoa_wkwebview_engine(bool debug, void *window)
-      : engine_base{!window}, m_app{NSApplication_get_sharedApplication()} {
+      : engine_base{!window} {
+    ensure_cocoa_frameworks_loaded();
+    m_app = NSApplication_get_sharedApplication();
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
