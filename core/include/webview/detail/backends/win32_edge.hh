@@ -787,6 +787,11 @@ private:
       return error_info{WEBVIEW_ERROR_UNSPECIFIED,
                         "put_AreDevToolsEnabled failed"};
     }
+    res = settings->put_AreDefaultContextMenusEnabled(debug ? TRUE : FALSE);
+    if (res != S_OK) {
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED,
+                        "put_AreDefaultContextMenusEnabled failed"};
+    }
     res = settings->put_IsStatusBarEnabled(FALSE);
     if (res != S_OK) {
       return error_info{WEBVIEW_ERROR_UNSPECIFIED,
