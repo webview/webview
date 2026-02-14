@@ -56,6 +56,53 @@ public:
     return navigate_impl(url);
   }
 
+  class navigation_ctx_t {
+  public:
+    navigation_ctx_t(navigation_fn_t callback, void *arg)
+        : m_callback(callback), m_arg(arg) {}
+
+    navigation_ctx_t(const navigation_ctx_t &other) = default;
+    navigation_ctx_t(navigation_ctx_t &&other) = default;
+
+    bool operator==(const navigation_ctx_t &other) const {
+      if (m_arg != other.m_arg)
+        return false;
+      if (m_callback != other.m_callback)
+        return false;
+      return true;
+    }
+
+    void call(engine_base *webview, std::string uri,
+              webview_navigation_event_t type) const {
+      if (m_callback) {
+        m_callback(webview, uri.c_str(), type, m_arg);
+      }
+    }
+
+  private:
+    // This function is called upon execution of the bound JS function
+    navigation_fn_t m_callback;
+    // This user-supplied argument is passed to the callback
+    void *m_arg;
+  };
+
+  noresult add_navigation_listener(navigation_fn_t fn, void *arg) {
+    navigation_ctx_t ctx(fn, arg);
+    for (const auto &var : m_navigation_listeners) {
+      if (var == ctx) {
+        return {};
+      }
+    }
+    m_navigation_listeners.emplace_back(std::move(ctx));
+    return {};
+  }
+
+  noresult remove_navigation_listener(navigation_fn_t fn, void *arg) {
+    navigation_ctx_t ctx(fn, arg);
+    m_navigation_listeners.remove(std::move(ctx));
+    return {};
+  }
+
   using binding_t = std::function<void(std::string, std::string, void *)>;
   class binding_ctx_t {
   public:
@@ -348,6 +395,13 @@ protected:
 
   bool owns_window() const { return m_owns_window; }
 
+  void notify_navigation_listeners(const std::string &uri,
+                                   webview_navigation_event_t type) {
+    for (auto &ctx : m_navigation_listeners) {
+      ctx.call(this, uri, type);
+    }
+  }
+
 private:
   static std::atomic_uint &window_ref_count() {
     static std::atomic_uint ref_count{0};
@@ -363,6 +417,8 @@ private:
     }
     return 0;
   }
+
+  std::list<navigation_ctx_t> m_navigation_listeners;
 
   std::map<std::string, binding_ctx_t> bindings;
   user_script *m_bind_script{};

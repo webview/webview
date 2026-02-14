@@ -190,6 +190,27 @@ WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {
   return api_filter([=] { return cast_to_webview(w)->navigate(url); });
 }
 
+WEBVIEW_API webview_error_t webview_add_navigation_listener(webview_t w,
+                                                            navigation_fn_t fn,
+                                                            void *arg) {
+  using namespace webview::detail;
+  if (!fn) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->add_navigation_listener(fn, arg); });
+}
+
+WEBVIEW_API webview_error_t
+webview_remove_navigation_listener(webview_t w, navigation_fn_t fn, void *arg) {
+  using namespace webview::detail;
+  if (!fn) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter(
+      [=] { return cast_to_webview(w)->remove_navigation_listener(fn, arg); });
+}
+
 WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html) {
   using namespace webview::detail;
   if (!html) {
