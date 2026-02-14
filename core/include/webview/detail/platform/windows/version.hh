@@ -58,12 +58,16 @@ std::array<unsigned int, 4>
 parse_version(const std::basic_string<T> &version) noexcept {
   using iterator = typename std::basic_string<T>::const_iterator;
   auto parse_component = [](iterator sb, iterator se) -> unsigned int {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
     try {
+#endif
       auto n = std::stol(std::basic_string<T>(sb, se));
       return n < 0 ? 0 : n;
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
     } catch (std::exception &) {
       return 0;
     }
+#endif
   };
   auto end = version.end();
   auto sb = version.begin(); // subrange begin

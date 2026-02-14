@@ -44,7 +44,9 @@ int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/,
 #else
 int main() {
 #endif
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
   try {
+#endif
     long count = 0;
 
     webview::webview w(true, nullptr);
@@ -75,10 +77,12 @@ int main() {
 
     w.set_html(html);
     w.run();
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
   } catch (const webview::exception &e) {
     std::cerr << e.what() << '\n';
     return 1;
   }
+#endif
 
   return 0;
 }

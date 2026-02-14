@@ -120,4 +120,10 @@
 #endif // WEBVIEW_HEADER
 #endif // __cplusplus
 
+#ifdef WEBVIEW_HAS_NO_EXCEPTIONS
+#ifndef WEBVIEW_THROW_REPLACEMENT
+#define WEBVIEW_THROW_REPLACEMENT(code, msg) std::terminate();
+#endif
+#endif
+
 #endif // WEBVIEW_MACROS_H
