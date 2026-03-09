@@ -275,7 +275,11 @@ private:
     m_window = static_cast<GtkWidget *>(window);
     if (owns_window()) {
       if (!gtk_compat::init_check()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
         throw exception{WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed"};
+#else
+        WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_UNSPECIFIED, "GTK init failed")
+#endif
       }
       m_window = gtk_compat::window_new();
       on_window_created();
