@@ -152,7 +152,14 @@ window.__webview__.onUnbind(" +
 
   noresult eval(const std::string &js) { return eval_impl(js); }
 
+  noresult alert(const std::string &message) { return alert_impl(message); }
+  result<bool> confirm(const std::string &message) { return confirm_impl(message); }
+  result<std::string> prompt(const std::string &message, const std::string &default_value) { return prompt_impl(message, default_value); }
+
 protected:
+  virtual noresult alert_impl(const std::string &message) = 0;
+  virtual result<bool> confirm_impl(const std::string &message) = 0;
+  virtual result<std::string> prompt_impl(const std::string &message, const std::string &default_value) = 0;
   virtual noresult navigate_impl(const std::string &url) = 0;
   virtual result<void *> window_impl() = 0;
   virtual result<void *> widget_impl() = 0;
@@ -165,7 +172,14 @@ protected:
                                  webview_hint_t hints) = 0;
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
+  virtual result<std::vector<std::string>> show_open_file_picker_impl(const std::string &title, const std::string &directory, const std::string &filter, bool allow_multiple) = 0;
+  
+public:
+  virtual result<std::vector<std::string>> show_open_file_picker(const std::string &title, const std::string &directory, const std::string &filter, bool allow_multiple) {
+    return show_open_file_picker_impl(title, directory, filter, allow_multiple);
+  }
 
+protected:
   virtual user_script *add_user_script(const std::string &js) {
     return std::addressof(*m_user_scripts.emplace(m_user_scripts.end(),
                                                   add_user_script_impl(js)));

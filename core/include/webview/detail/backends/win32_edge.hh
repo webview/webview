@@ -843,6 +843,216 @@ private:
     return ok;
   }
 
+  noresult alert_impl(const std::string &message) override {
+    auto wide_message = widen_string(message);
+    MessageBoxW(m_window, wide_message.c_str(), L"Alert", MB_OK | MB_ICONINFORMATION);
+    return {};
+  }
+
+  result<bool> confirm_impl(const std::string &message) override {
+    auto wide_message = widen_string(message);
+    int result = MessageBoxW(m_window, wide_message.c_str(), L"Confirm", MB_YESNO | MB_ICONQUESTION);
+    return result == IDYES;
+  }
+
+  result<std::string> prompt_impl(const std::string &message, const std::string &default_value) override {
+    // Create a custom prompt dialog
+    const wchar_t *className = L"WebViewPromptDialog";
+    WNDCLASSW wc = {0};
+    wc.lpfnWndProc = prompt_dialog_proc;
+    wc.hInstance = GetModuleHandleW(nullptr);
+    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszClassName = className;
+    RegisterClassW(&wc);
+
+    // Create the dialog window
+    HWND dialog = CreateWindowExW(
+        0,
+        className,
+        L"Prompt",
+        WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        400,
+        150,
+        m_window,
+        nullptr,
+        GetModuleHandleW(nullptr),
+        (LPVOID)this
+    );
+
+    if (!dialog) {
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "Failed to create prompt dialog"};
+    }
+
+    // Create controls
+    auto wide_message = widen_string(message);
+    auto wide_default = widen_string(default_value);
+
+    CreateWindowExW(0, L"STATIC", wide_message.c_str(), WS_VISIBLE | WS_CHILD | SS_LEFT,
+                    20, 20, 360, 20, dialog, nullptr, nullptr, nullptr);
+
+    HWND edit = CreateWindowExW(0, L"EDIT", wide_default.c_str(), WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL,
+                                20, 50, 360, 25, dialog, (HMENU)1, nullptr, nullptr);
+
+    CreateWindowExW(0, L"BUTTON", L"OK", WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+                    240, 90, 70, 25, dialog, (HMENU)IDOK, nullptr, nullptr);
+
+    CreateWindowExW(0, L"BUTTON", L"Cancel", WS_VISIBLE | WS_CHILD,
+                    320, 90, 70, 25, dialog, (HMENU)IDCANCEL, nullptr, nullptr);
+
+    // Center the dialog
+    RECT parent_rect, dialog_rect;
+    GetWindowRect(m_window, &parent_rect);
+    GetWindowRect(dialog, &dialog_rect);
+    int x = parent_rect.left + (parent_rect.right - parent_rect.left - (dialog_rect.right - dialog_rect.left)) / 2;
+    int y = parent_rect.top + (parent_rect.bottom - parent_rect.top - (dialog_rect.bottom - dialog_rect.top)) / 2;
+    SetWindowPos(dialog, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+
+    // Set focus to the edit control
+    SetFocus(edit);
+    SendMessageW(edit, EM_SETSEL, 0, -1);
+
+    // Run the dialog loop
+    MSG msg;
+    bool canceled = true;
+    std::wstring input;
+
+    while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+      if (msg.hwnd == dialog && msg.message == WM_COMMAND) {
+        if (LOWORD(msg.wParam) == IDOK) {
+          // Get the input text
+          int length = GetWindowTextLengthW(edit) + 1;
+          std::wstring buffer(length, L'\0');
+          GetWindowTextW(edit, &buffer[0], length);
+          input = buffer;
+          canceled = false;
+          break;
+        } else if (LOWORD(msg.wParam) == IDCANCEL) {
+          canceled = true;
+          break;
+        }
+      }
+      TranslateMessage(&msg);
+      DispatchMessageW(&msg);
+    }
+
+    // Destroy the dialog
+    DestroyWindow(dialog);
+    UnregisterClassW(className, GetModuleHandleW(nullptr));
+
+    if (canceled) {
+      return error_info{WEBVIEW_ERROR_CANCELED};
+    } else {
+      return narrow_string(input);
+    }
+  }
+
+  result<std::vector<std::string>> show_open_file_picker_impl(const std::string &title, const std::string &directory, const std::string &filter, bool allow_multiple) override {
+    OPENFILENAMEW ofn = {0};
+    wchar_t szFile[260] = {0};
+    wchar_t szFilter[1024] = {0};
+
+    // Convert filter string to Windows format (e.g., "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0")
+    std::wstring wfilter = widen_string(filter);
+    size_t pos = 0;
+    size_t filter_idx = 0;
+    
+    while (pos < wfilter.size()) {
+      size_t comma_pos = wfilter.find(L',', pos);
+      if (comma_pos == std::wstring::npos) {
+        comma_pos = wfilter.size();
+      }
+      
+      std::wstring ext = wfilter.substr(pos, comma_pos - pos);
+      std::wstring desc = ext;
+      
+      // Create description (e.g., "*.txt" becomes "Text Files (*.txt)")
+      if (desc.find(L"*") == 0) {
+        desc = desc.substr(1);
+        if (!desc.empty() && desc[0] == L'.') {
+          desc = desc.substr(1);
+        }
+        desc += L" Files (" + ext + L")";
+      }
+      
+      // Copy description and extension to szFilter
+      wcscpy_s(&szFilter[filter_idx], sizeof(szFilter)/sizeof(wchar_t) - filter_idx, desc.c_str());
+      filter_idx += desc.size() + 1;
+      wcscpy_s(&szFilter[filter_idx], sizeof(szFilter)/sizeof(wchar_t) - filter_idx, ext.c_str());
+      filter_idx += ext.size() + 1;
+      
+      pos = comma_pos + 1;
+    }
+
+    // Add null terminator to szFilter
+    szFilter[filter_idx] = L'\0';
+
+    // Initialize OPENFILENAME
+    ofn.lStructSize = sizeof(OPENFILENAMEW);
+    ofn.hwndOwner = m_window;
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile)/sizeof(wchar_t);
+    ofn.lpstrFilter = szFilter;
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = nullptr;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = directory.empty() ? nullptr : widen_string(directory).c_str();
+    ofn.lpstrTitle = title.empty() ? nullptr : widen_string(title).c_str();
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (allow_multiple) {
+      ofn.Flags |= OFN_ALLOWMULTISELECT;
+      ofn.lpstrFile = new wchar_t[260 * 100]; // Allocate space for multiple files
+      memset(ofn.lpstrFile, 0, 260 * 100 * sizeof(wchar_t));
+    }
+
+    std::vector<std::string> selected_paths;
+
+    if (GetOpenFileNameW(&ofn)) {
+      if (allow_multiple) {
+        // Process multiple selected files
+        wchar_t *p = ofn.lpstrFile;
+        std::wstring path = p;
+        p += path.size() + 1;
+
+        while (*p) {
+          std::wstring file = p;
+          selected_paths.push_back(narrow_string(path + L"\\" + file));
+          p += file.size() + 1;
+        }
+      } else {
+        // Single file selected
+        selected_paths.push_back(narrow_string(ofn.lpstrFile));
+      }
+    }
+
+    if (allow_multiple) {
+      delete[] ofn.lpstrFile;
+    }
+
+    if (!selected_paths.empty()) {
+      return selected_paths;
+    } else {
+      return error_info{WEBVIEW_ERROR_CANCELED};
+    }
+  }
+
+private:
+  static LRESULT CALLBACK prompt_dialog_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+    switch (msg) {
+      case WM_CLOSE:
+        PostQuitMessage(0);
+        return 0;
+      case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+      default:
+        return DefWindowProcW(hwnd, msg, wparam, lparam);
+    }
+  }
+
   void on_dpi_changed(int dpi) {
     auto scaled_size = get_scaled_size(m_dpi, dpi);
     auto frame_size =

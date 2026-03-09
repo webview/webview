@@ -238,6 +238,50 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
                                            int status, const char *result);
 
 /**
+ * Displays an alert dialog.
+ *
+ * @param w The webview instance.
+ * @param message The message to display in the alert.
+ */
+WEBVIEW_API webview_error_t webview_alert(webview_t w, const char *message);
+
+/**
+ * Displays a confirmation dialog.
+ *
+ * @param w The webview instance.
+ * @param message The message to display in the confirmation dialog.
+ * @param result Pointer to an integer that will receive the result (1 for OK, 0 for Cancel).
+ */
+WEBVIEW_API webview_error_t webview_confirm(webview_t w, const char *message, int *result);
+
+/**
+ * Displays a prompt dialog.
+ *
+ * @param w The webview instance.
+ * @param message The message to display in the prompt.
+ * @param default_value The default value to display in the input field.
+ * @param result Pointer to a buffer that will receive the user's input.
+ * @param result_size The size of the result buffer.
+ */
+WEBVIEW_API webview_error_t webview_prompt(webview_t w, const char *message, const char *default_value, char *result, size_t result_size);
+
+/**
+ * Shows an open file picker dialog.
+ *
+ * @param w The webview instance.
+ * @param title The title of the dialog.
+ * @param directory The initial directory to display.
+ * @param filter A comma-separated list of file extensions (e.g., "*.txt,*.doc").
+ * @param allow_multiple Whether to allow multiple file selection.
+ * @param paths Array to store selected file paths.
+ * @param path_size Size of each path buffer in the paths array.
+ * @return The number of selected files, or -1 if the dialog was canceled.
+ *         The selected file paths are copied to the `paths` array, each of
+ *         which must be at least `path_size` bytes long.
+ */
+WEBVIEW_API int webview_show_open_file_picker(webview_t w, const char *title, const char *directory, const char *filter, bool allow_multiple, char **paths, size_t path_size);
+
+/**
  * Get the library's version information.
  *
  * @since 0.10
