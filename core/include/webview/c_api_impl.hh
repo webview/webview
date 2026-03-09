@@ -88,6 +88,11 @@ inline webview *cast_to_webview(void *w) {
 } // namespace detail
 } // namespace webview
 
+WEBVIEW_API void webview_set_user_agent(webview_t w, const char *user_agent) {
+  if (!w) return;
+  static_cast<webview::webview*>(w)->set_user_agent(user_agent ? user_agent : "");
+}
+
 WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   using namespace webview::detail;
   webview::webview *w{};
