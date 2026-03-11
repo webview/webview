@@ -108,6 +108,10 @@ public:
           WKWebView_set_UIDelegate(m_webview, nullptr);
           objc::release(ui_delegate);
         }
+        if (auto nav_delegate{WKWebView_get_NavigationDelegate(m_webview)}) {
+          WKWebView_set_NavigationDelegate(m_webview, nullptr);
+          objc::release(nav_delegate);
+        }
         objc::release(m_webview);
         m_webview = nullptr;
       }
@@ -366,6 +370,56 @@ private:
     }
     return objc::Class_new(cls);
   }
+
+  void notify_navigation_event(webview_navigation_event_t type) {
+    auto nsurl{WKWebView_get_URL(m_webview)};
+    auto nsstr{NSURL_URLAsString(nsurl)};
+    auto uri = NSString_get_UTF8String(nsstr);
+    notify_navigation_listeners(uri, type);
+  }
+
+  id create_webkit_nav_delegate() {
+    objc::autoreleasepool arp;
+    constexpr auto class_name = "WebviewWKNavigationDelegate";
+    // Avoid crash due to registering same class twice
+    auto cls = objc_lookUpClass(class_name);
+    if (!cls) {
+      cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
+      class_addProtocol(cls, objc_getProtocol("WKNavigationDelegate"));
+      class_addMethod(cls,
+                      objc::selector("webView:didStartProvisionalNavigation:"),
+                      (IMP)(+[](id self, SEL, id, id) {
+                        auto w = get_associated_webview(self);
+                        w->notify_navigation_event(WEBVIEW_LOAD_STARTED);
+                      }),
+                      "v@:@");
+      class_addMethod(
+          cls,
+          objc::selector(
+              "webView:didReceiveServerRedirectForProvisionalNavigation:"),
+          (IMP)(+[](id self, SEL, id, id) {
+            auto w = get_associated_webview(self);
+            w->notify_navigation_event(WEBVIEW_LOAD_REDIRECTED);
+          }),
+          "v@:@");
+      class_addMethod(cls, objc::selector("webView:didCommitNavigation:"),
+                      (IMP)(+[](id self, SEL, id, id) {
+                        auto w = get_associated_webview(self);
+                        w->notify_navigation_event(WEBVIEW_LOAD_COMMITTED);
+                      }),
+                      "v@:@");
+      class_addMethod(cls, objc::selector("webView:didFinishNavigation:"),
+                      (IMP)(+[](id self, SEL, id, id) {
+                        auto w = get_associated_webview(self);
+                        w->notify_navigation_event(WEBVIEW_LOAD_FINISHED);
+                      }),
+                      "v@:@");
+      objc_registerClassPair(cls);
+    }
+    auto instance{objc::Class_new(cls)};
+    set_associated_webview(instance, this);
+    return instance;
+  }
   static id create_window_delegate() {
     objc::autoreleasepool arp;
     constexpr auto class_name = "WebviewNSWindowDelegate";
@@ -482,6 +536,7 @@ private:
 #endif
 
     auto ui_delegate = create_webkit_ui_delegate();
+    auto nav_delegate = create_webkit_nav_delegate();
     m_webview =
         objc::retain(WKWebView_withFrame(CGRectMake(0, 0, 0, 0), config));
     // Autoresizing mask is needed to prevent the Web Inspector pane from
@@ -492,6 +547,7 @@ private:
     NSView_set_autoresizingMask(m_webview, autoresizing_mask);
     set_associated_webview(ui_delegate, this);
     WKWebView_set_UIDelegate(m_webview, ui_delegate);
+    WKWebView_set_NavigationDelegate(m_webview, nav_delegate);
 
     if (debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
