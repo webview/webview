@@ -23,3 +23,4 @@ extern void webview_eval(webview_t w, const char *js);
 extern void webview_bind(webview_t w, const char *name, void (*fn)(const char *seq, const char *req, void *arg), void *arg);
 extern void webview_unbind(webview_t w, const char *name);
 extern void webview_return(webview_t w, const char *seq, int status, const char *result);
+extern int webview_pump_msgloop(webview_t w, int block);
