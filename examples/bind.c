@@ -81,7 +81,7 @@ typedef struct {
 static const char html[] = "\
 <div>\n\
   <button id=\"increment\">+</button>\n\
-  <button id=\"decrement\">−</button>\n\
+  <button id=\"decrement\">-</button>\n\
   <span>Counter: <span id=\"counterResult\">0</span></span>\n\
 </div>\n\
 <hr />\n\

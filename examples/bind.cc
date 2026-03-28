@@ -9,7 +9,7 @@ constexpr const auto html =
     R"html(
 <div>
   <button id="increment">+</button>
-  <button id="decrement">−</button>
+  <button id="decrement">-</button>
   <span>Counter: <span id="counterResult">0</span></span>
 </div>
 <hr />
