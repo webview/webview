@@ -1,7 +1,7 @@
 # webview
 
 <a href="https://discord.gg/24KMecn" title="Join the chat at Discord"><img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0b5061df29d55a92d945_full_logo_blurple_RGB.svg" alt="Discord" height="20" /></a>
-[![Build Status](https://img.shields.io/github/actions/workflow/status/webview/webview/ci.yaml?branch=master)](https://github.com/webview/webview)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/webview/webview/ci.yaml?branch=master)](https://github.com/webview/webview/actions)
 
 A tiny cross-platform webview library for C/C++ to build modern cross-platform GUIs.
 
@@ -26,7 +26,7 @@ The most up-to-date documentation is right in the source code. Improving the doc
 
 ## Prerequisites
 
-Your compiler must support minimum C++11 except for platforms that require a more modern version.
+Your compiler must support minimum C++11.
 
 This project uses CMake and Ninja, and while recommended for your convenience, these tools aren't required for using the library.
 
@@ -144,7 +144,7 @@ int main() {
     w.set_html("Thanks for using webview!");
     w.run();
   } catch (const webview::exception &e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     return 1;
   }
 
@@ -223,10 +223,10 @@ An amalgamated library can be built when building the project using CMake, or th
 The latter is described below.
 
 ```sh
-python3 scripts/amalgamate.py --output webview_amalgamation.h core/include/webview/webview.h
+python3 scripts/amalgamate/amalgamate.py --base core --search include --output webview_amalgamation.h src
 ```
 
-See `python3 scripts/amalgamate.py --help` for script usage.
+See `python3 scripts/amalgamate/amalgamate.py --help` for script usage.
 
 ### Non-CMake Usage
 
@@ -380,6 +380,14 @@ Here are some of the noteworthy ways our implementation of the loader differs fr
 
 [Customization options](#Customization) can be used to change how the library integrates the WebView2 loader.
 
+## Thread Safety
+
+Since library functions generally do not have thread safety guarantees, `webview_dispatch()` (C) / `webview::dispatch()` (C++) can be used to schedule code to execute on the main/GUI thread and thereby make that execution safe in multi-threaded applications.
+
+`webview_return()` (C) / `webview::resolve()` (C++) uses `*dispatch()` internally and is therefore safe to call from another thread.
+
+The main/GUI thread should be the thread that calls `webview_run()` (C) / `webview::run()` (C++).
+
 ## Development
 
 This project uses the CMake build system.
@@ -465,17 +473,20 @@ Haskell     | [lettier/webviewhs](https://github.com/lettier/webviewhs)
 Janet       | [janet-lang/webview](https://github.com/janet-lang/webview)
 Java        | [webview/webview_java](https://github.com/webview/webview_java)
 Kotlin      | [Winterreisender/webviewko](https://github.com/Winterreisender/webviewko)
+MoonBit     | [justjavac/moonbit-webview](https://github.com/justjavac/moonbit-webview)
 Nim         | [oskca/webview](https://github.com/oskca/webview), [neroist/webview](https://github.com/neroist/webview)
 Node.js     | [Winterreisender/webview-nodejs](https://github.com/Winterreisender/webview-nodejs)
 Odin        | [thechampagne/webview-odin](https://github.com/thechampagne/webview-odin)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
-Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
-PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
+Python      | [congzhangzh/webview_python](https://github.com/congzhangzh/webview_python),[zserge/webview-python](https://github.com/zserge/webview-python)
+PHP         | [0hr/php-webview](https://github.com/0hr/php-webview), [KingBes/pebview](https://github.com/KingBes/pebview), [happystraw/php-ext-webview](https://github.com/happystraw/php-ext-webview)
+Ring        | [ysdragon/webview](https://github.com/ysdragon/webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/web-view](https://github.com/Boscop/web-view)
 Swift       | [jakenvac/SwiftWebview](https://github.com/jakenvac/SwiftWebview)
 V           | [malisipi/mui](https://github.com/malisipi/mui/tree/main/webview), [ttytm/webview](https://github.com/ttytm/webview)
-Zig         | [thechampagne/webview-zig](https://github.com/thechampagne/webview-zig)
+Vala        | [taozuhong/webview-vala](https://github.com/taozuhong/webview-vala)
+Zig         | [thechampagne/webview-zig](https://github.com/thechampagne/webview-zig), [happystraw/zig-webview](https://github.com/happystraw/zig-webview)
 
 If you wish to add bindings to the list, feel free to submit a pull request or [open an issue][issues-new].
 

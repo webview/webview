@@ -23,9 +23,14 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH) &&                      \
-    defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#ifndef WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
 #define WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 
 #include <cstdlib>
 #include <string>
@@ -157,4 +162,6 @@ static inline void apply_webkit_dmabuf_workaround() {
 } // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_BACKENDS_GTK_WEBKITGTK_DMABUF_HH

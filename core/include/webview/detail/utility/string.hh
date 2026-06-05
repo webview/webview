@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_DETAIL_UTILITY_STRING_HH
 #define WEBVIEW_DETAIL_UTILITY_STRING_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include <string>
 
 #if defined(_WIN32)
@@ -93,4 +95,5 @@ inline std::string narrow_string(const std::wstring &input) {
 } // namespace detail
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_DETAIL_UTILITY_STRING_HH

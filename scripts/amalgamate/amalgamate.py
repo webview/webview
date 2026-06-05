@@ -29,7 +29,8 @@ class Include:
 @dataclass
 class ProcessorContext:
     base_dir: os.PathLike
-    include_pattern = re.compile(r'#include "([^"]+)"\n')
+    include_pattern = re.compile(
+        r'^\s*#include "([^"]+)"\s*(?://\s*(.+))?', re.M)
     block_comment_pattern = re.compile(r"^/\*.*?\*/\n", re.DOTALL)
     visited_files: MutableSet[os.PathLike] = field(default_factory=set)
     visited_copyright_notices: MutableSet[str] = field(default_factory=set)
@@ -38,10 +39,15 @@ class ProcessorContext:
     includes: MutableMapping[str, Include] = field(default_factory=dict)
 
 
-def process_file(context: ProcessorContext, input: os.PathLike):
+def process_file(context: ProcessorContext, input: os.PathLike, search_dirs: Sequence[os.PathLike] = []):
     input = os.path.realpath(
-        input if os.path.isabs(input) else os.path.join(context.base_dir, input)
+        input if os.path.isabs(input) else os.path.join(
+            context.base_dir, input)
     )
+
+    search_dirs = [os.path.realpath(
+        search_dir if os.path.isabs(search_dir) else os.path.join(
+            context.base_dir, search_dir)) for search_dir in search_dirs]
 
     if input in context.visited_files:
         return
@@ -49,6 +55,12 @@ def process_file(context: ProcessorContext, input: os.PathLike):
 
     if not os.path.exists(input):
         raise Exception("Input file not found: {}".format(input))
+
+    if os.path.isdir(input):
+        print("Processing directory: {}".format(input))
+        for entry in os.scandir(input):
+            process_file(context, entry.path, search_dirs=search_dirs)
+        return
 
     print("Processing file: {}".format(input))
 
@@ -66,22 +78,47 @@ def process_file(context: ProcessorContext, input: os.PathLike):
 
         end = 0
         for m in context.include_pattern.finditer(content):
-            input_include.chunks.append(content[end : m.start(0)])
+            input_include.chunks.append(content[end: m.start(0)])
             end = m.end(0)
-            include_file = os.path.realpath(os.path.join(input_parent_dir, m[1]))
 
-            if include_file in context.visited_files:
-                input_include_files.add(include_file)
+            comment_instruction = m[2]
+            if comment_instruction is not None:
+                skip_include = comment_instruction == "amalgamate(skip)"
+
+            include_file_in_parent_dir = os.path.realpath(
+                os.path.join(input_parent_dir, m[1]))
+            if include_file_in_parent_dir in context.visited_files:
+                input_include_files.add(include_file_in_parent_dir)
+                continue
+            if os.path.exists(include_file_in_parent_dir):
+                input_include_files.add(include_file_in_parent_dir)
+                process_file(context, include_file_in_parent_dir,
+                             search_dirs=search_dirs)
                 continue
 
-            if not os.path.exists(include_file):
-                print("File not found: {}".format(include_file))
+            include_file_in_search_dir_found = False
+            for search_dir in search_dirs:
+                include_file_in_search_dir = os.path.realpath(
+                    os.path.join(search_dir, m[1]))
+                if include_file_in_search_dir in context.visited_files:
+                    input_include_files.add(include_file_in_search_dir)
+                    include_file_in_search_dir_found = True
+                    break
+                if os.path.exists(include_file_in_search_dir):
+                    input_include_files.add(include_file_in_search_dir)
+                    process_file(context, include_file_in_search_dir,
+                                 search_dirs=search_dirs)
+                    include_file_in_search_dir_found = True
+                    break
+            if include_file_in_search_dir_found:
+                continue
+
+            if skip_include:
+                print("Skipped: {}".format(m[1]))
                 input_include.chunks.append(m[0])
                 continue
 
-            input_include_files.add(include_file)
-
-            process_file(context, include_file)
+            raise Exception("Not found: {}".format(m[1]))
         input_include.chunks.append(content[end:])
 
 
@@ -97,11 +134,12 @@ def replace_copyright(context: ProcessorContext, match: re.Match[str]):
 
 
 def amalgamate(
-    base_dir: os.PathLike, inputs: Sequence[os.PathLike], output: os.PathLike
+    base_dir: os.PathLike, inputs: Sequence[os.PathLike], output: os.PathLike,
+    search_dirs: Sequence[os.PathLike] = []
 ):
     context = ProcessorContext(base_dir=base_dir)
     for input in inputs:
-        process_file(context, input)
+        process_file(context, input, search_dirs=search_dirs)
     output = os.path.realpath(output)
     print("Sorting...")
     graph = dict(
@@ -110,8 +148,8 @@ def amalgamate(
         )
     )
     sorter = graphlib.TopologicalSorter(graph)
-    ordered_includes = tuple(map(lambda x: context.includes[x], sorter.static_order()))
-    print("Saving amalgamation to file: {}".format(output))
+    ordered_includes = tuple(
+        map(lambda x: context.includes[x], sorter.static_order()))
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, mode="w", encoding="utf-8") as f:
         if len(context.ordered_copyright_notices) > 0:
@@ -147,11 +185,13 @@ def main(options):
     with TemporaryDirectory() as temp_dir:
         try:
             amalgamated_path = os.path.join(temp_dir, "amalgamated.hh")
-            amalgamate(base_dir, options.input, amalgamated_path)
-            reformat_file(amalgamated_path, clang_format_exe=options.clang_format_exe)
-            print("Saving output file: {}".format(output_path))
+            amalgamate(base_dir, options.input, amalgamated_path,
+                       search_dirs=options.search)
+            reformat_file(amalgamated_path,
+                          clang_format_exe=options.clang_format_exe)
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             shutil.move(amalgamated_path, output_path)
+            print("Saved output to file: {}".format(output_path))
         finally:
             shutil.rmtree(temp_dir)
 
@@ -165,6 +205,7 @@ def parse_args():
     parser.add_argument(
         "--clang-format-exe", help="clang-format executable", default="clang-format"
     )
+    parser.add_argument("--search", nargs="+", help="Header search directory")
     parser.add_argument("--output", help="Output file")
     parser.add_argument("input", nargs="+", help="Input file")
     return parser.parse_args()

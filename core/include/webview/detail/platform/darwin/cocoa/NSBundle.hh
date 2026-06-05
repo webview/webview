@@ -23,20 +23,34 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH) &&                             \
-    defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
-#define WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_COCOA_NSBUNDLE_HH
+#define WEBVIEW_PLATFORM_DARWIN_COCOA_NSBUNDLE_HH
 
-#include <objc/NSObjCRuntime.h>
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+
+#include "../objc/objc.hh"
 
 namespace webview {
 namespace detail {
+namespace cocoa {
 
-enum WKUserScriptInjectionTime : NSInteger {
-  WKUserScriptInjectionTimeAtDocumentStart = 0
-};
+inline id NSBundle_get_mainBundle() {
+  return objc::msg_send<id>(objc::get_class("NSBundle"),
+                            objc::selector("mainBundle"));
+}
 
+inline id NSBundle_get_bundlePath(id self) {
+  return objc::msg_send<id>(self, objc::selector("bundlePath"));
+}
+
+} // namespace cocoa
 } // namespace detail
 } // namespace webview
 
-#endif // WEBVIEW_PLATFORM_DARWIN_WEBKIT_HH
+#endif // defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_PLATFORM_DARWIN_COCOA_NSBUNDLE_HH
