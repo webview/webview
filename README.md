@@ -437,18 +437,7 @@ cd build
 cpack -G External -C "Debug;Release" --config CPackConfig.cmake
 ```
 
-### Cross-compilation
-
-See CMake toolchain files in the `cmake/toolchains` directory.
-
-For example, this targets Windows x64 on Linux with POSIX threads:
-
-```sh
-cmake -G "Ninja Multi-Config" -B build -S . -D CMAKE_TOOLCHAIN_FILE=cmake/toolchains/x86_64-w64-mingw32.cmake -D WEBVIEW_TOOLCHAIN_EXECUTABLE_SUFFIX=-posix
-cmake --build build --config CONFIG
-```
-
-## Limitations
+#
 
 ### Browser Features
 
@@ -481,6 +470,8 @@ Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
 Python      | [congzhangzh/webview_python](https://github.com/congzhangzh/webview_python),[zserge/webview-python](https://github.com/zserge/webview-python)
 PHP         | [0hr/php-webview](https://github.com/0hr/php-webview), [KingBes/pebview](https://github.com/KingBes/pebview), [happystraw/php-ext-webview](https://github.com/happystraw/php-ext-webview)
 Ring        | [ysdragon/webview](https://github.com/ysdragon/webview)
+Python      | [zserge/webview-python](https://github.com/zserge/webview-python)
+PHP         | [0hr/php-webview](https://github.com/0hr/php-webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
 Rust        | [Boscop/web-view](https://github.com/Boscop/web-view)
 Swift       | [jakenvac/SwiftWebview](https://github.com/jakenvac/SwiftWebview)
