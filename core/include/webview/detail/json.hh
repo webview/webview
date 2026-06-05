@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_DETAIL_JSON_HH
 #define WEBVIEW_DETAIL_JSON_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -181,7 +183,10 @@ constexpr bool is_json_special_char(char c) {
          c == '\r' || c == '\t';
 }
 
-constexpr bool is_ascii_control_char(char c) { return c >= 0 && c <= 0x1f; }
+constexpr bool is_ascii_control_char(char c) {
+  // `char` may be unsigned on some targets (e.g. ARM64).
+  return static_cast<unsigned char>(c) <= 0x1f;
+}
 
 inline std::string json_escape(const std::string &s, bool add_quotes = true) {
   // Calculate the size of the resulting string.
@@ -328,4 +333,5 @@ inline std::string json_parse(const std::string &s, const std::string &key,
 } // namespace detail
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_DETAIL_JSON_HH

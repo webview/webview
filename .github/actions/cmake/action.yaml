@@ -56,6 +56,10 @@ inputs:
     description: CMake source directory
     required: false
     default: .
+  test-timeout:
+    description: Test timeout in seconds
+    required: false
+    default: '60'
   test-wrapper-cmd:
     description: Test wrapper command
     required: false
@@ -147,6 +151,9 @@ runs:
             --output-on-failure
             --build-config "${config}"
           )
+          if [[ ! -z "${{ inputs.test-timeout }}" ]]; then
+            cmake_cmd+=(--timeout "${{ inputs.test-timeout }}")
+          fi
           "${cmake_cmd[@]}"
         done
       shell: ${{ inputs.shell }}

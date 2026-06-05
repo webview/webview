@@ -23,8 +23,10 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_DETAIL_ENGINE_BASE_H
-#define WEBVIEW_DETAIL_ENGINE_BASE_H
+#ifndef WEBVIEW_DETAIL_ENGINE_BASE_HH
+#define WEBVIEW_DETAIL_ENGINE_BASE_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "../errors.hh"
 #include "../types.h"
@@ -43,6 +45,8 @@ namespace detail {
 
 class engine_base {
 public:
+  engine_base(bool owns_window) : m_owns_window{owns_window} {}
+
   virtual ~engine_base() = default;
 
   noresult navigate(const std::string &url) {
@@ -134,7 +138,9 @@ window.__webview__.onUnbind(" +
   noresult set_title(const std::string &title) { return set_title_impl(title); }
 
   noresult set_size(int width, int height, webview_hint_t hints) {
-    return set_size_impl(width, height, hints);
+    auto res = set_size_impl(width, height, hints);
+    m_is_size_set = true;
+    return res;
   }
 
   noresult set_html(const std::string &html) { return set_html_impl(html); }
@@ -198,6 +204,7 @@ protected:
 
   void add_init_script(const std::string &post_fn) {
     add_user_script(create_init_script(post_fn));
+    m_is_init_script_added = true;
   }
 
   std::string create_init_script(const std::string &post_fn) {
@@ -316,6 +323,31 @@ protected:
     }
   }
 
+  // Runs the event loop until the currently queued events have been processed.
+  void deplete_run_loop_event_queue() {
+    bool done{};
+    dispatch([&] { done = true; });
+    run_event_loop_while([&] { return !done; });
+  }
+
+  // Runs the event loop while the passed-in function returns true.
+  virtual void run_event_loop_while(std::function<bool()> fn) = 0;
+
+  void dispatch_size_default() {
+    if (!owns_window() || !m_is_init_script_added) {
+      return;
+    };
+    dispatch([this]() {
+      if (!m_is_size_set) {
+        set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
+      }
+    });
+  }
+
+  void set_default_size_guard(bool guarded) { m_is_size_set = guarded; }
+
+  bool owns_window() const { return m_owns_window; }
+
 private:
   static std::atomic_uint &window_ref_count() {
     static std::atomic_uint ref_count{0};
@@ -335,9 +367,16 @@ private:
   std::map<std::string, binding_ctx_t> bindings;
   user_script *m_bind_script{};
   std::list<user_script> m_user_scripts;
+
+  bool m_is_init_script_added{};
+  bool m_is_size_set{};
+  bool m_owns_window{};
+  static const int m_initial_width = 640;
+  static const int m_initial_height = 480;
 };
 
 } // namespace detail
 } // namespace webview
 
-#endif
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_DETAIL_ENGINE_BASE_HH

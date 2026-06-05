@@ -15,7 +15,7 @@ extern void webview_dispatch(webview_t w, void (*fn)(webview_t w, void *arg), vo
 extern void *webview_get_window(webview_t w);
 extern void *webview_get_native_handle(webview_t w, webview_native_handle_kind_t kind);
 extern void webview_set_title(webview_t w, const char *title);
-extern void webview_set_size(webview_t w, int width, int height, int hints);
+extern void webview_set_size(webview_t w, int width, int height, webview_hint_t hints);
 extern void webview_navigate(webview_t w, const char *url);
 extern void webview_set_html(webview_t w, const char *html);
 extern void webview_init(webview_t w, const char *js);

@@ -26,6 +26,9 @@
 #ifndef WEBVIEW_DETAIL_USER_SCRIPT_HH
 #define WEBVIEW_DETAIL_USER_SCRIPT_HH
 
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -36,8 +39,10 @@ namespace detail {
 class user_script {
 public:
   class impl;
+  using impl_deleter = std::function<void(impl *)>;
+  using impl_ptr = std::unique_ptr<impl, impl_deleter>;
 
-  user_script(const std::string &code, std::unique_ptr<impl> &&impl_)
+  user_script(const std::string &code, impl_ptr &&impl_)
       : m_code{code}, m_impl{std::move(impl_)} {}
 
   user_script(const user_script &other) = delete;
@@ -61,10 +66,11 @@ public:
 
 private:
   std::string m_code;
-  std::unique_ptr<impl> m_impl;
+  impl_ptr m_impl;
 };
 
 } // namespace detail
 } // namespace webview
 
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_DETAIL_USER_SCRIPT_HH

@@ -23,13 +23,15 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_DARWIN_OBJC_HH) &&                               \
-    defined(WEBVIEW_PLATFORM_DARWIN)
-#define WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#ifndef WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
+#define WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH
 
-#include <cstddef>
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
-#include <objc/NSObjCRuntime.h>
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_DARWIN)
+
 #include <objc/objc-runtime.h>
 
 namespace webview {
@@ -62,51 +64,12 @@ Result msg_send_stret(Args... args) noexcept {
 #endif
 }
 
-// Wrapper around NSAutoreleasePool that drains the pool on destruction.
-class autoreleasepool {
-public:
-  autoreleasepool()
-      : m_pool(msg_send<id>(objc_getClass("NSAutoreleasePool"),
-                            sel_registerName("new"))) {}
+inline SEL selector(const char *name) { return sel_registerName(name); }
 
-  ~autoreleasepool() {
-    if (m_pool) {
-      msg_send<void>(m_pool, sel_registerName("drain"));
-    }
-  }
-
-  autoreleasepool(const autoreleasepool &) = delete;
-  autoreleasepool &operator=(const autoreleasepool &) = delete;
-  autoreleasepool(autoreleasepool &&) = delete;
-  autoreleasepool &operator=(autoreleasepool &&) = delete;
-
-private:
-  id m_pool{};
-};
-
-inline id autoreleased(id object) {
-  msg_send<void>(object, sel_registerName("autorelease"));
-  return object;
-}
-
-namespace literals {
-
-// Convenient conversion of string literals.
-inline id operator"" _cls(const char *s, std::size_t) {
-  return (id)objc_getClass(s);
-}
-
-inline SEL operator"" _sel(const char *s, std::size_t) {
-  return sel_registerName(s);
-}
-
-inline id operator"" _str(const char *s, std::size_t) {
-  return msg_send<id>("NSString"_cls, "stringWithUTF8String:"_sel, s);
-}
-
-} // namespace literals
 } // namespace objc
 } // namespace detail
 } // namespace webview
 
-#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_HH
+#endif // defined(WEBVIEW_PLATFORM_DARWIN)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_PLATFORM_DARWIN_OBJC_INVOKE_HH

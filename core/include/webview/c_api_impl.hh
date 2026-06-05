@@ -23,8 +23,10 @@
  * SOFTWARE.
  */
 
-#ifndef WEBVIEW_C_API_IMPL_H
-#define WEBVIEW_C_API_IMPL_H
+#ifndef WEBVIEW_C_API_IMPL_HH
+#define WEBVIEW_C_API_IMPL_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 
 #include "backends.hh"
 #include "errors.h"
@@ -252,4 +254,5 @@ WEBVIEW_API const webview_version_info_t *webview_version(void) {
   return &webview::detail::library_version_info;
 }
 
-#endif // WEBVIEW_C_API_IMPL_H
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+#endif // WEBVIEW_C_API_IMPL_HH

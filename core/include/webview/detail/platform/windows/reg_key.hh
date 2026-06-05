@@ -23,9 +23,14 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH) &&                           \
-    defined(WEBVIEW_PLATFORM_WINDOWS)
+#ifndef WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH
 #define WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_WINDOWS)
 
 #include <string>
 #include <vector>
@@ -125,4 +130,6 @@ private:
 } // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_WINDOWS)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_PLATFORM_WINDOWS_REG_KEY_HH

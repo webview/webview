@@ -74,7 +74,7 @@ WEBVIEW_API webview_error_t webview_destroy(webview_t w);
 WEBVIEW_API webview_error_t webview_run(webview_t w);
 
 /**
- * Stops the main loop. It is safe to call this function from another other
+ * Stops the main loop. It is safe to call this function from another
  * background thread.
  *
  * @param w The webview instance.
@@ -83,7 +83,10 @@ WEBVIEW_API webview_error_t webview_terminate(webview_t w);
 
 /**
  * Schedules a function to be invoked on the thread with the run/event loop.
- * Use this function e.g. to interact with the library or native handles.
+ *
+ * Since library functions generally do not have thread safety guarantees,
+ * this function can be used to schedule code to execute on the main/GUI
+ * thread and thereby make that execution safe in multi-threaded applications.
  *
  * @param w The webview instance.
  * @param fn The function to be invoked.
@@ -126,6 +129,8 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  * Updates the size of the native window.
  *
  * Remarks:
+ * - Subsequent calls to this function may behave inconsistently across
+ *   different versions of GTK and windowing systems (X11/Wayland).
  * - Using WEBVIEW_HINT_MAX for setting the maximum window size is not
  *   supported with GTK 4 because X11-specific functions such as
  *   gtk_window_set_geometry_hints were removed. This option has no effect
@@ -218,11 +223,13 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
 /**
  * Responds to a binding call from the JS side.
  *
+ * This function is safe to call from another thread.
+ *
  * @param w The webview instance.
  * @param id The identifier of the binding call. Pass along the value received
  *           in the binding handler (see webview_bind()).
  * @param status A status of zero tells the JS side that the binding call was
- *               succesful; any other value indicates an error.
+ *               successful; any other value indicates an error.
  * @param result The result of the binding call to be returned to the JS side.
  *               This must either be a valid JSON value or an empty string for
  *               the primitive JS value @c undefined.

@@ -23,9 +23,14 @@
  * SOFTWARE.
  */
 
-#if !defined(WEBVIEW_PLATFORM_LINUX_WEBKITGTK_COMPAT_HH) &&                    \
-    defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#ifndef WEBVIEW_PLATFORM_LINUX_WEBKITGTK_COMPAT_HH
 #define WEBVIEW_PLATFORM_LINUX_WEBKITGTK_COMPAT_HH
+
+#if defined(__cplusplus) && !defined(WEBVIEW_HEADER)
+
+#include "../../../../macros.h"
+
+#if defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
 
 #include <functional>
 #include <string>
@@ -132,4 +137,6 @@ public:
 } // namespace detail
 } // namespace webview
 
+#endif // defined(WEBVIEW_PLATFORM_LINUX) && defined(WEBVIEW_GTK)
+#endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
 #endif // WEBVIEW_PLATFORM_LINUX_WEBKITGTK_COMPAT_HH
