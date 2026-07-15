@@ -1,4 +1,5 @@
 export default {
+  fileTree: { toggleFolder: '展开或收起文件夹' },
   calendarNavigation: { previous: '上个月', next: '下个月' },
   app: { name: 'Northstar', workspace: '工作空间' },
   common: { retry: '重试', empty: '暂无数据', loading: '加载中', loadFailed: '数据加载失败，请重试', viewAll: '查看全部', completed: '已完成', all: '全部', cancel: '取消', save: '保存' },

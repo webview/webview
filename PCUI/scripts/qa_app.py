@@ -46,6 +46,8 @@ with sync_playwright() as playwright:
         page.goto(f"http://127.0.0.1:5173/#/{route}")
         page.wait_for_load_state("networkidle")
         assert page.locator("main").count() == 1
+        unnamed_buttons = page.locator("button").evaluate_all("buttons => buttons.filter(button => !(button.getAttribute('aria-label') || button.getAttribute('title') || button.textContent.trim())).map(button => button.outerHTML)")
+        assert not unnamed_buttons, f"Unnamed buttons on {route}: {unnamed_buttons}"
         if route == "assistant":
             expect(page.locator(".p-drawer")).to_be_visible()
 
@@ -54,6 +56,7 @@ with sync_playwright() as playwright:
     page.get_by_role("button", name="Next month").click()
     expect(page.get_by_text("August 2026", exact=True)).to_be_visible()
     expect(page.get_by_text("Release check", exact=True).first).to_be_visible()
+    expect(page.get_by_role("button", name="Thursday, August 6, 2026")).to_be_visible()
 
     page.goto("http://127.0.0.1:5173/#/messages")
     page.get_by_placeholder("Search messages").fill("Zhou")

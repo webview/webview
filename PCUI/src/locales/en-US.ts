@@ -1,4 +1,5 @@
 export default {
+  fileTree: { toggleFolder: 'Expand or collapse folder' },
   calendarNavigation: { previous: 'Previous month', next: 'Next month' },
   app: { name: 'Northstar', workspace: 'Workspace' },
   common: { retry: 'Retry', empty: 'No data', loading: 'Loading', loadFailed: 'Failed to load data. Try again.', viewAll: 'View all', completed: 'completed', all: 'All', cancel: 'Cancel', save: 'Save' },
