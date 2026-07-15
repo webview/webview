@@ -6,8 +6,8 @@ import FileUpload from 'primevue/fileupload'
 import Tree from 'primevue/tree'
 import PageHeader from '@/components/common/PageHeader.vue'
 
-const folders = [{ key: '0', label: 'Northstar 2.0', icon: 'pi pi-folder', children: [{ key: '0-0', label: '设计稿', icon: 'pi pi-folder' }, { key: '0-1', label: '产品文档', icon: 'pi pi-folder' }] }, { key: '1', label: '品牌资源中心', icon: 'pi pi-folder' }]
-const files = [{ name: '产品体验规范.pdf', type: 'PDF', size: '8.4 MB', modified: '今天 10:24' }, { name: 'Dashboard-v3.fig', type: 'Figma', size: '24.6 MB', modified: '昨天 18:42' }, { name: '发布检查清单.xlsx', type: 'Excel', size: '1.2 MB', modified: '7 月 13 日' }, { name: '品牌插画.zip', type: 'Archive', size: '68.3 MB', modified: '7 月 11 日' }]
+const folders = [{ key: '0', label: 'Northstar 2.0', icon: 'pi pi-folder', children: [{ key: '0-0', label: 'Design', icon: 'pi pi-folder' }, { key: '0-1', label: 'Product Docs', icon: 'pi pi-folder' }] }, { key: '1', label: 'Brand Resources', icon: 'pi pi-folder' }]
+const files = [{ name: 'Product-guidelines.pdf', type: 'PDF', size: '8.4 MB', modified: 'Today 10:24' }, { name: 'Dashboard-v3.fig', type: 'Figma', size: '24.6 MB', modified: 'Yesterday 18:42' }, { name: 'Release-checklist.xlsx', type: 'Excel', size: '1.2 MB', modified: 'Jul 13' }, { name: 'Brand-illustrations.zip', type: 'Archive', size: '68.3 MB', modified: 'Jul 11' }]
 </script>
 
 <template>

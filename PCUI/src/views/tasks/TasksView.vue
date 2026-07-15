@@ -11,10 +11,10 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 
 const tasks = [
-  { title: '完成产品原型评审', project: 'Northstar 2.0', priority: 'high', status: 'doing', owner: '林清越' },
-  { title: '补充交互状态规范', project: '设计系统', priority: 'medium', status: 'todo', owner: '周屿' },
-  { title: '分析二季度增长数据', project: '增长实验', priority: 'high', status: 'review', owner: '沈星' },
-  { title: '归档品牌素材', project: '品牌资源', priority: 'low', status: 'done', owner: '顾言' },
+  { title: 'Complete prototype review', project: 'Northstar 2.0', priority: 'high', status: 'doing', owner: 'Lin Qingyue' },
+  { title: 'Document interaction states', project: 'Design System', priority: 'medium', status: 'todo', owner: 'Zhou Yu' },
+  { title: 'Analyze quarterly growth', project: 'Growth Experiments', priority: 'high', status: 'review', owner: 'Shen Xing' },
+  { title: 'Archive brand assets', project: 'Brand Resources', priority: 'low', status: 'done', owner: 'Gu Yan' },
 ]
 const columns = ['todo', 'doing', 'review', 'done']
 </script>

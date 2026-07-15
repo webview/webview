@@ -9,15 +9,15 @@ export interface DashboardMetric {
 
 export interface DashboardTask {
   id: number
-  title: string
-  project: string
+  titleKey: string
+  projectKey: string
   time: string
   completed: boolean
 }
 
 export interface DashboardProject {
   id: number
-  name: string
+  nameKey: string
   team: string[]
   progress: number
   status: 'active' | 'review' | 'planned'

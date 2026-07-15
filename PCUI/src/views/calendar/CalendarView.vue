@@ -7,8 +7,8 @@ import InputText from 'primevue/inputtext'
 import PageHeader from '@/components/common/PageHeader.vue'
 
 const dialogOpen = ref(false)
-const days = Array.from({ length: 35 }, (_, index) => ({ date: index - 1, current: index >= 2 && index < 33, events: index === 5 ? ['产品评审'] : index === 12 ? ['团队周会','发布检查'] : index === 22 ? ['用户访谈'] : [] }))
-const upcoming = [{ time: '10:00', title: '产品原型评审', color: '#4f6bed' }, { time: '14:30', title: '设计系统同步', color: '#16a36a' }, { time: '16:30', title: '团队周会', color: '#e59a18' }]
+const days = Array.from({ length: 35 }, (_, index) => ({ date: index - 1, current: index >= 2 && index < 33, events: index === 5 ? ['Product review'] : index === 12 ? ['Team sync','Release check'] : index === 22 ? ['User interview'] : [] }))
+const upcoming = [{ time: '10:00', title: 'Prototype review', color: '#4f6bed' }, { time: '14:30', title: 'Design system sync', color: '#16a36a' }, { time: '16:30', title: 'Team sync', color: '#e59a18' }]
 </script>
 
 <template>

@@ -15,10 +15,10 @@ const selected = ref<Record<string, unknown>>()
 const drawerOpen = ref(false)
 const status = ref('all')
 const projects = [
-  { name: 'Northstar 2.0', owner: '林清越', status: 'active', progress: 72, due: '2026-08-18' },
-  { name: '移动端体验升级', owner: '顾言', status: 'review', progress: 48, due: '2026-08-28' },
-  { name: '品牌资源中心', owner: '周屿', status: 'planned', progress: 24, due: '2026-09-12' },
-  { name: '增长实验平台', owner: '沈星', status: 'active', progress: 61, due: '2026-09-30' },
+  { name: 'Northstar 2.0', owner: 'Lin Qingyue', status: 'active', progress: 72, due: '2026-08-18' },
+  { name: 'Mobile Experience', owner: 'Gu Yan', status: 'review', progress: 48, due: '2026-08-28' },
+  { name: 'Brand Resource Hub', owner: 'Zhou Yu', status: 'planned', progress: 24, due: '2026-09-12' },
+  { name: 'Growth Experiments', owner: 'Shen Xing', status: 'active', progress: 61, due: '2026-09-30' },
 ]
 const openProject = (project: Record<string, unknown>) => { selected.value = project; drawerOpen.value = true }
 </script>

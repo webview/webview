@@ -52,7 +52,7 @@ onMounted(load)
         <div class="panel-heading"><div><h2>{{ $t('dashboard.todayTasks') }}</h2><p>{{ $t('dashboard.taskCount') }}</p></div><Button :label="$t('common.viewAll')" text size="small" /></div>
         <div v-for="task in data.tasks" :key="task.id" class="flex items-center gap-3 border-b border-surface py-4 last:border-0">
           <span class="grid size-6 place-items-center rounded-lg border" :class="task.completed ? 'border-primary bg-primary text-primary-contrast' : 'border-surface'"><i v-if="task.completed" class="pi pi-check text-xs" /></span>
-          <div class="min-w-0 flex-1"><strong class="block truncate text-sm font-medium" :class="{ 'text-muted-color line-through': task.completed }">{{ task.title }}</strong><small class="text-muted-color">{{ task.project }}</small></div><time class="text-xs text-muted-color">{{ task.time }}</time>
+          <div class="min-w-0 flex-1"><strong class="block truncate text-sm font-medium" :class="{ 'text-muted-color line-through': task.completed }">{{ $t(task.titleKey) }}</strong><small class="text-muted-color">{{ $t(task.projectKey) }}</small></div><time class="text-xs text-muted-color">{{ task.time }}</time>
         </div>
       </section>
     </div>
@@ -60,7 +60,7 @@ onMounted(load)
       <div class="panel-heading"><div><h2>{{ $t('dashboard.recentProjects') }}</h2><p>{{ $t('dashboard.recentProjectsHelp') }}</p></div><Button :label="$t('common.viewAll')" text size="small" /></div>
       <div class="grid gap-3 md:grid-cols-3">
         <article v-for="project in data.projects" :key="project.id" class="rounded-xl bg-emphasis p-4">
-          <div class="mb-4 flex items-center justify-between"><strong>{{ project.name }}</strong><StatusBadge :label="$t(`status.${project.status}`)" :severity="project.status === 'active' ? 'success' : 'secondary'" /></div>
+          <div class="mb-4 flex items-center justify-between"><strong>{{ $t(project.nameKey) }}</strong><StatusBadge :label="$t(`status.${project.status}`)" :severity="project.status === 'active' ? 'success' : 'secondary'" /></div>
           <ProgressBar :value="project.progress" :show-value="false" class="h-1.5" /><p class="mb-0 mt-2 text-xs text-muted-color">{{ project.progress }}% {{ $t('common.completed') }}</p>
         </article>
       </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
@@ -10,17 +11,18 @@ import { useAppStore, type AppLocale, type ThemeMode } from '@/stores/app'
 import WindowControls from './WindowControls.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 const store = useAppStore()
 const { locale, theme } = storeToRefs(store)
 const titleKey = computed(() => route.meta.titleKey || 'navigation.dashboard')
 const languageMenu = computed<MenuItem[]>(() => [
-  { label: '简体中文', icon: locale.value === 'zh-CN' ? 'pi pi-check' : '', command: () => store.setLocale('zh-CN' as AppLocale) },
-  { label: 'English', icon: locale.value === 'en-US' ? 'pi pi-check' : '', command: () => store.setLocale('en-US' as AppLocale) },
+  { label: t('languageNames.chinese'), icon: locale.value === 'zh-CN' ? 'pi pi-check' : '', command: () => store.setLocale('zh-CN' as AppLocale) },
+  { label: t('languageNames.english'), icon: locale.value === 'en-US' ? 'pi pi-check' : '', command: () => store.setLocale('en-US' as AppLocale) },
 ])
 const themeMenu = computed<MenuItem[]>(() => [
-  { label: '浅色', icon: theme.value === 'light' ? 'pi pi-check' : 'pi pi-sun', command: () => store.setTheme('light' as ThemeMode) },
-  { label: '深色', icon: theme.value === 'dark' ? 'pi pi-check' : 'pi pi-moon', command: () => store.setTheme('dark' as ThemeMode) },
-  { label: '跟随系统', icon: theme.value === 'system' ? 'pi pi-check' : 'pi pi-desktop', command: () => store.setTheme('system' as ThemeMode) },
+  { label: t('settings.light'), icon: theme.value === 'light' ? 'pi pi-check' : 'pi pi-sun', command: () => store.setTheme('light' as ThemeMode) },
+  { label: t('settings.dark'), icon: theme.value === 'dark' ? 'pi pi-check' : 'pi pi-moon', command: () => store.setTheme('dark' as ThemeMode) },
+  { label: t('settings.system'), icon: theme.value === 'system' ? 'pi pi-check' : 'pi pi-desktop', command: () => store.setTheme('system' as ThemeMode) },
 ])
 </script>
 

@@ -10,14 +10,14 @@ const dashboardData: DashboardData = {
   ],
   progress: [32, 41, 48, 44, 63, 72, 86],
   tasks: [
-    { id: 1, title: '完成产品原型评审', project: 'Northstar 2.0', time: '09:30', completed: true },
-    { id: 2, title: '更新设计系统组件', project: '设计规范', time: '13:00', completed: false },
-    { id: 3, title: '团队周会同步', project: '产品团队', time: '16:30', completed: false },
+    { id: 1, titleKey: 'samples.tasks.prototypeReview', projectKey: 'samples.projects.northstar', time: '09:30', completed: true },
+    { id: 2, titleKey: 'samples.tasks.designSystem', projectKey: 'samples.projects.designSystem', time: '13:00', completed: false },
+    { id: 3, titleKey: 'samples.tasks.teamSync', projectKey: 'samples.projects.productTeam', time: '16:30', completed: false },
   ],
   projects: [
-    { id: 1, name: 'Northstar 2.0', team: ['林', '周', '沈'], progress: 72, status: 'active' },
-    { id: 2, name: '移动端体验升级', team: ['顾', '林'], progress: 48, status: 'review' },
-    { id: 3, name: '品牌资源中心', team: ['周', '叶'], progress: 24, status: 'planned' },
+    { id: 1, nameKey: 'samples.projects.northstar', team: ['L', 'Z', 'S'], progress: 72, status: 'active' },
+    { id: 2, nameKey: 'samples.projects.mobile', team: ['G', 'L'], progress: 48, status: 'review' },
+    { id: 3, nameKey: 'samples.projects.brand', team: ['Z', 'Y'], progress: 24, status: 'planned' },
   ],
 }
 

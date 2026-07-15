@@ -12,7 +12,7 @@ const { sidebarCollapsed } = storeToRefs(appStore)
     class="app-sidebar"
     :class="{ 'is-collapsed': sidebarCollapsed }"
   >
-    <div class="flex h-16 items-center gap-2.5 px-3">
+    <div class="sidebar-brand flex h-16 items-center gap-2.5 px-3">
       <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-contrast shadow-sm shadow-primary/20">
         <i class="pi pi-sparkles text-sm" aria-hidden="true" />
       </span>
@@ -51,7 +51,7 @@ const { sidebarCollapsed } = storeToRefs(appStore)
     </nav>
 
     <button type="button" class="mx-2.5 flex items-center gap-2.5 rounded-xl p-2 text-left transition hover:bg-emphasis">
-      <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-medium text-primary-contrast">林</span>
+      <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-medium text-primary-contrast">{{ $t('user.initials') }}</span>
       <span v-if="!sidebarCollapsed" class="grid min-w-0 flex-1">
         <strong class="truncate text-sm font-medium">{{ $t('user.name') }}</strong>
         <small class="truncate text-xs text-muted-color">{{ $t('user.role') }}</small>

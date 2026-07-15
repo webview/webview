@@ -19,8 +19,8 @@ export const useLocale = () => {
   return {
     locale,
     locales: computed(() => [
-      { label: '简体中文', value: 'zh-CN' as AppLocale },
-      { label: 'English', value: 'en-US' as AppLocale },
+      { label: i18n.global.t('languageNames.chinese'), value: 'zh-CN' as AppLocale },
+      { label: i18n.global.t('languageNames.english'), value: 'en-US' as AppLocale },
     ]),
     setLocale: store.setLocale,
   }

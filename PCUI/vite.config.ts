@@ -10,6 +10,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    // ECharts is loaded only by analytics routes; its tree-shaken vendor chunk is intentionally larger.
+    chunkSizeWarningLimit: 650,
+  },
   test: {
     environment: 'happy-dom',
     globals: true,

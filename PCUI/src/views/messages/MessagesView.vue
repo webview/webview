@@ -6,7 +6,7 @@ import InputText from 'primevue/inputtext'
 import PageHeader from '@/components/common/PageHeader.vue'
 
 const selected = ref(0)
-const messages = [{ sender: '周屿', initials: '周', title: 'Northstar 原型评审', preview: '我已经补充了交互状态，麻烦看一下。', time: '10:24', unread: true }, { sender: '沈星', initials: '沈', title: '二季度数据报告', preview: '增长部分的数据已经更新完毕。', time: '昨天', unread: true }, { sender: '产品团队', initials: '产', title: '本周同步纪要', preview: '会议纪要和后续动作已整理。', time: '周一', unread: false }]
+const messages = [{ sender: 'Zhou Yu', initials: 'Z', title: 'Northstar prototype review', preview: 'I added the missing interaction states for review.', time: '10:24', unread: true }, { sender: 'Shen Xing', initials: 'S', title: 'Quarterly data report', preview: 'The growth section now includes the latest data.', time: 'Yesterday', unread: true }, { sender: 'Product Team', initials: 'P', title: 'Weekly sync notes', preview: 'Meeting notes and follow-up actions are ready.', time: 'Monday', unread: false }]
 </script>
 
 <template>

@@ -61,6 +61,8 @@ select {
 }
 
 .app-sidebar.is-collapsed { width: 72px; }
+.app-sidebar.is-collapsed .sidebar-brand { flex-direction: column; justify-content: center; gap: 2px; padding-inline: 0; }
+.app-sidebar.is-collapsed .sidebar-brand .sidebar-icon-button { width: 26px; height: 22px; }
 
 .sidebar-link {
   display: flex;

@@ -12,7 +12,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 
 const inviteOpen = ref(false)
-const members = [{ name: '林清越', initials: '林', role: 'owner', team: '产品设计', status: 'online', joined: '2025-03-18' }, { name: '周屿', initials: '周', role: 'admin', team: '产品设计', status: 'online', joined: '2025-06-02' }, { name: '沈星', initials: '沈', role: 'member', team: '数据增长', status: 'busy', joined: '2025-09-14' }, { name: '顾言', initials: '顾', role: 'member', team: '产品研发', status: 'offline', joined: '2026-01-08' }]
+const members = [{ name: 'Lin Qingyue', initials: 'L', role: 'owner', team: 'Product Design', status: 'online', joined: '2025-03-18' }, { name: 'Zhou Yu', initials: 'Z', role: 'admin', team: 'Product Design', status: 'online', joined: '2025-06-02' }, { name: 'Shen Xing', initials: 'S', role: 'member', team: 'Data Growth', status: 'busy', joined: '2025-09-14' }, { name: 'Gu Yan', initials: 'G', role: 'member', team: 'Engineering', status: 'offline', joined: '2026-01-08' }]
 </script>
 
 <template>
