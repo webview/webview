@@ -11,8 +11,8 @@ export default {
   window: { controls: '窗口控制', minimize: '最小化', maximize: '最大化', restore: '还原', close: '关闭窗口' },
   user: { name: '林清越', role: '产品设计师' },
   assistant: { context: '上下文面板' },
-  auth: { login: '登录' },
-  errors: { notFound: '页面不存在', forbidden: '无权访问' },
+  auth: { login: '登录', welcome: '欢迎回来', description: '登录 Northstar，继续推进你的工作。', email: '邮箱地址', password: '密码', remember: '记住我', forgot: '忘记密码？', demo: '演示账号已预填，点击登录即可进入工作台。' },
+  errors: { notFound: '页面不存在', notFoundHelp: '你访问的页面可能已移动、删除或地址输入有误。', forbidden: '无权访问', forbiddenHelp: '你的账户暂时没有访问此页面的权限，请联系工作区管理员。', backHome: '返回工作台' },
   status: { active: '进行中', review: '评审中', planned: '已规划', todo: '待处理', doing: '进行中', done: '已完成' },
   priority: { high: '高优先级', medium: '中优先级', low: '低优先级' },
   dashboard: {

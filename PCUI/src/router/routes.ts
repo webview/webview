@@ -1,7 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-const page = () => import('@/views/PlaceholderView.vue')
-
 export const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -25,9 +23,9 @@ export const routes: RouteRecordRaw[] = [
     path: '/auth',
     component: () => import('@/layouts/AuthLayout.vue'),
     children: [
-      { path: 'login', name: 'login', component: page, meta: { titleKey: 'auth.login' } },
-      { path: 'forbidden', name: 'forbidden', component: page, meta: { titleKey: 'errors.forbidden' } },
-      { path: ':pathMatch(.*)*', name: 'not-found', component: page, meta: { titleKey: 'errors.notFound' } },
+      { path: 'login', name: 'login', component: () => import('@/views/auth/LoginView.vue'), meta: { titleKey: 'auth.login' } },
+      { path: 'forbidden', name: 'forbidden', component: () => import('@/views/errors/ForbiddenView.vue'), meta: { titleKey: 'errors.forbidden' } },
+      { path: ':pathMatch(.*)*', name: 'not-found', component: () => import('@/views/errors/NotFoundView.vue'), meta: { titleKey: 'errors.notFound' } },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: { name: 'not-found' } },

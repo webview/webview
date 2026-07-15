@@ -11,8 +11,8 @@ export default {
   window: { controls: 'Window controls', minimize: 'Minimize', maximize: 'Maximize', restore: 'Restore', close: 'Close window' },
   user: { name: 'Lin Qingyue', role: 'Product designer' },
   assistant: { context: 'Context panel' },
-  auth: { login: 'Sign in' },
-  errors: { notFound: 'Page not found', forbidden: 'Access denied' },
+  auth: { login: 'Sign in', welcome: 'Welcome back', description: 'Sign in to Northstar and keep your work moving.', email: 'Email address', password: 'Password', remember: 'Remember me', forgot: 'Forgot password?', demo: 'Demo credentials are prefilled. Select sign in to enter the workspace.' },
+  errors: { notFound: 'Page not found', notFoundHelp: 'The page may have moved, been deleted, or the address may be incorrect.', forbidden: 'Access denied', forbiddenHelp: 'Your account does not have permission to view this page. Contact a workspace administrator.', backHome: 'Back to dashboard' },
   status: { active: 'Active', review: 'In review', planned: 'Planned', todo: 'To do', doing: 'In progress', done: 'Done' },
   priority: { high: 'High priority', medium: 'Medium priority', low: 'Low priority' },
   dashboard: {
