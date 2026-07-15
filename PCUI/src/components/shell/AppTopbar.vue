@@ -88,7 +88,7 @@ const notificationMenu = computed<MenuItem[]>(() => [
       <Menu ref="language" :model="languageMenu" popup />
       <Button v-tooltip.bottom="$t('actions.theme')" :icon="theme === 'dark' ? 'pi pi-moon' : 'pi pi-sun'" text rounded :aria-label="$t('actions.theme')" @click="($refs.themes as InstanceType<typeof Menu>).toggle($event)" />
       <Menu ref="themes" :model="themeMenu" popup />
-      <span class="relative"><Button v-tooltip.bottom="$t('navigation.messages')" icon="pi pi-bell" text rounded :aria-label="$t('navigation.messages')" @click="($refs.notifications as InstanceType<typeof Menu>).toggle($event)" /><span v-if="unreadCount" class="absolute right-1 top-1 grid size-3.5 place-items-center rounded-full bg-red-500 text-[9px] text-white">{{ unreadCount }}</span></span>
+      <span class="relative"><Button v-tooltip.bottom="$t('navigation.messages')" icon="pi pi-bell" text rounded :aria-label="$t('navigation.messages')" @click="($refs.notifications as InstanceType<typeof Menu>).toggle($event)" /><span v-if="unreadCount" class="notification-badge" data-testid="notification-badge">{{ unreadCount }}</span></span>
       <Menu ref="notifications" :model="notificationMenu" popup />
       <Button v-tooltip.bottom="$t(currentUser.nameKey)" :label="$t(currentUser.initialsKey)" text rounded :aria-label="$t('actions.account')" as="router-link" :to="{ name: 'profile' }" />
       <WindowControls />

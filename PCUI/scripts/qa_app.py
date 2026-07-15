@@ -42,6 +42,9 @@ with sync_playwright() as playwright:
     expect(page.get_by_role("button", name="Maximize")).to_be_visible()
     expect(page.get_by_role("button", name="Close window")).to_be_visible()
     expect(page.get_by_label("Account menu")).to_be_visible()
+    notification_badge = page.get_by_test_id("notification-badge")
+    expect(notification_badge).to_have_text("2")
+    assert notification_badge.evaluate("badge => badge.scrollHeight <= badge.clientHeight")
 
     for width in (1280, 1024):
         page.set_viewport_size({"width": width, "height": 800})

@@ -35,4 +35,10 @@ describe('typography system', () => {
     expect(css).toMatch(/\.sidebar-group-label\s*\{[^}]*line-height: var\(--leading-caption\)/s)
     expect(css).toMatch(/\.sidebar-group-label\s*\{[^}]*color: var\(--p-text-muted-color\)/s)
   })
+
+  it('keeps notification badge digits inside their container', () => {
+    expect(css).toMatch(/\.notification-badge\s*\{[^}]*min-width: 1rem/s)
+    expect(css).toMatch(/\.notification-badge\s*\{[^}]*height: 1rem/s)
+    expect(css).toMatch(/\.notification-badge\s*\{[^}]*line-height: 1/s)
+  })
 })

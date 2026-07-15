@@ -179,6 +179,26 @@ select {
 .global-search-result .pi-arrow-right { font-size: 10px; opacity: .55; }
 .global-search-results p { margin: 0; padding: 12px; color: var(--p-text-muted-color); font-size: var(--text-ui); line-height: var(--leading-ui); text-align: center; }
 
+.notification-badge {
+  position: absolute;
+  top: .25rem;
+  right: .25rem;
+  display: inline-flex;
+  min-width: 1rem;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #ef4444;
+  padding-inline: .25rem;
+  color: #fff;
+  font-size: .625rem;
+  line-height: 1;
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
 .panel-enter-active,.panel-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
 .panel-enter-from,.panel-leave-to { opacity: 0; transform: translateX(16px); }
 

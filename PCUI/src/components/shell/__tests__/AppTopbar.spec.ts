@@ -68,4 +68,12 @@ describe('AppTopbar global search', () => {
 
     expect(wrapper.get('[data-testid="global-search-results"]').text()).toContain('项目管理')
   })
+
+  it('renders the unread count in a dedicated notification badge', async () => {
+    const wrapper = await mountTopbar()
+    const badge = wrapper.get('[data-testid="notification-badge"]')
+
+    expect(badge.text()).toBe('2')
+    expect(badge.classes()).toContain('notification-badge')
+  })
 })
