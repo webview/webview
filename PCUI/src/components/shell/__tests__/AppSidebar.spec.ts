@@ -27,4 +27,22 @@ describe('AppSidebar', () => {
     expect(wrapper.classes()).toContain('is-collapsed')
     expect(wrapper.get('nav').attributes('aria-label')).toBe('navigation.main')
   })
+
+  it('uses the semantic caption role for navigation group labels', () => {
+    const wrapper = mount(AppSidebar, {
+      global: {
+        plugins: [createPinia()],
+        stubs: { RouterLink: { template: '<a><slot /></a>' }, Tooltip: true },
+        mocks: { $t: (key: string) => key },
+      },
+    })
+
+    const labels = wrapper.findAll('.sidebar-group-label')
+    expect(labels).toHaveLength(3)
+    expect(labels.map((label) => label.text())).toEqual([
+      'navigation.workspace',
+      'navigation.insights',
+      'navigation.account',
+    ])
+  })
 })

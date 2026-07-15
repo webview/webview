@@ -28,4 +28,11 @@ describe('typography system', () => {
     expect(css).toContain('.p-datatable .p-datatable-tbody > tr > td')
     expect(css).toMatch(/\.panel-heading h2\s*\{[^}]*font-size: var\(--text-section\)/s)
   })
+
+  it('styles sidebar group labels as readable muted captions', () => {
+    expect(css).toContain('--color-muted-color: var(--p-text-muted-color)')
+    expect(css).toMatch(/\.sidebar-group-label\s*\{[^}]*font-size: var\(--text-caption\)/s)
+    expect(css).toMatch(/\.sidebar-group-label\s*\{[^}]*line-height: var\(--leading-caption\)/s)
+    expect(css).toMatch(/\.sidebar-group-label\s*\{[^}]*color: var\(--p-text-muted-color\)/s)
+  })
 })

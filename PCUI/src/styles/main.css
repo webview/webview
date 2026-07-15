@@ -35,6 +35,7 @@
   --color-surface: var(--p-content-border-color);
   --color-primary: var(--p-primary-color);
   --color-primary-contrast: var(--p-primary-contrast-color);
+  --color-muted-color: var(--p-text-muted-color);
 }
 
 :root {
@@ -94,6 +95,13 @@ select {
 .app-sidebar.is-collapsed { width: 72px; }
 .app-sidebar.is-collapsed .sidebar-brand { flex-direction: column; justify-content: center; gap: 2px; padding-inline: 0; }
 .app-sidebar.is-collapsed .sidebar-brand .sidebar-icon-button { width: 26px; height: 22px; }
+
+.sidebar-group-label {
+  color: var(--p-text-muted-color);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-medium);
+}
 
 .sidebar-link {
   display: flex;

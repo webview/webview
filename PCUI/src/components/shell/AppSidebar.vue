@@ -34,7 +34,7 @@ const { currentUser } = storeToRefs(useUserStore())
 
     <nav class="flex-1 overflow-y-auto px-2.5 pb-3" :aria-label="$t('navigation.main')">
       <section v-for="group in navigationGroups" :key="group.labelKey" class="mb-4">
-        <p v-if="!sidebarIsCollapsed" class="px-2.5 pb-1.5 pt-2 text-[11px] font-medium text-muted-color">
+        <p v-if="!sidebarIsCollapsed" class="sidebar-group-label px-2.5 pb-1.5 pt-2">
           {{ $t(group.labelKey) }}
         </p>
         <div class="space-y-1">
