@@ -152,6 +152,12 @@ select {
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .panel-heading h2 { margin: 0; font-size: 1rem; font-weight: 500; }
 .panel-heading p { margin: .25rem 0 0; color: var(--p-text-muted-color); font-size: .8125rem; }
+.form-field { display: grid; gap: .5rem; font-size: .875rem; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; border-top: 1px solid var(--p-content-border-color); padding: 1rem 0; }
+.setting-row:first-of-type { border-top: 0; }
+.setting-row strong { font-size: .875rem; font-weight: 500; }
+.setting-row p { margin: .25rem 0 0; color: var(--p-text-muted-color); font-size: .75rem; }
+.setting-row kbd { border: 1px solid var(--p-content-border-color); border-radius: 7px; background: var(--app-emphasis); padding: .25rem .5rem; color: var(--p-text-muted-color); font-size: .75rem; }
 
 @media (max-width: 1100px) {
   .app-sidebar { width: 72px; }

@@ -25,4 +25,11 @@ export default {
   files: { title: '文件管理', description: '统一组织项目文件和团队资源。', upload: '上传文件', newFolder: '新建文件夹', folders: '文件夹', recent: '最近文件', name: '名称', type: '类型', size: '大小', modified: '修改时间' },
   analytics: { title: '数据分析', description: '查看工作区关键趋势和渠道表现。', export: '导出报告', visits: '访问量', users: '活跃用户', conversion: '转化率', duration: '平均时长', trend: '增长趋势', trendSummary: '访问量在六周内整体增长。', channels: '渠道分布', channelsSummary: '直接访问占比最高。', sourceDetails: '来源明细', source: '来源', change: '变化' },
   calendar: { title: '日历日程', description: '安排会议、评审和项目节点。', new: '新建日程', today: '今天', month: '2026 年 7 月', weekdays: '周一,周二,周三,周四,周五,周六,周日', upcoming: '即将开始', eventName: '日程名称', eventDate: '日期与时间' },
+  team: { title: '团队成员', description: '管理成员、角色与工作区权限。', invite: '邀请成员', search: '搜索成员', filter: '筛选团队', product: '产品设计', engineering: '产品研发', member: '成员', role: '角色', group: '团队', status: '状态', joined: '加入日期', email: '邮箱地址', sendInvite: '发送邀请' },
+  roles: { owner: '所有者', admin: '管理员', member: '成员' },
+  presence: { online: '在线', busy: '忙碌', offline: '离线' },
+  messages: { title: '消息中心', description: '集中处理团队消息和系统通知。', compose: '写消息', search: '搜索消息', body: '相关反馈已经汇总在附件中，确认后我们会继续推进下一阶段。' },
+  assistantPage: { title: 'AI 助手', description: '整理信息、规划任务和加速日常工作。', thinking: '正在整理…', placeholder: '输入问题，Ctrl + Enter 发送', send: '发送', hint: '当前使用本地演示响应，可通过 service 替换为真实 AI API。' },
+  profile: { title: '个人中心', description: '管理个人资料和工作偏好。', changeAvatar: '更换头像', basic: '基本资料', basicHelp: '这些信息会显示在团队空间中。', fullName: '姓名', email: '邮箱', role: '职位', timezone: '时区', bio: '个人简介', bioPlaceholder: '简单介绍你的职责和关注方向', designer: '产品设计师', manager: '产品经理' },
+  settings: { title: '系统设置', description: '调整界面、通知和工作方式。', appearance: '外观与语言', appearanceHelp: '自定义工作区的显示方式。', notifications: '通知', notificationsHelp: '选择希望接收的提醒。', shortcuts: '快捷键', theme: '主题模式', themeHelp: '可选择浅色、深色或跟随系统。', light: '浅色', dark: '深色', system: '跟随系统', language: '界面语言', languageHelp: '同时更新界面和 PrimeVue 组件语言。', desktopNotifications: '桌面通知', desktopNotificationsHelp: '接收任务和项目状态提醒。', sounds: '提示音', soundsHelp: '重要提醒到达时播放声音。', quickSearch: '全局搜索', newTask: '新建任务', customize: '自定义快捷键' },
 }
