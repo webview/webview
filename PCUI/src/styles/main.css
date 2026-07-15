@@ -5,9 +5,26 @@
 
 :root {
   color-scheme: light;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  --font-sans: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-caption: 0.75rem;
+  --leading-caption: 1.125rem;
+  --text-ui: 0.875rem;
+  --leading-ui: 1.25rem;
+  --text-body: 1rem;
+  --leading-body: 1.5rem;
+  --text-section: 1.25rem;
+  --leading-section: 1.75rem;
+  --text-page: 1.75rem;
+  --leading-page: 2.25rem;
+  --text-metric: 1.5rem;
+  --leading-metric: 1.875rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  font-kerning: normal;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
