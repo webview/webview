@@ -14,4 +14,12 @@ describe('typography system', () => {
     expect(css).toContain('--text-section: 1.25rem')
     expect(css).toContain('--text-page: 1.75rem')
   })
+
+  it('maps shared component roles to semantic tokens', () => {
+    expect(css).toContain('.page-title')
+    expect(css).toContain('font-size: var(--text-page)')
+    expect(css).toContain('.page-description')
+    expect(css).toContain('.metric-value')
+    expect(css).toContain('font-variant-numeric: tabular-nums')
+  })
 })

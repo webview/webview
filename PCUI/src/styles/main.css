@@ -168,6 +168,13 @@ select {
 .metric-icon[data-tone="warning"] { background: color-mix(in srgb, #e59a18 13%, transparent); color: #c8820b; }
 .metric-icon[data-tone="violet"] { background: color-mix(in srgb, #8b5cf6 12%, transparent); color: #8b5cf6; }
 
+.page-eyebrow { margin: 0 0 .25rem; color: var(--p-text-muted-color); font-size: var(--text-ui); line-height: var(--leading-ui); }
+.page-title { margin: 0; font-size: var(--text-page); line-height: var(--leading-page); font-weight: var(--weight-semibold); letter-spacing: -.02em; text-wrap: balance; }
+.page-description { max-width: 68ch; margin: .375rem 0 0; color: var(--p-text-muted-color); font-size: var(--text-ui); line-height: var(--leading-ui); text-wrap: pretty; }
+.metric-label { overflow: hidden; color: var(--p-text-muted-color); font-size: var(--text-ui); line-height: var(--leading-ui); text-overflow: ellipsis; white-space: nowrap; }
+.metric-value { overflow: hidden; font-size: var(--text-metric); line-height: var(--leading-metric); font-weight: var(--weight-semibold); letter-spacing: -.015em; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.metric-helper { overflow: hidden; color: var(--p-text-muted-color); font-size: var(--text-caption); line-height: var(--leading-caption); text-overflow: ellipsis; white-space: nowrap; }
+
 .workspace-panel {
   min-width: 0;
   border: 1px solid var(--p-content-border-color);
