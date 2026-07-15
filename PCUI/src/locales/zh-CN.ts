@@ -1,6 +1,6 @@
 export default {
   app: { name: 'Northstar', workspace: '工作空间' },
-  common: { retry: '重试', empty: '暂无数据', loading: '加载中' },
+  common: { retry: '重试', empty: '暂无数据', loading: '加载中', loadFailed: '数据加载失败，请重试', viewAll: '查看全部', completed: '已完成', all: '全部', cancel: '取消', save: '保存' },
   navigation: {
     main: '主导航', workspace: '工作空间', insights: '洞察与协作', account: '账户',
     dashboard: '工作台', projects: '项目管理', tasks: '任务中心', files: '文件管理', calendar: '日历日程',
@@ -13,4 +13,16 @@ export default {
   assistant: { context: '上下文面板' },
   auth: { login: '登录' },
   errors: { notFound: '页面不存在', forbidden: '无权访问' },
+  status: { active: '进行中', review: '评审中', planned: '已规划', todo: '待处理', doing: '进行中', done: '已完成' },
+  priority: { high: '高优先级', medium: '中优先级', low: '低优先级' },
+  dashboard: {
+    date: '7 月 15 日，星期三', greeting: '下午好，林清越', description: '这是你今天的工作进展和团队动态。', newProject: '新建项目',
+    metrics: { projects: '活跃项目', projectsHelp: '本月新增 2 个', tasks: '已完成任务', tasksHelp: '较上周 +12.5%', focus: '专注时长', focusHelp: '较上周 +4.2 小时', members: '团队成员', membersHelp: '当前 3 人在线' },
+    progress: '项目进度', progressHelp: '最近 7 天完成情况', progressSummary: '项目进度整体上升，今天达到 86。', weekdays: '周四,周五,周六,周日,周一,周二,今天', todayTasks: '今日任务', taskCount: '3 项待完成', recentProjects: '最近项目', recentProjectsHelp: '团队正在推进的重点项目',
+  },
+  projects: { title: '项目管理', description: '集中管理项目进度、成员与交付时间。', new: '新建项目', search: '搜索项目', name: '项目名称', owner: '负责人', status: '状态', progress: '进度', due: '截止日期', drawerDescription: '在这里查看项目概况、参与成员和最近活动。' },
+  tasks: { title: '任务中心', description: '用看板或列表组织团队工作。', new: '新建任务', board: '看板视图', list: '列表视图', task: '任务', project: '项目', owner: '负责人', status: '状态' },
+  files: { title: '文件管理', description: '统一组织项目文件和团队资源。', upload: '上传文件', newFolder: '新建文件夹', folders: '文件夹', recent: '最近文件', name: '名称', type: '类型', size: '大小', modified: '修改时间' },
+  analytics: { title: '数据分析', description: '查看工作区关键趋势和渠道表现。', export: '导出报告', visits: '访问量', users: '活跃用户', conversion: '转化率', duration: '平均时长', trend: '增长趋势', trendSummary: '访问量在六周内整体增长。', channels: '渠道分布', channelsSummary: '直接访问占比最高。', sourceDetails: '来源明细', source: '来源', change: '变化' },
+  calendar: { title: '日历日程', description: '安排会议、评审和项目节点。', new: '新建日程', today: '今天', month: '2026 年 7 月', weekdays: '周一,周二,周三,周四,周五,周六,周日', upcoming: '即将开始', eventName: '日程名称', eventDate: '日期与时间' },
 }

@@ -1,6 +1,6 @@
 export default {
   app: { name: 'Northstar', workspace: 'Workspace' },
-  common: { retry: 'Retry', empty: 'No data', loading: 'Loading' },
+  common: { retry: 'Retry', empty: 'No data', loading: 'Loading', loadFailed: 'Failed to load data. Try again.', viewAll: 'View all', completed: 'completed', all: 'All', cancel: 'Cancel', save: 'Save' },
   navigation: {
     main: 'Main navigation', workspace: 'Workspace', insights: 'Insights & collaboration', account: 'Account',
     dashboard: 'Dashboard', projects: 'Projects', tasks: 'Tasks', files: 'Files', calendar: 'Calendar',
@@ -13,4 +13,16 @@ export default {
   assistant: { context: 'Context panel' },
   auth: { login: 'Sign in' },
   errors: { notFound: 'Page not found', forbidden: 'Access denied' },
+  status: { active: 'Active', review: 'In review', planned: 'Planned', todo: 'To do', doing: 'In progress', done: 'Done' },
+  priority: { high: 'High priority', medium: 'Medium priority', low: 'Low priority' },
+  dashboard: {
+    date: 'Wednesday, July 15', greeting: 'Good afternoon, Lin', description: 'Here is today’s progress and team activity.', newProject: 'New project',
+    metrics: { projects: 'Active projects', projectsHelp: '2 added this month', tasks: 'Completed tasks', tasksHelp: '+12.5% from last week', focus: 'Focus time', focusHelp: '+4.2h from last week', members: 'Team members', membersHelp: '3 currently online' },
+    progress: 'Project progress', progressHelp: 'Completion over the last 7 days', progressSummary: 'Project progress rises overall and reaches 86 today.', weekdays: 'Thu,Fri,Sat,Sun,Mon,Tue,Today', todayTasks: 'Today’s tasks', taskCount: '3 remaining', recentProjects: 'Recent projects', recentProjectsHelp: 'Priority work moving across the team',
+  },
+  projects: { title: 'Projects', description: 'Manage progress, people, and delivery dates in one place.', new: 'New project', search: 'Search projects', name: 'Project', owner: 'Owner', status: 'Status', progress: 'Progress', due: 'Due date', drawerDescription: 'Review the overview, members, and latest project activity here.' },
+  tasks: { title: 'Tasks', description: 'Organize team work in board or list views.', new: 'New task', board: 'Board', list: 'List', task: 'Task', project: 'Project', owner: 'Owner', status: 'Status' },
+  files: { title: 'Files', description: 'Keep project files and team resources organized.', upload: 'Upload', newFolder: 'New folder', folders: 'Folders', recent: 'Recent files', name: 'Name', type: 'Type', size: 'Size', modified: 'Modified' },
+  analytics: { title: 'Analytics', description: 'Explore key workspace trends and channel performance.', export: 'Export report', visits: 'Visits', users: 'Active users', conversion: 'Conversion', duration: 'Avg. duration', trend: 'Growth trend', trendSummary: 'Visits rise overall over six weeks.', channels: 'Channel mix', channelsSummary: 'Direct traffic is the largest channel.', sourceDetails: 'Source details', source: 'Source', change: 'Change' },
+  calendar: { title: 'Calendar', description: 'Plan meetings, reviews, and project milestones.', new: 'New event', today: 'Today', month: 'July 2026', weekdays: 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', upcoming: 'Coming up', eventName: 'Event name', eventDate: 'Date and time' },
 }

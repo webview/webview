@@ -142,6 +142,17 @@ select {
 .metric-icon[data-tone="warning"] { background: color-mix(in srgb, #e59a18 13%, transparent); color: #c8820b; }
 .metric-icon[data-tone="violet"] { background: color-mix(in srgb, #8b5cf6 12%, transparent); color: #8b5cf6; }
 
+.workspace-panel {
+  min-width: 0;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 16px;
+  background: var(--p-content-background);
+  padding: 18px;
+}
+.panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.panel-heading h2 { margin: 0; font-size: 1rem; font-weight: 500; }
+.panel-heading p { margin: .25rem 0 0; color: var(--p-text-muted-color); font-size: .8125rem; }
+
 @media (max-width: 1100px) {
   .app-sidebar { width: 72px; }
   .app-sidebar:not(.is-collapsed) strong,
