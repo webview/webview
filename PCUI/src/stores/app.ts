@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type AppLocale = 'zh-CN' | 'en-US'
@@ -16,6 +16,8 @@ const readChoice = <T extends string>(key: string, values: readonly T[], fallbac
 
 export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(readBoolean('pcui:sidebar-collapsed'))
+  const compactViewport = ref(false)
+  const sidebarIsCollapsed = computed(() => sidebarCollapsed.value || compactViewport.value)
   const rightPanelOpen = ref(false)
   const theme = ref<ThemeMode>(
     readChoice('pcui:theme', ['light', 'dark', 'system'] as const, 'light'),
@@ -30,6 +32,7 @@ export const useAppStore = defineStore('app', () => {
   }
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed.value)
+  const setCompactViewport = (value: boolean) => { compactViewport.value = value }
 
   const setTheme = (value: ThemeMode) => {
     theme.value = value
@@ -43,11 +46,14 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     sidebarCollapsed,
+    compactViewport,
+    sidebarIsCollapsed,
     rightPanelOpen,
     theme,
     locale,
     setSidebarCollapsed,
     toggleSidebar,
+    setCompactViewport,
     setTheme,
     setLocale,
   }

@@ -31,6 +31,7 @@ with sync_playwright() as playwright:
     expect(page.get_by_role("button", name="Minimize")).to_be_visible()
     expect(page.get_by_role("button", name="Maximize")).to_be_visible()
     expect(page.get_by_role("button", name="Close window")).to_be_visible()
+    expect(page.get_by_label("Account menu")).to_be_visible()
 
     for width in (1280, 1024):
         page.set_viewport_size({"width": width, "height": 800})
@@ -43,6 +44,8 @@ with sync_playwright() as playwright:
         page.goto(f"http://127.0.0.1:5173/#/{route}")
         page.wait_for_load_state("networkidle")
         assert page.locator("main").count() == 1
+        if route == "assistant":
+            expect(page.locator(".p-drawer")).to_be_visible()
 
     assert not errors, "Browser console errors: " + " | ".join(errors)
     browser.close()

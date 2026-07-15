@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import AppSidebar from '@/components/shell/AppSidebar.vue'
 import AppTopbar from '@/components/shell/AppTopbar.vue'
@@ -8,9 +10,19 @@ import { useLocale } from '@/composables/useLocale'
 import { useTheme } from '@/composables/useTheme'
 
 const appStore = useAppStore()
+const route = useRoute()
 const { rightPanelOpen } = storeToRefs(appStore)
 useTheme()
 useLocale()
+
+const compactQuery = window.matchMedia('(max-width: 1100px)')
+const syncCompactViewport = () => appStore.setCompactViewport(compactQuery.matches)
+onMounted(() => {
+  syncCompactViewport()
+  compactQuery.addEventListener('change', syncCompactViewport)
+})
+onBeforeUnmount(() => compactQuery.removeEventListener('change', syncCompactViewport))
+watch(() => route.meta.contextPanel, (open) => { rightPanelOpen.value = Boolean(open) }, { immediate: true })
 </script>
 
 <template>

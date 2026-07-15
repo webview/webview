@@ -41,8 +41,22 @@ export const createWindowBridge = (target: WindowLike): WindowBridge => {
     toggleMaximize: async () => post({ type: 'window:toggle-maximize' }),
     close: async () => post({ type: 'window:close' }),
     isMaximized: async () => {
-      post({ type: 'window:get-state' })
-      return false
+      if (!channel?.addEventListener) return false
+      return new Promise<boolean>((resolve) => {
+        let settled = false
+        const finish = (value: boolean) => {
+          if (settled) return
+          settled = true
+          channel.removeEventListener?.('message', listener)
+          resolve(value)
+        }
+        const listener = (event: WebViewMessageEvent) => {
+          if (isStateMessage(event.data)) finish(event.data.maximized)
+        }
+        channel.addEventListener?.('message', listener)
+        globalThis.setTimeout(() => finish(false), 250)
+        post({ type: 'window:get-state' })
+      })
     },
     onWindowStateChanged: (callback) => {
       const listener = (event: WebViewMessageEvent) => {

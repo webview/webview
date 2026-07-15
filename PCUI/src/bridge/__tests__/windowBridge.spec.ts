@@ -25,4 +25,21 @@ describe('window bridge', () => {
     expect(postMessage).toHaveBeenNthCalledWith(2, { type: 'window:toggle-maximize' })
     expect(postMessage).toHaveBeenNthCalledWith(3, { type: 'window:close' })
   })
+
+  it('subscribes before requesting the initial maximized state', async () => {
+    let listener: ((event: { data: unknown }) => void) | undefined
+    const bridge = createWindowBridge({
+      chrome: {
+        webview: {
+          addEventListener: (_type, callback) => { listener = callback },
+          removeEventListener: vi.fn(),
+          postMessage: (message) => {
+            if (message.type === 'window:get-state') listener?.({ data: { type: 'window:state', maximized: true } })
+          },
+        },
+      },
+    })
+
+    await expect(bridge.isMaximized()).resolves.toBe(true)
+  })
 })

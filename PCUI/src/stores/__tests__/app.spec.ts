@@ -28,4 +28,12 @@ describe('app store', () => {
     expect(localStorage.getItem('pcui:theme')).toBe('dark')
     expect(localStorage.getItem('pcui:locale')).toBe('en-US')
   })
+
+  it('uses the effective collapsed state on compact windows without overwriting preference', () => {
+    const store = useAppStore()
+    store.setCompactViewport(true)
+
+    expect(store.sidebarIsCollapsed).toBe(true)
+    expect(store.sidebarCollapsed).toBe(false)
+  })
 })

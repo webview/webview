@@ -6,8 +6,8 @@ const maximized = ref(false)
 let dispose: (() => void) | undefined
 
 onMounted(async () => {
-  maximized.value = await windowBridge.isMaximized()
   dispose = windowBridge.onWindowStateChanged((value) => (maximized.value = value))
+  maximized.value = await windowBridge.isMaximized()
 })
 
 onBeforeUnmount(() => dispose?.())

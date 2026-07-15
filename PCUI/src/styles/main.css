@@ -162,12 +162,6 @@ select {
 .setting-row kbd { border: 1px solid var(--p-content-border-color); border-radius: 7px; background: var(--app-emphasis); padding: .25rem .5rem; color: var(--p-text-muted-color); font-size: .75rem; }
 
 @media (max-width: 1100px) {
-  .app-sidebar { width: 72px; }
-  .app-sidebar:not(.is-collapsed) strong,
-  .app-sidebar:not(.is-collapsed) nav p,
-  .app-sidebar:not(.is-collapsed) .sidebar-link span,
-  .app-sidebar:not(.is-collapsed) .sidebar-link span + span { display: none; }
-  .app-sidebar:not(.is-collapsed) .sidebar-link { justify-content: center; padding-inline: 0; }
   .top-search { width: 42px; }
   .top-search span,.top-search kbd { display: none; }
 }
