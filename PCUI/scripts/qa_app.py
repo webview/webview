@@ -24,6 +24,12 @@ with sync_playwright() as playwright:
     page.get_by_role("button", name="切换语言").click()
     page.get_by_text("English", exact=True).click()
     expect(page.get_by_text("Dashboard", exact=True).first).to_be_visible()
+    expect(page.locator(".page-title")).to_have_css("font-size", "28px")
+    expect(page.locator(".page-title")).to_have_css("line-height", "36px")
+    expect(page.locator(".page-description")).to_have_css("font-size", "14px")
+    expect(page.locator(".sidebar-link").first).to_have_css("font-size", "14px")
+    expect(page.locator(".metric-value").first).to_have_css("font-size", "24px")
+    expect(page.locator(".p-button").first).to_have_css("font-size", "14px")
 
     page.get_by_role("button", name="Change theme").click()
     page.get_by_text("Dark", exact=True).click()
@@ -74,6 +80,9 @@ with sync_playwright() as playwright:
 
     page.goto("http://127.0.0.1:5173/#/files")
     expect(page.get_by_text("Product-guidelines.pdf", exact=True)).to_be_visible()
+    expect(page.locator(".panel-heading h2").first).to_have_css("font-size", "20px")
+    expect(page.locator(".p-datatable-thead th").first).to_have_css("font-size", "14px")
+    expect(page.locator(".p-datatable-tbody td").first).to_have_css("font-size", "14px")
     upload_input = page.locator('input[type="file"]')
     upload_input.set_input_files({"name": "qa-notes.txt", "mimeType": "text/plain", "buffer": b"qa"})
     expect(page.get_by_text("qa-notes.txt", exact=True)).to_be_visible()
