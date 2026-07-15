@@ -111,7 +111,7 @@ select {
 }
 
 [data-webview-drag-region] { -webkit-app-region: drag; }
-.app-topbar button { -webkit-app-region: no-drag; }
+.app-topbar button,.app-topbar input { -webkit-app-region: no-drag; }
 
 .top-search {
   display: flex;
@@ -124,8 +124,15 @@ select {
   padding: 0.5rem 0.625rem;
   color: var(--p-text-muted-color);
 }
-.top-search span { min-width: 0; flex: 1; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.top-search-shell { position: relative; }
+.top-search input { min-width: 0; width: 100%; flex: 1; border: 0; outline: 0; background: transparent; color: var(--p-text-color); font: inherit; }
+.top-search input::placeholder { color: var(--p-text-muted-color); opacity: 1; }
 .top-search kbd { font-size: 10px; }
+.global-search-results { position: absolute; z-index: 50; top: calc(100% + 8px); right: 0; width: 280px; overflow: hidden; border: 1px solid var(--p-content-border-color); border-radius: 14px; background: var(--p-content-background); padding: 6px; box-shadow: 0 18px 45px color-mix(in srgb, #0f172a 16%, transparent); }
+.global-search-result { display: grid; grid-template-columns: 24px minmax(0,1fr) 16px; align-items: center; gap: 8px; border-radius: 10px; padding: 10px; color: var(--p-text-color); font-size: .8125rem; text-decoration: none; }
+.global-search-result:hover { background: var(--app-emphasis); color: var(--p-primary-color); }
+.global-search-result .pi-arrow-right { font-size: 10px; opacity: .55; }
+.global-search-results p { margin: 0; padding: 12px; color: var(--p-text-muted-color); font-size: .8125rem; text-align: center; }
 
 .panel-enter-active,.panel-leave-active { transition: opacity 180ms ease, transform 180ms ease; }
 .panel-enter-from,.panel-leave-to { opacity: 0; transform: translateX(16px); }
@@ -162,8 +169,11 @@ select {
 .setting-row kbd { border: 1px solid var(--p-content-border-color); border-radius: 7px; background: var(--app-emphasis); padding: .25rem .5rem; color: var(--p-text-muted-color); font-size: .75rem; }
 
 @media (max-width: 1100px) {
-  .top-search { width: 42px; }
-  .top-search span,.top-search kbd { display: none; }
+  .top-search { width: 42px; transition: width 160ms ease; }
+  .top-search input { width: 0; opacity: 0; }
+  .top-search kbd { display: none; }
+  .top-search:focus-within { width: 190px; }
+  .top-search:focus-within input { width: 100%; opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
