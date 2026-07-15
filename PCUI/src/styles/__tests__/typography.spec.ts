@@ -22,4 +22,10 @@ describe('typography system', () => {
     expect(css).toContain('.metric-value')
     expect(css).toContain('font-variant-numeric: tabular-nums')
   })
+
+  it('uses the UI text role for shell and PrimeVue controls', () => {
+    expect(css).toContain('.p-button.p-component,.p-inputtext.p-component')
+    expect(css).toContain('.p-datatable .p-datatable-tbody > tr > td')
+    expect(css).toMatch(/\.panel-heading h2\s*\{[^}]*font-size: var\(--text-section\)/s)
+  })
 })

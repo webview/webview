@@ -30,7 +30,7 @@ const send = async (presetKey?: string) => {
     <div class="flex-1 space-y-5 overflow-auto p-6 lg:p-8">
       <div v-for="message in messages" :key="message.id" class="flex gap-3" :class="{ 'justify-end': message.role === 'user' }">
         <span v-if="message.role === 'assistant'" class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-contrast"><i class="pi pi-sparkles" /></span>
-        <p class="m-0 max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-6" :class="message.role === 'user' ? 'bg-primary text-primary-contrast' : 'bg-emphasis'">{{ message.contentKey ? $t(message.contentKey) : message.content }}</p>
+        <p class="assistant-copy m-0 max-w-[75%] rounded-2xl px-4 py-3" :class="message.role === 'user' ? 'bg-primary text-primary-contrast' : 'bg-emphasis'">{{ message.contentKey ? $t(message.contentKey) : message.content }}</p>
       </div>
       <p v-if="sending" class="text-sm text-muted-color">{{ $t('assistantPage.thinking') }}</p>
     </div>
