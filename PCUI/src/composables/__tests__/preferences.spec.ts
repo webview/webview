@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
+import PrimeVue, { usePrimeVue } from 'primevue/config'
 import { i18n } from '@/locales'
 import { useLocale } from '@/composables/useLocale'
 import { useTheme } from '@/composables/useTheme'
@@ -32,13 +32,26 @@ describe('preference composables', () => {
     media.matches = false
     listeners.forEach((listener) => listener())
     expect(document.documentElement.classList.contains('app-dark')).toBe(false)
+    media.matches = true
+    listeners.forEach((listener) => listener())
+    expect(document.documentElement.classList.contains('app-dark')).toBe(true)
   })
 
   it('synchronizes Vue I18n, PrimeVue locale, and html lang', async () => {
-    mount(defineComponent({ setup: useLocale, template: '<div />' }), { global: { plugins: [createPinia(), i18n, PrimeVue] } })
+    const wrapper = mount(defineComponent({
+      setup() {
+        useLocale()
+        return { primeVue: usePrimeVue() }
+      },
+      template: '<div :data-accept="primeVue.config.locale.accept" />',
+    }), { global: { plugins: [createPinia(), i18n, PrimeVue] } })
     useAppStore().setLocale('en-US')
     await nextTick()
     expect(i18n.global.locale.value).toBe('en-US')
     expect(document.documentElement.lang).toBe('en-US')
+    expect(wrapper.attributes('data-accept')).toBe('Yes')
+    useAppStore().setLocale('zh-CN')
+    await nextTick()
+    expect(wrapper.attributes('data-accept')).toBe('\u786e\u5b9a')
   })
 })

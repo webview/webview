@@ -3,8 +3,8 @@ import { ref } from 'vue'
 
 export interface WorkspaceUser {
   id: string
-  name: string
-  initials: string
+  nameKey: string
+  initialsKey: string
   email: string
   roleKey: string
 }
@@ -12,8 +12,8 @@ export interface WorkspaceUser {
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref<WorkspaceUser>({
     id: 'user-001',
-    name: 'Lin Qingyue',
-    initials: 'L',
+    nameKey: 'user.name',
+    initialsKey: 'user.initials',
     email: 'lin@northstar.app',
     roleKey: 'profile.designer',
   })

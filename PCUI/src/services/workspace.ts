@@ -2,10 +2,12 @@ import { mockApi } from './mockApi'
 
 export interface ProjectRecord { id: number; nameKey: string; ownerKey: string; status: 'active' | 'review' | 'planned'; progress: number; due: string }
 export interface TaskRecord { id: number; titleKey: string; projectKey: string; priority: 'high' | 'medium' | 'low'; status: 'todo' | 'doing' | 'review' | 'done'; ownerKey: string }
-export interface FileRecord { id: number; nameKey: string; type: string; size: string; modifiedKey: string }
+export interface FileRecord { id: number; nameKey?: string; name?: string; type: string; size: string; modifiedKey: string }
 export interface TeamRecord { id: number; nameKey: string; initials: string; role: 'owner' | 'admin' | 'member'; teamKey: string; status: 'online' | 'busy' | 'offline'; joined: string }
 export interface MessageRecord { id: number; senderKey: string; initials: string; titleKey: string; previewKey: string; timeKey: string; unread: boolean }
 export interface AnalyticsData { rows: Array<{ sourceKey: string; visits: string; conversion: string; change: string }>; trend: number[]; channels: Array<{ nameKey: string; value: number }> }
+export interface CalendarEventRecord { id: number; isoDate: string; time: string; titleKey?: string; title?: string; color: string }
+export interface CalendarDay { isoDate: string; date: number; current: boolean; events: CalendarEventRecord[] }
 
 const projects: ProjectRecord[] = [
   { id: 1, nameKey: 'samples.projects.northstar', ownerKey: 'samples.people.lin', status: 'active', progress: 72, due: '2026-08-18' },
@@ -41,6 +43,24 @@ const analytics: AnalyticsData = {
   trend: [120, 168, 151, 219, 238, 286],
   channels: [{ nameKey: 'samples.channels.direct', value: 45 }, { nameKey: 'samples.channels.search', value: 28 }, { nameKey: 'samples.channels.social', value: 17 }, { nameKey: 'samples.channels.other', value: 10 }],
 }
+const calendarEvents: CalendarEventRecord[] = [
+  { id: 1, isoDate: '2026-07-04', time: '10:00', titleKey: 'calendar.events.prototype', color: '#4f6bed' },
+  { id: 2, isoDate: '2026-07-11', time: '14:30', titleKey: 'calendar.events.design', color: '#16a36a' },
+  { id: 3, isoDate: '2026-07-11', time: '16:30', titleKey: 'calendar.events.sync', color: '#e59a18' },
+  { id: 4, isoDate: '2026-08-06', time: '09:30', titleKey: 'calendar.events.release', color: '#8b5cf6' },
+]
+
+const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+export const buildCalendarDays = (month: Date, events: CalendarEventRecord[]): CalendarDay[] => {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1)
+  const mondayOffset = (first.getDay() + 6) % 7
+  const start = new Date(month.getFullYear(), month.getMonth(), 1 - mondayOffset)
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)
+    const isoDate = toIsoDate(date)
+    return { isoDate, date: date.getDate(), current: date.getMonth() === month.getMonth(), events: events.filter((event) => event.isoDate === isoDate) }
+  })
+}
 
 export const filterProjects = (items: ProjectRecord[], query: string, status: string) => items.filter((item) => (status === 'all' || item.status === status) && item.nameKey.toLowerCase().includes(query.trim().toLowerCase()))
 export const getProjects = () => mockApi(projects)
@@ -49,3 +69,4 @@ export const getFiles = () => mockApi(files)
 export const getTeam = () => mockApi(team)
 export const getMessages = () => mockApi(messages)
 export const getAnalytics = () => mockApi(analytics)
+export const getCalendarEvents = () => mockApi(calendarEvents)

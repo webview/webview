@@ -45,7 +45,7 @@ onMounted(load)
     </div>
     <div v-if="data" class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,.8fr)]">
       <section class="workspace-panel">
-        <div class="panel-heading"><div><h2>{{ $t('dashboard.progress') }}</h2><p>{{ $t('dashboard.progressHelp') }}</p></div><Button icon="pi pi-ellipsis-h" text rounded aria-label="More" /></div>
+        <div class="panel-heading"><div><h2>{{ $t('dashboard.progress') }}</h2><p>{{ $t('dashboard.progressHelp') }}</p></div><Button icon="pi pi-ellipsis-h" text rounded :aria-label="$t('actions.more')" /></div>
         <BaseChart :option="chartOption" :summary="$t('dashboard.progressSummary')" height="250px" />
       </section>
       <section class="workspace-panel">

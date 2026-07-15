@@ -5,7 +5,7 @@ import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 
 const appStore = useAppStore()
-const { sidebarIsCollapsed } = storeToRefs(appStore)
+const { compactViewport, sidebarIsCollapsed } = storeToRefs(appStore)
 const { currentUser } = storeToRefs(useUserStore())
 </script>
 
@@ -20,6 +20,7 @@ const { currentUser } = storeToRefs(useUserStore())
       </span>
       <strong v-if="!sidebarIsCollapsed" class="min-w-0 flex-1 truncate text-[15px] tracking-tight">{{ $t('app.name') }}</strong>
       <button
+        v-if="!compactViewport"
         v-tooltip.right="sidebarIsCollapsed ? $t('navigation.expand') : undefined"
         type="button"
         class="sidebar-icon-button"
@@ -53,9 +54,9 @@ const { currentUser } = storeToRefs(useUserStore())
     </nav>
 
     <button type="button" class="mx-2.5 flex items-center gap-2.5 rounded-xl p-2 text-left transition hover:bg-emphasis">
-      <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-medium text-primary-contrast">{{ currentUser.initials }}</span>
+      <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-sm font-medium text-primary-contrast">{{ $t(currentUser.initialsKey) }}</span>
       <span v-if="!sidebarIsCollapsed" class="grid min-w-0 flex-1">
-        <strong class="truncate text-sm font-medium">{{ currentUser.name }}</strong>
+        <strong class="truncate text-sm font-medium">{{ $t(currentUser.nameKey) }}</strong>
         <small class="truncate text-xs text-muted-color">{{ $t(currentUser.roleKey) }}</small>
       </span>
       <i v-if="!sidebarIsCollapsed" class="pi pi-angle-up text-xs text-muted-color" aria-hidden="true" />

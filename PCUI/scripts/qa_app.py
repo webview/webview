@@ -38,6 +38,8 @@ with sync_playwright() as playwright:
         page.wait_for_timeout(120)
         overflow = page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth")
         assert not overflow, f"Horizontal overflow at {width}px"
+        if width == 1024:
+            expect(page.get_by_test_id("sidebar-toggle")).to_have_count(0)
         page.screenshot(path=str(output / f"dashboard-{width}.png"), full_page=True)
 
     for route in ("projects", "tasks", "files", "analytics", "team", "messages", "calendar", "assistant", "profile", "settings"):
@@ -46,6 +48,30 @@ with sync_playwright() as playwright:
         assert page.locator("main").count() == 1
         if route == "assistant":
             expect(page.locator(".p-drawer")).to_be_visible()
+
+    page.goto("http://127.0.0.1:5173/#/calendar")
+    expect(page.get_by_text("July 2026", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Next month").click()
+    expect(page.get_by_text("August 2026", exact=True)).to_be_visible()
+    expect(page.get_by_text("Release check", exact=True).first).to_be_visible()
+
+    page.goto("http://127.0.0.1:5173/#/messages")
+    page.get_by_placeholder("Search messages").fill("Zhou")
+    expect(page.get_by_text("Zhou Yu", exact=True).first).to_be_visible()
+    expect(page.get_by_text("Shen Xing", exact=True)).to_have_count(0)
+
+    page.goto("http://127.0.0.1:5173/#/team")
+    page.get_by_placeholder("Search members").fill("Gu Yan")
+    expect(page.get_by_text("Gu Yan", exact=True)).to_be_visible()
+    expect(page.get_by_text("Lin Qingyue", exact=True)).to_have_count(0)
+
+    page.goto("http://127.0.0.1:5173/#/files")
+    expect(page.get_by_text("Product-guidelines.pdf", exact=True)).to_be_visible()
+    upload_input = page.locator('input[type="file"]')
+    upload_input.set_input_files({"name": "qa-notes.txt", "mimeType": "text/plain", "buffer": b"qa"})
+    expect(page.get_by_text("qa-notes.txt", exact=True)).to_be_visible()
+    page.get_by_role("row").filter(has_text="qa-notes.txt").get_by_role("button", name="Delete file").click()
+    expect(page.get_by_text("qa-notes.txt", exact=True)).to_have_count(0)
 
     assert not errors, "Browser console errors: " + " | ".join(errors)
     browser.close()
