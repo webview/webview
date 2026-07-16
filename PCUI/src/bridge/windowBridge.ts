@@ -21,6 +21,7 @@ export interface WindowBridge {
   toggleMaximize: () => Promise<void>
   close: () => Promise<void>
   isMaximized: () => Promise<boolean>
+  isHostAvailable: () => boolean
   onWindowStateChanged: (callback: (maximized: boolean) => void) => () => void
 }
 
@@ -40,6 +41,7 @@ export const createWindowBridge = (target: WindowLike): WindowBridge => {
     minimize: async () => post({ type: 'window:minimize' }),
     toggleMaximize: async () => post({ type: 'window:toggle-maximize' }),
     close: async () => post({ type: 'window:close' }),
+    isHostAvailable: () => Boolean(channel),
     isMaximized: async () => {
       if (!channel?.addEventListener) return false
       return new Promise<boolean>((resolve) => {

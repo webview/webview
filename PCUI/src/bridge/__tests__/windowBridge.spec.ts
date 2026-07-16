@@ -9,6 +9,7 @@ describe('window bridge', () => {
     await expect(bridge.toggleMaximize()).resolves.toBeUndefined()
     await expect(bridge.close()).resolves.toBeUndefined()
     await expect(bridge.isMaximized()).resolves.toBe(false)
+    expect(bridge.isHostAvailable()).toBe(false)
   })
 
   it('posts typed commands through the WebView2 channel', async () => {
@@ -21,6 +22,7 @@ describe('window bridge', () => {
     await bridge.toggleMaximize()
     await bridge.close()
 
+    expect(bridge.isHostAvailable()).toBe(true)
     expect(postMessage).toHaveBeenNthCalledWith(1, { type: 'window:minimize' })
     expect(postMessage).toHaveBeenNthCalledWith(2, { type: 'window:toggle-maximize' })
     expect(postMessage).toHaveBeenNthCalledWith(3, { type: 'window:close' })
