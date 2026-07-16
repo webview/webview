@@ -11,9 +11,15 @@ const collect = (directory: string): string[] => readdirSync(directory, { withFi
   return ['.ts', '.vue'].includes(extname(entry.name)) ? [path] : []
 })
 
+const removeComments = (source: string) => source
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '')
+
 describe('localization boundaries', () => {
   it('keeps Chinese interface text inside locale resources', () => {
-    const offenders = collect(join(process.cwd(), 'src')).filter((path) => /\p{Script=Han}/u.test(readFileSync(path, 'utf8')))
+    const offenders = collect(join(process.cwd(), 'src')).filter((path) => (
+      /\p{Script=Han}/u.test(removeComments(readFileSync(path, 'utf8')))
+    ))
     expect(offenders).toEqual([])
   })
 })
