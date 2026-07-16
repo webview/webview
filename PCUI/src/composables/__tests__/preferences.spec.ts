@@ -3,6 +3,9 @@ import { defineComponent, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue, { usePrimeVue } from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
+import App from '@/App.vue'
 import { i18n } from '@/locales'
 import { useLocale } from '@/composables/useLocale'
 import { useTheme } from '@/composables/useTheme'
@@ -53,5 +56,24 @@ describe('preference composables', () => {
     useAppStore().setLocale('zh-CN')
     await nextTick()
     expect(wrapper.attributes('data-accept')).toBe('\u786e\u5b9a')
+  })
+
+  it('applies persisted preferences before a layout is mounted', async () => {
+    localStorage.setItem('pcui:theme', 'dark')
+    localStorage.setItem('pcui:locale', 'en-US')
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [pinia, i18n, PrimeVue, ToastService, ConfirmationService],
+        stubs: { RouterView: true, Toast: true, ConfirmDialog: true },
+      },
+    })
+    await nextTick()
+
+    expect(document.documentElement.classList.contains('app-dark')).toBe(true)
+    expect(document.documentElement.lang).toBe('en-US')
+    wrapper.unmount()
   })
 })
