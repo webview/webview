@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { routes } from '@/router/routes'
 
+const workspaceRoutes = routes.find((route) => route.path === '/')?.children
+
 describe('workspace routes', () => {
   it.each([
     ['team', 'TeamView'],
@@ -9,7 +11,7 @@ describe('workspace routes', () => {
     ['profile', 'ProfileView'],
     ['settings', 'SettingsView'],
   ])('loads %s as its own view', async (name, expectedComponentName) => {
-    const route = routes[0]?.children?.find((item) => item.name === name)
+    const route = workspaceRoutes?.find((item) => item.name === name)
     const module = await (route?.component as () => Promise<{ default: { __name?: string } }>)()
     expect(module.default.__name).toBe(expectedComponentName)
   })
