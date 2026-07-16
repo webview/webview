@@ -1,7 +1,7 @@
 # PCUI JSON 国际化资源迁移设计
 
 日期：2026-07-16  
-状态：待用户确认
+状态：已确认
 
 ## 1. 目标
 
@@ -18,6 +18,9 @@ src/locales/
 ├─ index.ts
 ├─ primevue.ts
 ├─ messages/
+│  ├─ zh-CN.json
+│  └─ en-US.json
+├─ primevue/
 │  ├─ zh-CN.json
 │  └─ en-US.json
 └─ __tests__/
@@ -48,7 +51,8 @@ TypeScript/Vite 原生处理 JSON 模块，不引入额外国际化依赖或运�
 ## 4. 资源边界
 
 - `messages/zh-CN.json` 和 `messages/en-US.json` 保存产品界面文案。
-- `primevue.ts` 继续保存 PrimeVue 组件需要的语言配置，因为它包含库配置对象而非产品翻译页面结构。
+- `primevue/zh-CN.json` 和 `primevue/en-US.json` 保存 PrimeVue 组件语言资源。
+- `primevue.ts` 只导入两份 PrimeVue JSON 并导出语言代码映射，不包含任何中英文文案字面量。
 - 组件、Store、Service、路由元信息继续只保存语言键，不保存可见中文界面文案。
 - 导航和路由中的中文代码注释保留；它们不是运行时界面文案。
 - 品牌名、错误码、键盘快捷键等不翻译内容可继续出现在组件或数据结构中。
@@ -68,6 +72,7 @@ TypeScript/Vite 原生处理 JSON 模块，不引入额外国际化依赖或运�
 - 中文存在但英文缺失时测试失败。
 - 英文存在但中文缺失时测试失败。
 - 嵌套对象层级不同导致最终键不一致时测试失败。
+- 产品语言包和 PrimeVue 语言包分别执行结构一致性检查。
 
 现有 `noHardcodedChinese.spec.ts` 继续确保产品中文文案不会回流到组件和 TypeScript 逻辑；它仍忽略已确认的中文代码注释。
 
@@ -77,10 +82,11 @@ Vue I18n 继续使用英文作为缺失键回退语言。开发测试负责阻�
 
 - 项目中不再存在 `src/locales/zh-CN.ts` 和 `src/locales/en-US.ts`。
 - 全部产品中英文文案位于 `src/locales/messages/*.json`。
+- PrimeVue 中英文文案位于 `src/locales/primevue/*.json`。
 - `src/locales/index.ts` 只加载 JSON 并配置 Vue I18n。
+- `src/locales/primevue.ts` 只负责 JSON 导入和语言映射，不包含翻译文本。
 - 中文、英文语言包的叶子键集合完全一致。
 - 启动页、工作台和设置页切换中英文时显示正确。
 - PrimeVue 组件语言仍随应用语言同步。
 - 原有 60 项测试保持通过，并新增语言包一致性测试。
 - `npm run type-check` 和 `npm run build` 成功。
-
