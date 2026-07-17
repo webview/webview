@@ -279,6 +279,15 @@ private:
       }
       m_window = gtk_compat::window_new();
       on_window_created();
+      auto on_window_close_request = +[](GtkWidget *, gpointer arg) -> gboolean {
+        auto *w = static_cast<gtk_webkit_engine *>(arg);
+        if (w->m_on_close) {
+          return w->m_on_close() ? FALSE : TRUE;
+        }
+        return FALSE;
+      };
+      g_signal_connect(G_OBJECT(m_window), "delete-event",
+                       G_CALLBACK(on_window_close_request), this);
       auto on_window_destroy = +[](GtkWidget *, gpointer arg) {
         auto *w = static_cast<gtk_webkit_engine *>(arg);
         w->m_window = nullptr;
