@@ -478,7 +478,7 @@ Nim         | [oskca/webview](https://github.com/oskca/webview), [neroist/webvie
 Node.js     | [Winterreisender/webview-nodejs](https://github.com/Winterreisender/webview-nodejs)
 Odin        | [thechampagne/webview-odin](https://github.com/thechampagne/webview-odin)
 Pascal      | [PierceNg/fpwebview](http://github.com/PierceNg/fpwebview)
-Python      | [congzhangzh/webview_python](https://github.com/congzhangzh/webview_python),[zserge/webview-python](https://github.com/zserge/webview-python)
+Python      | [congzhangzh/webview_python](https://github.com/congzhangzh/webview_python), [zserge/webview-python](https://github.com/zserge/webview-python), [RustamovHumoyunMirzo/AppVerse](https://github.com/RustamovHumoyunMirzo/AppVerse)
 PHP         | [0hr/php-webview](https://github.com/0hr/php-webview), [KingBes/pebview](https://github.com/KingBes/pebview), [happystraw/php-ext-webview](https://github.com/happystraw/php-ext-webview)
 Ring        | [ysdragon/webview](https://github.com/ysdragon/webview)
 Ruby        | [Maaarcocr/webview_ruby](https://github.com/Maaarcocr/webview_ruby)
