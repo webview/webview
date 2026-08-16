@@ -108,6 +108,18 @@ public:
           WKWebView_set_UIDelegate(m_webview, nullptr);
           objc::release(ui_delegate);
         }
+        // Detach the script-message machinery BEFORE releasing the webview.
+        // The registered handler object carries an associated pointer back
+        // to this engine instance; WebKit may still deliver an in-flight
+        // WKScriptMessage after teardown began, which would dereference
+        // freed memory once the engine is destroyed. Removing the handler
+        // also drops the binding user scripts, so the page can no longer
+        // post messages at all.
+        if (m_manager) {
+          WKUserContentController_removeAllUserScripts(m_manager);
+          WKUserContentController_removeScriptMessageHandler(
+              m_manager, NSString_stringWithUTF8String("__webview__"));
+        }
         objc::release(m_webview);
         m_webview = nullptr;
       }
