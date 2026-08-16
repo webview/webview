@@ -177,6 +177,29 @@ protected:
     return {};
   }
 
+  void deplete_run_loop_event_queue() override {
+    objc::autoreleasepool arp;
+    // Non-blocking drain: nextEventMatchingMask with a distantPast
+    // expiration returns immediately when nothing is pending. The base
+    // implementation (dispatch a done-flag + wait for it) deadlocks on
+    // this backend when called from a block that already runs on the
+    // GCD main queue: the completion block is queued behind the
+    // currently executing one, and manually pumping NSApp events does
+    // not drain GCD blocks.
+    auto distant_past{objc::msg_send<id>(objc::get_class("NSDate"),
+                                         objc::selector("distantPast"))};
+    for (int i = 0; i < 256; i++) {
+      objc::autoreleasepool arp2;
+      if (auto event{NSApplication_nextEventMatchingMask(
+              m_app, NSEventMaskAny, distant_past,
+              NSRunLoopMode::NSDefaultRunLoopMode(), true)}) {
+        NSApplication_sendEvent(m_app, event);
+        continue;
+      }
+      break;
+    }
+  }
+
   noresult dispatch_impl(std::function<void()> f) override {
     dispatch_async_f(dispatch_get_main_queue(), new dispatch_fn_t(f),
                      (dispatch_function_t)([](void *arg) {
