@@ -311,7 +311,13 @@ private:
 
 class win32_edge_engine : public engine_base {
 public:
-  win32_edge_engine(bool debug, void *window) : engine_base{!window} {
+  win32_edge_engine(bool debug, void *window, const std::string &scheme = {},
+                    const std::string &scheme_root = {})
+      : engine_base{!window} {
+    // Custom URL scheme handlers are currently only implemented by the
+    // Cocoa backend; the parameters are accepted for source compatibility.
+    (void)scheme;
+    (void)scheme_root;
     window_init(window);
     window_settings(debug);
     dispatch_size_default();

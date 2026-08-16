@@ -26,6 +26,8 @@
 #ifndef WEBVIEW_TYPES_H
 #define WEBVIEW_TYPES_H
 
+#include <stddef.h>
+
 /// Holds the elements of a MAJOR.MINOR.PATCH version number.
 typedef struct {
   /// Major version.
@@ -51,6 +53,32 @@ typedef struct {
 
 /// Pointer to a webview instance.
 typedef void *webview_t;
+
+/// Webview creation options, passed to @c webview_create_from_config().
+/// Zero-initialization followed by setting @c size produces defaults
+/// equivalent to @c webview_create(). The @c size field enables future,
+/// backwards-compatible extension of the struct.
+typedef struct {
+  /// Must be set to @c sizeof(webview_config_t) by the caller. Smaller
+  /// values are rejected.
+  size_t size;
+  /// Enable developer tools if supported by the backend (equivalent to
+  /// @c webview_create's @c debug parameter).
+  int debug;
+  /// Optional native window handle to embed into; @c NULL creates a new
+  /// managed window (equivalent to @c webview_create's @c window parameter).
+  void *window;
+  /// Optional custom URL scheme to register (e.g. @c "app"). When set
+  /// together with @c scheme_root, requests to
+  /// @c scheme://<host>/<path> are served from @c <scheme_root>/<path>.
+  /// Currently supported by the Cocoa backend only; other backends ignore
+  /// it. Must be registered at creation time.
+  const char *scheme;
+  /// Root directory the custom scheme's URLs are served from. Relative
+  /// components (@c ..) and percent-encoded escapes in the request path are
+  /// decoded and confined to this directory.
+  const char *scheme_root;
+} webview_config_t;
 
 /// Native handle kind. The actual type depends on the backend.
 typedef enum {
