@@ -50,6 +50,7 @@
 #include "../user_script.hh"
 
 #include <atomic>
+#include <cstring>
 #include <functional>
 #include <list>
 #include <memory>
@@ -88,8 +89,12 @@ using namespace webkit;
 
 class cocoa_wkwebview_engine : public engine_base {
 public:
-  cocoa_wkwebview_engine(bool debug, void *window)
+  cocoa_wkwebview_engine(bool debug, void *window,
+                         const std::string &scheme = {},
+                         const std::string &scheme_root = {})
       : engine_base{!window}, m_app{NSApplication_get_sharedApplication()} {
+    m_scheme = scheme;
+    m_scheme_root = scheme_root;
     window_init(window);
     window_settings(debug);
     dispatch_size_default();
@@ -444,10 +449,64 @@ private:
     m_window = nullptr;
     dispatch([this] { on_window_destroyed(); });
   }
+  // ---- custom URL scheme handler (serves files from a root directory) ----
+
+  static void set_scheme_root(id handler, const std::string &root) {
+    objc_setAssociatedObject(handler, "webview_scheme_root",
+                             NSString_stringWithUTF8String(root.c_str()),
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  }
+
+  static std::string get_scheme_root(id handler) {
+    if (auto root{static_cast<id>(
+            objc_getAssociatedObject(handler, "webview_scheme_root"))}) {
+      return NSString_get_UTF8String(root);
+    }
+    return {};
+  }
+
+  id create_scheme_handler() {
+    objc::autoreleasepool arp;
+    constexpr auto class_name = "WebviewWKURLSchemeHandler";
+    // Avoid crash due to registering same class twice; the IMPs are static
+    // and read their per-instance state from an associated object, so one
+    // class is shared by every engine instance.
+    auto cls = objc_lookUpClass(class_name);
+    if (!cls) {
+      cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
+      class_addProtocol(cls, objc_getProtocol("WKURLSchemeHandler"));
+      class_addMethod(cls, objc::selector("webView:startURLSchemeTask:"),
+                      (IMP)(&scheme_start), "v@:@@");
+      class_addMethod(cls, objc::selector("webView:stopURLSchemeTask:"),
+                      (IMP)(&scheme_stop), "v@:@@");
+      objc_registerClassPair(cls);
+    }
+    return objc::Class_new(cls);
+  }
+
+  void install_scheme_handler(id config) {
+    m_scheme_handler = create_scheme_handler();
+    set_scheme_root(m_scheme_handler, m_scheme_root);
+    objc::msg_send<void>(
+        config, objc::selector("setURLSchemeHandler:forURLScheme:"),
+        m_scheme_handler, NSString_stringWithUTF8String(m_scheme.c_str()));
+  }
+
+  static void scheme_start(id self, SEL cmd, id webview, id task) noexcept;
+  static void scheme_stop(id self, SEL cmd, id webview, id task) noexcept;
+
   void window_settings(bool debug) {
     objc::autoreleasepool arp;
 
     auto config{objc::autorelease(WKWebViewConfiguration_new())};
+
+    // A custom URL scheme handler must be registered on the configuration
+    // BEFORE the WKWebView is created; late registration on an existing
+    // web view is not possible. That is why the scheme is a creation-time
+    // parameter (webview_create_from_config) rather than a setter.
+    if (!m_scheme.empty() && !m_scheme_root.empty()) {
+      install_scheme_handler(config);
+    }
 
     m_manager = WKWebViewConfiguration_get_userContentController(config);
 
@@ -612,7 +671,129 @@ private:
   id m_webview{};
   id m_manager{};
   bool m_is_window_shown{};
+  std::string m_scheme{};
+  std::string m_scheme_root{};
+  id m_scheme_handler{};
 };
+
+inline void cocoa_wkwebview_engine::scheme_stop(id, SEL, id, id) noexcept {
+  // Content is delivered in a single shot from scheme_start; there is no
+  // streaming state to cancel.
+}
+
+inline void cocoa_wkwebview_engine::scheme_start(id self, SEL, id,
+                                                 id task) noexcept {
+  objc::autoreleasepool arp;
+  try {
+    auto request{objc::msg_send<id>(task, objc::selector("request"))};
+    auto url{objc::msg_send<id>(request, objc::selector("URL"))};
+
+    // Map scheme://<host>/<path> onto <root>/<path>. Percent-escapes in
+    // the path are decoded first so that e.g. %20 works as expected.
+    auto url_str{objc::msg_send<id>(url, objc::selector("absoluteString"))};
+    auto url_text = std::string{NSString_get_UTF8String(url_str)};
+    auto pos = url_text.find("://");
+    auto path =
+        pos == std::string::npos ? std::string{} : url_text.substr(pos + 3);
+    auto slash = path.find('/');
+    path = slash == std::string::npos ? std::string{} : path.substr(slash + 1);
+    std::string decoded;
+    for (std::size_t i = 0; i < path.size(); i++) {
+      if (path[i] == '%' && i + 2 < path.size()) {
+        auto hex = [](char c) -> int {
+          if (c >= '0' && c <= '9') {
+            return c - '0';
+          }
+          if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+          }
+          if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+          }
+          return -1;
+        };
+        auto hi = hex(path[i + 1]);
+        auto lo = hex(path[i + 2]);
+        if (hi >= 0 && lo >= 0) {
+          decoded += static_cast<char>((hi << 4) | lo);
+          i += 2;
+          continue;
+        }
+      }
+      decoded += path[i];
+    }
+
+    // Confine requests to the root directory: reject any ".." component.
+    auto is_dotdot = [](const std::string &s, std::size_t i) {
+      return s.compare(i, 2, "..") == 0 &&
+             (i + 2 == s.size() || s[i + 2] == '/');
+    };
+    auto forbidden = decoded.empty() || decoded == "..";
+    for (std::size_t i = 0; !forbidden && i < decoded.size(); i++) {
+      if ((i == 0 || decoded[i - 1] == '/') && is_dotdot(decoded, i)) {
+        forbidden = true;
+      }
+    }
+
+    auto full =
+        forbidden ? std::string{} : get_scheme_root(self) + "/" + decoded;
+    auto data{full.empty() ? id{}
+                           : objc::msg_send<id>(
+                                 objc::get_class("NSData"),
+                                 objc::selector("dataWithContentsOfFile:"),
+                                 NSString_stringWithUTF8String(full.c_str()))};
+
+    // Minimal MIME detection so WKWebView parses HTML/CSS/JS correctly.
+    auto mime = std::string{"application/octet-stream"};
+    auto ends_with = [&](const char *suffix) {
+      auto len = std::strlen(suffix);
+      return decoded.size() >= len &&
+             decoded.compare(decoded.size() - len, len, suffix) == 0;
+    };
+    if (ends_with(".html") || ends_with(".htm")) {
+      mime = "text/html";
+    } else if (ends_with(".js")) {
+      mime = "application/javascript";
+    } else if (ends_with(".css")) {
+      mime = "text/css";
+    } else if (ends_with(".json")) {
+      mime = "application/json";
+    } else if (ends_with(".svg")) {
+      mime = "image/svg+xml";
+    } else if (ends_with(".png")) {
+      mime = "image/png";
+    } else if (ends_with(".jpg") || ends_with(".jpeg")) {
+      mime = "image/jpeg";
+    } else if (ends_with(".gif")) {
+      mime = "image/gif";
+    } else if (ends_with(".webp")) {
+      mime = "image/webp";
+    } else if (ends_with(".ico")) {
+      mime = "image/x-icon";
+    } else if (ends_with(".txt")) {
+      mime = "text/plain";
+    }
+
+    auto headers{objc::msg_send<id>(objc::get_class("NSMutableDictionary"),
+                                    objc::selector("dictionary"))};
+    objc::msg_send<void>(headers, objc::selector("setObject:forKey:"),
+                         NSString_stringWithUTF8String(mime.c_str()),
+                         NSString_stringWithUTF8String("Content-Type"));
+    auto response{objc::msg_send<id>(
+        objc::msg_send<id>(objc::get_class("NSHTTPURLResponse"),
+                           objc::selector("alloc")),
+        objc::selector("initWithURL:statusCode:HTTPVersion:headerFields:"), url,
+        static_cast<long>(data ? 200 : 404),
+        NSString_stringWithUTF8String("HTTP/1.1"), headers)};
+    objc::msg_send<void>(task, objc::selector("didReceiveResponse:"), response);
+    if (data) {
+      objc::msg_send<void>(task, objc::selector("didReceiveData:"), data);
+    }
+    objc::msg_send<void>(task, objc::selector("didFinish"));
+  } catch (...) {
+    // Never let an exception cross into Objective-C.
+  }
+}
 
 } // namespace cocoa_webkit
 } // namespace detail
