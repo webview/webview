@@ -40,7 +40,8 @@
 // IWYU pragma: end_exports
 
 #include <objc/NSObjCRuntime.h>
-#include <objc/objc-runtime.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
 
 #endif // defined(WEBVIEW_PLATFORM_DARWIN)
 #endif // defined(__cplusplus) && !defined(WEBVIEW_HEADER)
