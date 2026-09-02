@@ -132,6 +132,11 @@ window.__webview__.onUnbind(" +
   result<void *> window() { return window_impl(); }
   result<void *> widget() { return widget_impl(); }
   result<void *> browser_controller() { return browser_controller_impl(); }
+  /// DirectComposition device; null unless the backend is hosting the web
+  /// content in a visual tree (Win32 visual hosting).
+  result<void *> composition_device() { return composition_device_impl(); }
+  /// Root composition visual; null under the same conditions.
+  result<void *> composition_root() { return composition_root_impl(); }
   noresult run() { return run_impl(); }
   noresult terminate() { return terminate_impl(); }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
@@ -157,6 +162,10 @@ protected:
   virtual result<void *> window_impl() = 0;
   virtual result<void *> widget_impl() = 0;
   virtual result<void *> browser_controller_impl() = 0;
+  // Not pure: only the Win32 backend hosts in a visual tree, and a backend
+  // that does not should not have to say so.
+  virtual result<void *> composition_device_impl() { return nullptr; }
+  virtual result<void *> composition_root_impl() { return nullptr; }
   virtual noresult run_impl() = 0;
   virtual noresult terminate_impl() = 0;
   virtual noresult dispatch_impl(std::function<void()> f) = 0;
