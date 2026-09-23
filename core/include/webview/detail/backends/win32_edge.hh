@@ -57,6 +57,7 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <ctime>
 #include <functional>
 #include <list>
 #include <memory>
@@ -71,6 +72,7 @@
 #include <objbase.h>
 #include <shlobj.h>
 #include <shlwapi.h>
+#include <shobjidl.h>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "ole32.lib")
@@ -88,7 +90,10 @@ using msg_cb_t = std::function<void(const std::string)>;
 class webview2_com_handler
     : public ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler,
       public ICoreWebView2CreateCoreWebView2ControllerCompletedHandler,
+      public ICoreWebView2DownloadStartingEventHandler,
+      public ICoreWebView2NavigationStartingEventHandler,
       public ICoreWebView2WebMessageReceivedEventHandler,
+      public ICoreWebView2WebResourceResponseReceivedEventHandler,
       public ICoreWebView2PermissionRequestedEventHandler {
   using webview2_com_handler_cb_t =
       std::function<void(ICoreWebView2Controller *, ICoreWebView2 *webview)>;
@@ -165,10 +170,74 @@ public:
     ICoreWebView2 *webview;
     ::EventRegistrationToken token;
     controller->get_CoreWebView2(&webview);
-    webview->add_WebMessageReceived(this, &token);
-    webview->add_PermissionRequested(this, &token);
+
+    // Query for the ICoreWebView2_10 interface
+    ICoreWebView2_10 *webview10{};
+    if (SUCCEEDED(webview->QueryInterface(IID_PPV_ARGS(&webview10)))) {
+      webview10->add_DownloadStarting(this, &token);
+      webview10->add_NavigationStarting(this, &token);
+      webview10->add_WebMessageReceived(this, &token);
+      webview10->add_WebResourceResponseReceived(this, &token);
+      webview10->add_PermissionRequested(this, &token);
+    } else {
+      throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
+                      "WebView2 is unavailable"};
+    }
 
     m_cb(controller, webview);
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2DownloadStartingEventArgs *args) {
+    // Show save file dialog
+    IFileSaveDialog *pFileSave;
+    HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_ALL,
+                                  IID_IFileSaveDialog,
+                                  reinterpret_cast<void **>(&pFileSave));
+    if (SUCCEEDED(hr)) {
+      LPWSTR resultFilePath;
+      args->get_ResultFilePath(&resultFilePath);
+      LPCWSTR fileName = PathFindFileNameW(resultFilePath);
+      pFileSave->SetFileName(fileName);
+      hr = pFileSave->Show(m_window);
+      if (SUCCEEDED(hr)) {
+        // Get the file name from the dialog
+        IShellItem *pItem{};
+        hr = pFileSave->GetResult(&pItem);
+        if (SUCCEEDED(hr)) {
+          PWSTR pszFilePath;
+          hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+          if (SUCCEEDED(hr)) {
+            // Set the download path
+            args->put_ResultFilePath(pszFilePath);
+            CoTaskMemFree(pszFilePath);
+            // Mark the event as handled. This tells WebView2 to not show the little
+            // "Download completed" dialog that pops up after a file finishes
+            args->put_Handled(TRUE);
+          }
+          pItem->Release();
+        }
+      } else {
+        args->put_Cancel(true);
+      }
+      CoTaskMemFree(resultFilePath);
+      pFileSave->Release();
+    }
+    return S_OK;
+  }
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2NavigationStartingEventArgs *args) {
+    LPWSTR uriw{};
+    args->get_Uri(&uriw);
+    const std::string uri = narrow_string(uriw);
+    CoTaskMemFree(uriw);
+    if (m_decide_policy_navigation_handler &&
+        // origin of refresh cannot be detected, always false!
+        !m_decide_policy_navigation_handler(uri.c_str(), FALSE)) {
+      args->put_Cancel(true);
+    }
     return S_OK;
   }
   HRESULT STDMETHODCALLTYPE
@@ -183,6 +252,30 @@ public:
     CoTaskMemFree(message);
     return S_OK;
   }
+
+  HRESULT STDMETHODCALLTYPE
+  Invoke(ICoreWebView2 * /*sender*/,
+         ICoreWebView2WebResourceResponseReceivedEventArgs *args) {
+    ICoreWebView2WebResourceResponseView *response{};
+    args->get_Response(&response);
+    int statusCode{};
+    response->get_StatusCode(&statusCode);
+    if (statusCode != 200 && m_navigation_error_handler) { // ignore 'Ok'
+      // ICoreWebView2WebResourceRequest* request {};
+      // args->get_Request(&request);
+      // LPWSTR uriw{};
+      // request->get_Uri(&uriw);
+      // const std::string uri = narrow_string(uriw);
+      // CoTaskMemFree(uriw);
+      // qWarning("  request status=%d, url=%s", statusCode, std::string(uri.begin(), uri.begin() + std::min(size_t(300), uri.size())).data());
+      bool res = m_navigation_error_handler(statusCode);
+      if (res) {
+        return E_FAIL;
+      }
+    }
+    return S_OK;
+  }
+
   HRESULT STDMETHODCALLTYPE
   Invoke(ICoreWebView2 * /*sender*/,
          ICoreWebView2PermissionRequestedEventArgs *args) {
@@ -198,6 +291,17 @@ public:
   // the WebView2 environment.
   void set_attempt_handler(std::function<HRESULT()> attempt_handler) noexcept {
     m_attempt_handler = attempt_handler;
+  }
+  // Set the function that will decide about navigation
+  void set_decide_policy_navigation_handler(
+      std::function<bool(const char *, bool)>
+          decide_policy_navigation_handler) noexcept {
+    m_decide_policy_navigation_handler = decide_policy_navigation_handler;
+  }
+  // Set the function that will be called on navigation error events.
+  void set_navigation_error_handler(
+      std::function<bool(int)> navigation_error_handler) noexcept {
+    m_navigation_error_handler = navigation_error_handler;
   }
 
   // Retry creating a WebView2 environment.
@@ -234,6 +338,8 @@ private:
   webview2_com_handler_cb_t m_cb;
   std::atomic<ULONG> m_ref_count{1};
   std::function<HRESULT()> m_attempt_handler;
+  std::function<bool(const char *, bool)> m_decide_policy_navigation_handler;
+  std::function<bool(int)> m_navigation_error_handler;
   unsigned int m_max_attempts = 60;
   unsigned int m_sleep_ms = 200;
   unsigned int m_attempts = 0;
@@ -457,6 +563,72 @@ protected:
 
   noresult set_html_impl(const std::string &html) override {
     m_webview->NavigateToString(widen_string(html).c_str());
+    return {};
+  }
+
+  noresult add_cookie_impl(const cookie_data &cookieData) override {
+    // Query for the ICoreWebView2_10 interface
+    ICoreWebView2_10 *webview10{};
+    HRESULT res = m_webview->QueryInterface(IID_PPV_ARGS(&webview10));
+    if (SUCCEEDED(res)) {
+      ICoreWebView2CookieManager *cookieManager{};
+      res = webview10->get_CookieManager(&cookieManager);
+      if (SUCCEEDED(res)) {
+        ICoreWebView2Cookie *cookie{};
+        res = cookieManager->CreateCookie(
+            widen_string(cookieData.get_name()).c_str(),
+            widen_string(cookieData.get_value()).c_str(),
+            widen_string(cookieData.get_domain()).c_str(),
+            widen_string(cookieData.get_path()).c_str(), &cookie);
+        if (SUCCEEDED(res)) {
+          cookie->put_IsHttpOnly(cookieData.get_httpOnly());
+          cookie->put_IsSecure(cookieData.get_secure());
+          const double expireValue = cookieData.get_maxage() == -1
+                                         ? -1
+                                         : static_cast<double>(time(nullptr)) +
+                                               cookieData.get_maxage();
+          cookie->put_Expires(expireValue);
+          switch (cookieData.get_sameSite()) {
+          case cookie_data::same_site_values::SAME_SITE_STRICT:
+            cookie->put_SameSite(COREWEBVIEW2_COOKIE_SAME_SITE_KIND_STRICT);
+            break;
+          case cookie_data::same_site_values::SAME_SITE_LAX:
+            cookie->put_SameSite(COREWEBVIEW2_COOKIE_SAME_SITE_KIND_LAX);
+            break;
+          default:
+            cookie->put_SameSite(COREWEBVIEW2_COOKIE_SAME_SITE_KIND_NONE);
+            break;
+          }
+          res = cookieManager->AddOrUpdateCookie(cookie);
+          cookie->Release();
+        }
+        cookieManager->Release();
+      }
+      webview10->Release();
+    }
+    if (FAILED(res)) {
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "set_cookie failed"};
+    }
+    return {};
+  }
+
+  noresult delete_cookie_impl(const cookie_data &cookieData) override {
+    ICoreWebView2_10 *webview10{};
+    HRESULT res = m_webview->QueryInterface(IID_PPV_ARGS(&webview10));
+    if (SUCCEEDED(res)) {
+      ICoreWebView2CookieManager *cookieManager{};
+      res = webview10->get_CookieManager(&cookieManager);
+      if (SUCCEEDED(res)) {
+        cookieManager->DeleteCookiesWithDomainAndPath(
+            widen_string(cookieData.get_name()).c_str(),
+            widen_string(cookieData.get_domain()).c_str(), L"");
+        cookieManager->Release();
+      }
+      webview10->Release();
+    }
+    if (FAILED(res)) {
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED, "delete_cookie failed"};
+    }
     return {};
   }
 
@@ -758,6 +930,14 @@ private:
       return m_webview2_loader.create_environment_with_options(
           nullptr, userDataFolder, nullptr, m_com_handler);
     });
+    m_com_handler->set_decide_policy_navigation_handler(
+        [this](const char *url, bool triggeredByReload) {
+          return get_decide_policy_navigation_callback().call<true>(
+              url, triggeredByReload);
+        });
+    m_com_handler->set_navigation_error_handler([this](int httpErrorCode) {
+      return get_navigation_error_callback().call<false>(httpErrorCode);
+    });
     m_com_handler->try_create_environment();
 
     // Pump the message loop until WebView2 has finished initialization.
@@ -786,6 +966,12 @@ private:
     if (res != S_OK) {
       return error_info{WEBVIEW_ERROR_UNSPECIFIED,
                         "put_AreDevToolsEnabled failed"};
+    }
+    // disable context menu (Back, Refresh, Save as, Print, More Tools, ...)
+    res = settings->put_AreDefaultContextMenusEnabled(debug ? TRUE : FALSE);
+    if (res != S_OK) {
+      return error_info{WEBVIEW_ERROR_UNSPECIFIED,
+                        "put_AreDefaultContextMenusEnabled failed"};
     }
     res = settings->put_IsStatusBarEnabled(FALSE);
     if (res != S_OK) {

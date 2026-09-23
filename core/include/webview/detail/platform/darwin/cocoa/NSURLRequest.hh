@@ -38,6 +38,10 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+inline id NSURLRequest_URL(id self) {
+  return objc::msg_send<id>(self, objc::selector("URL"));
+}
+
 inline id NSURLRequest_requestWithURL(id url) {
   return objc::msg_send<id>(objc::get_class("NSURLRequest"),
                             objc::selector("requestWithURL:"), url);

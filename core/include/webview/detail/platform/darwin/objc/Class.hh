@@ -46,6 +46,13 @@ inline id Class_new(Class class_) {
 
 inline Class get_class(const char *name) { return objc_getClass(name); }
 
+inline bool is_kind_of_class(id self, const char *name) {
+  if (self) {
+    return msg_send<bool>(self, selector("isKindOfClass:"), get_class(name));
+  }
+  return false;
+}
+
 } // namespace objc
 } // namespace detail
 } // namespace webview

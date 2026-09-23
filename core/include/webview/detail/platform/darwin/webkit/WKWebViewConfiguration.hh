@@ -33,6 +33,8 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN) && defined(WEBVIEW_COCOA)
 
 #include "../objc/objc.hh"
+#include <CoreFoundation/CoreFoundation.h>
+#include <dispatch/dispatch.h>
 
 namespace webview {
 namespace detail {
@@ -49,6 +51,37 @@ inline id WKWebViewConfiguration_get_userContentController(id self) {
 
 inline id WKWebViewConfiguration_get_preferences(id self) {
   return objc::msg_send<id>(self, objc::selector("preferences"));
+}
+
+inline id WKWebViewConfiguration_get_websiteDataStore(id self) {
+  return objc::msg_send<id>(self, objc::selector("websiteDataStore"));
+}
+
+inline id WKWebsiteDataStore_get_httpCookieStore(id self) {
+  return objc::msg_send<id>(self, objc::selector("httpCookieStore"));
+}
+
+// WKHTTPCookieStore
+inline void
+WKHTTPCookieStore_setCookie(id self, id cookie,
+                            std::function<void()> completionHandler = {}) {
+  auto *block = objc::make_block(completionHandler);
+  objc::msg_send<void>(self, objc::selector("setCookie:completionHandler:"),
+                       cookie, block);
+}
+inline void
+WKHTTPCookieStore_deleteCookie(id self, id cookie,
+                               std::function<void()> completionHandler = {}) {
+  auto *block = objc::make_block(completionHandler);
+  objc::msg_send<void>(self, objc::selector("deleteCookie:completionHandler:"),
+                       cookie, block);
+}
+
+// completionHandler provides NSArray<NSHTTPCookie*>*
+inline id WKHTTPCookieStore_getAllCookies(
+    id self, std::function<void(id)> completionHandler = {}) {
+  auto *block = objc::make_block(completionHandler);
+  return objc::msg_send<id>(self, objc::selector("getAllCookies:"), block);
 }
 
 } // namespace webkit

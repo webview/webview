@@ -248,7 +248,7 @@ Build the project on your chosen platform.
 
 <details>
   <summary>Windows</summary>
-  <pre><code>c++ main.cc -O2 --std=c++14 -static -mwindows -Ilibs -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -o example</code></pre>
+  <pre><code>c++ main.cc -O2 --std=c++14 -static -mwindows -Ilibs -ladvapi32 -lole32 -lshell32 -lshlwapi -luser32 -lversion -luuid -o example</code></pre>
 </details>
 
 ## Customization

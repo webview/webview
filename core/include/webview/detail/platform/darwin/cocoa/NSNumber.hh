@@ -44,6 +44,11 @@ inline id NSNumber_numberWithBool(bool value) {
                             static_cast<BOOL>(value));
 }
 
+inline id NSNumber_numberWithInt(int number) {
+  return objc::msg_send<id>(objc::get_class("NSNumber"),
+                            objc::selector("numberWithInt:"), number);
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

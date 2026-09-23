@@ -127,6 +127,22 @@ public:
     (void)height;
 #endif
   }
+
+  static void window_show_uri_in_default_browser(GtkWindow *parent,
+                                                 const char *uri) {
+    // Open uri in default browser
+#if GTK_MAJOR_VERSION < 4
+    gtk_show_uri(nullptr, uri, GDK_CURRENT_TIME, nullptr);
+#else
+#if GTK_CHECK_VERSION(4, 10, 0)
+    auto *launcher = gtk_uri_launcher_new(uri);
+    gtk_uri_launcher_launch(launcher, parent, nullptr, nullptr, nullptr);
+    g_object_unref(launcher);
+#else
+    g_app_info_launch_default_for_uri(uri, nullptr, nullptr);
+#endif
+#endif
+  }
 };
 
 } // namespace detail

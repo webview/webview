@@ -132,6 +132,19 @@ public:
     webkit_user_content_manager_register_script_message_handler(manager, name);
 #endif
   }
+
+  static WebKitNavigationType
+  get_navigation_type(WebKitNavigationPolicyDecision *navigationDecision) {
+#if GTK_MAJOR_VERSION >= 4
+    WebKitNavigationAction *action =
+        webkit_navigation_policy_decision_get_navigation_action(
+            navigationDecision);
+    return webkit_navigation_action_get_navigation_type(action);
+#else
+    return webkit_navigation_policy_decision_get_navigation_type(
+        navigationDecision);
+#endif
+  }
 };
 
 } // namespace detail

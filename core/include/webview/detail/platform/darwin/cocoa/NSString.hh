@@ -50,6 +50,11 @@ inline bool NSString_hasSuffix(id self, id suffix) {
       objc::msg_send<BOOL>(self, objc::selector("hasSuffix:"), suffix));
 }
 
+inline bool NSString_isEqualToString(id self, id aString) {
+  return static_cast<bool>(
+      objc::msg_send<BOOL>(self, objc::selector("isEqualToString:"), aString));
+}
+
 inline id NSString_alloc() {
   return objc::msg_send<id>(objc::get_class("NSString"),
                             objc::selector("alloc"));

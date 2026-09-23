@@ -39,8 +39,37 @@ namespace webview {
 namespace detail {
 namespace cocoa {
 
+inline id NSSavePanel_savePanel() {
+  return objc::msg_send<id>(objc::get_class("NSSavePanel"),
+                            objc::selector("savePanel"));
+}
+
+inline NSModalResponse NSSavePanel_setNameFieldStringValue(id self, id value) {
+  return objc::msg_send<NSModalResponse>(
+      self, objc::selector("setNameFieldStringValue:"), value);
+}
+
 inline NSModalResponse NSSavePanel_runModal(id self) {
   return objc::msg_send<NSModalResponse>(self, objc::selector("runModal"));
+}
+
+inline NSModalResponse NSSavePanel_runModalForWindow(id self, id window) {
+  objc::msg_send<void>(
+      self, objc::selector("beginSheetModalForWindow:completionHandler:"),
+      window, ^(id result) {
+        objc::msg_send<void>(
+            objc::msg_send<id>(objc::get_class("NSApplication"),
+                               objc::selector("sharedApplication")),
+            objc::selector("stopModalWithCode:"), result);
+      });
+  return objc::msg_send<NSModalResponse>(
+      objc::msg_send<id>(objc::get_class("NSApplication"),
+                         objc::selector("sharedApplication")),
+      objc::selector("runModalForWindow:"), self);
+}
+
+inline id NSSavePanel_get_URL(id self) {
+  return objc::msg_send<id>(self, objc::selector("URL"));
 }
 
 } // namespace cocoa
