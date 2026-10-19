@@ -252,7 +252,7 @@ private:
       return -1;
     }
     auto info_length_bytes =
-        found_client.version.size() * sizeof(found_client.version[0]);
+        (found_client.version.size() + 1) * sizeof(found_client.version[0]);
     auto info = static_cast<LPWSTR>(CoTaskMemAlloc(info_length_bytes));
     if (!info) {
       return -1;
