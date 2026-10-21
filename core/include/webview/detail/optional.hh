@@ -31,7 +31,6 @@
 #include "exceptions.hh"
 
 #include <new>
-#include <type_traits>
 #include <utility>
 
 namespace webview {
@@ -104,8 +103,8 @@ public:
   bool has_value() const { return m_has_data; }
 
 private:
-  // NOLINTNEXTLINE(bugprone-sizeof-expression): pointer to aggregate is OK
-  typename std::aligned_storage<sizeof(T), alignof(T)>::type m_data;
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays, hicpp-avoid-c-arrays): raw storage
+  alignas(T) unsigned char m_data[sizeof(T)];
   bool m_has_data{};
 };
 
