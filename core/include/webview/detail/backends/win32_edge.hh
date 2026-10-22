@@ -509,8 +509,13 @@ protected:
 private:
   void window_init(void *window) {
     if (!is_webview2_available()) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception{WEBVIEW_ERROR_MISSING_DEPENDENCY,
                       "WebView2 is unavailable"};
+#else
+      WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_MISSING_DEPENDENCY,
+                                "WebView2 is unavailable")
+#endif
     }
 
     HINSTANCE hInstance = GetModuleHandle(nullptr);
@@ -608,7 +613,11 @@ private:
       CreateWindowW(L"webview", L"", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                     CW_USEDEFAULT, 0, 0, nullptr, nullptr, hInstance, this);
       if (!m_window) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
         throw exception{WEBVIEW_ERROR_INVALID_STATE, "Window is null"};
+#else
+        WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_INVALID_STATE, "Window is null")
+#endif
       }
       on_window_created();
 
@@ -659,7 +668,12 @@ private:
     CreateWindowExW(WS_EX_CONTROLPARENT, L"webview_widget", nullptr, WS_CHILD,
                     0, 0, 0, 0, m_window, nullptr, hInstance, this);
     if (!m_widget) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception{WEBVIEW_ERROR_INVALID_STATE, "Widget window is null"};
+#else
+      WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_INVALID_STATE,
+                                "Widget window is null")
+#endif
     }
 
     // Create a message-only window for internal messaging.
@@ -705,7 +719,12 @@ private:
     CreateWindowExW(0, L"webview_message", nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE,
                     nullptr, hInstance, this);
     if (!m_message_window) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw exception{WEBVIEW_ERROR_INVALID_STATE, "Message window is null"};
+#else
+      WEBVIEW_THROW_REPLACEMENT(WEBVIEW_ERROR_INVALID_STATE,
+                                "Message window is null")
+#endif
     }
   }
 

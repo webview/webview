@@ -86,7 +86,11 @@ public:
 
   const T &get() const {
     if (!m_has_data) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw bad_access{};
+#else
+      WEBVIEW_THROW_REPLACEMENT(0xbadf00d, "bad access")
+#endif
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return *reinterpret_cast<const T *>(&m_data);
@@ -94,7 +98,11 @@ public:
 
   T &get() {
     if (!m_has_data) {
+#ifndef WEBVIEW_HAS_NO_EXCEPTIONS
       throw bad_access{};
+#else
+      WEBVIEW_THROW_REPLACEMENT(0xbadf00d, "bad access")
+#endif
     }
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     return *reinterpret_cast<T *>(&m_data);
