@@ -46,6 +46,7 @@
 #include "../engine_base.hh"
 #include "../platform/darwin/cocoa/cocoa.hh"
 #include "../platform/darwin/objc/objc.hh"
+#include "../platform/darwin/objc/version.hh"
 #include "../platform/darwin/webkit/webkit.hh"
 #include "../user_script.hh"
 
@@ -225,6 +226,74 @@ protected:
 
     return {};
   }
+  noresult add_cookie_impl(const cookie_data &cookieData) override {
+    objc::autoreleasepool arp;
+    std::vector<id> keyIds{
+        NSHTTPCookie::NSHTTPCookieVersion(),
+        NSHTTPCookie::NSHTTPCookieName(),
+        NSHTTPCookie::NSHTTPCookieValue(),
+        NSHTTPCookie::NSHTTPCookieDomain(),
+        NSHTTPCookie::NSHTTPCookiePath(),
+        NSHTTPCookie::NSHTTPCookieSameSitePolicy(),
+    };
+    std::vector<id> valIds{
+        NSString_stringWithUTF8String("0"),
+        NSString_stringWithUTF8String(cookieData.get_name()),
+        NSString_stringWithUTF8String(cookieData.get_value()),
+        NSString_stringWithUTF8String(cookieData.get_domain()),
+        NSString_stringWithUTF8String(cookieData.get_path()),
+        NSString_stringWithUTF8String(cookieData.get_sameSiteString()),
+    };
+    if (cookieData.get_maxage() == -1) {
+      keyIds.push_back(NSHTTPCookie::NSHTTPCookieDiscard());
+      valIds.push_back(NSString_stringWithUTF8String("TRUE"));
+    } else {
+      keyIds.push_back(NSHTTPCookie::NSHTTPCookieMaximumAge());
+      valIds.push_back(NSNumber_numberWithInt(cookieData.get_maxage()));
+    }
+    if (cookieData.get_httpOnly()) {
+      keyIds.push_back(NSHTTPCookie::NSHTTPCookieHTTPOnly());
+      valIds.push_back(NSString_stringWithUTF8String("TRUE"));
+    };
+    if (cookieData.get_secure()) {
+      keyIds.push_back(NSHTTPCookie::NSHTTPCookieSecure());
+      valIds.push_back(NSString_stringWithUTF8String("TRUE"));
+    };
+
+    id props = NSDictionary_dictionaryWithObjects(valIds, keyIds);
+    id cookie = NSHTTPCookie_cookieWithProperties(props);
+    id config = WKWebView_get_configuration(m_webview);
+    id dataStore = WKWebViewConfiguration_get_websiteDataStore(config);
+    id cookieStore = WKWebsiteDataStore_get_httpCookieStore(dataStore);
+    WKHTTPCookieStore_setCookie(cookieStore, cookie);
+    return {};
+  }
+  noresult delete_cookie_impl(const cookie_data &cookieData) override {
+    objc::autoreleasepool arp;
+    id config = WKWebView_get_configuration(m_webview);
+    id dataStore = WKWebViewConfiguration_get_websiteDataStore(config);
+    id cookieStore = WKWebsiteDataStore_get_httpCookieStore(dataStore);
+    WKHTTPCookieStore_getAllCookies(
+        cookieStore, [cookieData, cookieStore](id cookies) {
+          if (cookies == nullptr) {
+            return;
+          }
+          NSUInteger count = NSArray_count(cookies);
+          for (NSUInteger i = 0; i < count; ++i) {
+            id cookie = NSArray_objectAtIndex(cookies, i);
+            id name = NSHTTPCookie_get_name(cookie);
+            id domain = NSHTTPCookie_get_domain(cookie);
+            const bool nameMatch = NSString_isEqualToString(
+                name, NSString_stringWithUTF8String(cookieData.get_name()));
+            const bool domainMatch = NSString_isEqualToString(
+                domain, NSString_stringWithUTF8String(cookieData.get_domain()));
+            if (nameMatch && domainMatch) {
+              WKHTTPCookieStore_deleteCookie(cookieStore, cookie);
+            }
+          }
+        });
+    return {};
+  }
   noresult set_html_impl(const std::string &html) override {
     objc::autoreleasepool arp;
     WKWebView_loadHTMLString(m_webview, NSString_stringWithUTF8String(html),
@@ -362,6 +431,181 @@ private:
             NSInvocation_invoke(invocation);
           }),
           "v@:@@@@");
+
+      // Add: handle new window requests (e.g. window.open with _blank)
+      class_addMethod(
+          cls,
+          objc::selector("webView:createWebViewWithConfiguration:"
+                         "forNavigationAction:windowFeatures:"),
+          (IMP)(+[](id self, SEL, id webView, id configuration,
+                    id navigationAction, id windowFeatures) -> id {
+            // webView:           WKWebView
+            // configuration:     WKWebViewConfiguration
+            // navigationAction:  WKNavigationAction
+            // windowFeatures:    WKWindowFeatures
+            (void)self;
+            (void)webView;
+            (void)configuration;
+            (void)windowFeatures;
+            // Get the URL from the navigation action
+            id request =
+                objc::msg_send<id>(navigationAction, objc::selector("request"));
+            id url = objc::msg_send<id>(request, objc::selector("URL"));
+            // NSWorkspace.sharedWorkspace.openURL(url)
+            id workspace =
+                objc::msg_send<id>(objc::get_class("NSWorkspace"),
+                                   objc::selector("sharedWorkspace"));
+            objc::msg_send<void>(workspace, objc::selector("openURL:"), url);
+
+            return nullptr;
+          }),
+          "@@:@@@@"); // return id, receiver, sel, 4 args
+      objc_registerClassPair(cls);
+    }
+    return objc::Class_new(cls);
+  }
+  static id create_webkit_navigation_delegate() {
+    objc::autoreleasepool arp;
+    constexpr auto class_name = "webviewWKNavigationDelegate";
+    // Avoid crash due to registering same class twice
+    auto cls = objc_lookUpClass(class_name);
+    if (!cls) {
+      cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
+      class_addProtocol(cls, objc_getProtocol("WKNavigationDelegate"));
+      class_addProtocol(cls, objc_getProtocol("WKDownloadDelegate"));
+      class_addMethod(
+          cls,
+          objc::selector(
+              "webView:decidePolicyForNavigationAction:decisionHandler:"),
+          (IMP)(+[](id self, SEL, id webView, id navigationAction,
+                    id decisionHandler) {
+            // webView:             WKWebView
+            // navigationAction:    WKNavigationAction
+            // decisionHandler:     void (^decisionHandler)(WKNavigationActionPolicy)
+            (void)(webView);
+            WKNavigationActionPolicy policy = WKNavigationActionPolicyAllow;
+            if (objc::macos_at_least(11, 3)) {
+              if (WKNavigationAction_shouldPerformDownload(navigationAction)) {
+                policy = WKNavigationActionPolicyDownload;
+              }
+            } else {
+              // for old macos, hope this is enough
+              auto request = WKNavigationResponse_request(navigationAction);
+              auto url = NSURLRequest_URL(request);
+              auto scheme = NSURL_scheme(url);
+              if (NSString_isEqualToString(
+                      scheme, NSString_stringWithUTF8String("blob"))) {
+                policy = WKNavigationActionPolicyDownload;
+              }
+            }
+            const WKNavigationType navType =
+                WKNavigationAction_navigationType(navigationAction);
+            const bool triggeredByReload = navType == WKNavigationTypeReload;
+            if (policy != WKNavigationActionPolicyDownload) {
+              auto request = WKNavigationResponse_request(navigationAction);
+              auto url = NSURLRequest_URL(request);
+              const char *utf8Url =
+                  NSString_get_UTF8String(NSURL_absoluteString(url));
+              const cocoa_wkwebview_engine *engine =
+                  get_associated_webview(self);
+              if (engine &&
+                  !engine->get_decide_policy_navigation_callback().call<true>(
+                      utf8Url, triggeredByReload)) {
+                policy = WKNavigationActionPolicyCancel;
+              }
+            }
+            // Invoke the decision handler block.
+            auto sig{NSMethodSignature_signatureWithObjCTypes("v@?@")};
+            auto invocation{NSInvocation_invocationWithMethodSignature(sig)};
+            NSInvocation_set_target(invocation, decisionHandler);
+            NSInvocation_setArgument(invocation, &policy, 1);
+            NSInvocation_invoke(invocation);
+          }),
+          "v@:@@?");
+      class_addMethod(
+          cls,
+          objc::selector(
+              "webView:decidePolicyForNavigationResponse:decisionHandler:"),
+          (IMP)(+[](id self, SEL, id webView, id navigationResponse,
+                    void (^decisionHandler)(WKNavigationResponsePolicy)) {
+            // webView:             WKWebView
+            // navigationResponse:  WKNavigationResponse
+            // decisionHandler:     void (^decisionHandler)(WKNavigationResponsePolicy)
+            (void)(webView);
+            objc::autoreleasepool arp;
+            WKNavigationResponsePolicy policy = WKNavigationResponsePolicyAllow;
+            id response = WKNavigationResponse_response(navigationResponse);
+            if (objc::is_kind_of_class(response, "NSHTTPURLResponse")) {
+              NSInteger statusCode = NSHTTPURLResponse_statusCode(response);
+              if (statusCode != 200) {
+                const cocoa_wkwebview_engine *engine =
+                    get_associated_webview(self);
+                if (engine &&
+                    engine->get_navigation_error_callback().call<false>(
+                        static_cast<int>(statusCode))) {
+                  policy = WKNavigationResponsePolicyCancel;
+                }
+              }
+            }
+            // Invoke the decision handler block (NSInvocation would would work as well)
+            decisionHandler(policy);
+            // auto sig{NSMethodSignature_signatureWithObjCTypes("v@?@")};
+            // auto invocation{NSInvocation_invocationWithMethodSignature(sig)};
+            // NSInvocation_set_target(invocation, decisionHandler);
+            // NSInvocation_setArgument(invocation, &policy, 1);
+            // NSInvocation_invoke(invocation);
+          }),
+          "v@:@@?");
+      class_addMethod(
+          cls, objc::selector("webView:navigationAction:didBecomeDownload:"),
+          (IMP)(+[](id self, SEL, id webView, id navigationAction,
+                    id download) {
+            // webView:             WKWebView*
+            // navigationAction:    WKNavigationAction*
+            // download:            WKDownload*
+            (void)(self);
+            (void)(navigationAction);
+            // set delegate for save dialog
+            WKDownload_set_delegate(download,
+                                    WKWebView_get_NavigationDelegate(webView));
+          }),
+          "v@:@@@");
+      class_addMethod(
+          cls,
+          objc::selector("download:decideDestinationUsingResponse:"
+                         "suggestedFilename:completionHandler:"),
+          (IMP)(+[](id self, SEL, id download, id response,
+                    id suggestedFilename, id completionHandler) {
+            // download:            WKDownload*
+            // response:            NSURLResponse*
+            // suggestedFilename:   NSString*
+            // completionHandler:   void (^)(NSURL* destination)
+            (void)(download);
+            (void)(response);
+            objc::autoreleasepool arp;
+
+            auto panel{NSSavePanel_savePanel()};
+            NSSavePanel_setNameFieldStringValue(panel, suggestedFilename);
+
+            const cocoa_wkwebview_engine *engine = get_associated_webview(self);
+            // get actual window of view
+            id window = engine ? WKWebView_window(engine->m_webview) : id{};
+            // if there is a window, show dialog as sheet
+            NSModalResponse modal_response =
+                window ? NSSavePanel_runModalForWindow(panel, window)
+                       : NSSavePanel_runModal(panel);
+            id url = modal_response == NSModalResponseOK
+                         ? NSSavePanel_get_URL(panel)
+                         : nullptr;
+
+            // Invoke the completion handler block.
+            auto sig{NSMethodSignature_signatureWithObjCTypes("v@?@")};
+            auto invocation{NSInvocation_invocationWithMethodSignature(sig)};
+            NSInvocation_set_target(invocation, completionHandler);
+            NSInvocation_setArgument(invocation, &url, 1);
+            NSInvocation_invoke(invocation);
+          }),
+          "v@:@@@?");
       objc_registerClassPair(cls);
     }
     return objc::Class_new(cls);
@@ -493,6 +737,10 @@ private:
     set_associated_webview(ui_delegate, this);
     WKWebView_set_UIDelegate(m_webview, ui_delegate);
 
+    auto navigation_delegate = create_webkit_navigation_delegate();
+    set_associated_webview(navigation_delegate, this);
+    WKWebView_set_NavigationDelegate(m_webview, navigation_delegate);
+
     if (debug) {
       // Explicitly make WKWebView inspectable via Safari on OS versions that
       // disable the feature by default (macOS 13.3 and later) and support
@@ -604,13 +852,13 @@ private:
     }
   }
 
-  id m_app{};
-  id m_app_delegate{};
-  id m_window_delegate{};
-  id m_window{};
-  id m_widget{};
-  id m_webview{};
-  id m_manager{};
+  id m_app{};             // NSApplication
+  id m_app_delegate{};    // WebviewAppDelegate
+  id m_window_delegate{}; // WebviewNSWindowDelegate
+  id m_window{};          // NSWindow
+  id m_widget{};          // NSView
+  id m_webview{};         // WKWebView
+  id m_manager{};         // WKUserContentController
   bool m_is_window_shown{};
 };
 

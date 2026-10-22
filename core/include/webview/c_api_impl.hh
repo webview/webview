@@ -198,6 +198,15 @@ WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html) {
   return api_filter([=] { return cast_to_webview(w)->set_html(html); });
 }
 
+WEBVIEW_API webview_error_t webview_set_cookie(webview_t w,
+                                               const char *cookie) {
+  using namespace webview::detail;
+  if (!cookie) {
+    return WEBVIEW_ERROR_INVALID_ARGUMENT;
+  }
+  return api_filter([=] { return cast_to_webview(w)->set_cookie(cookie); });
+}
+
 WEBVIEW_API webview_error_t webview_init(webview_t w, const char *js) {
   using namespace webview::detail;
   if (!js) {
@@ -248,6 +257,23 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
   }
   return api_filter(
       [=] { return cast_to_webview(w)->resolve(id, status, result); });
+}
+
+WEBVIEW_API webview_error_t webview_set_decide_policy_navigation_callback(
+    webview_t w, bool (*fn)(const char *url, bool triggeredByReload, void *arg),
+    void *arg) {
+  using namespace webview::detail;
+  return api_filter([=] {
+    return cast_to_webview(w)->set_decide_policy_navigation_callback(fn, arg);
+  });
+}
+
+WEBVIEW_API webview_error_t webview_set_navigation_error_callback(
+    webview_t w, bool (*fn)(int httpStatusCode, void *arg), void *arg) {
+  using namespace webview::detail;
+  return api_filter([=] {
+    return cast_to_webview(w)->set_navigation_error_callback(fn, arg);
+  });
 }
 
 WEBVIEW_API const webview_version_info_t *webview_version(void) {

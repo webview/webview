@@ -54,6 +54,14 @@ inline id NSURL_URLWithString(const std::string &string) {
   return NSURL_URLWithString(NSString_stringWithUTF8String(string));
 }
 
+inline id NSURL_absoluteString(id self) {
+  return objc::msg_send<id>(self, objc::selector("absoluteString"));
+}
+
+inline id NSURL_scheme(id self) {
+  return objc::msg_send<id>(self, objc::selector("scheme"));
+}
+
 } // namespace cocoa
 } // namespace detail
 } // namespace webview

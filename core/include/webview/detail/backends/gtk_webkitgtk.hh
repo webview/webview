@@ -50,6 +50,7 @@
 #include "../engine_base.hh"
 #include "../platform/linux/gtk/compat.hh"
 #include "../platform/linux/webkitgtk/compat.hh"
+#include "../platform/linux/webkitgtk/cookies.hh"
 #include "../platform/linux/webkitgtk/dmabuf.hh"
 #include "../user_script.hh"
 
@@ -68,6 +69,7 @@
 #elif GTK_MAJOR_VERSION >= 3
 
 #include <JavaScriptCore/JavaScript.h>
+#include <libsoup/soup.h>
 #include <webkit2/webkit2.h>
 
 #endif
@@ -205,6 +207,16 @@ protected:
     return {};
   }
 
+  noresult add_cookie_impl(const cookie_data &cookieData) override {
+    return webkitgtk_cookies::add_cookie(WEBKIT_WEB_VIEW(m_webview),
+                                         cookieData);
+  }
+
+  noresult delete_cookie_impl(const cookie_data &cookieData) override {
+    return webkitgtk_cookies::delete_cookie(WEBKIT_WEB_VIEW(m_webview),
+                                            cookieData);
+  }
+
   noresult eval_impl(const std::string &js) override {
     // URI is null before content has begun loading.
     if (!webkit_web_view_get_uri(WEBKIT_WEB_VIEW(m_webview))) {
@@ -303,6 +315,197 @@ private:
     add_init_script("function(message) {\n\
   return window.webkit.messageHandlers.__webview__.postMessage(message);\n\
 }");
+    auto on_view_decide_policy =
+        +[](WebKitWebView *, WebKitPolicyDecision *decision,
+            WebKitPolicyDecisionType type, gpointer arg) -> gboolean {
+      if (type == WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION) {
+        WebKitNavigationPolicyDecision *navigationDecision =
+            WEBKIT_NAVIGATION_POLICY_DECISION(decision);
+        WebKitNavigationAction *action =
+            webkit_navigation_policy_decision_get_navigation_action(
+                navigationDecision);
+        WebKitURIRequest *request =
+            webkit_navigation_action_get_request(action);
+        WebKitNavigationType navType =
+            webkitgtk_compat::get_navigation_type(navigationDecision);
+        const bool triggeredByReload = navType == WEBKIT_NAVIGATION_TYPE_RELOAD;
+        const gchar *url = webkit_uri_request_get_uri(request);
+        auto *w = static_cast<gtk_webkit_engine *>(arg);
+        if (w && !w->get_decide_policy_navigation_callback().call<true>(
+                     url, triggeredByReload)) {
+          webkit_policy_decision_ignore(decision);
+        }
+        return TRUE; // Return TRUE to stop further handling
+
+      } else if (type == WEBKIT_POLICY_DECISION_TYPE_RESPONSE) {
+        WebKitResponsePolicyDecision *response =
+            WEBKIT_RESPONSE_POLICY_DECISION(decision);
+        WebKitURIResponse *res =
+            webkit_response_policy_decision_get_response(response);
+        guint statusCode = webkit_uri_response_get_status_code(res);
+        if (statusCode != SOUP_STATUS_OK) { // ignore 'Ok'
+          auto *w = static_cast<gtk_webkit_engine *>(arg);
+          if (w && w->get_navigation_error_callback().call<false>(
+                       static_cast<int>(statusCode))) {
+            webkit_policy_decision_ignore(decision);
+            return TRUE; // Return TRUE to stop further handling
+          }
+        }
+
+      } else if (type == WEBKIT_POLICY_DECISION_TYPE_NEW_WINDOW_ACTION) {
+        WebKitNavigationPolicyDecision *navigationDecision =
+            WEBKIT_NAVIGATION_POLICY_DECISION(decision);
+        WebKitNavigationAction *action =
+            webkit_navigation_policy_decision_get_navigation_action(
+                navigationDecision);
+        WebKitURIRequest *request =
+            webkit_navigation_action_get_request(action);
+        const gchar *url = webkit_uri_request_get_uri(request);
+        auto *w = static_cast<gtk_webkit_engine *>(arg);
+        gtk_compat::window_show_uri_in_default_browser(GTK_WINDOW(w->m_window),
+                                                       url);
+
+        webkit_policy_decision_ignore(decision);
+        return TRUE; // Return TRUE to stop further handling
+      }
+      return FALSE; // Making no decision results in webkit_policy_decision_use().
+    };
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "decide-policy",
+                     G_CALLBACK(on_view_decide_policy), this);
+
+    // Add: handle new window requests (e.g. window.open with _blank)
+    auto on_create =
+        +[](WebKitWebView *web_view, WebKitNavigationAction *navigation_action,
+            gpointer arg) -> WebKitWebView * {
+      (void)web_view;
+      WebKitURIRequest *request =
+          webkit_navigation_action_get_request(navigation_action);
+      const gchar *url = webkit_uri_request_get_uri(request);
+      auto *w = static_cast<gtk_webkit_engine *>(arg);
+      gtk_compat::window_show_uri_in_default_browser(GTK_WINDOW(w->m_window),
+                                                     url);
+      return nullptr; // don't create new web view
+    };
+    g_signal_connect(WEBKIT_WEB_VIEW(m_webview), "create",
+                     G_CALLBACK(on_create), this);
+
+#if GTK_MAJOR_VERSION >= 4
+    auto on_download_started = +[](WebKitNetworkSession *,
+                                   WebKitDownload *download, gpointer arg) {
+      auto destination = +[](WebKitDownload *download2, char *suggestedFilename,
+                             gpointer arg2) -> gboolean {
+        auto *w = static_cast<gtk_webkit_engine *>(arg2);
+#if GTK_CHECK_VERSION(4, 10, 0)
+        GtkFileDialog *dialog = gtk_file_dialog_new();
+        gtk_file_dialog_set_title(dialog, "Save File");
+        gtk_file_dialog_set_initial_name(dialog, suggestedFilename);
+        g_object_ref(download2); // required in async dialog
+
+        gtk_file_dialog_save(
+            dialog, GTK_WINDOW(w->m_window), nullptr,
+            [](GObject *source_object, GAsyncResult *res, gpointer user_data) {
+              GtkFileDialog *dialog = GTK_FILE_DIALOG(source_object);
+              WebKitDownload *download = WEBKIT_DOWNLOAD(user_data);
+              GError *error = nullptr;
+              GFile *file = gtk_file_dialog_save_finish(dialog, res, &error);
+              if (file != nullptr) {
+                char *destination = g_file_get_path(file);
+                webkit_download_set_destination(download, destination);
+                g_free(destination);
+                g_object_unref(file);
+              } else {
+                webkit_download_cancel(download);
+                if (error) {
+                  g_clear_error(&error);
+                }
+              }
+              g_object_unref(download); // release
+            },
+            download2);
+        g_object_unref(dialog);
+#else
+        // GTK < 4.10.0
+        // gtk_file_dialog_new() is available since gtk 4.10 (e.g. Ubuntu 24.04)
+        GtkFileChooserNative *native = gtk_file_chooser_native_new(
+            "Save File", GTK_WINDOW(w->m_window), GTK_FILE_CHOOSER_ACTION_SAVE,
+            "_Save", "_Cancel");
+
+        gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(native),
+                                          suggestedFilename);
+        g_object_ref(download2); // keep download alive until callback runs
+        g_signal_connect(native, "response",
+                         G_CALLBACK(+[](GtkNativeDialog *native_dialog,
+                                        gint response, gpointer user_data) {
+                           WebKitDownload *download =
+                               WEBKIT_DOWNLOAD(user_data);
+                           GtkFileChooserNative *native =
+                               GTK_FILE_CHOOSER_NATIVE(native_dialog);
+                           if (response == GTK_RESPONSE_ACCEPT) {
+                             GFile *file = gtk_file_chooser_get_file(
+                                 GTK_FILE_CHOOSER(native));
+                             if (file != nullptr) {
+                               char *dest = g_file_get_path(file);
+                               webkit_download_set_destination(download, dest);
+                               g_free(dest);
+                               g_object_unref(file);
+                             } else {
+                               webkit_download_cancel(download);
+                             }
+                           } else {
+                             webkit_download_cancel(download);
+                           }
+
+                           g_object_unref(download);
+                           g_object_unref(native_dialog);
+                         }),
+                         download2);
+
+        gtk_native_dialog_show(GTK_NATIVE_DIALOG(native));
+#endif // GTK < 4.10.0
+        return TRUE;
+      };
+      g_signal_connect(download, "decide-destination", G_CALLBACK(destination),
+                       arg);
+    };
+    WebKitNetworkSession *network_session =
+        webkit_web_view_get_network_session(WEBKIT_WEB_VIEW(m_webview));
+    g_signal_connect(network_session, "download-started",
+                     G_CALLBACK(on_download_started), this);
+
+#else
+    auto on_download_started = +[](WebKitWebContext *, WebKitDownload *download,
+                                   gpointer arg) {
+      // const gchar *dest = webkit_download_get_destination(download);
+      // qWarning("signal 'download-started' (destination='%s')", dest);
+      auto destination = +[](WebKitDownload *download2, char *suggestedFilename,
+                             gpointer arg2) -> gboolean {
+        auto *w = static_cast<gtk_webkit_engine *>(arg2);
+        GtkWidget *dialog = gtk_file_chooser_dialog_new(
+            "Save File", GTK_WINDOW(w->m_window), GTK_FILE_CHOOSER_ACTION_SAVE,
+            "_Cancel", GTK_RESPONSE_CANCEL, "_Save", GTK_RESPONSE_ACCEPT,
+            nullptr);
+        GtkFileChooser *chooser = GTK_FILE_CHOOSER(dialog);
+        gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
+        gtk_file_chooser_set_current_name(chooser, suggestedFilename);
+        if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+          gchar *destinationUri = gtk_file_chooser_get_uri(chooser);
+          webkit_download_set_destination(download2, destinationUri);
+          g_free(destinationUri);
+        } else {
+          webkit_download_cancel(download2);
+        }
+        gtk_widget_destroy(dialog);
+        return FALSE;
+      };
+
+      g_signal_connect(download, "decide-destination", G_CALLBACK(destination),
+                       arg);
+    };
+    WebKitWebContext *web_context =
+        webkit_web_view_get_context(WEBKIT_WEB_VIEW(m_webview));
+    g_signal_connect(web_context, "download-started",
+                     G_CALLBACK(on_download_started), this);
+#endif
   }
 
   void window_settings(bool debug) {

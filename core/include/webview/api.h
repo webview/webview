@@ -173,6 +173,31 @@ WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url);
 WEBVIEW_API webview_error_t webview_set_html(webview_t w, const char *html);
 
 /**
+ * Sets or deletes a cookie for the given webview.
+ *
+ * This function parses the provided string and adds it to the webview's cookie jar.
+ * If a cookie with the same name and domain already exists, it will be updated.
+ * To delete a cookie, set its value to an empty string and provide the @c Domain.
+ * On Linux and MacOS, the operation is executed asynchronously in the next event loop.
+ * On Windows, the operation is synchron.
+ *
+ * The cookie format is @c "NAME=VALUE; Domain=DOMAIN; Path=PATH; Max-Age=MAXAGE; [HttpOnly; ][Secure; ][SameSite=SAMESITE]"
+ * - @c MAXAGE: number in seconds, use @c -1 for session cookies
+ * - @c SAMESITE: @c "Lax" or @c "Strict"
+ * Example:
+ * @code{.c}
+ * webview_set_cookie(w, "myAuthSessionId=00112233; Domain=127.0.0.1; Path=/; Max-Age=-1; HttpOnly; SameSite=Lax");
+ * webview_set_cookie(w, "XSRF-TOKEN=ffeeddcc; Domain=127.0.0.1; Path=/; Max-Age=86400; Secure; SameSite=Strict");
+ * // Delete cookie
+ * webview_set_cookie(w, "XSRF-TOKEN=; Domain=127.0.01");
+ * @endcode
+ *
+ * @param w The webview instance.
+ * @param cookie The cookie string.
+ */
+WEBVIEW_API webview_error_t webview_set_cookie(webview_t w, const char *cookie);
+
+/**
  * Injects JavaScript code to be executed immediately upon loading a page.
  * The code will be executed before @c window.onload.
  *
@@ -236,6 +261,34 @@ WEBVIEW_API webview_error_t webview_unbind(webview_t w, const char *name);
  */
 WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
                                            int status, const char *result);
+
+/**
+ * Register a function to get notified about navigation requests.
+ * arg is the context provided while setting the callback.
+ * triggeredByReload true if triggered by Reload context menu, Browser UI or
+ * JavaScript (`location.reload()`). On Windows always false.
+ * return false to abort the navigation, true accepts the url.
+ *
+ * @param w The webview instance.
+ * @param fn Callback function.
+ * @param arg User argument.
+ */
+WEBVIEW_API webview_error_t webview_set_decide_policy_navigation_callback(
+    webview_t w, int (*fn)(const char *url, int triggeredByReload, void *arg),
+    void *arg);
+
+/**
+ * Register a function to get notified about navigation errors.
+ * In the callback, httpStatusCode could be 403 (forbidden).
+ * arg is the context provided while setting the callback.
+ * return true to abort navigation.
+ *
+ * @param w The webview instance.
+ * @param fn Callback function.
+ * @param arg User argument.
+ */
+WEBVIEW_API webview_error_t webview_set_navigation_error_callback(
+    webview_t w, int (*fn)(int httpStatusCode, void *arg), void *arg);
 
 /**
  * Get the library's version information.

@@ -33,6 +33,7 @@
 #if defined(WEBVIEW_PLATFORM_DARWIN)
 
 // IWYU pragma: begin_exports
+#include "Block.hh"
 #include "Class.hh"
 #include "autoreleasepool.hh"
 #include "invoke.hh"
