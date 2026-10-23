@@ -52,6 +52,12 @@ inline void WKUserContentController_removeAllUserScripts(id self) {
   objc::msg_send<id>(self, objc::selector("removeAllUserScripts"));
 }
 
+inline void WKUserContentController_removeScriptMessageHandler(id self,
+                                                               id name) {
+  objc::msg_send<void>(
+      self, objc::selector("removeScriptMessageHandlerForName:"), name);
+}
+
 } // namespace webkit
 } // namespace detail
 } // namespace webview
