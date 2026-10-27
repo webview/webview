@@ -763,13 +763,18 @@ private:
     // Pump the message loop until WebView2 has finished initialization.
     bool got_quit_msg = false;
     MSG msg;
-    while (flag.test_and_set() && GetMessageW(&msg, nullptr, 0, 0) >= 0) {
-      if (msg.message == WM_QUIT) {
-        got_quit_msg = true;
-        break;
+    BOOL ret;
+    while (flag.test_and_set() && !got_quit_msg) {
+      Sleep(1);
+      while (PeekMessageW(&msg, nullptr, 0, 0, PM_NOREMOVE)) {
+        ret = GetMessageW(&msg, nullptr, 0, 0);
+        if (0 == ret || -1 == ret) {
+          got_quit_msg = true;
+          break;
+        }
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
       }
-      TranslateMessage(&msg);
-      DispatchMessageW(&msg);
     }
     if (got_quit_msg) {
       return error_info{WEBVIEW_ERROR_CANCELED};
