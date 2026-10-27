@@ -604,6 +604,55 @@ private:
     }
   }
 
+  noresult alert_impl(const std::string &message) override {
+    objc::autoreleasepool arp;
+    id alert = NSAlert_alloc();
+    NSAlert_setMessageText(alert, message);
+    NSAlert_setAlertStyle(alert, NSAlertStyleInformational);
+    NSAlert_addButtonWithTitle(alert, "OK");
+    NSAlert_beginSheetModalForWindow(alert, m_window, nullptr, nullptr, nullptr);
+    return {};
+  }
+
+  result<bool> confirm_impl(const std::string &message) override {
+    objc::autoreleasepool arp;
+    id alert = NSAlert_alloc();
+    NSAlert_setMessageText(alert, message);
+    NSAlert_setAlertStyle(alert, NSAlertStyleWarning);
+    NSAlert_addButtonWithTitle(alert, "OK");
+    NSAlert_addButtonWithTitle(alert, "Cancel");
+    NSInteger result = NSAlert_runModal(alert);
+    return result == NSAlertFirstButtonReturn;
+  }
+
+  result<std::string> prompt_impl(const std::string &message, const std::string &default_value) override {
+    objc::autoreleasepool arp;
+    id alert = NSAlert_alloc();
+    NSAlert_setMessageText(alert, message);
+    NSAlert_setAlertStyle(alert, NSAlertStyleInformational);
+    
+    // Create a text field for input
+    id textField = NSTextField_alloc();
+    NSTextField_setFrame(textField, NSRectMake(0, 0, 200, 24));
+    NSTextField_setStringValue(textField, default_value);
+    NSAlert_setAccessoryView(alert, textField);
+    
+    NSAlert_addButtonWithTitle(alert, "OK");
+    NSAlert_addButtonWithTitle(alert, "Cancel");
+    
+    // Make the text field focusable
+    NSWindow *alertWindow = NSAlert_window(alert);
+    NSWindow_makeFirstResponder(alertWindow, textField);
+    
+    NSInteger result = NSAlert_runModal(alert);
+    if (result == NSAlertFirstButtonReturn) {
+      std::string input = NSTextField_stringValue(textField);
+      return input;
+    } else {
+      return error_info{WEBVIEW_ERROR_CANCELED};
+    }
+  }
+
   id m_app{};
   id m_app_delegate{};
   id m_window_delegate{};
