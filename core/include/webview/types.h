@@ -63,7 +63,16 @@ typedef enum {
   /// Browser controller. @c WebKitWebView pointer (WebKitGTK), @c WKWebView
   /// pointer (Cocoa/WebKit) or @c ICoreWebView2Controller pointer
   /// (Win32/WebView2).
-  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER
+  WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER,
+  /// DirectComposition device backing the visual tree (Win32/WebView2 under
+  /// visual hosting only; null otherwise). @c IDCompositionDevice pointer.
+  /// Needed to create visuals and to Commit after changing the tree.
+  WEBVIEW_NATIVE_HANDLE_KIND_COMPOSITION_DEVICE,
+  /// Root of the composition visual tree (Win32/WebView2 under visual hosting
+  /// only; null otherwise). @c IDCompositionVisual pointer. The web content's
+  /// visual is already a child; visuals added below it show through wherever
+  /// the page is transparent.
+  WEBVIEW_NATIVE_HANDLE_KIND_COMPOSITION_ROOT
 } webview_native_handle_kind_t;
 
 /// Window size hints

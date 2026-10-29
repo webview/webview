@@ -156,6 +156,10 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
           return w_->widget();
         case WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER:
           return w_->browser_controller();
+        case WEBVIEW_NATIVE_HANDLE_KIND_COMPOSITION_DEVICE:
+          return w_->composition_device();
+        case WEBVIEW_NATIVE_HANDLE_KIND_COMPOSITION_ROOT:
+          return w_->composition_root();
         default:
           return webview::error_info{WEBVIEW_ERROR_INVALID_ARGUMENT};
         }

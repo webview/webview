@@ -96,6 +96,16 @@ static constexpr IID
         0xC9B7,
         0x4260,
         {0x81, 0x27, 0xC9, 0xF5, 0xBD, 0xE7, 0xF6, 0x8C}};
+// Visual hosting (docs/visual-hosting.md). Declared here rather than taken from
+// the SDK header because the SDK's IIDs are `__declspec(selectany) const IID`,
+// which is not usable in a constant expression — the same reason every other
+// IID in this namespace is redeclared.
+static constexpr IID
+    IID_ICoreWebView2CreateCoreWebView2CompositionControllerCompletedHandler{
+        0x02FAB84B,
+        0x1428,
+        0x4FB7,
+        {0xAD, 0x45, 0x1B, 0x2E, 0x64, 0x73, 0x61, 0x84}};
 static constexpr IID
     IID_ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler{
         0x4E8A3389,
@@ -363,6 +373,13 @@ namespace cast_info {
 static constexpr auto controller_completed =
     cast_info_t<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>{
         IID_ICoreWebView2CreateCoreWebView2ControllerCompletedHandler};
+
+// Visual hosting: the completion handler for
+// ICoreWebView2Environment3::CreateCoreWebView2CompositionController. See
+// docs/visual-hosting.md for why an embedder would want it.
+static constexpr auto composition_controller_completed = cast_info_t<
+    ICoreWebView2CreateCoreWebView2CompositionControllerCompletedHandler>{
+    IID_ICoreWebView2CreateCoreWebView2CompositionControllerCompletedHandler};
 
 static constexpr auto environment_completed =
     cast_info_t<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>{
