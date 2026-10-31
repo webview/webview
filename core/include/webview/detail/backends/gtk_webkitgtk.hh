@@ -99,7 +99,13 @@ private:
 
 class gtk_webkit_engine : public engine_base {
 public:
-  gtk_webkit_engine(bool debug, void *window) : engine_base{!window} {
+  gtk_webkit_engine(bool debug, void *window, const std::string &scheme = {},
+                    const std::string &scheme_root = {})
+      : engine_base{!window} {
+    // Custom URL scheme handlers are currently only implemented by the
+    // Cocoa backend; the parameters are accepted for source compatibility.
+    (void)scheme;
+    (void)scheme_root;
     window_init(window);
     window_settings(debug);
     dispatch_size_default();

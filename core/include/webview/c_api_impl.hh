@@ -102,6 +102,27 @@ WEBVIEW_API webview_t webview_create(int debug, void *wnd) {
   return nullptr;
 }
 
+WEBVIEW_API webview_t
+webview_create_from_config(const webview_config_t *config) {
+  using namespace webview::detail;
+  if (config == nullptr || config->size < sizeof(*config)) {
+    return nullptr;
+  }
+  webview::webview *w{};
+  auto err = api_filter(
+      [=]() -> webview::result<webview::webview *> {
+        return new webview::webview{
+            static_cast<bool>(config->debug), config->window,
+            std::string(config->scheme ? config->scheme : ""),
+            std::string(config->scheme_root ? config->scheme_root : "")};
+      },
+      [&](webview::webview *w_) { w = w_; });
+  if (err == WEBVIEW_ERROR_OK) {
+    return w;
+  }
+  return nullptr;
+}
+
 WEBVIEW_API webview_error_t webview_destroy(webview_t w) {
   using namespace webview::detail;
   return api_filter([=]() -> webview::noresult {

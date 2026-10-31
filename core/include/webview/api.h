@@ -60,6 +60,21 @@ extern "C" {
 WEBVIEW_API webview_t webview_create(int debug, void *window);
 
 /**
+ * Creates a new webview instance from a @c webview_config_t. Behaves like
+ * @c webview_create() for the debug/window fields and additionally allows
+ * registering a custom URL scheme whose requests are served from a local
+ * root directory (see @c webview_config_t). This enables bundling an
+ * application's assets behind a virtual scheme instead of spinning up a
+ * local HTTP server.
+ *
+ * @param config Creation options. @c config->size must be
+ *        @c sizeof(webview_config_t).
+ * @return @c NULL on failure or when @c config is @c NULL / undersized.
+ */
+WEBVIEW_API webview_t
+webview_create_from_config(const webview_config_t *config);
+
+/**
  * Destroys a webview instance and closes the native window.
  *
  * @param w The webview instance.
