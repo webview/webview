@@ -244,6 +244,31 @@ WEBVIEW_API webview_error_t webview_return(webview_t w, const char *id,
  */
 WEBVIEW_API const webview_version_info_t *webview_version(void);
 
+/**
+ * Add a navigation callback function.
+ *
+ * @param w The webview instance.
+ * @param fn The callback function to call on events
+ * @param arg A user defined data pointer passed to the callback
+ * 
+ * @since 0.1.x
+ */
+WEBVIEW_API webview_error_t webview_add_navigation_listener(webview_t w,
+                                                            navigation_fn_t fn,
+                                                            void *arg);
+
+/**
+ * Remove a navigation callback function.
+ *
+ * @param w The webview instance.
+ * @param fn The callback function to call on events
+ * @param arg A user defined data pointer passed to the callback
+ * 
+ * @since 0.1.x
+ */
+WEBVIEW_API webview_error_t
+webview_remove_navigation_listener(webview_t w, navigation_fn_t fn, void *arg);
+
 #ifdef __cplusplus
 }
 #endif
