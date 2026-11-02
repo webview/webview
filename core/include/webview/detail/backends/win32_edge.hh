@@ -564,26 +564,32 @@ private:
           break;
         case WM_GETMINMAXINFO: {
           auto lpmmi = (LPMINMAXINFO)lp;
+          // m_minsz and m_maxsz are in DPI-independent units (see set_size),
+          // so they must be scaled to the current DPI before handing them to
+          // Windows, which interprets them as physical pixels.
+          auto dpi = get_window_dpi(hwnd);
+          auto scale = [dpi](int value) {
+            return scale_value_for_dpi(value, get_default_window_dpi(), dpi);
+          };
           if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-            lpmmi->ptMaxSize = w->m_maxsz;
-            lpmmi->ptMaxTrackSize = w->m_maxsz;
+            lpmmi->ptMaxSize = {scale(w->m_maxsz.x), scale(w->m_maxsz.y)};
+            lpmmi->ptMaxTrackSize = lpmmi->ptMaxSize;
           }
           if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-            lpmmi->ptMinTrackSize = w->m_minsz;
+            lpmmi->ptMinTrackSize = {scale(w->m_minsz.x), scale(w->m_minsz.y)};
           }
         } break;
-        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
-          auto dpi = static_cast<int>(wp);
-          auto *size{reinterpret_cast<SIZE *>(lp)};
-          *size = w->get_scaled_size(w->m_dpi, dpi);
-          return TRUE;
+        case WM_MOVE: {
+          // The WebView renders on the monitor its top-level window is on, and
+          // only learns that the window moved when told so. Without this, the
+          // WebView keeps the rasterization scale of the previous monitor after
+          // the window is dragged to one with a different DPI.
+          w->on_window_moved();
+          break;
         }
         case 0x02E0 /*WM_DPICHANGED*/: {
-          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
-          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
-          // Due to this difference, don't use the suggested bounds.
           auto dpi = static_cast<int>(HIWORD(wp));
-          w->on_dpi_changed(dpi);
+          w->on_dpi_changed(dpi, reinterpret_cast<const RECT *>(lp));
           break;
         }
         case WM_SETTINGCHANGE: {
@@ -843,26 +849,31 @@ private:
     return ok;
   }
 
-  void on_dpi_changed(int dpi) {
-    auto scaled_size = get_scaled_size(m_dpi, dpi);
-    auto frame_size =
-        make_window_frame_size(m_window, scaled_size.cx, scaled_size.cy, dpi);
-    SetWindowPos(m_window, nullptr, 0, 0, frame_size.cx, frame_size.cy,
-                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_FRAMECHANGED);
+  void on_dpi_changed(int dpi, const RECT *suggested_rect) {
+    // Resize and reposition the window to the bounds suggested by Windows.
+    // These are what make the window land where the pointer is, and applying
+    // a size of our own instead keeps the window straddling the monitor edge,
+    // which makes it flip back and forth between the two DPIs while dragged.
+    // See
+    // https://learn.microsoft.com/windows/win32/hidpi/wm-dpichanged#remarks
+    if (suggested_rect) {
+      SetWindowPos(m_window, nullptr, suggested_rect->left, suggested_rect->top,
+                   suggested_rect->right - suggested_rect->left,
+                   suggested_rect->bottom - suggested_rect->top,
+                   SWP_NOZORDER | SWP_NOACTIVATE);
+    }
     m_dpi = dpi;
+    // The window is now on a monitor with another scale. The WebView updates
+    // its rasterization scale once it learns that its top-level window moved;
+    // resizing the window alone does not tell it (see RasterizationScale:
+    // https://learn.microsoft.com/microsoft-edge/webview2/reference/win32/icorewebview2controller3#get_rasterizationscale).
+    on_window_moved();
   }
 
-  SIZE get_size() const {
-    RECT bounds;
-    GetClientRect(m_window, &bounds);
-    auto width = bounds.right - bounds.left;
-    auto height = bounds.bottom - bounds.top;
-    return {width, height};
-  }
-
-  SIZE get_scaled_size(int from_dpi, int to_dpi) const {
-    auto size = get_size();
-    return scale_size(size.cx, size.cy, from_dpi, to_dpi);
+  void on_window_moved() {
+    if (m_controller) {
+      m_controller->NotifyParentWindowPositionChanged();
+    }
   }
 
   void on_system_setting_change(const wchar_t *area) {
