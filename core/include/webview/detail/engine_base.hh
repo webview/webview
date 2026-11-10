@@ -324,7 +324,11 @@ protected:
   }
 
   // Runs the event loop until the currently queued events have been processed.
-  void deplete_run_loop_event_queue() {
+  // Virtual: backends whose dispatch() targets a queue that manual event
+  // pumping cannot drain (macOS GCD main queue) must override with a
+  // non-blocking drain — the dispatch-then-wait scheme below never
+  // completes when called from a block already running on that queue.
+  virtual void deplete_run_loop_event_queue() {
     bool done{};
     dispatch([&] { done = true; });
     run_event_loop_while([&] { return !done; });
