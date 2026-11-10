@@ -34,7 +34,8 @@
 
 #include "invoke.hh"
 
-#include <objc/objc-runtime.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
 
 namespace webview {
 namespace detail {
