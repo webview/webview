@@ -137,6 +137,8 @@ window.__webview__.onUnbind(" +
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
   noresult set_title(const std::string &title) { return set_title_impl(title); }
 
+  void set_on_close(std::function<int()> fn) { m_on_close = fn; }
+
   noresult set_size(int width, int height, webview_hint_t hints) {
     auto res = set_size_impl(width, height, hints);
     m_is_size_set = true;
@@ -347,6 +349,8 @@ protected:
   void set_default_size_guard(bool guarded) { m_is_size_set = guarded; }
 
   bool owns_window() const { return m_owns_window; }
+
+  std::function<int()> m_on_close;
 
 private:
   static std::atomic_uint &window_ref_count() {

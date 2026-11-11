@@ -555,6 +555,9 @@ private:
           w->resize_widget();
           break;
         case WM_CLOSE:
+          if (w->m_on_close && !w->m_on_close()) {
+            break;
+          }
           DestroyWindow(hwnd);
           break;
         case WM_DESTROY:

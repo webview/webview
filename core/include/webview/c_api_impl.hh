@@ -175,6 +175,14 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title) {
   return api_filter([=] { return cast_to_webview(w)->set_title(title); });
 }
 
+WEBVIEW_API webview_error_t webview_set_on_close(webview_t w, int (*fn)(void)) {
+  using namespace webview::detail;
+  return api_filter([=] {
+    cast_to_webview(w)->set_on_close(fn);
+    return webview::noresult{};
+  });
+}
+
 WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
                                              webview_hint_t hints) {
   using namespace webview::detail;

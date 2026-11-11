@@ -287,6 +287,17 @@ private:
           cls,
           objc::selector("applicationShouldTerminateAfterLastWindowClosed:"),
           (IMP)(+[](id, SEL, id) -> BOOL { return NO; }), "c@:@");
+      class_addMethod(
+          cls,
+          objc::selector("applicationShouldTerminate:"),
+          (IMP)(+[](id self, SEL, id) -> unsigned long {
+            auto w = get_associated_webview(self);
+            if (w && w->m_on_close && !w->m_on_close()) {
+              return 0; // NSTerminateCancel
+            }
+            return 1; // NSTerminateNow
+          }),
+          "Q@:@");
       class_addMethod(cls, objc::selector("applicationDidFinishLaunching:"),
                       (IMP)(+[](id self, SEL, id notification) {
                         auto app{NSNotification_get_object(notification)};
@@ -374,6 +385,15 @@ private:
     if (!cls) {
       cls = objc_allocateClassPair(objc::get_class("NSObject"), class_name, 0);
       class_addProtocol(cls, objc_getProtocol("NSWindowDelegate"));
+      class_addMethod(cls, objc::selector("windowShouldClose:"),
+                      (IMP)(+[](id self, SEL, id /*sender*/) -> BOOL {
+                        auto w = get_associated_webview(self);
+                        if (w && w->m_on_close) {
+                          return w->m_on_close() ? YES : NO;
+                        }
+                        return YES;
+                      }),
+                      "B@:@");
       class_addMethod(cls, objc::selector("windowWillClose:"),
                       (IMP)(+[](id self, SEL, id notification) {
                         auto window{NSNotification_get_object(notification)};

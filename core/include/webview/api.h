@@ -126,6 +126,17 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
 WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
 
 /**
+ * Sets a callback that is invoked before the window is closed.
+ *
+ * The callback should return a non-zero value to allow the window to close,
+ * or zero to prevent the window from being closed.
+ *
+ * @param w The webview instance.
+ * @param fn The callback function.
+ */
+WEBVIEW_API webview_error_t webview_set_on_close(webview_t w, int (*fn)(void));
+
+/**
  * Updates the size of the native window.
  *
  * Remarks:
